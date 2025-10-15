@@ -1,4 +1,4 @@
-# Sistema de Control Horario y Guardias
+# Sistema de Gestión Integral de Guardias y Asistencias (GIGA)
 
 ## Descripción del Proyecto
 Sistema integral de gestión de recursos humanos, control de asistencia y guardias desarrollado con **Django REST Framework** (backend) y **SvelteKit** (frontend).
@@ -22,7 +22,7 @@ Sistema integral de gestión de recursos humanos, control de asistencia y guardi
 │                     Puerto 8000                                │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
 │  │   API REST      │  │   6 Apps        │  │   Base de       │ │
-│  │   Endpoints     │  │   Django        │  │   Datos MySQL   │ │
+│  │   Endpoints     │  │   Django        │  │   PostgreSQL    │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -68,7 +68,7 @@ Sistema integral de gestión de recursos humanos, control de asistencia y guardi
 ### Backend
 - **Django 5.2.7** - Framework web principal
 - **Django REST Framework** - API REST
-- **MySQL 8.x** - Base de datos
+- **PostgreSQL 12+** - Base de datos
 - **Python 3.13** - Lenguaje de programación
 
 ### Frontend
@@ -79,7 +79,7 @@ Sistema integral de gestión de recursos humanos, control de asistencia y guardi
 
 ### Dependencias Adicionales
 - **django-cors-headers** - Manejo de CORS
-- **mysqlclient** - Driver MySQL
+- **psycopg2-binary** - Driver PostgreSQL
 - **python-decouple** - Variables de entorno
 
 ## Requisitos Previos
@@ -87,66 +87,189 @@ Sistema integral de gestión de recursos humanos, control de asistencia y guardi
 ### Sistema
 - **Python 3.13+**
 - **Node.js 18+**
-- **MySQL 8.0+**
+- **PostgreSQL 12+**
 - **Git**
 
-### Dependencias del Sistema (Ubuntu/Debian)
+### Dependencias del Sistema
+
+#### 🐧 **Linux (Ubuntu/Debian)**
 ```bash
 sudo apt update
-sudo apt install python3-dev default-libmysqlclient-dev build-essential mysql-server
+sudo apt install python3-dev postgresql postgresql-contrib build-essential
 ```
 
-## Instalación Completa
+#### 🐧 **Linux (CentOS/RHEL/Fedora)**
+```bash
+# CentOS/RHEL
+sudo yum install python3-devel postgresql-devel gcc postgresql-server
+# o Fedora
+sudo dnf install python3-devel postgresql-devel gcc postgresql-server
+```
+
+#### 🍎 **macOS**
+```bash
+# Instalar Homebrew si no lo tienes
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Instalar dependencias
+brew install python postgresql pkg-config
+```
+
+#### 🪟 **Windows**
+1. **Descargar e instalar:**
+   - [Python 3.13+](https://www.python.org/downloads/windows/)
+   - [Node.js 18+](https://nodejs.org/en/download/)
+   - [PostgreSQL 12+](https://www.postgresql.org/download/windows/)
+   - [Git](https://git-scm.com/download/win)
+   - [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+
+2. **Configurar PATH** (añadir a las variables de entorno):
+   - `C:\Python313\`
+   - `C:\Python313\Scripts\`
+   - `C:\Program Files\PostgreSQL\15\bin\`
+
+## 🚀 Instalación Completa
 
 ### 1. Clonar y Configurar el Proyecto
 
+#### 🐧 **Linux / 🍎 macOS**
 ```bash
 # Clonar el repositorio
-git clone <url-del-repo>
+git clone https://github.com/micaelaalvaradomendez/giga.git
+cd giga
+
+# Configurar el backend
+cd back
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+#### 🪟 **Windows (PowerShell)**
+```powershell
+# Clonar el repositorio
+git clone https://github.com/micaelaalvaradomendez/giga.git
+cd giga
+
+# Configurar el backend
+cd back
+python -m venv venv
+venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+# Crear entorno virtual de Python
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+#### 🪟 **Windows (CMD)**
+```cmd
+# Clonar el repositorio
+git clone https://github.com/micaelaalvaradomendez/giga.git
 cd giga
 
 # Crear entorno virtual de Python
-python3 -m venv .venv
-source .venv/bin/activate  # En Linux/Mac
-# o en Windows: .venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate.bat
 ```
 
 ### 2. Configurar Backend (Django)
 
+#### 🐧 **Linux / 🍎 macOS**
 ```bash
 # Ir al directorio del backend
 cd back
 
 # Instalar dependencias de Python
-pip install django djangorestframework mysqlclient django-cors-headers python-decouple
+pip install -r requirements.txt
 
-# Crear archivo de variables de entorno
-cat > .env << EOF
-DEBUG=True
-SECRET_KEY=tu-clave-secreta-super-segura-aqui
-DB_NAME=sistema_horario
-DB_USER=root
-DB_PASSWORD=tu-password-mysql
+# O manualmente:
+# pip install django djangorestframework psycopg2-binary django-cors-headers python-decouple
+
+# El archivo .env ya está configurado para PostgreSQL
+# Verificar configuración:
+cat .env
+
+# Crear base de datos PostgreSQL
+sudo -u postgres psql
+```
+
+#### 🪟 **Windows (PowerShell)**
+```powershell
+# Ir al directorio del backend
+cd back
+
+# Instalar dependencias de Python
+pip install -r requirements.txt
+
+```
+
+### 2. Configurar PostgreSQL
+
+#### **Crear base de datos (todos los sistemas):**
+```bash
+# Acceder a PostgreSQL como usuario postgres
+sudo -u postgres psql
+
+# En el prompt de PostgreSQL, ejecutar:
+CREATE DATABASE giga;
+\q
+```
+
+### 3. Configurar Backend Django
+
+#### **El archivo .env ya está configurado:**
+```env
+# Configuración de base de datos PostgreSQL
+DB_NAME=giga
+DB_USER=postgres
+DB_PASSWORD=
 DB_HOST=localhost
-DB_PORT=3306
-CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-EOF
+DB_PORT=5432
+```
 
-# Crear base de datos MySQL
-mysql -u root -p
-CREATE DATABASE sistema_horario CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-EXIT;
+#### **Verificar conexión (no crear migraciones aún):**
+```bash
+# Linux/macOS (con entorno virtual activado)
+python manage.py check
 
-# Aplicar migraciones
+# # Windows (con entorno virtual activado)
+python manage.py check
+```
+
+### 🗄️ **Desarrollo de Base de Datos**
+
+#### **Antes de crear migraciones:**
+1. **Revisa el diseño**: Consulta `/documentacion/db.puml` para el diseño completo
+2. **Lee la guía de integración**: `/documentacion/integracionDB.md` 
+3. **Define los modelos** en cada app según el diseño
+4. **NO ejecutes** `makemigrations` hasta tener los modelos finales
+
+#### **Comandos para desarrollo:**
+```bash
+# Verificar que no hay errores en los modelos (SIN crear migraciones)
+python manage.py check
+
+# Ver el SQL que generaría Django (sin ejecutar)
+python manage.py sqlmigrate app_name 0001 --fake-initial
+
+# Cuando estés listo para crear la DB real:
 python manage.py makemigrations
 python manage.py migrate
+python manage.py createsuperuser
+```
 
-# Crear superusuario
+### 4. Configurar Frontend
+
+# Windows
+python manage.py makemigrations
+python manage.py migrate
 python manage.py createsuperuser
 ```
 
 ### 3. Configurar Frontend (SvelteKit)
 
+#### 🐧 **Linux / 🍎 macOS**
 ```bash
 # Ir al directorio del frontend
 cd ../front
@@ -155,26 +278,83 @@ cd ../front
 npm install
 
 # Crear archivo de variables de entorno
-cat > .env << EOF
+cat > .env << 'EOF'
 VITE_API_URL=http://localhost:8000/api
 EOF
 ```
 
+#### 🪟 **Windows (PowerShell)**
+```powershell
+# Ir al directorio del frontend
+cd ../front
+
+# Instalar dependencias de Node.js
+npm install
+
+# Crear archivo de variables de entorno
+@"
+VITE_API_URL=http://localhost:8000/api
+"@ | Out-File -FilePath .env -Encoding utf8
+```
+
+#### 🪟 **Windows (CMD)**
+```cmd
+# Ir al directorio del frontend
+cd ../front
+
+# Instalar dependencias de Node.js
+npm install
+
+# Crear archivo de variables de entorno
+echo VITE_API_URL=http://localhost:8000/api > .env
+```
+
 ## Ejecutar el Sistema
 
+> **💡 Importante:** Ambos servidores deben estar ejecutándose simultáneamente para el funcionamiento completo del sistema.
 
-Ambos servidores deben estar ejecutándose simultáneamente para el funcionamiento completo del sistema.
+### 1. Iniciar Backend
 
-### 1. Iniciar Backend (Terminal 1)
+#### 🐧 **Linux / 🍎 macOS**
 ```bash
+# Terminal 1
 cd back
-source .venv/bin/activate  # Activar entorno virtual
+source venv/bin/activate  # Activar entorno virtual
 python manage.py runserver
 # Backend disponible en: http://localhost:8000
 ```
 
-### 2. Iniciar Frontend (Terminal 2)
+#### 🪟 **Windows (PowerShell)**
+```powershell
+# Terminal 1
+cd back
+.venv\Scripts\Activate.ps1  # Activar entorno virtual
+python manage.py runserver
+# Backend disponible en: http://localhost:8000
+```
+
+#### 🪟 **Windows (CMD)**
+```cmd
+# Terminal 1
+cd back
+.venv\Scripts\activate.bat  # Activar entorno virtual
+python manage.py runserver
+# Backend disponible en: http://localhost:8000
+```
+
+### 2. Iniciar Frontend
+
+#### 🐧 **Linux / 🍎 macOS**
 ```bash
+# Terminal 2
+cd front
+npm run dev
+# Frontend disponible en: http://localhost:5173
+```
+
+#### 🪟 **Windows (PowerShell/CMD)**
+```cmd
+# Terminal 2
 cd front
 npm run dev
 # Frontend disponible en: http://localhost:5173
@@ -267,28 +447,105 @@ npm run preview
 ## Solución de Problemas Comunes
 
 ### Error de conexión a MySQL
+
+#### 🐧 **Linux**
 ```bash
 # Verificar que MySQL esté ejecutándose
 sudo systemctl status mysql
 
 # Reiniciar MySQL si es necesario
 sudo systemctl restart mysql
+
+# Iniciar MySQL si no está ejecutándose
+sudo systemctl start mysql
 ```
 
-### Error de permisos de Python
+#### 🍎 **macOS**
+```bash
+# Verificar estado de MySQL
+brew services list | grep mysql
+
+# Iniciar MySQL
+brew services start mysql
+
+# Reiniciar MySQL
+brew services restart mysql
+```
+
+#### 🪟 **Windows**
+```cmd
+# Verificar servicios (ejecutar como Administrador)
+sc query MySQL80
+
+# Iniciar MySQL
+net start MySQL80
+
+# Reiniciar MySQL
+net stop MySQL80
+net start MySQL80
+```
+
+### Error de entorno virtual
+
+#### 🐧 **Linux / 🍎 macOS**
 ```bash
 # Asegurarse de que el entorno virtual esté activo
 source .venv/bin/activate
+```
+
+#### 🪟 **Windows (PowerShell)**
+```powershell
+# Asegurarse de que el entorno virtual esté activo
+.venv\Scripts\Activate.ps1
+```
+
+#### 🪟 **Windows (CMD)**
+```cmd
+# Asegurarse de que el entorno virtual esté activo
+.venv\Scripts\activate.bat
 ```
 
 ### Error CORS en el frontend
 - Verificar que el backend esté ejecutándose en el puerto 8000
 - Confirmar que la variable `VITE_API_URL` esté configurada correctamente
 
+### Error de instalación de mysqlclient
+
+#### 🐧 **Linux**
+```bash
+# Si falla la instalación de mysqlclient
+sudo apt-get install python3-dev default-libmysqlclient-dev build-essential
+pip install mysqlclient
+```
+
+#### 🍎 **macOS**
+```bash
+# Si falla la instalación de mysqlclient
+brew install mysql-client
+export PATH="/usr/local/opt/mysql-client/bin:$PATH"
+pip install mysqlclient
+```
+
+#### 🪟 **Windows**
+```cmd
+# Alternativa si mysqlclient falla
+pip install PyMySQL
+# Luego añadir en settings.py:
+# import pymysql
+# pymysql.install_as_MySQLdb()
+```
+
 ### Error de migraciones
 ```bash
-# Resetear migraciones si es necesario
+# Resetear migraciones si es necesario (todos los sistemas)
 python manage.py migrate --fake-initial
+```
+
+### Error de permisos en Windows
+- Ejecutar PowerShell o CMD **como Administrador**
+- Configurar política de ejecución en PowerShell:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ## Estado de Desarrollo

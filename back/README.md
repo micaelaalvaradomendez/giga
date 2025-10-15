@@ -1,107 +1,279 @@
-# Estructura del Proyecto Django - Sistema de Control Horario y Guardias
+# Backend - Sistema GIGA
 
-## Resumen de la estructura creada
+## Descripción
+Backend desarrollado en **Django** con **Django REST Framework** que proporciona una API REST completa para el Sistema de Gestión Integral de Guardias y Asistencias (GIGA). La base de datos utilizada es **PostgreSQL**.
+Está preparado para desarrollo y listo para integrar con el frontend **SvelteKit**.
 
-Este proyecto Django ha sido creado basándose en el diagrama PlantUML proporcionado. La estructura incluye:
+## Arquitectura del Proyecto
 
-### Apps creadas:
+### Estructura de Apps
+
+El proyecto está dividido en 6 aplicaciones Django, cada una basada en los paquetes del diagrama UML:
 
 #### 1. **personas** - Gestión de Personal
-- **Modelos**: 
-  - `Area`: Áreas de la organización
-  - `Agente`: Empleados/agentes
-  - `Rol`: Roles del sistema
-  - `CuentaAcceso`: Cuentas de acceso al sistema
-- **Funcionalidades**: Gestión de personal, áreas y roles
+**Propósito**: Manejo de agentes, áreas organizacionales, roles y cuentas de acceso.
+
+**Modelos principales**:
+- `Area`: Áreas de la organización con código, nombre y descripción
+- `Agente`: Empleados con legajo, datos personales y área asignada
+- `Rol`: Roles del sistema con permisos JSON
+- `CuentaAcceso`: Cuentas de acceso vinculadas a agentes con roles
+
+**Endpoints**:
+- `/api/personas/agentes/` - CRUD de agentes
+- `/api/personas/areas/` - CRUD de áreas
+- `/api/personas/roles/` - CRUD de roles
+- `/api/personas/cuentas-acceso/` - CRUD de cuentas
 
 #### 2. **asistencia** - Control de Asistencia
-- **Modelos**:
-  - `Asistencia`: Registro diario de asistencia
-  - `Marca`: Marcas de entrada/salida
-  - `LicenciaONovedad`: Clase abstracta base
-  - `Licencia`: Licencias de los agentes
-  - `Novedad`: Novedades y permisos
-  - `Adjunto`: Archivos adjuntos
-- **Enums**: EstadoAsistencia, TipoMarca, TipoLicencia, etc.
+**Propósito**: Registro y control de asistencia diaria, marcas de entrada/salida, licencias y novedades.
+
+**Modelos principales**:
+- `Asistencia`: Registro diario con estado (presente, ausente, tardanza, etc.)
+- `Marca`: Marcas individuales de entrada/salida con validación
+- `LicenciaONovedad`: Clase abstracta base para solicitudes
+- `Licencia`: Licencias (vacaciones, enfermedad, personal, estudio)
+- `Novedad`: Novedades (médica, familiar, capacitación)
+- `Adjunto`: Archivos adjuntos a licencias/novedades
+
+**Endpoints**:
+- `/api/asistencia/asistencias/` - CRUD de asistencias
+- `/api/asistencia/marcas/` - CRUD de marcas
+- `/api/asistencia/licencias/` - CRUD de licencias
+- `/api/asistencia/novedades/` - CRUD de novedades
 
 #### 3. **guardias** - Sistema de Guardias
-- **Modelos**:
-  - `CronogramaGuardias`: Cronogramas mensuales
-  - `Guardia`: Guardias individuales
-  - `HorasGuardias`: Resumen de horas por período
-  - `Feriado`: Días feriados
-  - `ReglaPlus`: Reglas para asignación de plus
-  - `AsignacionPlus`: Asignaciones calculadas
-- **Enums**: EstadoCronograma, TipoGuardia, AplicaA
+**Propósito**: Gestión de cronogramas de guardias, asignación de turnos y cálculo de plus.
+
+**Modelos principales**:
+- `CronogramaGuardias`: Cronogramas mensuales por área
+- `Guardia`: Guardias individuales (operativas/administrativas)
+- `HorasGuardias`: Resumen mensual de horas por agente
+- `Feriado`: Días feriados que afectan guardias
+- `ReglaPlus`: Reglas para cálculo de plus salarial
+- `AsignacionPlus`: Asignaciones calculadas de plus
+
+**Endpoints**:
+- `/api/guardias/cronogramas/` - CRUD de cronogramas
+- `/api/guardias/guardias/` - CRUD de guardias
+- `/api/guardias/horas-guardias/` - Consulta de resúmenes
+- `/api/guardias/feriados/` - CRUD de feriados
 
 #### 4. **auditoria** - Auditoría y Parámetros
-- **Modelos**:
-  - `ParametrosControlHorario`: Configuración del sistema
-  - `RegistroAuditoria`: Registro de todas las acciones
-- **Enums**: PoliticaVentanas, AccionAuditoria
+**Propósito**: Registro de auditoría del sistema y configuración de parámetros operativos.
+
+**Modelos principales**:
+- `ParametrosControlHorario`: Configuración de ventanas de marcación y tolerancias
+- `RegistroAuditoria`: Log completo de todas las acciones del sistema
+
+**Endpoints**:
+- `/api/auditoria/parametros/` - CRUD de parámetros
+- `/api/auditoria/registros/` - Consulta de registros (solo lectura)
 
 #### 5. **reportes** - Reportes y Notificaciones
-- **Modelos**:
-  - `Reporte`: Generación de reportes
-  - `Notificacion`: Sistema de notificaciones
-  - `PlantillaCorreo`: Plantillas para emails
-  - `EnvioLoteNotificaciones`: Envíos masivos
-- **Clases auxiliares**: RenderCorreo, Vista
+**Propósito**: Generación de reportes y sistema de notificaciones por email.
+
+**Modelos principales**:
+- `Reporte`: Reportes generados (individual, área, dirección, consolidado)
+- `Notificacion`: Notificaciones del sistema y usuarios
+- `PlantillaCorreo`: Plantillas para emails automáticos
+- `EnvioLoteNotificaciones`: Envíos masivos de notificaciones
+
+**Endpoints**:
+- `/api/reportes/reportes/` - CRUD de reportes
+- `/api/reportes/notificaciones/` - CRUD de notificaciones
+- `/api/reportes/plantillas-correo/` - CRUD de plantillas
 
 #### 6. **convenio_ia** - IA para Convenios
-- **Modelos**:
-  - `Convenio`: Convenios colectivos
-  - `IndiceConvenio`: Índices de búsqueda
-  - `ConsultaConvenio`: Consultas realizadas
-- **Clases auxiliares**: ResultadoBusqueda, RespuestaConCitas, Archivo
+**Propósito**: Sistema de consultas inteligentes sobre convenios colectivos de trabajo.
 
-### Configuración realizada:
+**Modelos principales**:
+- `Convenio`: Convenios colectivos con versionado
+- `IndiceConvenio`: Índices de búsqueda (BM25/Embeddings)
+- `ConsultaConvenio`: Historial de consultas con respuestas
 
-1. **Settings.py**:
-   - Apps registradas
-   - Django REST Framework configurado
-   - Configuración de archivos multimedia
-   - Logging básico
-   - Configuración regional (español argentino)
+**Endpoints**:
+- `/api/convenio-ia/convenios/` - CRUD de convenios
+- `/api/convenio-ia/consultas/` - Historial de consultas
+- `/api/convenio-ia/consultar/` - Endpoint para realizar consultas
 
-2. **URLs**:
-   - URLs principales configuradas
-   - URLs de cada app creadas (estructura básica)
-   - Servicio de archivos multimedia
+## Configuración Técnica
 
-3. **Estructura API REST**:
-   - Views básicas usando Django REST Framework
-   - Serializers para la app personas (como ejemplo)
-   - Autenticación por token y sesión
+### Base de Datos
+- **Motor**: PostgreSQL 12+
+- **Encoding**: UTF-8
+- **Configuración**: Conexiones persistentes y health checks habilitados
 
-### Para continuar el desarrollo:
+### Autenticación y Permisos
+- **Django REST Framework** con autenticación por Token y Sesión
+- **Permisos**: IsAuthenticated por defecto
+- **CORS**: Configurado para frontend en puerto 5173
 
-1. **Instalar migraciones**:
-   ```bash
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
+### APIs y Serialización
+- **Paginación**: 20 elementos por página
+- **Serializers**: Incluyen información relacionada (nombres, etc.)
+- **Response Format**: JSON estándar
 
-2. **Crear superusuario**:
-   ```bash
-   python manage.py createsuperuser
-   ```
+### Logging y Auditoría
+- **Logs**: Almacenados en `logs/django.log`
+- **Auditoría**: Registro automático de todas las operaciones CRUD
+- **Timezone**: America/Argentina/Buenos_Aires
 
-3. **Completar serializers** para las demás apps
+## Variables de Entorno
 
-4. **Implementar las views** con la lógica de negocio
+El archivo `.env` debe contener:
 
-5. **Completar los métodos** en los modelos (actualmente tienen `pass`)
+```env
+DEBUG=True
+SECRET_KEY=tu-clave-secreta
+DB_NAME=giga
+DB_USER=postgres
+DB_PASSWORD=
+DB_HOST=localhost
+DB_PORT=5432
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
 
-6. **Configurar el admin** de Django para gestión
+## Instalación y Configuración
 
-### Próximos pasos recomendados:
+### Requisitos Previos
 
-- Implementar autenticación personalizada
-- Crear tests unitarios
-- Implementar validaciones de negocio
-- Configurar permisos granulares
-- Integrar sistema de IA para consultas de convenio
-- Implementar notificaciones por email
+#### 🐧 **Linux (Ubuntu/Debian)**
+```bash
+sudo apt update
+sudo apt install python3-dev postgresql postgresql-contrib build-essential
+```
 
-El proyecto está listo para comenzar el desarrollo con una estructura sólida basada en el diagrama UML proporcionado.
+#### 🍎 **macOS**
+```bash
+brew install python postgresql
+```
+
+#### 🪟 **Windows**
+- Instalar [Python 3.13+](https://www.python.org/downloads/windows/) ✅
+- Instalar [PostgreSQL 12+](https://www.postgresql.org/download/windows/) ✅
+- Instalar [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) ✅
+
+### Configuración del Entorno
+
+#### 🐧 **Linux / 🍎 macOS**
+```bash
+# Crear y activar entorno virtual
+python3 -m venv venv
+source venv/bin/activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+```
+
+#### 🪟 **Windows (PowerShell)**
+```powershell
+# Crear y activar entorno virtual
+python -m venv venv
+venv\Scripts\Activate.ps1
+
+# Instalar dependencias
+pip install -r requirements.txt
+```
+
+#### 🪟 **Windows (CMD)**
+```cmd
+# Crear y activar entorno virtual
+python -m venv venv
+venv\Scripts\activate.bat
+
+# Instalar dependencias
+pip install -r requirements.txt
+```
+
+## Comandos Importantes
+
+### Desarrollo (todos los sistemas)
+```bash
+# Crear migraciones
+python manage.py makemigrations
+
+# Aplicar migraciones
+python manage.py migrate
+
+# Crear superusuario
+python manage.py createsuperuser
+
+# Ejecutar servidor de desarrollo
+python manage.py runserver
+
+# Crear app nueva
+python manage.py startapp nombre_app
+
+# Shell interactivo de Django
+python manage.py shell
+
+# Recopilar archivos estáticos
+python manage.py collectstatic
+```
+
+### Base de Datos PostgreSQL
+
+#### 🐧 **Linux**
+```bash
+# Iniciar PostgreSQL
+sudo systemctl start postgresql
+
+# Acceder a PostgreSQL
+sudo -u postgres psql
+```
+
+#### 🍎 **macOS**
+```bash
+# Iniciar PostgreSQL
+brew services start postgresql
+
+# Acceder a PostgreSQL
+psql postgres
+```
+
+#### 🪟 **Windows**
+```cmd
+# Acceder a PostgreSQL
+psql -U postgres
+```
+
+#### Crear Base de Datos (todos los sistemas)
+```sql
+CREATE DATABASE giga;
+\l
+\q
+```
+
+## Estado del Desarrollo
+
+### Completado
+- Estructura completa de modelos base
+- APIs REST básicas para todas las apps
+- Configuración de base de datos PostgreSQL
+- Sistema de autenticación
+- Configuración CORS
+- Serializers con información relacionada
+- Entorno virtual configurado
+
+### Pendiente (Para Desarrollo)
+- Definir modelos finales según `documentacion/db.puml`
+- Crear migraciones (NO creadas intencionalmente)
+- Implementar lógica de negocio específica
+
+## Dependencias Principales
+
+- **Django 5.2.7**: Framework web
+- **djangorestframework**: API REST
+- **psycopg2-binary**: Conector PostgreSQL
+- **django-cors-headers**: Manejo de CORS
+- **python-decouple**: Variables de entorno
+
+## 🎯 Próximos Pasos
+
+1. **Revisar diseño**: `../documentacion/db.puml`
+2. **Leer guía**: `../documentacion/integracionDB.md`
+3. **Definir modelos** según el diseño
+4. **Crear migraciones**: `python manage.py makemigrations`
+5. **Aplicar migraciones**: `python manage.py migrate`
+

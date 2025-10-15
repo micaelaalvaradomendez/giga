@@ -1,8 +1,7 @@
-# Frontend - Sistema de Control Horario y Guardias
+# Frontend - Sistema GIGA
 
 ## Descripción
-Frontend desarrollado en **SvelteKit** con **JavaScript** que consume la API REST del backend Django. Proporciona una interfaz web moderna y responsive para la gestión del sistema de control horario y guardias.
-
+Frontend desarrollado en **SvelteKit** con **JavaScript** que consume la API REST del backend Django. 
 ## Tecnologías Utilizadas
 
 - **SvelteKit**: Framework de desarrollo web
@@ -49,23 +48,118 @@ Servicios completos para todas las apps del backend:
 - `convenioIaService`: Consultas inteligentes de convenios
 - `auditoriaService`: Parámetros y registros de auditoría
 
-## Variables de Entorno
+## Instalación y Configuración
 
-Crear archivo `.env`:
-```env
-VITE_API_URL=http://localhost:8000/api
+### Requisitos Previos
+- **Node.js 18+** 
+- **npm** (incluido con Node.js)
+
+#### 🐧 **Linux (Ubuntu/Debian)**
+```bash
+# Actualizar repositorios
+sudo apt update
+
+# Instalar Node.js
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verificar instalación
+node --version
+npm --version
 ```
 
-## Instalación y Desarrollo
-
+#### 🍎 **macOS**
 ```bash
-# Instalar dependencias
+# Con Homebrew
+brew install node
+
+# Verificar instalación
+node --version
+npm --version
+```
+
+#### 🪟 **Windows**
+1. Descargar e instalar [Node.js](https://nodejs.org/en/download/) desde el sitio oficial
+2. Verificar instalación en PowerShell/CMD:
+```cmd
+node --version
+npm --version
+```
+
+### Configuración del Entorno
+
+#### Variables de Entorno
+
+##### 🐧 **Linux / 🍎 macOS**
+```bash
+# Crear archivo .env
+cat > .env << 'EOF'
+VITE_API_URL=http://localhost:8000/api
+EOF
+```
+
+##### 🪟 **Windows (PowerShell)**
+```powershell
+# Crear archivo .env
+@"
+VITE_API_URL=http://localhost:8000/api
+"@ | Out-File -FilePath .env -Encoding utf8
+```
+
+##### 🪟 **Windows (CMD)**
+```cmd
+# Crear archivo .env
+echo VITE_API_URL=http://localhost:8000/api > .env
+```
+
+### Instalación de Dependencias
+
+#### Todos los sistemas
+```bash
+# Instalar dependencias del proyecto
 npm install
 
+# Verificar que las dependencias se instalaron correctamente
+npm list --depth=0
+```
+
+## Ejecutar en Desarrollo
+
+### Iniciar Servidor de Desarrollo
+
+#### 🐧 **Linux / 🍎 macOS**
+```bash
 # Iniciar servidor de desarrollo
 npm run dev
 
-# El frontend estará disponible en http://localhost:5173
+# Frontend disponible en: http://localhost:5173
+```
+
+#### 🪟 **Windows (PowerShell/CMD)**
+```cmd
+# Iniciar servidor de desarrollo
+npm run dev
+
+# Frontend disponible en: http://localhost:5173
+```
+
+### Otros Comandos Útiles
+
+#### Todos los sistemas
+```bash
+# Build para producción
+npm run build
+
+# Vista previa de build de producción
+npm run preview
+
+# Limpiar node_modules y reinstalar
+
+rm -rf node_modules package-lock.json  # Linux/macOS
+
+rmdir /s node_modules && del package-lock.json  # Windows CMD
+
+npm install # Ambos
 ```
 
 ## Integración con Backend
@@ -89,5 +183,22 @@ npm run dev
 - Formularios CRUD
 - Componentes reutilizables
 - Navegación entre páginas
+- Manejo de estados globales
+- Validación de formularios
+
+## Dependencias Principales
+
+- **@sveltejs/kit**: Framework Svelte
+- **svelte**: Core de Svelte
+- **axios**: Cliente HTTP
+- **vite**: Build tool y dev server
+
+## Próximos Pasos
+
+1. **Conectar con backend**: Asegurarse que backend esté ejecutándose en puerto 8000
+2. **Implementar autenticación**: Login/logout completo
+3. **Crear páginas CRUD**: Para cada módulo del sistema
+4. **Diseñar UI/UX**: Interfaz moderna y responsive
+5. **Testing**: Pruebas unitarias y de integración
 
 El frontend está preparado para desarrollo y listo para conectar con el backend Django.

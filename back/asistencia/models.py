@@ -102,13 +102,13 @@ class LicenciaONovedad(models.Model):
     Modelo abstracto base para licencias y novedades
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    agente = models.ForeignKey(Agente, on_delete=models.CASCADE, related_name='licencias_novedades')
+    agente = models.ForeignKey(Agente, on_delete=models.CASCADE, related_name='%(class)s_set')
     desde = models.DateField()
     hasta = models.DateField()
     motivo = models.TextField()
     estado = models.CharField(max_length=20, choices=EstadoSolicitud.choices, default=EstadoSolicitud.PENDIENTE)
     solicitado_en = models.DateTimeField(auto_now_add=True)
-    aprobado_por = models.ForeignKey(Agente, on_delete=models.SET_NULL, null=True, blank=True, related_name='aprobaciones')
+    aprobado_por = models.ForeignKey(Agente, on_delete=models.SET_NULL, null=True, blank=True, related_name='%(class)s_aprobadas')
     aprobado_en = models.DateTimeField(blank=True, null=True)
     
     class Meta:

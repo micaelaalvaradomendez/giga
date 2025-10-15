@@ -384,7 +384,9 @@ void
 +reintentar(): void
 +marcarError(mensaje: String): void
 }
-enum MedioNotificacion { EMAIL }
+enum MedioNotificacion { 
+    EMAIL 
+}
 enum OrigenNotificacion { 
     SISTEMA
     USUARIO 
