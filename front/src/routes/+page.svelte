@@ -37,7 +37,8 @@
             </button>
         </div>
         <button class="login-button">Iniciar</button>
-        <div class="recover-password"><a href="#">Recuperar contraseña</a></div>
+        <div class="recover-password"><a href>Recuperar contraseña</a></div>
+        <!-- Aca podriamos hacer como una notificacion de que revise su correo donde le va a llegar la nueva clave-->
     </div>
 </div>
 
