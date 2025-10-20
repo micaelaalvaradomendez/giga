@@ -4,7 +4,7 @@ from personas.models import Agente
 import uuid
 
 
-# ====== ENUMS DE LA APP CONVENIO_IA ======
+# ENUMS DE LA APP CONVENIO_IA 
 
 class EstadoConvenio(models.TextChoices):
     VIGENTE = 'VIGENTE', _('Vigente')
@@ -16,7 +16,7 @@ class MetodoIndice(models.TextChoices):
     EMBEDDINGS = 'EMBEDDINGS', _('Embeddings')
 
 
-# ====== MODELOS DE LA APP CONVENIO_IA ======
+# MODELOS DE LA APP CONVENIO_IA 
 
 class Convenio(models.Model):
     """
@@ -105,7 +105,7 @@ class ConsultaConvenio(models.Model):
         pass
 
 
-# ====== CLASES AUXILIARES ======
+# CLASES AUXILIARES 
 
 class ResultadoBusqueda(models.Model):
     """

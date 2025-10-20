@@ -3,112 +3,128 @@ from django.contrib.auth.models import AbstractUser
 import uuid
 
 
-# ====== MODELOS DE LA APP PERSONAS ======
+class Usuario(AbstractUser):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    email = models.EmailField(unique=True)
+    activo = models.BooleanField(default=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
 
 class Area(models.Model):
-    """
-    Modelo para representar las áreas de la organización
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    codigo = models.CharField(max_length=50, unique=True)
-    nombre = models.CharField(max_length=200)
-    descripcion = models.TextField(blank=True, null=True)
+    nombre = models.CharField(max_length=150)
+    area_padre = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='areas_hijas')
     activa = models.BooleanField(default=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='areas_creadas')
+    actualizado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='areas_actualizadas')
     
     class Meta:
-        db_table = 'areas'
-        verbose_name = 'Área'
-        verbose_name_plural = 'Áreas'
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(area_padre=models.F('id')),
+                name='area_no_padre_si_mismo'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['nombre', 'area_padre'], name='idx_area_nombre_padre')
+        ]
 
-    def __str__(self):
-        return f"{self.codigo} - {self.nombre}"
-
-    def agentes_activos(self):
-        """Retorna los agentes activos de esta área"""
+    def get_jerarquia_completa(self):
+        """Retorna la jerarquía completa del área"""
+        pass
+        
+    def get_areas_descendientes(self):
+        """Retorna todas las áreas descendientes"""
         pass
 
-
+# back/personas/models.py
 class Agente(models.Model):
-    """
-    Modelo para representar a los agentes de la organización
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    legajo = models.CharField(max_length=20, unique=True)
-    nombre = models.CharField(max_length=100)
-    apellido = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-    telefono = models.CharField(max_length=20, blank=True, null=True)
-    activo = models.BooleanField(default=True)
-    fecha_ingreso = models.DateField()
-    area = models.ForeignKey(Area, on_delete=models.PROTECT, related_name='agentes')
+    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='agente')
     
-    class Meta:
-        db_table = 'agentes'
-        verbose_name = 'Agente'
-        verbose_name_plural = 'Agentes'
+    # Datos de identificación
+    dni = models.CharField(max_length=8, unique=True)
+    legajo = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    
+    # Datos personales
+    apellido = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=50)
+    fecha_nac = models.DateField()
+    telefono = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(unique=True)
+    
+    # Dirección
+    provincia = models.CharField(max_length=50, default='Tierra del Fuego')
+    ciudad = models.CharField(max_length=50, blank=True, null=True)
+    calle = models.CharField(max_length=100, blank=True, null=True)
+    numero = models.CharField(max_length=10, blank=True, null=True)
+    
+    # Datos laborales
+    horario_entrada = models.TimeField(null=True, blank=True)
+    horario_salida = models.TimeField(null=True, blank=True)
+    categoria_revista = models.CharField(max_length=5)
+    agrupacion = models.CharField(max_length=5, choices=[
+        ('EPU', 'EPU'), ('POMYS', 'POMyS'), ('PAYT', 'PAyT')
+    ])
+    
+    # Jerarquía
+    es_jefe = models.BooleanField(default=False)
+    id_jefe = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subordinados')
+    categoria_usuf = models.CharField(max_length=5, blank=True, null=True)
+    
+    # Auditoría
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='agentes_creados')
+    actualizado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='agentes_actualizados')
 
-    def __str__(self):
-        return f"{self.legajo} - {self.nombre_completo()}"
+# back/personas/models.py
 
-    def nombre_completo(self):
-        """Retorna el nombre completo del agente"""
-        pass
-
-    def puede_marcar(self, fecha):
-        """Verifica si el agente puede marcar en una fecha determinada"""
-        pass
-
-    def es_activo(self):
-        """Verifica si el agente está activo"""
-        pass
-
+class Permiso(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    codigo = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True, null=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='permisos_creados')
+    actualizado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='permisos_actualizados')
 
 class Rol(models.Model):
-    """
-    Modelo para representar los roles del sistema
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    nombre = models.CharField(max_length=100, unique=True)
-    permisos = models.JSONField()
-    activo = models.BooleanField(default=True)
+    nombre = models.CharField(max_length=60, unique=True)
+    descripcion = models.TextField(blank=True, null=True)
+    permisos = models.ManyToManyField(Permiso, through='PermisoRol')
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='roles_creados')
+    actualizado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='roles_actualizados')
+
+class PermisoRol(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    rol = models.ForeignKey(Rol, on_delete=models.CASCADE)
+    permiso = models.ForeignKey(Permiso, on_delete=models.CASCADE)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='permisos_roles_creados')
+    actualizado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='permisos_roles_actualizados')
     
     class Meta:
-        db_table = 'roles'
-        verbose_name = 'Rol'
-        verbose_name_plural = 'Roles'
+        unique_together = ['rol', 'permiso']
 
-    def __str__(self):
-        return self.nombre
-
-    def tiene_permiso(self, accion):
-        """Verifica si el rol tiene un permiso específico"""
-        pass
-
-
-class CuentaAcceso(models.Model):
-    """
-    Modelo para representar las cuentas de acceso al sistema
-    """
+class AgenteRol(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    agente = models.OneToOneField(Agente, on_delete=models.CASCADE, related_name='cuenta_acceso')
-    usuario = models.CharField(max_length=50, unique=True)
-    password = models.CharField(max_length=128)
-    activa = models.BooleanField(default=True)
-    ultimo_acceso = models.DateTimeField(blank=True, null=True)
-    roles = models.ManyToManyField(Rol, blank=True)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    rol = models.ForeignKey(Rol, on_delete=models.CASCADE)
+    area = models.ForeignKey(Area, on_delete=models.CASCADE, null=True, blank=True)
+    asignado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='asignaciones_creadas')
+    actualizado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='asignaciones_actualizadas')
     
     class Meta:
-        db_table = 'cuentas_acceso'
-        verbose_name = 'Cuenta de Acceso'
-        verbose_name_plural = 'Cuentas de Acceso'
-
-    def __str__(self):
-        return f"{self.usuario} - {self.agente.nombre_completo()}"
-
-    def autenticar(self, password):
-        """Autentica la cuenta con la contraseña proporcionada"""
-        pass
-
-    def cambiar_password(self, nueva):
-        """Cambia la contraseña de la cuenta"""
-        pass
+        unique_together = ['usuario', 'rol', 'area']
