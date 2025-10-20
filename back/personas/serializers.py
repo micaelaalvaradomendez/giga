@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Agente, Area, Rol, CuentaAcceso
+from .models import Agente, Area, Rol
 
 
 class AreaSerializer(serializers.ModelSerializer):
@@ -31,15 +31,16 @@ class RolSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class CuentaAccesoSerializer(serializers.ModelSerializer):
-    """
-    Serializador para el modelo CuentaAcceso
-    """
-    agente_nombre = serializers.CharField(source='agente.nombre_completo', read_only=True)
-    
-    class Meta:
-        model = CuentaAcceso
-        fields = '__all__'
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+# TEMPORALMENTE COMENTADO - FALTA MODELO CuentaAcceso
+# class CuentaAccesoSerializer(serializers.ModelSerializer):
+#     """
+#     Serializador para el modelo CuentaAcceso
+#     """
+#     agente_nombre = serializers.CharField(source='agente.nombre_completo', read_only=True)
+#     
+#     class Meta:
+#         model = CuentaAcceso
+#         fields = '__all__'
+#         extra_kwargs = {
+#             'password': {'write_only': True}
+#         }
