@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: giga_db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-giga}
+      POSTGRES_USER: ${DB_USER:-giga_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-giga_pass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  back:
+    build:
+      context: .
+      dockerfile: back/Dockerfile
+    container_name: giga_back
+    environment:
+      DEBUG: "1"
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
+      DB_NAME: ${DB_NAME:-giga}
+      DB_USER: ${DB_USER:-giga_user}
+      DB_PASSWORD: ${DB_PASSWORD:-giga_pass}
+      DB_HOST: db
+      DB_PORT: "5432"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./back:/app
+      - back_logs:/app/logs
+
+  front:
+    build:
+      context: .
+      dockerfile: front/Dockerfile
+    container_name: giga_front
+    environment:
+      VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8000}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./front:/app
+      - front_node_modules:/app/node_modules
+    depends_on:
+      - back
+
+volumes:
+  pgdata:
+  front_node_modules:
+  back_logs:
+
