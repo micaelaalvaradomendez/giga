@@ -1,3 +1,8 @@
+# ===== IMPORTANTE PARA COLABORADORES =====
+# Los archivos .env contienen configuración sensible y no se suben a git
+# Después de hacer 'git pull', ejecutar: ./setup.sh
+# O crear manualmente: cp .env.example .env && cp back/.env.example back/.env
+
 # ===== BACKEND (Django) =====
 # Python
 __pycache__/

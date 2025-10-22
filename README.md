@@ -4,6 +4,39 @@ Sistema web para la gestión de recursos humanos, control de asistencia y guardi
 
 ## ⚡ Inicio Rápido con Docker
 
+### 🆕 **NUEVO**: Script de Configuración Automática
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/micaelaalvaradomendez/giga.git
+cd giga
+
+# 2. Ejecutar script de configuración automática
+./setup.sh
+```
+
+El script automáticamente:
+- ✅ Crea archivos `.env` necesarios
+- ✅ Construye los contenedores Docker
+- ✅ Ejecuta migraciones de base de datos
+- ✅ Crea usuarios de prueba con contraseñas
+- ✅ Inicia todos los servicios
+
+### 📋 Credenciales de Prueba
+
+| CUIL | Contraseña | Rol |
+|------|------------|-----|
+| `27-12345678-4` | `12345678` | Administrador |
+| `27-23456789-4` | `admin123` | Director |
+| `27-34567890-4` | `admin123` | Jefatura |
+| `27-45678901-4` | `admin123` | Agente Avanzado |
+| `27-56789012-4` | `admin123` | Agente |
+| `27-67890123-4` | `admin123` | Agente |
+
+### 🔧 Configuración Manual (Alternativa)
+
+Si prefieres configurar manualmente:
+
 ```bash
 # 1. Clonar el repositorio
 git clone https://github.com/micaelaalvaradomendez/giga.git
@@ -11,11 +44,20 @@ cd giga
 
 # 2. Configurar variables de entorno
 cp .env.example .env
+cp back/.env.example back/.env
 
-# 3. Levantar todos los servicios
+# 3. Crear directorio de logs
+mkdir -p back/logs
+
+# 4. Levantar todos los servicios
 docker-compose up -d --build
 
-# 4. ¡Listo! Acceder a:
+# 5. Ejecutar migraciones
+docker-compose exec back python manage.py migrate
+
+# 6. Crear usuarios de prueba (ver script setup.sh para detalles)
+
+# 7. ¡Listo! Acceder a:
 # Frontend: http://localhost:5173
 # Backend API: http://localhost:8000
 # Admin Django: http://localhost:8000/admin
