@@ -7,6 +7,26 @@
     function togglePassword() {
         showPassword = !showPassword;
     }
+
+    function handleCuilInput(event) {
+        let input = event.target.value.replace(/\D/g, "");
+        if (input.length > 11) {
+            input = input.slice(0, 11);
+        }
+        let formattedCuil = "";
+        if (input.length > 2) {
+            formattedCuil += input.slice(0, 2) + "-";
+            if (input.length > 10) {
+                formattedCuil += input.slice(2, 10) + "-";
+                formattedCuil += input.slice(10);
+            } else if (input.length > 2) {
+                formattedCuil += input.slice(2);
+            }
+        } else {
+            formattedCuil = input;
+        }
+        cuil = formattedCuil;
+    }
 </script>
 
 <div class="h1">
@@ -15,8 +35,14 @@
 <div class="page-container">
     <div class="component-one">
         <h2>Ingrese su CUIL:</h2>
-        <input type="text" id="cuil" bind:value={cuil} />
-
+        <input
+            type="text"
+            id="cuil"
+            bind:value={cuil}
+            maxlength="13"
+            placeholder="XX-XXXXXXXX-X"
+            on:input={handleCuilInput}
+        />
         <h2>Ingrese su contraseña:</h2>
         <div class="password-container">
             <input
@@ -24,6 +50,7 @@
                 bind:value={password}
                 type={showPassword ? "text" : "password"}
                 class="password-input"
+                placeholder="•••••••••"
             />
             <button
                 type="button"
