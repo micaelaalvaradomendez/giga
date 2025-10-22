@@ -3,6 +3,8 @@
     let cuil = "";
     let password = "";
     let showPassword = false;
+    let errorMessage = "";
+    let isLoading = false;
 
     function togglePassword() {
         showPassword = !showPassword;
@@ -26,6 +28,48 @@
             formattedCuil = input;
         }
         cuil = formattedCuil;
+    }
+
+    async function handleLogin() {
+        errorMessage = "";
+
+        if (!cuil.trim()) {
+            errorMessage = "Por favor ingrese su CUIL";
+            return;
+        }
+
+        if (!password.trim()) {
+            errorMessage = "Por favor ingrese su contraseña";
+            return;
+        }
+
+        if (cuil.length < 11) {
+            errorMessage = "El CUIL debe tener el formato correcto";
+            return;
+        }
+
+        isLoading = true;
+
+        try {
+            const response = await fetch("/api/login", {
+                //ajustar url con la respectiva del back
+                method: "POST",
+                headers: { "Content-Type": "application/json" }, //ajustar si es necesario
+                body: JSON.stringify({ cuil, password }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                errorMessage = data.message; // Mostrar el error que viene del backend
+            } else {
+                window.location.href = "/dashboard";
+            }
+        } catch (error) {
+            errorMessage = "Error de conexión. Intente nuevamente.";
+        } finally {
+            isLoading = false;
+        }
     }
 </script>
 
@@ -63,7 +107,10 @@
                 <IconifyIcon icon={showPassword ? "mdi:eye-off" : "mdi:eye"} />
             </button>
         </div>
-        <button class="login-button">Iniciar</button>
+        <button class="login-button" on:click={handleLogin}>Iniciar</button>
+        {#if errorMessage}
+            <div class="error-message">{errorMessage}</div>
+        {/if}
         <div class="recover-password"><a href>Recuperar contraseña</a></div>
         <!-- Aca podriamos hacer como una notificacion de que revise su correo donde le va a llegar la nueva clave-->
     </div>
@@ -184,5 +231,14 @@
     a {
         color: #fff;
         text-decoration: underline;
+    }
+    .error-message {
+        background: #ff4444;
+        color: white;
+        padding: 0.7rem;
+        border-radius: 5px;
+        text-align: center;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
     }
 </style>
