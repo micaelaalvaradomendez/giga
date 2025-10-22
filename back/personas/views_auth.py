@@ -5,17 +5,21 @@ from rest_framework.response import Response
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import check_password
 from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from .models import Usuario, Agente, AgenteRol
 import json
 
-@csrf_exempt
-@api_view(['POST'])
+@api_view(['POST', 'OPTIONS'])
 @permission_classes([AllowAny])
 def login_view(request):
     """
     API endpoint para login con CUIL y contraseña
     """
+    # Manejar preflight requests
+    if request.method == 'OPTIONS':
+        return Response(status=status.HTTP_200_OK)
+    
     try:
         data = json.loads(request.body)
         cuil = data.get('cuil', '').replace('-', '')  # Remover guiones del CUIL
@@ -94,12 +98,16 @@ def login_view(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@csrf_exempt
-@api_view(['POST'])
+@api_view(['POST', 'OPTIONS'])
+@permission_classes([AllowAny])
 def logout_view(request):
     """
     API endpoint para logout
     """
+    # Manejar preflight requests
+    if request.method == 'OPTIONS':
+        return Response(status=status.HTTP_200_OK)
+    
     try:
         from django.contrib.auth import logout
         logout(request)
@@ -115,11 +123,15 @@ def logout_view(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'OPTIONS'])
 def check_session(request):
     """
     Verificar si el usuario tiene una sesión activa
     """
+    # Manejar preflight requests
+    if request.method == 'OPTIONS':
+        return Response(status=status.HTTP_200_OK)
+    
     if request.user.is_authenticated:
         try:
             agente = Agente.objects.get(usuario=request.user)

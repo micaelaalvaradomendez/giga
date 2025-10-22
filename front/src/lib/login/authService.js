@@ -11,25 +11,25 @@ export class AuthService {
      */
     static async login(cuil, password) {
         try {
-            const response = await fetch(`${API_BASE_URL}/personas/auth/login/`, {
+            const cleanCuil = cuil.replace(/\D/g, '');
+            const requestBody = {
+                cuil: cleanCuil,
+                password: password
+            };
+            const response = await fetch(`${API_BASE_URL}/auth/login/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 credentials: 'include', // Importante para las cookies de sesión
-                body: JSON.stringify({
-                    cuil: cuil.replace(/\D/g, ''), // Remover caracteres no numéricos
-                    password: password
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const data = await response.json();
-            
             if (data.success) {
                 // Guardar información del usuario en localStorage
                 localStorage.setItem('user', JSON.stringify(data.user));
                 localStorage.setItem('isAuthenticated', 'true');
-                
                 return {
                     success: true,
                     user: data.user,
@@ -42,7 +42,6 @@ export class AuthService {
                 };
             }
         } catch (error) {
-            console.error('Error en login:', error);
             return {
                 success: false,
                 message: 'Error de conexión. Verifique su conexión a internet.'
@@ -56,7 +55,7 @@ export class AuthService {
      */
     static async logout() {
         try {
-            const response = await fetch(`${API_BASE_URL}/personas/auth/logout/`, {
+            const response = await fetch(`${API_BASE_URL}/auth/logout/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -93,7 +92,7 @@ export class AuthService {
      */
     static async checkSession() {
         try {
-            const response = await fetch(`${API_BASE_URL}/personas/auth/check-session/`, {
+            const response = await fetch(`${API_BASE_URL}/auth/check-session/`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
