@@ -1,5 +1,8 @@
 <script>
     import IconifyIcon from "@iconify/svelte";
+    import AuthService from "../lib/login/authService.js";
+    import { goto } from '$app/navigation';
+    
     let cuil = "";
     let password = "";
     let showPassword = false;
@@ -43,32 +46,34 @@
             return;
         }
 
-        if (cuil.length < 11) {
-            errorMessage = "El CUIL debe tener el formato correcto";
+        if (cuil.replace(/\D/g, '').length < 11) {
+            errorMessage = "El CUIL debe tener al menos 11 dígitos";
             return;
         }
 
         isLoading = true;
 
         try {
-            const response = await fetch("/api/login", {
-                //ajustar url con la respectiva del back
-                method: "POST",
-                headers: { "Content-Type": "application/json" }, //ajustar si es necesario
-                body: JSON.stringify({ cuil, password }),
-            });
+            const result = await AuthService.login(cuil, password);
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                errorMessage = data.message; // Mostrar el error que viene del backend
+            if (result.success) {
+                // Login exitoso - redirigir a la página de inicio
+                goto('/inicio');
             } else {
-                window.location.href = "/dashboard";
+                errorMessage = result.message || "Error en el login";
             }
         } catch (error) {
+            console.error('Error durante el login:', error);
             errorMessage = "Error de conexión. Intente nuevamente.";
         } finally {
             isLoading = false;
+        }
+    }
+
+    // Función para manejar Enter en los inputs
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            handleLogin();
         }
     }
 </script>
@@ -86,6 +91,8 @@
             maxlength="13"
             placeholder="XX-XXXXXXXX-X"
             on:input={handleCuilInput}
+            on:keypress={handleKeyPress}
+            disabled={isLoading}
         />
         <h2>Ingrese su contraseña:</h2>
         <div class="password-container">
@@ -95,6 +102,8 @@
                 type={showPassword ? "text" : "password"}
                 class="password-input"
                 placeholder="•••••••••"
+                on:keypress={handleKeyPress}
+                disabled={isLoading}
             />
             <button
                 type="button"
@@ -107,7 +116,17 @@
                 <IconifyIcon icon={showPassword ? "mdi:eye-off" : "mdi:eye"} />
             </button>
         </div>
-        <button class="login-button" on:click={handleLogin}>Iniciar</button>
+        <button 
+            class="login-button" 
+            on:click={handleLogin}
+            disabled={isLoading}
+        >
+            {#if isLoading}
+                Iniciando...
+            {:else}
+                Iniciar
+            {/if}
+        </button>
         {#if errorMessage}
             <div class="error-message">{errorMessage}</div>
         {/if}
@@ -222,6 +241,27 @@
         outline: 3px solid rgba(255, 255, 255, 0.5);
         outline-offset: 2px;
     }
+    .login-button:disabled {
+        background: #cccccc;
+        color: #666666;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .login-button:disabled:hover {
+        background: #cccccc;
+        color: #666666;
+        transform: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    input:disabled {
+        background-color: #f5f5f5;
+        color: #888;
+        cursor: not-allowed;
+    }
+    
     .recover-password {
         text-align: center;
         margin-top: 1rem;
