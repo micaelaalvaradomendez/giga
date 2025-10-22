@@ -6,6 +6,7 @@ import uuid
 class Usuario(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
+    cuil = models.CharField(max_length=11, unique=True, null=True, blank=True, help_text='CUIL sin guiones (11 dígitos)')
     activo = models.BooleanField(default=True)
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)

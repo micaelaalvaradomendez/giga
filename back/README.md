@@ -277,3 +277,8 @@ CREATE DATABASE giga;
 4. **Crear migraciones**: `python manage.py makemigrations`
 5. **Aplicar migraciones**: `python manage.py migrate`
 
+# Admin (borrar cuando vayamaos a entregar esta app)
+
+Usuario: admin
+Correo: seradmin2025@mail.com
+clave: 123456
