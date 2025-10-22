@@ -282,3 +282,41 @@ CREATE DATABASE giga;
 Usuario: admin
 Correo: seradmin2025@mail.com
 clave: 123456
+
+# Usuarios ingresados en la Base de Datos
+
+## Tayra Aguila
+
+CUIL: 101234567841
+
+Contraseña: 12345678
+
+## Micaela Alvarado
+
+CUIL: 10234567891
+
+Contraseña: 23456789
+
+## Cristian Garcia
+
+CUIL: 10345678901
+
+Contraseña: 34567890
+
+## Leandro Gomez
+
+CUIL: 10456789011
+
+Contraseña: 45678901
+
+## Teresa Criniti
+
+CUIL: 10567890121
+
+Contraseña: 56789012
+
+## Pamela Frers
+
+CUIL: 1067890123
+
+Contraseña: 67890123
