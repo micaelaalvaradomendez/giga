@@ -67,6 +67,8 @@ def login_view(request):
             roles = []
         
         # Login exitoso - crear sesión
+        # Especificar el backend de autenticación para evitar conflictos
+        usuario.backend = 'personas.backends.CUILAuthenticationBackend'
         login(request, usuario)
         
         return Response({

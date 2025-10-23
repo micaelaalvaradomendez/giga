@@ -189,7 +189,14 @@ LOGGING = {
 
 # Usuarios
 
+# Modelo de usuario personalizado
 AUTH_USER_MODEL = 'personas.Usuario'
+
+# Backend de autenticación personalizado para CUIL
+AUTHENTICATION_BACKENDS = [
+    'personas.backends.CUILAuthenticationBackend',  # Nuestro backend personalizado
+    'django.contrib.auth.backends.ModelBackend',    # Backend por defecto como fallback
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

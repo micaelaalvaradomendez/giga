@@ -6,6 +6,7 @@ Sistema web para la gestión de recursos humanos, control de asistencia y guardi
 
 ### **NUEVO**: Setup Automático (Sin Problemas)
 
+**Linux/Mac:**
 ```bash
 # 1. Clonar el repositorio
 git clone https://github.com/micaelaalvaradomendez/giga.git
@@ -16,10 +17,24 @@ chmod +x setup.sh normalize_repo.sh
 ./setup.sh
 ```
 
-**¿Problemas después de `git pull`?** (Típico en Windows):
+**Windows (Git Bash):**
 ```bash
-# Solo ejecutar una vez si el backend no levanta
-./normalize_repo.sh
+# 1. Clonar el repositorio (en Git Bash)
+git clone https://github.com/micaelaalvaradomendez/giga.git
+cd giga
+
+# 2. Ejecutar setup automático
+bash setup.sh
+```
+
+> ⚠️ **Importante para Windows**: Usar **Git Bash** (no PowerShell ni CMD). Git Bash viene incluido con Git.
+
+**¿Problemas después de `git pull`?**
+- **Linux/Mac:** `./normalize_repo.sh`
+- **Windows:** `bash normalize_repo.sh`
+
+Luego:
+```bash
 git add . && git commit -m "fix: normalize line endings"
 docker compose down -v && docker compose up -d --build
 ```
@@ -36,17 +51,20 @@ El setup automáticamente:
 
 | CUIL | Contraseña | Rol |
 |------|------------|-----|
-| `27-12345678-4` | `12345678` | Administrador |
-| `27-23456789-4` | `admin123` | Director |
-| `27-34567890-4` | `admin123` | Jefatura |
-| `27-45678901-4` | `admin123` | Agente Avanzado |
-| `27-56789012-4` | `admin123` | Agente |
-| `27-67890123-4` | `admin123` | Agente |
+| `27123456784` | `12345678` | Administrador |
+| `27234567894` | `admin123` | Director |
+| `27345678904` | `admin123` | Jefatura |
+| `27456789014` | `admin123` | Agente Avanzado |
+| `27567890124` | `admin123` | Agente |
+| `27678901234` | `admin123` | Agente |
+
+> ✅ **Funciona con o sin guiones**: `27123456784` o `27-12345678-4`
 
 ### Configuración Manual (Alternativa)
 
 Si prefieres configurar paso a paso:
 
+**Linux/Mac:**
 ```bash
 # 1. Preparar el entorno
 chmod +x setup.sh normalize_repo.sh
@@ -58,7 +76,23 @@ cp back/.env.example back/.env
 
 # 3. Levantar servicios
 docker-compose up -d --build
+```
 
+**Windows (Git Bash):**
+```bash
+# 1. Preparar el entorno (en Git Bash)
+bash normalize_repo.sh  # Solo la primera vez
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+cp back/.env.example back/.env
+
+# 3. Levantar servicios
+docker-compose up -d --build
+```
+
+**Ambos sistemas:**
+```bash
 # 4. Ejecutar migraciones y crear usuarios
 docker-compose exec back python manage.py migrate
 # (Ver setup.sh para crear usuarios de prueba)
@@ -66,24 +100,49 @@ docker-compose exec back python manage.py migrate
 
 ### Si Algo No Funciona
 
-**Backend no levanta después de `git pull`**:
+**Backend no levanta después de `git pull`:**
+- **Linux/Mac:** `./normalize_repo.sh`
+- **Windows:** `bash normalize_repo.sh`
+
+Luego:
 ```bash
-./normalize_repo.sh
 docker compose down -v && docker compose build --no-cache && docker compose up -d
 ```
 
-**Primera vez o problemas de permisos**:
-```bash
-chmod +x setup.sh normalize_repo.sh
-sudo usermod -aG docker $USER  # Linux: agregar usuario a docker
-# Reiniciar sesión después del usermod
-```
+**Primera vez o problemas de permisos:**
+- **Linux:** 
+  ```bash
+  chmod +x setup.sh normalize_repo.sh
+  sudo usermod -aG docker $USER  # Agregar usuario a docker
+  # Reiniciar sesión después del usermod
+  ```
+- **Windows:** Asegúrate de usar **Git Bash** (no PowerShell ni CMD) y tener Docker Desktop corriendo
 
 **Puerto ocupado** - cambiar en `docker-compose.yml`:
 ```yaml
 ports:
   - "8001:8000"  # Backend
   - "5174:5173"  # Frontend
+```
+
+**Login no funciona** - verificar usuarios creados:
+```bash
+# Ver qué usuarios están en la DB
+docker-compose exec back python manage.py shell -c "
+from personas.models import Usuario
+for u in Usuario.objects.all():
+    print(f'CUIL: {u.cuil} | Username: {u.username} | Active: {u.is_active}')
+"
+
+# Si no hay usuarios, ejecutar setup otra vez
+bash setup.sh
+
+# Si hay usuarios pero login falla, reiniciar backend
+docker-compose restart back
+
+# Si aparece error de "multiple authentication backends"
+# El problema está solucionado, solo reinicia:
+docker-compose restart back
 ```
 
 ## Funcionalidades
@@ -131,6 +190,14 @@ ports:
 ```bash
 # Ver si todo funciona
 docker-compose ps
+
+# Ver usuarios en la base de datos
+docker-compose exec back python manage.py shell -c "
+from personas.models import Usuario
+print('=== USUARIOS DISPONIBLES ===')
+for u in Usuario.objects.all():
+    print(f'CUIL: {u.cuil} | Nombre: {u.username}')
+"
 
 # Ver logs si hay problemas
 docker-compose logs -f back    # Backend
