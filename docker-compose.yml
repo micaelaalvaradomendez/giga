@@ -11,7 +11,7 @@ services:
     ports:
       - "5434:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata2:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -56,7 +56,7 @@ services:
       - back
 
 volumes:
-  pgdata:
+  pgdata2:
   front_node_modules:
   back_logs:
 
