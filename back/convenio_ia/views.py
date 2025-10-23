@@ -6,7 +6,7 @@ from .models import Convenio, ConsultaConvenio, IndiceConvenio
 from .serializers import ConvenioSerializer, ConsultaConvenioSerializer, IndiceConvenioSerializer
 
 
-# ====== VIEWS PARA CONVENIOS ======
+# VIEWS PARA CONVENIOS
 
 class ConvenioListView(generics.ListCreateAPIView):
     """Vista para listar y crear convenios"""
@@ -22,7 +22,7 @@ class ConvenioDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
 
-# ====== VIEWS PARA CONSULTAS DE CONVENIO ======
+# VIEWS PARA CONSULTAS DE CONVENIO
 
 class ConsultaConvenioListView(generics.ListCreateAPIView):
     """Vista para listar y crear consultas de convenio"""
@@ -38,7 +38,7 @@ class ConsultaConvenioDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
 
-# ====== VIEW PARA CONSULTAR CONVENIO ======
+# VIEW PARA CONSULTAR CONVENIO
 
 class ConsultarConvenioView(generics.CreateAPIView):
     """Vista para realizar consultas sobre convenios usando IA"""

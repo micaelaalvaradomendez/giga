@@ -2,27 +2,37 @@
 
 Sistema web para la gestión de recursos humanos, control de asistencia y guardias desarrollado con **Django REST Framework** (backend) y **SvelteKit** (frontend).
 
-## ⚡ Inicio Rápido con Docker
+## Inicio Rápido con Docker
 
-### 🆕 **NUEVO**: Script de Configuración Automática
+### **NUEVO**: Setup Automático (Sin Problemas)
 
 ```bash
 # 1. Clonar el repositorio
 git clone https://github.com/micaelaalvaradomendez/giga.git
 cd giga
 
-# 2. Ejecutar script de configuración automática
+# 2. Ejecutar setup automático
+chmod +x setup.sh normalize_repo.sh
 ./setup.sh
 ```
 
-El script automáticamente:
-- ✅ Crea archivos `.env` necesarios
-- ✅ Construye los contenedores Docker
-- ✅ Ejecuta migraciones de base de datos
-- ✅ Crea usuarios de prueba con contraseñas
-- ✅ Inicia todos los servicios
+**¿Problemas después de `git pull`?** (Típico en Windows):
+```bash
+# Solo ejecutar una vez si el backend no levanta
+./normalize_repo.sh
+git add . && git commit -m "fix: normalize line endings"
+docker compose down -v && docker compose up -d --build
+```
 
-### 📋 Credenciales de Prueba
+El setup automáticamente:
+- Configura line endings (Windows/Linux)
+- Crea archivos `.env` necesarios
+- Construye contenedores sin conflictos
+- Ejecuta migraciones de base de datos
+- Crea usuarios de prueba
+- Inicia todos los servicios
+
+### Credenciales de Prueba
 
 | CUIL | Contraseña | Rol |
 |------|------------|-----|
@@ -33,34 +43,47 @@ El script automáticamente:
 | `27-56789012-4` | `admin123` | Agente |
 | `27-67890123-4` | `admin123` | Agente |
 
-### 🔧 Configuración Manual (Alternativa)
+### Configuración Manual (Alternativa)
 
-Si prefieres configurar manualmente:
+Si prefieres configurar paso a paso:
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/micaelaalvaradomendez/giga.git
-cd giga
+# 1. Preparar el entorno
+chmod +x setup.sh normalize_repo.sh
+./normalize_repo.sh  # Solo la primera vez
 
 # 2. Configurar variables de entorno
 cp .env.example .env
 cp back/.env.example back/.env
 
-# 3. Crear directorio de logs
-mkdir -p back/logs
-
-# 4. Levantar todos los servicios
+# 3. Levantar servicios
 docker-compose up -d --build
 
-# 5. Ejecutar migraciones
+# 4. Ejecutar migraciones y crear usuarios
 docker-compose exec back python manage.py migrate
+# (Ver setup.sh para crear usuarios de prueba)
+```
 
-# 6. Crear usuarios de prueba (ver script setup.sh para detalles)
+### Si Algo No Funciona
 
-# 7. ¡Listo! Acceder a:
-# Frontend: http://localhost:5173
-# Backend API: http://localhost:8000
-# Admin Django: http://localhost:8000/admin
+**Backend no levanta después de `git pull`**:
+```bash
+./normalize_repo.sh
+docker compose down -v && docker compose build --no-cache && docker compose up -d
+```
+
+**Primera vez o problemas de permisos**:
+```bash
+chmod +x setup.sh normalize_repo.sh
+sudo usermod -aG docker $USER  # Linux: agregar usuario a docker
+# Reiniciar sesión después del usermod
+```
+
+**Puerto ocupado** - cambiar en `docker-compose.yml`:
+```yaml
+ports:
+  - "8001:8000"  # Backend
+  - "5174:5173"  # Frontend
 ```
 
 ## Funcionalidades
@@ -95,40 +118,31 @@ docker-compose exec back python manage.py migrate
   sudo yum install docker docker-compose
   ```
 
+## URLs de Acceso
+
+| Servicio | URL | 
+|----------|-----|
+| **Frontend** | http://localhost:5173 |
+| **Backend API** | http://localhost:8000/api/ |
+| **Admin Django** | http://localhost:8000/admin |
+
 ## Comandos Útiles
 
 ```bash
-# Ver logs en tiempo real
-docker-compose logs -f
+# Ver si todo funciona
+docker-compose ps
 
-# Ver logs de un servicio específico
+# Ver logs si hay problemas
 docker-compose logs -f back    # Backend
 docker-compose logs -f front   # Frontend
-docker-compose logs -f db      # Base de datos
 
-# Parar todos los servicios
+# Parar todo
 docker-compose down
 
-# Parar y eliminar volúmenes (CUIDADO: borra la BD)
+# Limpiar y reiniciar (si algo se rompe)
 docker-compose down -v
-
-# Rebuildir los contenedores
 docker-compose up -d --build
-
-# Ejecutar comandos Django
-docker-compose exec back python manage.py createsuperuser
-docker-compose exec back python manage.py makemigrations
-docker-compose exec back python manage.py migrate
 ```
-
-## URLs de Acceso
-
-| Servicio | URL | Descripción |
-|----------|-----|-------------|
-| **Frontend** | http://localhost:5173 | Aplicación web principal |
-| **Backend API** | http://localhost:8000/api/ | API REST |
-| **Admin Django** | http://localhost:8000/admin | Panel de administración |
-| **Base de datos** | `localhost:5434` | PostgreSQL (para clientes externos) |
 
 ## Estructura del Proyecto
 
@@ -155,29 +169,7 @@ giga/
 
 ## Solución de Problemas
 
-### Puerto ocupado
-```bash
-# Si el puerto está en uso, cambiar en docker-compose.yml:
-ports:
-  - "8001:8000"  # Backend
-  - "5174:5173"  # Frontend
-  - "5435:5432"  # Base de datos
-```
-
-### Permisos en Linux
-```bash
-# Agregar usuario al grupo docker
-sudo usermod -aG docker $USER
-# Reiniciar sesión
-```
-
-### Limpiar Docker
-```bash
-# Si algo no funciona, limpiar y reiniciar
-docker-compose down -v
-docker system prune -f
-docker-compose up -d --build
-```
+Si necesitas más ayuda, revisa [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) que tiene soluciones paso a paso para problemas comunes.
 
 ## Contribuir
 

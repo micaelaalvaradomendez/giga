@@ -31,7 +31,7 @@ class RolSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# TEMPORALMENTE COMENTADO - FALTA MODELO CuentaAcceso
+# FALTA MODELO CuentaAcceso
 # class CuentaAccesoSerializer(serializers.ModelSerializer):
 #     """
 #     Serializador para el modelo CuentaAcceso

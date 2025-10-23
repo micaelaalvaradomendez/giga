@@ -214,7 +214,7 @@ python manage.py collectstatic
 
 ### Base de Datos PostgreSQL
 
-#### 🐧 **Linux**
+#### **Linux**
 ```bash
 # Iniciar PostgreSQL
 sudo systemctl start postgresql
@@ -223,7 +223,7 @@ sudo systemctl start postgresql
 sudo -u postgres psql
 ```
 
-#### 🍎 **macOS**
+#### **macOS**
 ```bash
 # Iniciar PostgreSQL
 brew services start postgresql
@@ -232,7 +232,7 @@ brew services start postgresql
 psql postgres
 ```
 
-#### 🪟 **Windows**
+#### **Windows**
 ```cmd
 # Acceder a PostgreSQL
 psql -U postgres
@@ -269,7 +269,7 @@ CREATE DATABASE giga;
 - **django-cors-headers**: Manejo de CORS
 - **python-decouple**: Variables de entorno
 
-## 🎯 Próximos Pasos
+## Próximos Pasos
 
 1. **Revisar diseño**: `../documentacion/db.puml`
 2. **Leer guía**: `../documentacion/integracionDB.md`

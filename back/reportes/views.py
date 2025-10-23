@@ -4,7 +4,7 @@ from .models import Reporte, Notificacion, PlantillaCorreo, EnvioLoteNotificacio
 from .serializers import ReporteSerializer, NotificacionSerializer, PlantillaCorreoSerializer, EnvioLoteNotificacionesSerializer
 
 
-# ====== VIEWS PARA REPORTES ======
+# VIEWS PARA REPORTES
 
 class ReporteListView(generics.ListCreateAPIView):
     """Vista para listar y crear reportes"""
@@ -20,7 +20,7 @@ class ReporteDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
 
-# ====== VIEWS PARA NOTIFICACIONES ======
+# VIEWS PARA NOTIFICACIONES
 
 class NotificacionListView(generics.ListCreateAPIView):
     """Vista para listar y crear notificaciones"""
@@ -36,7 +36,7 @@ class NotificacionDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
 
-# ====== VIEWS PARA PLANTILLAS DE CORREO ======
+# VIEWS PARA PLANTILLAS DE CORREO
 
 class PlantillaCorreoListView(generics.ListCreateAPIView):
     """Vista para listar y crear plantillas de correo"""
@@ -52,7 +52,7 @@ class PlantillaCorreoDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
 
-# ====== VIEWS PARA ENVÍOS LOTE ======
+# VIEWS PARA ENVÍOS LOTE
 
 class EnvioLoteNotificacionesListView(generics.ListCreateAPIView):
     """Vista para listar y crear envíos masivos"""

@@ -20,10 +20,6 @@
 
 <Footer />
 
-<!--
-aca definimos todo lo que se va a repetir en todas las paginas del sw
--->
-
 <style>
 	* {
 		margin: 0;

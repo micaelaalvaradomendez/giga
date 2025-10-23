@@ -1,6 +1,6 @@
 import api from './api.js';
 
-// ====== SERVICIOS PARA PERSONAS ======
+// SERVICIOS PARA PERSONAS
 export const personasService = {
   // Agentes
   getAgentes: () => api.get('/personas/agentes/'),
@@ -24,7 +24,7 @@ export const personasService = {
   deleteRol: (id) => api.delete(`/personas/roles/${id}/`),
 };
 
-// ====== SERVICIOS PARA ASISTENCIA ======
+// SERVICIOS PARA ASISTENCIA
 export const asistenciaService = {
   // Asistencias
   getAsistencias: () => api.get('/asistencia/asistencias/'),
@@ -49,7 +49,7 @@ export const asistenciaService = {
   updateNovedad: (id, data) => api.put(`/asistencia/novedades/${id}/`, data),
 };
 
-// ====== SERVICIOS PARA GUARDIAS ======
+// SERVICIOS PARA GUARDIAS
 export const guardiasService = {
   // Cronogramas
   getCronogramas: () => api.get('/guardias/cronogramas/'),
@@ -69,7 +69,7 @@ export const guardiasService = {
   updateFeriado: (id, data) => api.put(`/guardias/feriados/${id}/`, data),
 };
 
-// ====== SERVICIOS PARA REPORTES ======
+// SERVICIOS PARA REPORTES
 export const reportesService = {
   getReportes: () => api.get('/reportes/reportes/'),
   createReporte: (data) => api.post('/reportes/reportes/', data),
@@ -77,14 +77,14 @@ export const reportesService = {
   createNotificacion: (data) => api.post('/reportes/notificaciones/', data),
 };
 
-// ====== SERVICIOS PARA CONVENIO IA ======
+// SERVICIOS PARA CONVENIO IA
 export const convenioIaService = {
   getConvenios: () => api.get('/convenio-ia/convenios/'),
   getConsultas: () => api.get('/convenio-ia/consultas/'),
   consultarConvenio: (pregunta) => api.post('/convenio-ia/consultar/', { pregunta }),
 };
 
-// ====== SERVICIOS PARA AUDITORÍA ======
+// SERVICIOS PARA AUDITORÍA
 export const auditoriaService = {
   getParametros: () => api.get('/auditoria/parametros/'),
   getRegistrosAuditoria: () => api.get('/auditoria/registros/'),

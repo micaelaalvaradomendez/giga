@@ -1,206 +1,201 @@
-# 🔧 Guía de Solución de Problemas - Sistema GIGA
+# Guía de Solución de Problemas con Docker - GIGA
 
-## 🚨 Problema: "El login no funciona después del git pull"
+## Diagnóstico Rápido
 
-### Causa
-Archivos de configuración críticos están en `.gitignore` y no se transfieren con git.
-
-### ✅ Solución Rápida
+### Estado de los Servicios
 ```bash
-# Ejecutar el script de configuración automática
-./setup.sh
+# Ver estado de contenedores
+docker ps
+
+# Ver logs de todos los servicios
+docker-compose logs
+
+# Ver logs de un servicio específico
+docker-compose logs back    # Backend
+docker-compose logs db      # Base de datos
+docker-compose logs front   # Frontend
 ```
 
-### 🔍 Solución Manual Paso a Paso
+## Problemas Comunes
 
-#### 1. **Verificar archivos `.env` necesarios**
+### 1. **Error CRLF en Windows** (Típico después de git pull)
+
+**Síntomas**: 
+- El backend no inicia después de `git pull`
+- Error `/bin/sh^M: bad interpreter`
+- El setup.sh se queda colgado
+
+**Causa**: Line endings CRLF de Windows en archivos `.sh`
+
+**Solución**:
 ```bash
-# Archivo .env principal (raíz del proyecto)
-cp .env.example .env
+# Rebuild sin cache para aplicar conversión CRLF→LF
+docker compose down -v
+docker compose build --no-cache back
+docker compose up -d
 
-# Archivo .env del backend
-cp back/.env.example back/.env
+# Ver logs para confirmar
+docker logs -f giga_back
 ```
 
-#### 2. **Crear directorio de logs**
+**Prevención**: El repositorio ya tiene `.gitattributes` configurado. Una sola vez ejecutar:
 ```bash
-mkdir -p back/logs
-touch back/logs/django.log
+./normalize_repo.sh
+git commit -m "chore: enforce LF endings via .gitattributes"
 ```
 
-#### 3. **Recrear base de datos con usuarios**
+### 2. **Error de Autenticación - No se puede hacer login**
+
+**Síntomas**: 
+- 403 Forbidden en login
+- Error CSRF
+- Usuario/contraseña no válidos
+
+**Soluciones**:
 ```bash
-# Detener servicios
-docker-compose down -v
+# 1. Verificar que existen usuarios de prueba
+docker-compose exec back python manage.py shell -c "
+from personas.models import Usuario
+print('Usuarios:', Usuario.objects.count())
+for u in Usuario.objects.all()[:3]:
+    print(f'- CUIL: {u.cuil}, Activo: {u.is_active}')
+"
 
-# Reconstruir y iniciar
-docker-compose up -d --build
-
-# Esperar 10 segundos para que inicie la BD
-sleep 10
-
-# Ejecutar migraciones
-docker-compose exec back python manage.py migrate
-
-# Crear usuarios de prueba (usar script setup.sh o crear manualmente)
-```
-
-## 🔑 Usuarios de Prueba Predeterminados
-
-Si necesitas crear los usuarios manualmente:
-
-```bash
-docker-compose exec back python manage.py shell
-```
-
-Luego ejecutar en el shell de Django:
-```python
-from personas.models import Usuario, Agente, Area, Rol, AgenteRol
-
-# Crear área
-area_admin, _ = Area.objects.get_or_create(
-    codigo="ADMIN",
-    defaults={'nombre': 'Administración General'}
+# 2. Crear usuario de prueba si no existe
+docker-compose exec back python manage.py shell -c "
+from personas.models import Usuario
+from django.contrib.auth.hashers import make_password
+usuario, created = Usuario.objects.get_or_create(
+    cuil='27-12345678-4',
+    defaults={
+        'password': make_password('12345678'),
+        'email': 'admin@giga.com',
+        'is_active': True,
+        'is_staff': True,
+        'is_superuser': True
+    }
 )
+print(f'Usuario creado: {created}')
+"
 
-# Crear roles
-rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
-
-# Crear usuario de prueba
-usuario = Usuario.objects.create_user(
-    username='Tayra Aguila',
-    email='tayra.aguila@giga.gov.ar',
-    password='12345678',
-    first_name='Tayra',
-    last_name='Aguila',
-    cuil='27123456784'
-)
-
-# Crear agente
-agente = Agente.objects.create(
-    usuario=usuario,
-    dni='12345678',
-    apellido='Aguila',
-    nombre='Tayra',
-    fecha_nac='1990-01-01',
-    email='tayra.aguila@giga.gov.ar',
-    categoria_revista='A1',
-    agrupacion='EPU'
-)
-
-# Asignar rol
-AgenteRol.objects.create(
-    usuario=usuario,
-    rol=rol_admin,
-    area=area_admin
-)
-
-print("Usuario creado exitosamente")
+# 3. Verificar CORS y CSRF settings
+docker-compose logs back | grep -i "cors\|csrf"
 ```
 
-## 🛠️ Otros Problemas Comunes
+### 3. **Base de Datos no conecta**
 
-### Error: "Puerto 8000 ya está en uso"
+**Síntomas**:
+- `could not connect to server`
+- `database "giga_db" does not exist`
+
+**Soluciones**:
 ```bash
-# Ver qué proceso usa el puerto
-sudo lsof -i :8000
+# 1. Verificar que PostgreSQL esté corriendo
+docker-compose ps db
 
-# Matar proceso si es necesario
-sudo kill -9 <PID>
-
-# O cambiar puerto en docker-compose.yml
-ports:
-  - "8001:8000"  # Cambiar 8000 por 8001
-```
-
-### Error: "Puerto 5173 ya está en uso"
-```bash
-# Ver qué proceso usa el puerto
-sudo lsof -i :5173
-
-# O cambiar puerto en docker-compose.yml
-ports:
-  - "5174:5173"  # Cambiar 5173 por 5174
-```
-
-### Error: "Cannot connect to Docker"
-```bash
-# Iniciar Docker (Linux)
-sudo systemctl start docker
-
-# Agregar usuario al grupo docker
-sudo usermod -aG docker $USER
-
-# Reiniciar sesión o ejecutar
-newgrp docker
-```
-
-### Error: "CSRF Failed" en el frontend
-✅ **Ya solucionado** - El sistema tiene middleware personalizado para deshabilitar CSRF en APIs.
-
-### Error: "CORS" al hacer peticiones
-✅ **Ya solucionado** - CORS configurado para `localhost:5173`.
-
-### Error: "Database connection failed"
-```bash
-# Verificar que PostgreSQL esté corriendo
-docker-compose ps
-
-# Ver logs de la base de datos
+# 2. Ver logs de la base de datos
 docker-compose logs db
 
-# Reiniciar servicios
-docker-compose restart
-```
-
-### Error: "Migration failed"
-```bash
-# Limpiar y recrear base de datos
+# 3. Recrear base de datos
 docker-compose down -v
-docker-compose up -d
-sleep 10
-docker-compose exec back python manage.py migrate
+docker-compose up -d db
+# Esperar que esté ready
+docker-compose up -d back
 ```
 
-## 📊 Verificar que Todo Funciona
+### 4. **Puerto ocupado**
 
-### 1. **Verificar servicios corriendo**
+**Síntomas**:
+- `port already in use`
+- `bind: address already in use`
+
+**Soluciones**:
 ```bash
-docker-compose ps
+# Ver qué proceso usa el puerto
+sudo netstat -tulpn | grep :8000
+sudo netstat -tulpn | grep :5173
+
+# Matar proceso (cambiar PID)
+sudo kill -9 <PID>
+
+# O cambiar puertos en docker-compose.yml
 ```
-Todos los servicios deben mostrar estado `Up`.
 
-### 2. **Verificar frontend**
-Abrir http://localhost:5173 - debe mostrar página de login.
+### 5. **Frontend no carga**
 
-### 3. **Verificar backend**
+**Síntomas**:
+- Página en blanco
+- Error de conexión API
+
+**Soluciones**:
 ```bash
-curl http://localhost:8000/api/auth/login/
+# 1. Verificar variables de entorno del frontend
+cat .env | grep VITE_API_BASE
+
+# 2. Verificar que backend responde
+curl http://localhost:8000/api/personas/
+
+# 3. Ver logs del frontend
+docker-compose logs front
 ```
-Debe devolver error de método (405 o similar), no error de conexión.
 
-### 4. **Verificar login**
-- Ir a http://localhost:5173
-- CUIL: `27-12345678-4`
-- Contraseña: `12345678`
-- Debe redirigir a página de inicio con datos del usuario.
+## Reset Completo
 
-## 📞 Contacto para Soporte
+Si nada funciona, reset completo:
 
-Si los problemas persisten:
-1. Ejecutar `docker-compose logs > logs_completos.txt`
-2. Compartir el archivo de logs
-3. Describir pasos exactos que llevaron al error
-
-## 🔄 Comandos de Limpieza Total
-
-En caso de problemas graves, limpiar completamente:
 ```bash
-# CUIDADO: Esto borra TODA la base de datos
+# 1. Parar y eliminar todo
 docker-compose down -v
 docker system prune -f
-docker volume prune -f
 
-# Luego ejecutar setup nuevamente
+# 2. Ejecutar setup nuevamente
 ./setup.sh
 ```
+
+## Consultar Base de Datos
+
+### Acceso directo a PostgreSQL
+```bash
+# Conectar a la base de datos
+docker-compose exec db psql -U giga_user -d giga_db
+
+# Consultas útiles:
+\dt                              # Listar tablas
+SELECT * FROM personas_usuario;  # Ver usuarios
+SELECT * FROM django_session;   # Ver sesiones activas
+\q                              # Salir
+```
+
+### Via Django Shell
+```bash
+# Acceder al shell de Django
+docker-compose exec back python manage.py shell
+
+# Consultas en Python:
+from personas.models import Usuario
+Usuario.objects.all()
+Usuario.objects.filter(is_active=True)
+```
+
+## Si Nada Funciona
+
+1. **Copia logs completos**:
+   ```bash
+   docker-compose logs > debug_logs.txt
+   ```
+
+2. **Verifica versiones**:
+   ```bash
+   docker --version
+   docker-compose --version
+   git --version
+   ```
+
+3. **Estado del sistema**:
+   ```bash
+   df -h          # Espacio en disco
+   free -h        # Memoria RAM
+   docker system df # Espacio Docker
+   ```
+
+4. **Contacta al equipo** con los logs y la información del sistema.

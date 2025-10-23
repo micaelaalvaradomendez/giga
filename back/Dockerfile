@@ -25,7 +25,9 @@ RUN mkdir -p /app/logs /app/staticfiles /app/media
 
 COPY back/docker/entrypoint.sh /entrypoint.sh
 COPY back/docker/wait_for_db.py /wait_for_db.py
-RUN chmod +x /entrypoint.sh
+
+# blindaje contra CRLF (problema Windows)
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 EXPOSE 8000
 

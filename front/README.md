@@ -54,7 +54,7 @@ Servicios completos para todas las apps del backend:
 - **Node.js 18+** 
 - **npm** (incluido con Node.js)
 
-#### 🐧 **Linux (Ubuntu/Debian)**
+#### **Linux (Ubuntu/Debian)**
 ```bash
 # Actualizar repositorios
 sudo apt update
@@ -68,7 +68,7 @@ node --version
 npm --version
 ```
 
-#### 🍎 **macOS**
+#### **macOS**
 ```bash
 # Con Homebrew
 brew install node
@@ -78,7 +78,7 @@ node --version
 npm --version
 ```
 
-#### 🪟 **Windows**
+#### **Windows**
 1. Descargar e instalar [Node.js](https://nodejs.org/en/download/) desde el sitio oficial
 2. Verificar instalación en PowerShell/CMD:
 ```cmd
@@ -90,7 +90,7 @@ npm --version
 
 #### Variables de Entorno
 
-##### 🐧 **Linux / 🍎 macOS**
+##### **Linux / macOS**
 ```bash
 # Crear archivo .env
 cat > .env << 'EOF'
@@ -98,7 +98,7 @@ VITE_API_URL=http://localhost:8000/api
 EOF
 ```
 
-##### 🪟 **Windows (PowerShell)**
+##### **Windows (PowerShell)**
 ```powershell
 # Crear archivo .env
 @"
@@ -106,7 +106,7 @@ VITE_API_URL=http://localhost:8000/api
 "@ | Out-File -FilePath .env -Encoding utf8
 ```
 
-##### 🪟 **Windows (CMD)**
+##### **Windows (CMD)**
 ```cmd
 # Crear archivo .env
 echo VITE_API_URL=http://localhost:8000/api > .env
@@ -127,7 +127,7 @@ npm list --depth=0
 
 ### Iniciar Servidor de Desarrollo
 
-#### 🐧 **Linux / 🍎 macOS**
+#### **Linux / macOS**
 ```bash
 # Iniciar servidor de desarrollo
 npm run dev
@@ -135,7 +135,7 @@ npm run dev
 # Frontend disponible en: http://localhost:5173
 ```
 
-#### 🪟 **Windows (PowerShell/CMD)**
+#### **Windows (PowerShell/CMD)**
 ```cmd
 # Iniciar servidor de desarrollo
 npm run dev

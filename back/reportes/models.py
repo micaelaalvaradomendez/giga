@@ -5,7 +5,7 @@ from guardias.models import CronogramaGuardias
 import uuid
 
 
-# ====== ENUMS DE LA APP REPORTES ======
+# ENUMS DE LA APP REPORTES
 
 class TipoReporte(models.TextChoices):
     INDIVIDUAL = 'INDIVIDUAL', _('Individual')
@@ -45,7 +45,7 @@ class EstadoEnvio(models.TextChoices):
     ERROR = 'ERROR', _('Error')
 
 
-# ====== MODELOS DE LA APP REPORTES ======
+# MODELOS DE LA APP REPORTES
 
 class Reporte(models.Model):
     """
@@ -184,7 +184,7 @@ class EnvioLoteNotificaciones(models.Model):
         pass
 
 
-# ====== CLASES AUXILIARES ======
+# CLASES AUXILIARES
 
 class RenderCorreo(models.Model):
     """
