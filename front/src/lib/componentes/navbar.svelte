@@ -6,6 +6,15 @@
     </div>
     <div class="navbar-right">
       <div class="organization-name">Subsecretaría de Seguridad Vial</div>
+      <img alt="SsSV" class="SsSV" src="/logos/SsSV.png" />
     </div>
   </div>
 </nav>
+
+<style>
+  .SsSV {
+    height: 65px;
+    margin-left: 10px;
+    width: auto;
+  }
+</style>
