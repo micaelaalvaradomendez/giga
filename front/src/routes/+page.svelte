@@ -1,8 +1,7 @@
 <script>
     import IconifyIcon from "@iconify/svelte";
     import AuthService from "../lib/login/authService.js";
-    import { goto } from '$app/navigation';
-    
+
     let cuil = "";
     let password = "";
     let showPassword = false;
@@ -46,7 +45,7 @@
             return;
         }
 
-        if (cuil.replace(/\D/g, '').length < 11) {
+        if (cuil.replace(/\D/g, "").length < 11) {
             errorMessage = "El CUIL debe tener al menos 11 dígitos";
             return;
         }
@@ -58,12 +57,12 @@
 
             if (result.success) {
                 // Login exitoso - redirigir a la página de inicio
-                goto('/inicio');
+                window.location.href = "/inicio";
             } else {
                 errorMessage = result.message || "Error en el login";
             }
         } catch (error) {
-            console.error('Error durante el login:', error);
+            console.error("Error durante el login:", error);
             errorMessage = "Error de conexión. Intente nuevamente.";
         } finally {
             isLoading = false;
@@ -72,7 +71,7 @@
 
     // Función para manejar Enter en los inputs
     function handleKeyPress(event) {
-        if (event.key === 'Enter') {
+        if (event.key === "Enter") {
             handleLogin();
         }
     }
@@ -116,8 +115,8 @@
                 <IconifyIcon icon={showPassword ? "mdi:eye-off" : "mdi:eye"} />
             </button>
         </div>
-        <button 
-            class="login-button" 
+        <button
+            class="login-button"
             on:click={handleLogin}
             disabled={isLoading}
         >
@@ -248,20 +247,20 @@
         transform: none;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    
+
     .login-button:disabled:hover {
         background: #cccccc;
         color: #666666;
         transform: none;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    
+
     input:disabled {
         background-color: #f5f5f5;
         color: #888;
         cursor: not-allowed;
     }
-    
+
     .recover-password {
         text-align: center;
         margin-top: 1rem;

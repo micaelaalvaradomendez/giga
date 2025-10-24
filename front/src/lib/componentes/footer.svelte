@@ -3,18 +3,8 @@
     <div class="footer-left">
       <div class="department-name">Subsecretaría de Protección Civil</div>
     </div>
-    <div class="footer-center" color="white">
-      <a href="/convenio">Consultar convenio</a>
-    </div>
     <div class="footer-right">
       <div class="footer-info">2025 - UNTDF - Ushuaia - Tierra del Fuego</div>
     </div>
   </div>
 </footer>
-
-<style>
-  a {
-    color: #fff;
-    text-decoration: underline;
-  }
-</style>

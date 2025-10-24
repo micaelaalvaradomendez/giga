@@ -1,22 +1,39 @@
 <script>
-	import Navbar from '$lib/componentes/navbar.svelte';
-	import Footer from '$lib/componentes/footer.svelte';
-	import '$lib/componentes/componentes.css';
-	
-	let { children } = $props();
+	import Navbar from "$lib/componentes/navbar.svelte";
+	import Footer from "$lib/componentes/footer.svelte";
+	import Menu from "$lib/componentes/menu.svelte";
+	import "$lib/componentes/componentes.css";
+	import { onMount } from "svelte";
+	import AuthService, {
+		isAuthenticated as authStore,
+		user as userStore,
+	} from "$lib/login/authService.js";
+
+	let isMenuOpen = false;
+
+	onMount(async () => {
+		await AuthService.checkSession();
+	});
 </script>
 
 <svelte:head>
 	<link rel="icon" href="/favicon.svg" />
 	<title>Sistema GIGA</title>
-	<meta name="description" content="Sistema de Gestión Integral de Guardias y Asistencia" />
+	<meta
+		name="description"
+		content="Sistema de Gestión Integral de Guardias y Asistencia"
+	/>
 </svelte:head>
 
 <Navbar />
 
-<main>
-	{@render children?.()}
-</main>
+<Menu bind:isActive={isMenuOpen} />
+
+<div class="layout-container" class:menu-open={isMenuOpen}>
+	<main>
+		<slot />
+	</main>
+</div>
 
 <Footer />
 
@@ -26,22 +43,32 @@
 		padding: 0;
 		box-sizing: border-box;
 	}
-	
+
 	:global(html, body) {
 		height: 100%;
 		margin: 0;
 		padding: 0;
 	}
-	
+
 	:global(body) {
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
 	}
-	
+
+	.layout-container {
+		display: flex;
+		flex: 1;
+		transition: margin-left 0.4s ease;
+		margin-left: 0;
+	}
+
+	.layout-container.menu-open {
+		margin-left: 320px;
+	}
+
 	main {
 		flex: 1;
 		padding: 2rem;
 	}
 </style>
-
