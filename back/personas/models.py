@@ -7,12 +7,17 @@ class Usuario(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     cuil = models.CharField(max_length=11, unique=True, null=True, blank=True, help_text='CUIL sin guiones (11 dígitos)')
+    password_hash = models.CharField(max_length=255, blank=True, null=True)  # Redundante con AbstractUser.password pero según db.puml
     activo = models.BooleanField(default=True)
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
+    actualizado_por = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='usuarios_actualizados')
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
+    
+    def __str__(self):
+        return f"{self.email} ({self.cuil or 'sin CUIL'})"
 
 class Area(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -29,6 +34,10 @@ class Area(models.Model):
             models.CheckConstraint(
                 condition=~models.Q(area_padre=models.F('id')),
                 name='area_no_padre_si_mismo'
+            ),
+            models.UniqueConstraint(
+                fields=['nombre', 'area_padre'],
+                name='unique_nombre_area_padre'
             )
         ]
         indexes = [

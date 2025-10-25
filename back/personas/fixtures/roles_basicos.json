@@ -1,0 +1,62 @@
+[
+    {
+        "model": "personas.rol",
+        "pk": "11111111-1111-1111-1111-111111111111",
+        "fields": {
+            "nombre": "Administrador",
+            "descripcion": "Acceso total al sistema, gestión de usuarios y configuración",
+            "creado_en": "2025-01-01T00:00:00Z",
+            "actualizado_en": "2025-01-01T00:00:00Z",
+            "creado_por": null,
+            "actualizado_por": null
+        }
+    },
+    {
+        "model": "personas.rol",
+        "pk": "22222222-2222-2222-2222-222222222222",
+        "fields": {
+            "nombre": "Director",
+            "descripcion": "Valida y aprueba cronogramas, accede a reportes globales",
+            "creado_en": "2025-01-01T00:00:00Z",
+            "actualizado_en": "2025-01-01T00:00:00Z",
+            "creado_por": null,
+            "actualizado_por": null
+        }
+    },
+    {
+        "model": "personas.rol",
+        "pk": "33333333-3333-3333-3333-333333333333",
+        "fields": {
+            "nombre": "Jefatura",
+            "descripcion": "Planifica cronogramas mensuales, gestiona y supervisa equipos",
+            "creado_en": "2025-01-01T00:00:00Z",
+            "actualizado_en": "2025-01-01T00:00:00Z",
+            "creado_por": null,
+            "actualizado_por": null
+        }
+    },
+    {
+        "model": "personas.rol",
+        "pk": "44444444-4444-4444-4444-444444444444",
+        "fields": {
+            "nombre": "Agente Avanzado",
+            "descripcion": "Carga asistencia y novedades de su equipo, además de funciones de agente",
+            "creado_en": "2025-01-01T00:00:00Z",
+            "actualizado_en": "2025-01-01T00:00:00Z",
+            "creado_por": null,
+            "actualizado_por": null
+        }
+    },
+    {
+        "model": "personas.rol",
+        "pk": "55555555-5555-5555-5555-555555555555",
+        "fields": {
+            "nombre": "Agente",
+            "descripcion": "Consulta su ficha, parte diario, guardias y plus asignado",
+            "creado_en": "2025-01-01T00:00:00Z",
+            "actualizado_en": "2025-01-01T00:00:00Z",
+            "creado_por": null,
+            "actualizado_por": null
+        }
+    }
+]

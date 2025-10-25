@@ -24,12 +24,14 @@ RUN mkdir -p /app/logs /app/staticfiles /app/media
 
 
 COPY back/docker/entrypoint.sh /entrypoint.sh
+COPY back/docker/init_db.sh /init_db.sh
 COPY back/docker/wait_for_db.py /wait_for_db.py
 
 # blindaje contra CRLF (problema Windows)
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /init_db.sh && chmod +x /init_db.sh
 
 EXPOSE 8000
 
-CMD ["/entrypoint.sh"]
+CMD ["/init_db.sh"]
 

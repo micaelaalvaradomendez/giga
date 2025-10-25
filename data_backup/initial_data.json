@@ -1,0 +1,711 @@
+[
+{
+    "model": "personas.usuario",
+    "pk": "11111111-1111-1111-1111-111111111111",
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$8pvMUHgMkVUF1VLnT58VlB$mhAcv7MXGIflP7/Lq6u6zNHJz+lzcoW5CgkupeADPrs=",
+        "last_login": "2025-10-25T03:33:15.317Z",
+        "is_superuser": false,
+        "username": "tayra.aguila",
+        "first_name": "",
+        "last_name": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2025-01-01T00:00:00Z",
+        "email": "tayra.aguila@proteccioncivil.tdf.gov.ar",
+        "cuil": "27123456784",
+        "password_hash": null,
+        "activo": true,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-10-25T03:32:53.249Z",
+        "actualizado_por": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "personas.usuario",
+    "pk": "22222222-2222-2222-2222-222222222222",
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$Sri62bzIWFGs92wOHPHCKS$D8tgf4BfgowZu4RYUkdWSxL0d6deHX0LJEM1y1LCTb0=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "micaela.alvarado",
+        "first_name": "",
+        "last_name": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2025-01-01T00:00:00Z",
+        "email": "micaela.alvarado@proteccioncivil.tdf.gov.ar",
+        "cuil": "27234567894",
+        "password_hash": null,
+        "activo": true,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-10-25T03:32:53.411Z",
+        "actualizado_por": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "personas.usuario",
+    "pk": "33333333-3333-3333-3333-333333333333",
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$Sk2t49fa3UKio3sujXiOI2$e4ydNlSarSDNbshkLVL0OE29sr5SxRxvokOubYbXeRE=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "cristian.garcia",
+        "first_name": "",
+        "last_name": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2025-01-01T00:00:00Z",
+        "email": "cristian.garcia@proteccioncivil.tdf.gov.ar",
+        "cuil": "27345678904",
+        "password_hash": null,
+        "activo": true,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-10-25T03:32:53.573Z",
+        "actualizado_por": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "personas.usuario",
+    "pk": "44444444-4444-4444-4444-444444444444",
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$P9JZQ87gJxeAfRoNu8yowb$rREiPL3pGSBWOf1xnT5lb8A7up4M6yCOHmjTTymwTuw=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "leandro.gomez",
+        "first_name": "",
+        "last_name": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2025-01-01T00:00:00Z",
+        "email": "leandro.gomez@proteccioncivil.tdf.gov.ar",
+        "cuil": "27456789014",
+        "password_hash": null,
+        "activo": true,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-10-25T03:32:53.734Z",
+        "actualizado_por": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "personas.usuario",
+    "pk": "55555555-5555-5555-5555-555555555555",
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$vVO6zahTn88XgBb8PbOP4q$wFYLXveeSfM2TL6Qp7kXDh9vq8ZHoKzsbb/6H5u53ws=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "teresa.criniti",
+        "first_name": "",
+        "last_name": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2025-01-01T00:00:00Z",
+        "email": "teresa.criniti@proteccioncivil.tdf.gov.ar",
+        "cuil": "27567890124",
+        "password_hash": null,
+        "activo": true,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-10-25T03:32:53.896Z",
+        "actualizado_por": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "personas.usuario",
+    "pk": "66666666-6666-6666-6666-666666666666",
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$iM76niPNVfKVLYzYXRrkAT$cO1ntV2hNf5WMhPQ6Ei+ZCASPk5D05BCJfLLvgiV00o=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "pamela.frers",
+        "first_name": "",
+        "last_name": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2025-01-01T00:00:00Z",
+        "email": "pamela.frers@proteccioncivil.tdf.gov.ar",
+        "cuil": "27678901234",
+        "password_hash": null,
+        "activo": true,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-10-25T03:32:54.059Z",
+        "actualizado_por": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "personas.area",
+    "pk": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "fields": {
+        "nombre": "Secretaría de Protección Civil",
+        "area_padre": null,
+        "activa": true,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agente",
+    "pk": "a1111111-1111-1111-1111-111111111111",
+    "fields": {
+        "usuario": "11111111-1111-1111-1111-111111111111",
+        "dni": "12345678",
+        "legajo": "001",
+        "apellido": "Aguila",
+        "nombre": "Tayra",
+        "fecha_nac": "1990-01-15",
+        "telefono": "2964123456",
+        "email": "tayra.aguila@proteccioncivil.tdf.gov.ar",
+        "provincia": "Tierra del Fuego",
+        "ciudad": "Ushuaia",
+        "calle": "San Martín",
+        "numero": "123",
+        "horario_entrada": null,
+        "horario_salida": null,
+        "categoria_revista": "24",
+        "agrupacion": "EPU",
+        "es_jefe": false,
+        "id_jefe": null,
+        "categoria_usuf": null,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agente",
+    "pk": "a2222222-2222-2222-2222-222222222222",
+    "fields": {
+        "usuario": "22222222-2222-2222-2222-222222222222",
+        "dni": "23456789",
+        "legajo": "002",
+        "apellido": "Alvarado",
+        "nombre": "Micaela",
+        "fecha_nac": "1985-03-22",
+        "telefono": "2964234567",
+        "email": "micaela.alvarado@proteccioncivil.tdf.gov.ar",
+        "provincia": "Tierra del Fuego",
+        "ciudad": "Ushuaia",
+        "calle": "Belgrano",
+        "numero": "456",
+        "horario_entrada": null,
+        "horario_salida": null,
+        "categoria_revista": "24",
+        "agrupacion": "EPU",
+        "es_jefe": false,
+        "id_jefe": null,
+        "categoria_usuf": null,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agente",
+    "pk": "a3333333-3333-3333-3333-333333333333",
+    "fields": {
+        "usuario": "33333333-3333-3333-3333-333333333333",
+        "dni": "34567890",
+        "legajo": "003",
+        "apellido": "Garcia",
+        "nombre": "Cristian",
+        "fecha_nac": "1988-07-10",
+        "telefono": "2964345678",
+        "email": "cristian.garcia@proteccioncivil.tdf.gov.ar",
+        "provincia": "Tierra del Fuego",
+        "ciudad": "Ushuaia",
+        "calle": "Rivadavia",
+        "numero": "789",
+        "horario_entrada": null,
+        "horario_salida": null,
+        "categoria_revista": "22",
+        "agrupacion": "POMYS",
+        "es_jefe": false,
+        "id_jefe": null,
+        "categoria_usuf": null,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agente",
+    "pk": "a4444444-4444-4444-4444-444444444444",
+    "fields": {
+        "usuario": "44444444-4444-4444-4444-444444444444",
+        "dni": "45678901",
+        "legajo": "004",
+        "apellido": "Gomez",
+        "nombre": "Leandro",
+        "fecha_nac": "1992-11-05",
+        "telefono": "2964456789",
+        "email": "leandro.gomez@proteccioncivil.tdf.gov.ar",
+        "provincia": "Tierra del Fuego",
+        "ciudad": "Ushuaia",
+        "calle": "Maipú",
+        "numero": "321",
+        "horario_entrada": null,
+        "horario_salida": null,
+        "categoria_revista": "20",
+        "agrupacion": "PAYT",
+        "es_jefe": false,
+        "id_jefe": null,
+        "categoria_usuf": null,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agente",
+    "pk": "a5555555-5555-5555-5555-555555555555",
+    "fields": {
+        "usuario": "55555555-5555-5555-5555-555555555555",
+        "dni": "56789012",
+        "legajo": "005",
+        "apellido": "Criniti",
+        "nombre": "Teresa",
+        "fecha_nac": "1980-09-18",
+        "telefono": "2964567890",
+        "email": "teresa.criniti@proteccioncivil.tdf.gov.ar",
+        "provincia": "Tierra del Fuego",
+        "ciudad": "Ushuaia",
+        "calle": "Yaganes",
+        "numero": "654",
+        "horario_entrada": null,
+        "horario_salida": null,
+        "categoria_revista": "22",
+        "agrupacion": "EPU",
+        "es_jefe": false,
+        "id_jefe": null,
+        "categoria_usuf": null,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agente",
+    "pk": "a6666666-6666-6666-6666-666666666666",
+    "fields": {
+        "usuario": "66666666-6666-6666-6666-666666666666",
+        "dni": "67890123",
+        "legajo": "006",
+        "apellido": "Frers",
+        "nombre": "Pamela",
+        "fecha_nac": "1995-12-30",
+        "telefono": "2964678901",
+        "email": "pamela.frers@proteccioncivil.tdf.gov.ar",
+        "provincia": "Tierra del Fuego",
+        "ciudad": "Ushuaia",
+        "calle": "Onashaga",
+        "numero": "987",
+        "horario_entrada": null,
+        "horario_salida": null,
+        "categoria_revista": "18",
+        "agrupacion": "POMYS",
+        "es_jefe": false,
+        "id_jefe": null,
+        "categoria_usuf": null,
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.rol",
+    "pk": "11111111-1111-1111-1111-111111111111",
+    "fields": {
+        "nombre": "Administrador",
+        "descripcion": "Acceso total al sistema, gestión de usuarios y configuración",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.rol",
+    "pk": "22222222-2222-2222-2222-222222222222",
+    "fields": {
+        "nombre": "Director",
+        "descripcion": "Valida y aprueba cronogramas, accede a reportes globales",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.rol",
+    "pk": "33333333-3333-3333-3333-333333333333",
+    "fields": {
+        "nombre": "Jefatura",
+        "descripcion": "Planifica cronogramas mensuales, gestiona y supervisa equipos",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.rol",
+    "pk": "44444444-4444-4444-4444-444444444444",
+    "fields": {
+        "nombre": "Agente Avanzado",
+        "descripcion": "Carga asistencia y novedades de su equipo, además de funciones de agente",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.rol",
+    "pk": "55555555-5555-5555-5555-555555555555",
+    "fields": {
+        "nombre": "Agente",
+        "descripcion": "Consulta su ficha, parte diario, guardias y plus asignado",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agenterol",
+    "pk": "a1111111-1111-1111-1111-111111111111",
+    "fields": {
+        "usuario": "11111111-1111-1111-1111-111111111111",
+        "rol": "11111111-1111-1111-1111-111111111111",
+        "area": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "asignado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agenterol",
+    "pk": "a2222222-2222-2222-2222-222222222222",
+    "fields": {
+        "usuario": "22222222-2222-2222-2222-222222222222",
+        "rol": "11111111-1111-1111-1111-111111111111",
+        "area": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "asignado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agenterol",
+    "pk": "a3333333-3333-3333-3333-333333333333",
+    "fields": {
+        "usuario": "33333333-3333-3333-3333-333333333333",
+        "rol": "22222222-2222-2222-2222-222222222222",
+        "area": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "asignado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agenterol",
+    "pk": "a4444444-4444-4444-4444-444444444444",
+    "fields": {
+        "usuario": "44444444-4444-4444-4444-444444444444",
+        "rol": "33333333-3333-3333-3333-333333333333",
+        "area": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "asignado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agenterol",
+    "pk": "a5555555-5555-5555-5555-555555555555",
+    "fields": {
+        "usuario": "55555555-5555-5555-5555-555555555555",
+        "rol": "44444444-4444-4444-4444-444444444444",
+        "area": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "asignado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "personas.agenterol",
+    "pk": "a6666666-6666-6666-6666-666666666666",
+    "fields": {
+        "usuario": "66666666-6666-6666-6666-666666666666",
+        "rol": "55555555-5555-5555-5555-555555555555",
+        "area": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "asignado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null
+    }
+},
+{
+    "model": "asistencia.tipolicencia",
+    "pk": "11111111-1111-1111-1111-111111111111",
+    "fields": {
+        "codigo": "VAC",
+        "descripcion": "Vacaciones"
+    }
+},
+{
+    "model": "asistencia.tipolicencia",
+    "pk": "22222222-2222-2222-2222-222222222222",
+    "fields": {
+        "codigo": "ENF",
+        "descripcion": "Enfermedad"
+    }
+},
+{
+    "model": "asistencia.tipolicencia",
+    "pk": "33333333-3333-3333-3333-333333333333",
+    "fields": {
+        "codigo": "PER",
+        "descripcion": "Personal"
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "11111111-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a1111111-1111-1111-1111-111111111111",
+        "fecha_inicio": "2025-02-15",
+        "fecha_fin": "2025-02-17",
+        "motivo": "Vacaciones programadas",
+        "observaciones": null,
+        "estado": "aprobada",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "11111111-1111-1111-1111-111111111111",
+        "con_goce_haberes": true
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "12222222-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a1111111-1111-1111-1111-111111111111",
+        "fecha_inicio": "2025-04-10",
+        "fecha_fin": "2025-04-10",
+        "motivo": "Consulta médica",
+        "observaciones": null,
+        "estado": "aprobada",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "22222222-2222-2222-2222-222222222222",
+        "con_goce_haberes": true
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "21111111-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a2222222-2222-2222-2222-222222222222",
+        "fecha_inicio": "2025-03-05",
+        "fecha_fin": "2025-03-05",
+        "motivo": "Trámite personal",
+        "observaciones": null,
+        "estado": "aprobada",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "33333333-3333-3333-3333-333333333333",
+        "con_goce_haberes": false
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "22222222-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a2222222-2222-2222-2222-222222222222",
+        "fecha_inicio": "2025-06-20",
+        "fecha_fin": "2025-06-24",
+        "motivo": "Vacaciones de invierno",
+        "observaciones": null,
+        "estado": "aprobada",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "11111111-1111-1111-1111-111111111111",
+        "con_goce_haberes": true
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "31111111-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a3333333-3333-3333-3333-333333333333",
+        "fecha_inicio": "2025-01-25",
+        "fecha_fin": "2025-01-25",
+        "motivo": "Control médico rutinario",
+        "observaciones": null,
+        "estado": "aprobada",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "22222222-2222-2222-2222-222222222222",
+        "con_goce_haberes": true
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "32222222-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a3333333-3333-3333-3333-333333333333",
+        "fecha_inicio": "2025-05-12",
+        "fecha_fin": "2025-05-16",
+        "motivo": "Vacaciones familiares",
+        "observaciones": null,
+        "estado": "pendiente",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "11111111-1111-1111-1111-111111111111",
+        "con_goce_haberes": true
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "41111111-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a4444444-4444-4444-4444-444444444444",
+        "fecha_inicio": "2025-02-28",
+        "fecha_fin": "2025-02-28",
+        "motivo": "Gestión bancaria",
+        "observaciones": null,
+        "estado": "aprobada",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "33333333-3333-3333-3333-333333333333",
+        "con_goce_haberes": false
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "42222222-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a4444444-4444-4444-4444-444444444444",
+        "fecha_inicio": "2025-08-01",
+        "fecha_fin": "2025-08-03",
+        "motivo": "Descanso programado",
+        "observaciones": null,
+        "estado": "pendiente",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "11111111-1111-1111-1111-111111111111",
+        "con_goce_haberes": true
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "51111111-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a5555555-5555-5555-5555-555555555555",
+        "fecha_inicio": "2025-03-15",
+        "fecha_fin": "2025-03-17",
+        "motivo": "Reposo médico",
+        "observaciones": null,
+        "estado": "aprobada",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "22222222-2222-2222-2222-222222222222",
+        "con_goce_haberes": true
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "52222222-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a5555555-5555-5555-5555-555555555555",
+        "fecha_inicio": "2025-07-07",
+        "fecha_fin": "2025-07-11",
+        "motivo": "Vacaciones de verano",
+        "observaciones": null,
+        "estado": "pendiente",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "11111111-1111-1111-1111-111111111111",
+        "con_goce_haberes": true
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "61111111-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a6666666-6666-6666-6666-666666666666",
+        "fecha_inicio": "2025-04-22",
+        "fecha_fin": "2025-04-22",
+        "motivo": "Cita médica especialista",
+        "observaciones": null,
+        "estado": "aprobada",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "33333333-3333-3333-3333-333333333333",
+        "con_goce_haberes": true
+    }
+},
+{
+    "model": "asistencia.licencia",
+    "pk": "62222222-1111-1111-1111-111111111111",
+    "fields": {
+        "agente": "a6666666-6666-6666-6666-666666666666",
+        "fecha_inicio": "2025-09-01",
+        "fecha_fin": "2025-09-05",
+        "motivo": "Vacaciones primavera",
+        "observaciones": null,
+        "estado": "pendiente",
+        "creado_en": "2025-01-01T00:00:00Z",
+        "actualizado_en": "2025-01-01T00:00:00Z",
+        "creado_por": null,
+        "actualizado_por": null,
+        "tipo_licencia": "11111111-1111-1111-1111-111111111111",
+        "con_goce_haberes": true
+    }
+}
+]

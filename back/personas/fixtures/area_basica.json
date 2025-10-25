@@ -1,0 +1,15 @@
+[
+    {
+        "model": "personas.area",
+        "pk": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "fields": {
+            "nombre": "Secretaría de Protección Civil",
+            "area_padre": null,
+            "activa": true,
+            "creado_en": "2025-01-01T00:00:00Z",
+            "actualizado_en": "2025-01-01T00:00:00Z",
+            "creado_por": null,
+            "actualizado_por": null
+        }
+    }
+]
