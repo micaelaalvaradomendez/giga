@@ -104,4 +104,4 @@ config.local.*
 settings.local.py
 
 # Documentación (archivos sensibles o de desarrollo)
-documentacion/
+documentacion/doc/
