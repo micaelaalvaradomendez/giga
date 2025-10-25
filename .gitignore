@@ -90,6 +90,15 @@ Thumbs.db
 *.backup
 *.old
 
+# Scripts temporales y archivos de desarrollo
+generate_passwords.py
+*.tmp
+
+# Node modules en lugares incorrectos (solo debe estar en front/)
+/node_modules/
+/package.json
+/package-lock.json
+
 # IMPORTANTE: Los archivos en data_backup/ SÍ se versiojan
 # para mantener sincronizados los datos entre desarrolladores
 # NO agregar data_backup/ aquí
