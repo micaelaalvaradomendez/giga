@@ -30,6 +30,7 @@
   letter-spacing: 2px;
   margin: 0;
   line-height: 1;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
 .logo-subtitle {
@@ -40,6 +41,7 @@
   margin-top: 2px;
   line-height: 1.2;
   font-weight: 400;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
 .navbar-right {
@@ -52,6 +54,7 @@
   color: white;
   font-weight: 600;
   text-align: right;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
 .footer {
@@ -79,6 +82,7 @@
   font-size: 1rem;
   color: white;
   font-weight: 600;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
 .footer-right {
@@ -91,45 +95,46 @@
   color: #cbd5e1;
   font-weight: 400;
   text-align: right;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
 @media (max-width: 768px) {
   main {
     padding: 1.5rem;
   }
-  
+
   .navbar-container {
     padding: 0.75rem 1rem;
   }
-  
+
   .logo-title {
     font-size: 1.75rem;
   }
-  
+
   .logo-subtitle {
     font-size: 0.8rem;
   }
-  
+
   .organization-name {
     font-size: 1rem;
   }
-  
+
   .footer-container {
     padding: 0.75rem 1rem;
   }
-  
+
   .department-name {
     font-size: 0.9rem;
   }
-  
+
   .footer-info {
     font-size: 0.8rem;
   }
-  
+
   .presentacion h1 {
     font-size: 2rem;
   }
-  
+
   .presentacion p {
     font-size: 1rem;
   }
@@ -139,50 +144,50 @@
   main {
     padding: 1rem;
   }
-  
+
   .navbar-container {
     padding: 0.5rem 1rem;
     min-height: 60px;
   }
-  
+
   .logo-title {
     font-size: 1.5rem;
     letter-spacing: 1px;
   }
-  
+
   .logo-subtitle {
     display: none;
   }
-  
+
   .organization-name {
     font-size: 0.9rem;
     max-width: 120px;
     line-height: 1.2;
   }
-  
+
   .footer-container {
     flex-direction: column;
     padding: 0.75rem 1rem;
     min-height: 80px;
     gap: 0.5rem;
   }
-  
+
   .footer-left,
   .footer-right {
     width: 100%;
     justify-content: center;
     text-align: center;
   }
-  
+
   .department-name {
     font-size: 0.85rem;
   }
-  
+
   .footer-info {
     font-size: 0.75rem;
     text-align: center;
   }
-  
+
   .presentacion h1 {
     font-size: 1.75rem;
   }
@@ -192,29 +197,29 @@
   main {
     padding: 0.75rem;
   }
-  
+
   .navbar-container {
     padding: 0.5rem 0.75rem;
   }
-  
+
   .logo-title {
     font-size: 1.25rem;
   }
-  
+
   .organization-name {
     font-size: 0.8rem;
     max-width: 100px;
   }
-  
+
   .footer-container {
     padding: 0.5rem;
     min-height: 70px;
   }
-  
+
   .department-name {
     font-size: 0.8rem;
   }
-  
+
   .footer-info {
     font-size: 0.7rem;
     line-height: 1.3;
