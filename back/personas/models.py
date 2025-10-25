@@ -8,6 +8,7 @@ class Usuario(AbstractUser):
     email = models.EmailField(unique=True)
     cuil = models.CharField(max_length=11, unique=True, null=True, blank=True, help_text='CUIL sin guiones (11 dígitos)')
     password_hash = models.CharField(max_length=255, blank=True, null=True)  # Redundante con AbstractUser.password pero según db.puml
+    password_reset = models.BooleanField(default=False, help_text='Indica si la contraseña fue reseteada automáticamente')
     activo = models.BooleanField(default=True)
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)

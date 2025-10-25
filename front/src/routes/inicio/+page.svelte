@@ -2,10 +2,14 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import AuthService from '../../lib/login/authService.js';
+    import EditarPerfil from '../../lib/componentes/EditarPerfil.svelte';
+    import CambioContrasenaObligatorio from '../../lib/componentes/CambioContrasenaObligatorio.svelte';
     
     let user = null;
     let isLoading = true;
     let errorMessage = "";
+    let showEditProfile = false;
+    let showMandatoryPasswordChange = false;
 
     onMount(async () => {
         // Verificar si el usuario está autenticado
@@ -14,6 +18,11 @@
             
             if (sessionCheck.authenticated) {
                 user = sessionCheck.user;
+                
+                // Verificar si se requiere cambio obligatorio de contraseña
+                if (sessionCheck.requires_password_change || AuthService.requiresPasswordChange()) {
+                    showMandatoryPasswordChange = true;
+                }
             } else {
                 // Si no está autenticado, redirigir al login
                 goto('/');
@@ -49,6 +58,19 @@
             'Agente': 'role-agente'
         };
         return roleClasses[rol] || 'role-default';
+    }
+
+    function openEditProfile() {
+        showEditProfile = true;
+    }
+
+    function closeEditProfile() {
+        showEditProfile = false;
+    }
+
+    function handleUserUpdated(event) {
+        // Actualizar la información del usuario en la interfaz
+        user = { ...user, ...event.detail };
     }
 </script>
 
@@ -101,6 +123,9 @@
             </div>
             
             <div class="actions">
+                <button class="edit-profile-button" on:click={openEditProfile}>
+                    Editar Perfil
+                </button>
                 <button class="logout-button" on:click={handleLogout}>
                     Cerrar Sesión
                 </button>
@@ -153,6 +178,20 @@
         <button on:click={() => goto('/')}>Ir al Login</button>
     </div>
 {/if}
+
+<!-- Modal de editar perfil -->
+<EditarPerfil 
+    bind:showModal={showEditProfile} 
+    {user} 
+    on:close={closeEditProfile}
+    on:userUpdated={handleUserUpdated}
+/>
+
+<!-- Modal obligatorio de cambio de contraseña -->
+<CambioContrasenaObligatorio 
+    bind:showAlert={showMandatoryPasswordChange}
+    {user}
+/>
 
 <style>
     .loading-container {
@@ -278,6 +317,28 @@
         display: flex;
         gap: 0.5rem;
         flex-wrap: wrap;
+    }
+
+    .actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .edit-profile-button {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .edit-profile-button:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: white;
     }
 
     .logout-button {

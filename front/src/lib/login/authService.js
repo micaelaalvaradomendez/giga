@@ -27,10 +27,17 @@ export class AuthService {
                 if (isBrowser) {
                     localStorage.setItem('user', JSON.stringify(data.user));
                     localStorage.setItem('isAuthenticated', 'true');
+                    localStorage.setItem('requires_password_change', data.requires_password_change || false);
                 }
                 isAuthenticated.set(true);
                 user.set(data.user);
-                return { success: true, user: data.user, message: data.message };
+                return { 
+                    success: true, 
+                    user: data.user, 
+                    message: data.message,
+                    requires_password_change: data.requires_password_change || false,
+                    password_reset_reason: data.password_reset_reason
+                };
             } else {
                 return { success: false, message: data.message || 'Error en el login' };
             }
@@ -74,12 +81,18 @@ export class AuthService {
             if (data.authenticated) {
                 localStorage.setItem('user', JSON.stringify(data.user));
                 localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('requires_password_change', data.requires_password_change || false);
                 isAuthenticated.set(true);
                 user.set(data.user);
-                return { authenticated: true, user: data.user };
+                return { 
+                    authenticated: true, 
+                    user: data.user,
+                    requires_password_change: data.requires_password_change || false
+                };
             } else {
                 localStorage.removeItem('user');
                 localStorage.removeItem('isAuthenticated');
+                localStorage.removeItem('requires_password_change');
                 isAuthenticated.set(false);
                 user.set(null);
                 return { authenticated: false };
@@ -132,6 +145,12 @@ export class AuthService {
     static formatCuil(cuil) {
         if (!cuil || cuil.length !== 11) return cuil;
         return `${cuil.slice(0, 2)}-${cuil.slice(2, 10)}-${cuil.slice(10)}`;
+    }
+
+    static requiresPasswordChange() {
+        if (!isBrowser) return false;
+        const requiresChange = localStorage.getItem('requires_password_change');
+        return requiresChange === 'true';
     }
 }
 

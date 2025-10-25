@@ -129,8 +129,9 @@
         {#if errorMessage}
             <div class="error-message">{errorMessage}</div>
         {/if}
-        <div class="recover-password"><a href>Recuperar contraseña</a></div>
-        <!-- Aca podriamos hacer como una notificacion de que revise su correo donde le va a llegar la nueva clave-->
+        <div class="recover-password">
+            <a href="/contrasena">Recuperar contraseña</a>
+        </div>
     </div>
 </div>
 

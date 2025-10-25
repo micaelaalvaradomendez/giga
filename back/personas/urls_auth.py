@@ -9,4 +9,6 @@ urlpatterns = [
     path('login/', csrf_exempt(views_auth.login_view), name='api_login'),
     path('logout/', csrf_exempt(views_auth.logout_view), name='api_logout'),
     path('check-session/', csrf_exempt(views_auth.check_session), name='api_check_session'),
+    path('update-profile/', csrf_exempt(views_auth.update_profile), name='api_update_profile'),
+    path('recover-password/', csrf_exempt(views_auth.recover_password), name='api_recover_password'),
 ]
