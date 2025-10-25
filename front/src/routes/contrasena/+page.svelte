@@ -164,7 +164,7 @@
                         <h3>Instrucciones:</h3>
                         <ul>
                             <li>Revisa tu bandeja de entrada (y carpeta de spam)</li>
-                            <li>Tu nueva contraseña temporal será tu número de DNI</li>
+                            <li>Tu nueva contraseña te llegara al corre registrado en el Sistema</li>
                             <li>Por seguridad, deberás cambiarla en el primer inicio de sesión</li>
                         </ul>
                     </div>

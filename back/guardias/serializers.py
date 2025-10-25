@@ -58,3 +58,9 @@ class AsignacionPlusSerializer(serializers.ModelSerializer):
     class Meta:
         model = AsignacionPlus
         fields = '__all__'
+
+
+# Alias para compatibilidad con ViewSets existentes
+ModalidadSerializer = CronogramaGuardiasSerializer
+CuadroGuardiaSerializer = CronogramaGuardiasSerializer  
+AsignacionGuardiaSerializer = GuardiaSerializer

@@ -38,6 +38,9 @@ class Marca(models.Model):
     def __str__(self):
         return f"{self.agente} - {self.fecha} {self.hora} ({self.tipo})"
 
+# Alias para compatibilidad - ParteDiario es el modelo principal de asistencia
+Asistencia = None  # Se definirá después
+
 class ParteDiario(models.Model):
     """Consolidación diaria de asistencia por agente"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -64,6 +67,40 @@ class ParteDiario(models.Model):
     
     def __str__(self):
         return f"Parte {self.agente} - {self.fecha_parte}"
+
+# Modelo de Asistencia que es requerido por los ViewSets
+class Asistencia(models.Model):
+    """Registro diario de asistencia por agente"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    agente = models.ForeignKey(Agente, on_delete=models.CASCADE, related_name='asistencias')
+    fecha = models.DateField()
+    horario_entrada = models.TimeField(null=True, blank=True)
+    horario_salida = models.TimeField(null=True, blank=True)
+    minutos_tarde = models.IntegerField(default=0)
+    minutos_extras = models.IntegerField(default=0)
+    estado = models.CharField(max_length=20, default='presente', choices=[
+        ('presente', 'Presente'),
+        ('ausente', 'Ausente'),
+        ('tardanza', 'Tardanza'),
+        ('licencia', 'Licencia')
+    ])
+    observaciones = models.TextField(blank=True, null=True)
+    
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    creado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='asistencias_creadas')
+    actualizado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='asistencias_actualizadas')
+    
+    class Meta:
+        db_table = 'asistencia_asistencia'
+        unique_together = ['agente', 'fecha']
+        indexes = [
+            models.Index(fields=['agente', 'fecha']),
+            models.Index(fields=['estado', 'fecha']),
+        ]
+    
+    def __str__(self):
+        return f"Asistencia {self.agente} - {self.fecha} ({self.estado})"
 
 class LicenciaONovedad(models.Model):
     """Clase base abstracta para licencias y novedades"""

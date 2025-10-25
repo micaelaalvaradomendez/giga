@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Asistencia, Marca, Licencia, Novedad, Adjunto
+from .models import Asistencia, Marca, Licencia, Novedad, Adjunto, TipoLicencia, ParteDiario
 
 
 class AsistenciaSerializer(serializers.ModelSerializer):
@@ -13,7 +13,7 @@ class AsistenciaSerializer(serializers.ModelSerializer):
 
 class MarcaSerializer(serializers.ModelSerializer):
     """Serializador para el modelo Marca"""
-    asistencia_info = serializers.CharField(source='asistencia.agente.nombre_completo', read_only=True)
+    agente_nombre = serializers.CharField(source='agente.nombre_completo', read_only=True)
     
     class Meta:
         model = Marca
@@ -45,4 +45,22 @@ class NovedadSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Novedad
+        fields = '__all__'
+
+
+class TipoLicenciaSerializer(serializers.ModelSerializer):
+    """Serializador para el modelo TipoLicencia"""
+    
+    class Meta:
+        model = TipoLicencia
+        fields = '__all__'
+
+
+class ParteDiarioSerializer(serializers.ModelSerializer):
+    """Serializador para el modelo ParteDiario"""
+    agente_nombre = serializers.CharField(source='agente.nombre_completo', read_only=True)
+    area_nombre = serializers.CharField(source='area.nombre', read_only=True)
+    
+    class Meta:
+        model = ParteDiario
         fields = '__all__'
