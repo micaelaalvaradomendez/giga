@@ -85,10 +85,14 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Backup files
+# Backup files (excepto data_backup que SÍ se versiona)
 *.bak
 *.backup
 *.old
+
+# IMPORTANTE: Los archivos en data_backup/ SÍ se versiojan
+# para mantener sincronizados los datos entre desarrolladores
+# NO agregar data_backup/ aquí
 
 # Certificados y claves
 *.pem
@@ -98,3 +102,6 @@ Thumbs.db
 # Archivos de configuración local
 config.local.*
 settings.local.py
+
+# Documentación (archivos sensibles o de desarrollo)
+documentacion/
