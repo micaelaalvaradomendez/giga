@@ -1,13 +1,13 @@
-import api from './api.js';
+import { createApiClient } from './api.js';
 
 // SERVICIOS PARA PERSONAS
 export const personasService = {
   // Agentes
-  getAgentes: () => api.get('/personas/agentes/'),
-  getAgente: (id) => api.get(`/personas/agentes/${id}/`),
-  createAgente: (data) => api.post('/personas/agentes/', data),
-  updateAgente: (id, data) => api.put(`/personas/agentes/${id}/`, data),
-  deleteAgente: (id) => api.delete(`/personas/agentes/${id}/`),
+  getAllAgentes: (token = null) => createApiClient(token).get('/personas/agentes/'),
+  getAgente: (id, token = null) => createApiClient(token).get(`/personas/agentes/${id}/`),
+  createAgente: (data, token = null) => createApiClient(token).post('/personas/agentes/', data),
+  updateAgente: (id, data, token = null) => createApiClient(token).put(`/personas/agentes/${id}/`, data),
+  deleteAgente: (id, token = null) => createApiClient(token).delete(`/personas/agentes/${id}/`),
 
   // Áreas
   getAreas: () => api.get('/personas/areas/'),
