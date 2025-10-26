@@ -22,6 +22,12 @@ export const personasService = {
   createRol: (data) => api.post('/personas/roles/', data),
   updateRol: (id, data) => api.put(`/personas/roles/${id}/`, data),
   deleteRol: (id) => api.delete(`/personas/roles/${id}/`),
+  
+  // Subordinados del usuario autenticado
+  getSubordinados: (areaId = null) => {
+    const qs = areaId ? `?area_id=${encodeURIComponent(areaId)}` : '';
+    return api.get(`/personas/subordinados/${qs}`);
+  },
 };
 
 // SERVICIOS PARA ASISTENCIA

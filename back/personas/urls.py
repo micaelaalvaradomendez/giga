@@ -4,5 +4,5 @@ from . import views
 app_name = 'personas'
 
 urlpatterns = [
-    # URLs falta hacer porque hay que hacer los serializers
+    path('subordinados/', views.subordinados, name='api_subordinados'),
 ]
