@@ -10,18 +10,18 @@ export const personasService = {
   deleteAgente: (id, token = null) => createApiClient(token).delete(`/personas/agentes/${id}/`),
 
   // Áreas
-  getAreas: () => api.get('/personas/areas/'),
-  getArea: (id) => api.get(`/personas/areas/${id}/`),
-  createArea: (data) => api.post('/personas/areas/', data),
-  updateArea: (id, data) => api.put(`/personas/areas/${id}/`, data),
-  deleteArea: (id) => api.delete(`/personas/areas/${id}/`),
+  getAreas: (token = null) => createApiClient(token).get('/personas/areas/'),
+  getArea: (id, token = null) => createApiClient(token).get(`/personas/areas/${id}/`),
+  createArea: (data, token = null) => createApiClient(token).post('/personas/areas/', data),
+  updateArea: (id, data, token = null) => createApiClient(token).put(`/personas/areas/${id}/`, data),
+  deleteArea: (id, token = null) => createApiClient(token).delete(`/personas/areas/${id}/`),
 
   // Roles
-  getRoles: () => api.get('/personas/roles/'),
-  getRol: (id) => api.get(`/personas/roles/${id}/`),
-  createRol: (data) => api.post('/personas/roles/', data),
-  updateRol: (id, data) => api.put(`/personas/roles/${id}/`, data),
-  deleteRol: (id) => api.delete(`/personas/roles/${id}/`),
+  getRoles: (token = null) => createApiClient(token).get('/personas/roles/'),
+  getRol: (id, token = null) => createApiClient(token).get(`/personas/roles/${id}/`),
+  createRol: (data, token = null) => createApiClient(token).post('/personas/roles/', data),
+  updateRol: (id, data, token = null) => createApiClient(token).put(`/personas/roles/${id}/`, data),
+  deleteRol: (id, token = null) => createApiClient(token).delete(`/personas/roles/${id}/`),
 };
 
 // SERVICIOS PARA ASISTENCIA

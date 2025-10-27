@@ -9,8 +9,8 @@ const API_BASE_URL = browser
 
 /**
  * Crea una instancia de Axios configurada.
- * Esta función es clave para que la autenticación funcione tanto en el cliente como en el servidor.
- * @param {string | null} token - El token de autenticación para las peticiones.
+ * Esta función funciona con autenticación por sesiones/cookies de Django.
+ * @param {string | null} token - Parámetro legacy, no se usa ya que usamos cookies.
  * @returns Una instancia de Axios.
  */
 export const createApiClient = (token = null) => {
@@ -19,30 +19,20 @@ export const createApiClient = (token = null) => {
 		timeout: 10000,
 		headers: {
 			'Content-Type': 'application/json'
-		}
-	});
-
-	// Interceptor para añadir el token de autenticación a cada solicitud
-	apiClient.interceptors.request.use(
-		(config) => {
-			if (token) {
-				config.headers.Authorization = `Token ${token}`;
-			}
-			return config;
 		},
-		(error) => {
-			return Promise.reject(error);
-		}
-	);
+		// Importante: enviar cookies con cada petición
+		withCredentials: true
+	});
 
 	// Interceptor para manejar errores de respuesta (ej. 401 No autorizado)
 	apiClient.interceptors.response.use(
 		(response) => response,
 		(error) => {
-			if (browser && error.response?.status === 401) {
-				// Si estamos en el navegador y el token es inválido, limpiamos y redirigimos.
-				localStorage.removeItem('authToken'); // Asumiendo que usas esto.
-				window.location.href = '/login'; // Redirige a la página de login.
+			if (browser && (error.response?.status === 401 || error.response?.status === 403)) {
+				// Si estamos en el navegador y no está autenticado, redirigir al login
+				localStorage.removeItem('user');
+				localStorage.removeItem('isAuthenticated');
+				window.location.href = '/';
 			}
 			return Promise.reject(error);
 		}
@@ -52,7 +42,7 @@ export const createApiClient = (token = null) => {
 };
 
 // Exportamos una instancia por defecto para uso general en el cliente.
-// Esta instancia no tendrá token por defecto, se debe manejar en el AuthService.
-const api = createApiClient(browser ? localStorage.getItem('authToken') : null);
+// Esta instancia usa cookies para autenticación, no tokens.
+const api = createApiClient();
 
 export default api;

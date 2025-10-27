@@ -48,11 +48,31 @@ class AgenteSerializer(PersonaBaseSerializer):
     usuario_email = serializers.EmailField(source='usuario.email', read_only=True)
     categoria_display = serializers.CharField(source='get_categoria_revista_display', read_only=True)
     agrupacion_display = serializers.CharField(source='get_agrupacion_display', read_only=True)
+    direccion = serializers.SerializerMethodField()
+    roles = serializers.SerializerMethodField()
     
     class Meta:
         model = Agente
         fields = '__all__'
         read_only_fields = ['creado_en', 'actualizado_en', 'creado_por', 'actualizado_por']
+    
+    def get_direccion(self, obj):
+        """Concatenar dirección completa"""
+        if obj.calle and obj.numero:
+            return f"{obj.calle} {obj.numero}, {obj.ciudad or 'N/A'}"
+        elif obj.calle:
+            return f"{obj.calle}, {obj.ciudad or 'N/A'}"
+        else:
+            return obj.ciudad or 'N/A'
+    
+    def get_roles(self, obj):
+        """Obtener roles asignados al agente"""
+        roles_asignados = AgenteRol.objects.filter(usuario=obj.usuario).select_related('rol', 'area')
+        return [{
+            'id': asignacion.rol.id,
+            'nombre': asignacion.rol.nombre,
+            'area': asignacion.area.nombre if asignacion.area else None
+        } for asignacion in roles_asignados]
 
 
 class RolSerializer(BaseSerializer):
