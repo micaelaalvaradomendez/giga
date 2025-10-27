@@ -161,11 +161,15 @@
                         <button class="action-button">Generar Reportes</button>
                     </div>
                     {#if AuthService.hasRole('Administrador') || AuthService.hasRole('Director')}
-                        <div class="action-card admin-card">
-                            <h4>Administración</h4>
-                            <p>Panel de administrador</p>
-                            <button class="action-button admin-button">Panel Admin</button>
-                        </div>
+                        <a href="/admin">
+                           <div class="action-card admin-card">
+                                <h4>Administración</h4>
+                                <p>Panel de administrador</p>
+                                <button class="action-button admin-button">
+									Panel Admin
+								</button>
+                            </div>
+                        </a>
                     {/if}
                 </div>
             </div>
