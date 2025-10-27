@@ -54,47 +54,149 @@
 </div>
 
 <style>
-	body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    background-color: #ffffff;
-    color: #212529;
-}
+	:global(body) {
+		margin: 0;
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+		background-color: #f8f9fa;
+		color: #212529;
+	}
 
-.admin-layout {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
+	:global(.admin-layout) {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+	}
 
-.admin-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 1.5rem;
-    height: 60px;
-    background: linear-gradient(135deg, #e79043, #f39c12);
-    flex-shrink: 0;
-}
+	:global(.admin-header) {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0 1.5rem;
+		height: 70px;
+		background: linear-gradient(135deg, #e79043, #f39c12);
+		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	}
 
-.admin-header .logo a {
-    font-weight: bold;
-    font-size: 1.2rem;
-    text-decoration: none;
-    color: white;
-}
+	:global(.admin-header .logo a) {
+		font-weight: bold;
+		font-size: 1.3rem;
+		text-decoration: none;
+		color: white;
+		transition: opacity 0.2s;
+	}
 
-.admin-main {
-    display: flex;
-    flex-grow: 1;
-    overflow: hidden;
-}
+	:global(.admin-header .logo a:hover) {
+		opacity: 0.9;
+	}
 
-.admin-content-full {
-    flex-grow: 1;
-    padding: 2.5rem;
-    overflow-y: auto;
-    width: 100%;
-    background-color: #ffffff;
-}
+	:global(.admin-main) {
+		display: flex;
+		flex-grow: 1;
+		overflow: hidden;
+	}
+
+	:global(.admin-content-full) {
+		flex-grow: 1;
+		padding: 2rem;
+		overflow-y: auto;
+		width: 100%;
+		background-color: #ffffff;
+		margin: 1rem;
+		border-radius: 8px;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	}
+
+	.logo {
+		display: none; /* Ocultar porque ya está en el header */
+	}
+
+	.page-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+		padding-bottom: 1rem;
+		border-bottom: 2px solid #e9ecef;
+	}
+
+	.page-header h1 {
+		margin: 0;
+		color: #2c3e50;
+		font-size: 2rem;
+		font-weight: 600;
+	}
+
+	.btn-primary {
+		background: linear-gradient(135deg, #e79043, #f39c12);
+		color: white;
+		border: none;
+		padding: 0.75rem 1.5rem;
+		border-radius: 6px;
+		font-size: 1rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	}
+
+	.btn-primary:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+	}
+
+	.table-container {
+		overflow-x: auto;
+		border-radius: 8px;
+		border: 1px solid #e9ecef;
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		background: white;
+	}
+
+	thead {
+		background: #f8f9fa;
+	}
+
+	th {
+		padding: 1rem;
+		text-align: left;
+		font-weight: 600;
+		color: #495057;
+		border-bottom: 2px solid #e9ecef;
+	}
+
+	td {
+		padding: 1rem;
+		border-bottom: 1px solid #e9ecef;
+	}
+
+	tbody tr:hover {
+		background-color: #f8f9fa;
+	}
+
+	.actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.btn-icon, .btn-icon-danger {
+		background: none;
+		border: none;
+		font-size: 1.2rem;
+		cursor: pointer;
+		padding: 0.25rem;
+		border-radius: 4px;
+		transition: background-color 0.2s;
+	}
+
+	.btn-icon:hover {
+		background-color: #e9ecef;
+	}
+
+	.btn-icon-danger:hover {
+		background-color: #f8d7da;
+	}
 </style>
