@@ -1,0 +1,24 @@
+[
+{
+  "model": "personas.usuario",
+  "pk": "4eb4c77c-812a-46f5-a806-be113e1c48d2",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$D2nUojishHuh427d71axlU$vfP6fhzKIk9HP4Is+IbPgD0ogJzVanbIHQ+zXj6+4tA=",
+    "last_login": "2025-10-25T00:34:01.165Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-10-24T23:21:12.774Z",
+    "email": "",
+    "cuil": "27123456784",
+    "activo": true,
+    "creado_en": "2025-10-24T23:21:12.774Z",
+    "actualizado_en": "2025-10-24T23:21:12.774Z",
+    "groups": [],
+    "user_permissions": []
+  }
+}
+]
