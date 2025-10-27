@@ -2,8 +2,7 @@
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
     import AuthService from "../../lib/login/authService.js";
-    import EditarPerfil from "../../lib/componentes/EditarPerfil.svelte";
-    import CambioContrasenaObligatorio from "../../lib/componentes/CambioContrasenaObligatorio.svelte";
+    import CalendarioBase from "../../lib/componentes/calendarioBase.svelte";
 
     let user = null;
     let isLoading = true;
@@ -134,15 +133,6 @@
                     {/if}
                 </div>
             </div>
-
-            <div class="actions">
-                <button class="edit-profile-button" on:click={openEditProfile}>
-                    Editar Perfil
-                </button>
-                <button class="logout-button" on:click={handleLogout}>
-                    Cerrar Sesión
-                </button>
-            </div>
         </header>
 
         <main class="dashboard-content">
@@ -160,39 +150,50 @@
                     </p>
                 </div>
             </div>
+        </main>
 
-            <div class="quick-actions">
-                <h3>Acciones rápidas</h3>
-                <div class="actions-grid">
-                    <div class="action-card">
-                        <h4>Asistencia</h4>
-                        <p>Registrar entrada/salida</p>
-                        <button class="action-button">Ir a Asistencia</button>
+        <div class="container">
+            <div class="left-panel">
+                <div class="quick-actions">
+                    <h3>Acciones rápidas</h3>
+                    <div class="actions-grid">
+                        <div class="action-card">
+                            <h4>Asistencia</h4>
+                            <p>Registrar entrada/salida</p>
+                            <button class="action-button"
+                                >Ir a Asistencia</button
+                            >
+                        </div>
+                        <div class="action-card">
+                            <h4>Guardias</h4>
+                            <p>Consultar guardias asignadas</p>
+                            <button class="action-button">Ver Guardias</button>
+                        </div>
+                        <div class="action-card">
+                            <h4>Reportes</h4>
+                            <p>Generar reportes del sistema</p>
+                            <button class="action-button"
+                                >Generar Reportes</button
+                            >
+                        </div>
+                        {#if AuthService.hasRole("Administrador")}
+                            <a href="/admin">
+                                <div class="action-card admin-card">
+                                    <h4>Administración</h4>
+                                    <p>Panel de administrador</p>
+                                    <button class="action-button admin-button">
+                                        Panel Admin
+                                    </button>
+                                </div>
+                            </a>
+                        {/if}
                     </div>
-                    <div class="action-card">
-                        <h4>Guardias</h4>
-                        <p>Consultar guardias asignadas</p>
-                        <button class="action-button">Ver Guardias</button>
-                    </div>
-                    <div class="action-card">
-                        <h4>Reportes</h4>
-                        <p>Generar reportes del sistema</p>
-                        <button class="action-button">Generar Reportes</button>
-                    </div>
-                    {#if AuthService.hasRole("Administrador")}
-                        <a href="/admin">
-                            <div class="action-card admin-card">
-                                <h4>Administración</h4>
-                                <p>Panel de administrador</p>
-                                <button class="action-button admin-button">
-                                    Panel Admin
-                                </button>
-                            </div>
-                        </a>
-                    {/if}
                 </div>
             </div>
-        </main>
+            <div class="right-panel">
+                <CalendarioBase />
+            </div>
+        </div>
     </div>
 {:else}
     <div class="error-container">
@@ -202,21 +203,21 @@
     </div>
 {/if}
 
-<!-- Modal de editar perfil -->
-<EditarPerfil
-    bind:showModal={showEditProfile}
-    {user}
-    on:close={closeEditProfile}
-    on:userUpdated={handleUserUpdated}
-/>
-
-<!-- Modal obligatorio de cambio de contraseña -->
-<CambioContrasenaObligatorio
-    bind:showAlert={showMandatoryPasswordChange}
-    {user}
-/>
-
 <style>
+    .container {
+        display: flex;
+        gap: 2rem;
+        margin-top: 30px;
+    }
+
+    .left-panel {
+        flex: 1;
+    }
+
+    .right-panel {
+        flex: 1;
+    }
+
     .loading-container {
         display: flex;
         flex-direction: column;

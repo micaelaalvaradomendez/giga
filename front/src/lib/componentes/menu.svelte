@@ -211,6 +211,17 @@
                     </div>
                 {/if}
             {/if}
+            {#if !isAuth}
+                <div class="menu-section">
+                    <div class="menu-section-title">Acceso</div>
+                    <a href="/" class="menu-item" on:click={closeMenu}>
+                        <span class="menu-item-icon">🔐</span>
+                        <div class="menu-item-text">
+                            <div class="menu-item-title">Iniciar Sesión</div>
+                        </div>
+                    </a>
+                </div>
+            {/if}
             <div class="menu-section">
                 <div class="menu-section-title">Herramientas</div>
                 <a href="/convenio" class="menu-item" on:click={closeMenu}>

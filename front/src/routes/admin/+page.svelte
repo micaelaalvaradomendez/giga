@@ -1,15 +1,65 @@
 <script>
 	const modules = [
-		{ name: 'Usuarios', path: '/admin/usuarios', icon: '👥', description: 'Gestionar personal y usuarios' },
-		{ name: 'Organigrama', path: '/admin/organigrama', icon: '🏛️', description: 'Definir áreas y jerarquías       -' },
-		{ name: 'Roles y Permisos', path: '/admin/roles', icon: '🔐', description: 'Configurar roles de acceso' },
-		{ name: 'Asistencias', path: '/admin/asistencias', icon: '📋', description: 'Revisar registros de asistencia' },
-		{ name: 'Licencias', path: '/admin/licencias', icon: '🏥', description: 'Administrar licencias y novedades' },
-		{ name: 'Guardias', path: '/admin/guardias', icon: '🛡️', description: 'Planificar guardias y turnos' },
-		{ name: 'Feriados', path: '/admin/feriados', icon: '🎉', description: 'Gestionar días no laborables' },
-		{ name: 'Reportes', path: '/admin/reportes', icon: '📊', description: 'Generar informes del sistema' },
-		{ name: 'Parámetros', path: '/admin/parametros', icon: '⚙️', description: 'Ajustar la configuración global' },
-		{ name: 'Auditoría', path: '/admin/auditoria', icon: '🔍', description: 'Rastrear cambios en el sistema' },
+		{
+			name: "Usuarios",
+			path: "/admin/usuarios",
+			icon: "👥",
+			description: "Gestionar personal y usuarios",
+		},
+		{
+			name: "Organigrama",
+			path: "/admin/organigrama",
+			icon: "🏛️",
+			description: "Definir áreas y jerarquías       -",
+		},
+		{
+			name: "Roles y Permisos",
+			path: "/admin/roles",
+			icon: "🔐",
+			description: "Configurar roles de acceso",
+		},
+		{
+			name: "Asistencias",
+			path: "/admin/asistencias",
+			icon: "📋",
+			description: "Revisar registros de asistencia",
+		},
+		{
+			name: "Licencias",
+			path: "/admin/licencias",
+			icon: "🏥",
+			description: "Administrar licencias y novedades",
+		},
+		{
+			name: "Guardias",
+			path: "/admin/guardias",
+			icon: "🛡️",
+			description: "Planificar guardias y turnos",
+		},
+		{
+			name: "Feriados",
+			path: "/admin/feriados",
+			icon: "🎉",
+			description: "Gestionar días no laborables",
+		},
+		{
+			name: "Reportes",
+			path: "/admin/reportes",
+			icon: "📊",
+			description: "Generar informes del sistema",
+		},
+		{
+			name: "Parámetros",
+			path: "/admin/parametros",
+			icon: "⚙️",
+			description: "Ajustar la configuración global",
+		},
+		{
+			name: "Auditoría",
+			path: "/admin/auditoria",
+			icon: "🔍",
+			description: "Rastrear cambios en el sistema",
+		},
 	];
 </script>
 
@@ -33,7 +83,8 @@
 <style>
 	:global(body) {
 		margin: 0;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+			Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 		background-color: #f8f9fa;
 		color: #212529;
 	}
@@ -51,7 +102,7 @@
 		padding: 0 1.5rem;
 		height: 70px;
 		background: linear-gradient(135deg, #e79043, #f39c12);
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
 	:global(.admin-header .logo a) {
@@ -77,17 +128,17 @@
 		background-color: #ffffff;
 		margin: 1rem;
 		border-radius: 8px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
 
 	.dashboard-welcome {
 		text-align: center;
 		margin-bottom: 3rem;
-		padding: 2rem;
+		padding: 5px 0px 15px 0px;
 		background: linear-gradient(135deg, #e79043, #f39c12);
 		border-radius: 12px;
 		color: white;
-		margin: -2rem -2rem 3rem -2rem;
+		margin-bottom: 6px;
 	}
 
 	.dashboard-welcome h1 {
@@ -123,14 +174,14 @@
 		color: inherit;
 		transition: all 0.3s ease;
 		min-height: 180px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 	}
 
 	.module-card:hover {
 		transform: translateY(-8px);
 		border-color: #e79043;
 		box-shadow: 0 12px 24px rgba(231, 144, 67, 0.2);
-		background-color: #fff;
+		background-color: #f7b780;
 	}
 
 	.module-icon {
@@ -161,11 +212,10 @@
 		line-height: 1.4;
 		background: linear-gradient(135deg, #e79043, #f39c12);
 		padding: 0.5rem 0.75rem;
-		border-radius: 6px;
-		margin: 0;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		border-radius: 7px;
+		margin: 1px;
+		box-shadow: 3px 2px 4px 2px rgba(0, 0, 0, 0.1);
 	}
-
 	@media (max-width: 768px) {
 		.modules-grid {
 			grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
