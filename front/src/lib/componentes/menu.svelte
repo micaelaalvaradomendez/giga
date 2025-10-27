@@ -117,9 +117,7 @@
                     >
                         <span class="menu-item-icon">📋</span>
                         <div class="menu-item-text">
-                            <div class="menu-item-title">
-                                Asistencia (Registro)
-                            </div>
+                            <div class="menu-item-title">Asistencia</div>
                         </div>
                     </a>
 
@@ -138,25 +136,28 @@
                         </a>
                     {/if}
 
-                    {#if isJefatura}
-                        <a
-                            href="/guardias"
-                            class="menu-item"
-                            on:click={closeMenu}
-                        >
-                            <span class="menu-item-icon">🛡️</span>
-                            <div class="menu-item-text">
-                                <div class="menu-item-title">
-                                    Guardias (Planificación/Aprobación)
-                                </div>
-                            </div>
-                        </a>
-                    {/if}
+                    <a href="/guardias" class="menu-item" on:click={closeMenu}>
+                        <span class="menu-item-icon">🛡️</span>
+                        <div class="menu-item-text">
+                            <div class="menu-item-title">Guardias</div>
+                        </div>
+                    </a>
 
                     <a href="/reportes" class="menu-item" on:click={closeMenu}>
                         <span class="menu-item-icon">📊</span>
                         <div class="menu-item-text">
                             <div class="menu-item-title">Reportes</div>
+                        </div>
+                    </a>
+
+                    <a
+                        href="/admin/organigrama"
+                        class="menu-item"
+                        on:click={closeMenu}
+                    >
+                        <span class="menu-item-icon">🏛️</span>
+                        <div class="menu-item-text">
+                            <div class="menu-item-title">Organigrama</div>
                         </div>
                     </a>
                 </div>
@@ -174,38 +175,9 @@
                         >
                             <span class="menu-item-icon">🔍</span>
                             <div class="menu-item-text">
-                                <div class="menu-item-title">
-                                    Auditoría (Trazabilidad)
-                                </div>
+                                <div class="menu-item-title">Auditoría</div>
                             </div>
                         </a>
-
-                        {#if isAdmin}
-                            <a
-                                href="/admin/usuarios"
-                                class="menu-item"
-                                on:click={closeMenu}
-                            >
-                                <span class="menu-item-icon">👥</span>
-                                <div class="menu-item-text">
-                                    <div class="menu-item-title">
-                                        Gestión de Usuarios
-                                    </div>
-                                </div>
-                            </a>
-                            <a
-                                href="/admin/organigrama"
-                                class="menu-item"
-                                on:click={closeMenu}
-                            >
-                                <span class="menu-item-icon">🏛️</span>
-                                <div class="menu-item-text">
-                                    <div class="menu-item-title">
-                                        Organigrama
-                                    </div>
-                                </div>
-                            </a>
-                        {/if}
 
                         {#if isDirector}
                             <a
@@ -224,14 +196,14 @@
 
                         {#if isAdmin}
                             <a
-                                href="/admin/documentos"
+                                href="/admin"
                                 class="menu-item"
                                 on:click={closeMenu}
                             >
-                                <span class="menu-item-icon">⚖️</span>
+                                <span class="menu-item-icon">👥</span>
                                 <div class="menu-item-text">
                                     <div class="menu-item-title">
-                                        Documentos Legales
+                                        Panel Administrativo
                                     </div>
                                 </div>
                             </a>

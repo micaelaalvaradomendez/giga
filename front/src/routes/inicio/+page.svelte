@@ -1,10 +1,10 @@
 <script>
-    import { onMount } from 'svelte';
-    import { goto } from '$app/navigation';
-    import AuthService from '../../lib/login/authService.js';
-    import EditarPerfil from '../../lib/componentes/EditarPerfil.svelte';
-    import CambioContrasenaObligatorio from '../../lib/componentes/CambioContrasenaObligatorio.svelte';
-    
+    import { onMount } from "svelte";
+    import { goto } from "$app/navigation";
+    import AuthService from "../../lib/login/authService.js";
+    import EditarPerfil from "../../lib/componentes/EditarPerfil.svelte";
+    import CambioContrasenaObligatorio from "../../lib/componentes/CambioContrasenaObligatorio.svelte";
+
     let user = null;
     let isLoading = true;
     let errorMessage = "";
@@ -15,24 +15,27 @@
         // Verificar si el usuario está autenticado
         try {
             const sessionCheck = await AuthService.checkSession();
-            
+
             if (sessionCheck.authenticated) {
                 user = sessionCheck.user;
-                
+
                 // Verificar si se requiere cambio obligatorio de contraseña
-                if (sessionCheck.requires_password_change || AuthService.requiresPasswordChange()) {
+                if (
+                    sessionCheck.requires_password_change ||
+                    AuthService.requiresPasswordChange()
+                ) {
                     showMandatoryPasswordChange = true;
                 }
             } else {
                 // Si no está autenticado, redirigir al login
-                goto('/');
+                goto("/");
                 return;
             }
         } catch (error) {
-            console.error('Error verificando sesión:', error);
+            console.error("Error verificando sesión:", error);
             errorMessage = "Error verificando la sesión";
             // Redirigir al login en caso de error
-            setTimeout(() => goto('/'), 2000);
+            setTimeout(() => goto("/"), 2000);
         } finally {
             isLoading = false;
         }
@@ -41,23 +44,23 @@
     async function handleLogout() {
         try {
             await AuthService.logout();
-            goto('/');
+            goto("/");
         } catch (error) {
-            console.error('Error durante logout:', error);
+            console.error("Error durante logout:", error);
             // Aun con error, intentar ir al login
-            goto('/');
+            goto("/");
         }
     }
 
     function getRoleBadgeClass(rol) {
         const roleClasses = {
-            'Administrador': 'role-admin',
-            'Director': 'role-director', 
-            'Jefatura': 'role-jefatura',
-            'Agente Avanzado': 'role-agente-avanzado',
-            'Agente': 'role-agente'
+            Administrador: "role-admin",
+            Director: "role-director",
+            Jefatura: "role-jefatura",
+            "Agente Avanzado": "role-agente-avanzado",
+            Agente: "role-agente",
         };
-        return roleClasses[rol] || 'role-default';
+        return roleClasses[rol] || "role-default";
     }
 
     function openEditProfile() {
@@ -101,11 +104,17 @@
                     </div>
                     <div class="detail-item">
                         <span class="label">CUIL:</span>
-                        <span class="value">{AuthService.formatCuil(user.cuil)}</span>
+                        <span class="value"
+                            >{AuthService.formatCuil(user.cuil)}</span
+                        >
                     </div>
                     <div class="detail-item">
                         <span class="label">Rol principal:</span>
-                        <span class="role-badge {getRoleBadgeClass(user.rol_principal)}">
+                        <span
+                            class="role-badge {getRoleBadgeClass(
+                                user.rol_principal,
+                            )}"
+                        >
                             {user.rol_principal}
                         </span>
                     </div>
@@ -113,15 +122,19 @@
                         <div class="detail-item">
                             <span class="label">Otros roles:</span>
                             <div class="roles-list">
-                                {#each user.roles.filter(role => role !== user.rol_principal) as role}
-                                    <span class="role-badge {getRoleBadgeClass(role)}">{role}</span>
+                                {#each user.roles.filter((role) => role !== user.rol_principal) as role}
+                                    <span
+                                        class="role-badge {getRoleBadgeClass(
+                                            role,
+                                        )}">{role}</span
+                                    >
                                 {/each}
                             </div>
                         </div>
                     {/if}
                 </div>
             </div>
-            
+
             <div class="actions">
                 <button class="edit-profile-button" on:click={openEditProfile}>
                     Editar Perfil
@@ -137,8 +150,14 @@
                 <h2>Sesión iniciada correctamente</h2>
                 <p>Has ingresado exitosamente al sistema GIGA.</p>
                 <div class="session-info">
-                    <p><strong>Fecha de acceso:</strong> {new Date().toLocaleString('es-AR')}</p>
-                    <p><strong>Estado:</strong> <span class="status-active">Activo</span></p>
+                    <p>
+                        <strong>Fecha de acceso:</strong>
+                        {new Date().toLocaleString("es-AR")}
+                    </p>
+                    <p>
+                        <strong>Estado:</strong>
+                        <span class="status-active">Activo</span>
+                    </p>
                 </div>
             </div>
 
@@ -160,14 +179,14 @@
                         <p>Generar reportes del sistema</p>
                         <button class="action-button">Generar Reportes</button>
                     </div>
-                    {#if AuthService.hasRole('Administrador') || AuthService.hasRole('Director')}
+                    {#if AuthService.hasRole("Administrador")}
                         <a href="/admin">
-                           <div class="action-card admin-card">
+                            <div class="action-card admin-card">
                                 <h4>Administración</h4>
                                 <p>Panel de administrador</p>
                                 <button class="action-button admin-button">
-									Panel Admin
-								</button>
+                                    Panel Admin
+                                </button>
                             </div>
                         </a>
                     {/if}
@@ -179,20 +198,20 @@
     <div class="error-container">
         <h2>Error de autenticación</h2>
         <p>No se pudo verificar la sesión.</p>
-        <button on:click={() => goto('/')}>Ir al Login</button>
+        <button on:click={() => goto("/")}>Ir al Login</button>
     </div>
 {/if}
 
 <!-- Modal de editar perfil -->
-<EditarPerfil 
-    bind:showModal={showEditProfile} 
-    {user} 
+<EditarPerfil
+    bind:showModal={showEditProfile}
+    {user}
     on:close={closeEditProfile}
     on:userUpdated={handleUserUpdated}
 />
 
 <!-- Modal obligatorio de cambio de contraseña -->
-<CambioContrasenaObligatorio 
+<CambioContrasenaObligatorio
     bind:showAlert={showMandatoryPasswordChange}
     {user}
 />
@@ -217,8 +236,12 @@
     }
 
     @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
     }
 
     .error-container {
