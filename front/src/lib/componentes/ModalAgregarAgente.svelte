@@ -300,14 +300,6 @@
 
 								<div class="form-group">
 									<label for="password">Contraseña Inicial</label>
-									<input 
-										type="text" 
-										id="password" 
-										bind:value={formData.password} 
-										readonly
-										placeholder="Se generará automáticamente con el DNI"
-										disabled={true}
-									/>
 									<small class="help-text">La contraseña inicial será el DNI. El usuario deberá cambiarla en el primer acceso.</small>
 								</div>
 							</div>
@@ -337,17 +329,6 @@
 							<h3>💼 Información Laboral</h3>
 							
 							<div class="form-row">
-								<div class="form-group">
-									<label for="legajo">Legajo</label>
-									<input 
-										type="text" 
-										id="legajo" 
-										value="Se generará automáticamente"
-										readonly
-										disabled
-									/>
-									<small class="help-text">El legajo se genera automáticamente al crear el agente</small>
-								</div>
 								<div class="form-group">
 									<label for="categoria_revista">Categoría Revista *</label>
 									<input 
@@ -390,29 +371,6 @@
 										disabled={isSaving}
 									/>
 									<small class="help-text">Categoría de usufructo (opcional)</small>
-								</div>
-							</div>
-
-							<div class="form-row">
-								<div class="form-group">
-									<label for="horario_entrada">Horario Entrada</label>
-									<input 
-										type="time" 
-										id="horario_entrada" 
-										bind:value={formData.horario_entrada} 
-										disabled={isSaving}
-									/>
-									<small class="help-text">Hora de inicio de la jornada laboral</small>
-								</div>
-								<div class="form-group">
-									<label for="horario_salida">Horario Salida</label>
-									<input 
-										type="time" 
-										id="horario_salida" 
-										bind:value={formData.horario_salida} 
-										disabled={isSaving}
-									/>
-									<small class="help-text">Hora de finalización de la jornada laboral</small>
 								</div>
 							</div>
 

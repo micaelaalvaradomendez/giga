@@ -255,23 +255,6 @@
 							</div>
 
 							<div class="form-group">
-								<label for="rol">Rol *</label>
-								<select 
-									id="rol" 
-									bind:value={formData.rol_id} 
-									on:change={handleInputChange}
-									required
-									disabled={isSaving}
-								>
-									<option value="">Seleccione un rol</option>
-									{#each rolesDisponibles as rol}
-										<option value={rol.id}>{rol.nombre}</option>
-									{/each}
-								</select>
-								<small class="help-text">Rol asignado al agente en el sistema</small>
-							</div>
-
-							<div class="form-group">
 								<label for="telefono">Teléfono</label>
 								<input 
 									type="tel" 
@@ -289,15 +272,6 @@
 							<h3>💼 Información Laboral</h3>
 							
 							<div class="form-row">
-								<div class="form-group">
-									<label for="legajo">Legajo</label>
-									<input 
-										type="text" 
-										id="legajo" 
-										bind:value={formData.legajo} 
-										disabled={isSaving}
-									/>
-								</div>
 								<div class="form-group">
 									<label for="categoria_revista">Categoría Revista *</label>
 									<input 
@@ -336,27 +310,6 @@
 										type="text" 
 										id="categoria_usuf" 
 										bind:value={formData.categoria_usuf} 
-										disabled={isSaving}
-									/>
-								</div>
-							</div>
-
-							<div class="form-row">
-								<div class="form-group">
-									<label for="horario_entrada">Horario Entrada</label>
-									<input 
-										type="time" 
-										id="horario_entrada" 
-										bind:value={formData.horario_entrada} 
-										disabled={isSaving}
-									/>
-								</div>
-								<div class="form-group">
-									<label for="horario_salida">Horario Salida</label>
-									<input 
-										type="time" 
-										id="horario_salida" 
-										bind:value={formData.horario_salida} 
 										disabled={isSaving}
 									/>
 								</div>

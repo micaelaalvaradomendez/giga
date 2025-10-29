@@ -4,6 +4,7 @@ import { createApiClient } from './api.js';
 export const personasService = {
   // Agentes
   getAllAgentes: (token = null) => createApiClient(token).get('/personas/agentes/'),
+  getAgentes: (token = null) => createApiClient(token).get('/personas/agentes/'), // Alias para consistencia
   getAgente: (id, token = null) => createApiClient(token).get(`/personas/agentes/${id}/`),
   createAgente: (data, token = null) => createApiClient(token).post('/personas/agentes/', data),
   updateAgente: (id, data, token = null) => createApiClient(token).patch(`/personas/agentes/${id}/`, data),

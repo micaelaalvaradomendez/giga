@@ -207,6 +207,19 @@
                                     </div>
                                 </div>
                             </a>
+                            
+                            <a
+                                href="/admin/roles-permisos"
+                                class="menu-item"
+                                on:click={closeMenu}
+                            >
+                                <span class="menu-item-icon">🛡️</span>
+                                <div class="menu-item-text">
+                                    <div class="menu-item-title">
+                                        Roles y Permisos
+                                    </div>
+                                </div>
+                            </a>
                         {/if}
                     </div>
                 {/if}

@@ -93,7 +93,6 @@
             on:keypress={handleKeyPress}
             disabled={isLoading}
         />
-        <small class="help-text">Código Único de Identificación Laboral (11 dígitos con guiones)</small>
         <h2>Ingrese su contraseña:</h2>
         <div class="password-container">
             <input
