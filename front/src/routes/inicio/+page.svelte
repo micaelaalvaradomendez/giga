@@ -133,6 +133,14 @@
                     {/if}
                 </div>
             </div>
+            <div class="actions">
+                <button class="edit-profile-button" on:click={openEditProfile}>
+                    Editar Perfil
+                </button>
+                <button class="logout-button" on:click={handleLogout}>
+                    Cerrar Sesión
+                </button>
+            </div>
         </header>
 
         <main class="dashboard-content">

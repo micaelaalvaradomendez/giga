@@ -69,7 +69,7 @@ class AgenteSerializer(PersonaBaseSerializer):
         """Obtener roles asignados al agente"""
         roles_asignados = AgenteRol.objects.filter(usuario=obj.usuario).select_related('rol', 'area')
         return [{
-            'id': asignacion.rol.id,
+            'id': str(asignacion.rol.id),  # Convertir UUID a string
             'nombre': asignacion.rol.nombre,
             'area': asignacion.area.nombre if asignacion.area else None
         } for asignacion in roles_asignados]
@@ -107,27 +107,3 @@ class AsignacionRolSerializer(BaseSerializer):
         model = AgenteRol
         fields = ['id', 'usuario', 'rol', 'area', 'asignado_en', 
                  'usuario_nombre', 'rol_nombre', 'area_nombre']
-
-
-class RolSerializer(serializers.ModelSerializer):
-    """
-    Serializador para el modelo Rol
-    """
-    class Meta:
-        model = Rol
-        fields = '__all__'
-
-
-# FALTA MODELO CuentaAcceso
-# class CuentaAccesoSerializer(serializers.ModelSerializer):
-#     """
-#     Serializador para el modelo CuentaAcceso
-#     """
-#     agente_nombre = serializers.CharField(source='agente.nombre_completo', read_only=True)
-#     
-#     class Meta:
-#         model = CuentaAcceso
-#         fields = '__all__'
-#         extra_kwargs = {
-#             'password': {'write_only': True}
-#         }

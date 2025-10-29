@@ -231,6 +231,25 @@
                     </div>
                 </a>
             </div>
+
+            {#if isAuth}
+                <div class="menu-section">
+                    <div class="menu-section-title">Sesión</div>
+                    <button 
+                        class="menu-item logout-button" 
+                        on:click={async () => {
+                            await AuthService.logout();
+                            closeMenu();
+                            goto('/');
+                        }}
+                    >
+                        <span class="menu-item-icon">🚪</span>
+                        <div class="menu-item-text">
+                            <div class="menu-item-title">Cerrar Sesión</div>
+                        </div>
+                    </button>
+                </div>
+            {/if}
         </div>
     </div>
 {/if}
@@ -411,6 +430,19 @@
     .menu-item-highlight:hover {
         background: #feeaea;
         border-left-color: #dc2626;
+    }
+
+    .logout-button {
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+    }
+
+    .logout-button:hover {
+        background: #fff1f1;
+        border-left-color: #ef4444;
+        color: #dc2626;
     }
 
     .overlay {

@@ -4,6 +4,22 @@ Centraliza validaciones y campos comunes
 """
 from rest_framework import serializers
 from django.utils import timezone
+import uuid
+
+
+class UUIDField(serializers.Field):
+    """
+    Campo personalizado para UUIDs que siempre serializa como string
+    """
+    def to_representation(self, value):
+        if isinstance(value, uuid.UUID):
+            return str(value)
+        return value
+    
+    def to_internal_value(self, data):
+        if isinstance(data, str):
+            return uuid.UUID(data)
+        return data
 
 
 class BaseSerializer(serializers.ModelSerializer):
@@ -30,6 +46,19 @@ class BaseSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'actualizado_por') and obj.actualizado_por:
             return obj.actualizado_por.get_full_name() or obj.actualizado_por.username
         return None
+    
+    def to_representation(self, instance):
+        """
+        Convertir UUIDs a string automáticamente en la representación
+        """
+        data = super().to_representation(instance)
+        
+        # Convertir todos los UUIDs a strings
+        for key, value in data.items():
+            if isinstance(value, uuid.UUID):
+                data[key] = str(value)
+        
+        return data
     
     class Meta:
         abstract = True

@@ -6,22 +6,54 @@ export const personasService = {
   getAllAgentes: (token = null) => createApiClient(token).get('/personas/agentes/'),
   getAgente: (id, token = null) => createApiClient(token).get(`/personas/agentes/${id}/`),
   createAgente: (data, token = null) => createApiClient(token).post('/personas/agentes/', data),
-  updateAgente: (id, data, token = null) => createApiClient(token).put(`/personas/agentes/${id}/`, data),
+  updateAgente: (id, data, token = null) => createApiClient(token).patch(`/personas/agentes/${id}/`, data),
   deleteAgente: (id, token = null) => createApiClient(token).delete(`/personas/agentes/${id}/`),
+
+  	// Crear agente con rol asignado
+	async createAgenteConRol(agenteData) {
+		try {
+			console.log('Datos enviados a createAgente:', agenteData);
+			// Primero crear el agente
+			const response = await this.createAgente(agenteData);
+			console.log('Respuesta del agente creado:', response);
+			
+			if (response && response.usuario && agenteData.rol_id) {
+				// Luego asignar el rol usando el usuario_id del agente creado
+				const asignacionData = {
+					usuario: response.usuario,  // Usar el ID del usuario, no del agente
+					rol: agenteData.rol_id,
+					area: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', // ID por defecto del área: Secretaría de Protección Civil
+				};
+				
+				console.log('Datos de asignación:', asignacionData);
+				await this.createAsignacion(asignacionData);
+			}
+			
+			return response;
+		} catch (error) {
+			console.error('Error creando agente con rol:', error);
+			throw error;
+		}
+	},
 
   // Áreas
   getAreas: (token = null) => createApiClient(token).get('/personas/areas/'),
   getArea: (id, token = null) => createApiClient(token).get(`/personas/areas/${id}/`),
   createArea: (data, token = null) => createApiClient(token).post('/personas/areas/', data),
-  updateArea: (id, data, token = null) => createApiClient(token).put(`/personas/areas/${id}/`, data),
+  updateArea: (id, data, token = null) => createApiClient(token).patch(`/personas/areas/${id}/`, data),
   deleteArea: (id, token = null) => createApiClient(token).delete(`/personas/areas/${id}/`),
 
   // Roles
   getRoles: (token = null) => createApiClient(token).get('/personas/roles/'),
   getRol: (id, token = null) => createApiClient(token).get(`/personas/roles/${id}/`),
   createRol: (data, token = null) => createApiClient(token).post('/personas/roles/', data),
-  updateRol: (id, data, token = null) => createApiClient(token).put(`/personas/roles/${id}/`, data),
+  updateRol: (id, data, token = null) => createApiClient(token).patch(`/personas/roles/${id}/`, data),
   deleteRol: (id, token = null) => createApiClient(token).delete(`/personas/roles/${id}/`),
+
+  // Asignaciones de roles
+  getAsignaciones: (token = null) => createApiClient(token).get('/personas/asignaciones/'),
+  createAsignacion: (data, token = null) => createApiClient(token).post('/personas/asignaciones/', data),
+  deleteAsignacion: (id, token = null) => createApiClient(token).delete(`/personas/asignaciones/${id}/`),
 };
 
 // SERVICIOS PARA ASISTENCIA
