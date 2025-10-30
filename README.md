@@ -1,81 +1,88 @@
 # GIGA - Sistema de Gestión Integral de Guardias y Asistencias
 
-Sistema web para la gestión de recursos humanos, control de asistencia y guardias desarrollado con **Django REST Framework** (backend) y **SvelteKit** (frontend).
+Sistema web desarrollado con **Django REST**, **SvelteKit** y **PostgreSQL aislada**.
 
-## Inicio Rápido
+---
 
-### Setup Automático
+## ⚡ **SÚPER FÁCIL - DOS OPCIONES**
+
+### **Opción 1: Script automático (más fácil)**
 ```bash
-# Clonar repositorio
-git clone https://github.com/micaelaalvaradomendez/giga.git
+# Después de git clone o git pull:
 cd giga
-
-# Levantar sistema (carga datos automáticamente)
-sudo docker-compose up -d --build
+./start.sh     # ✅ Windows (Git Bash) | Linux | macOS
 ```
 
-### Si hay problemas después de `git pull`
+### **Opción 2: Comando manual**  
 ```bash
-./normalize_repo.sh
-sudo docker-compose down -v && sudo docker-compose up -d --build
+# Una sola línea (copiar y pegar completa):
+cd giga && cd db && docker-compose down -v && docker-compose up -d && sleep 15 && cd .. && docker-compose -f docker-compose.dev.yml down -v && docker-compose -f docker-compose.dev.yml up -d --build
 ```
 
-## URLs del Sistema
+### **¿Todo funcionando? Abrir navegador:**
+- **App:** http://localhost:5173
+- **Admin:** http://localhost:8000/admin  
+- **API:** http://localhost:8000/api/
 
-| Servicio | URL |
-|----------|-----|
-| **Aplicación Web** | http://localhost:5173 |
-| **API Backend** | http://localhost:8000/api/ |
-| **Admin Django** | http://localhost:8000/admin |
+---
 
-## Comandos Esenciales
+## 🎯 **Lo que hace el comando:**
+1. **Entra** al directorio del proyecto
+2. **Limpia** cualquier configuración anterior  
+3. **Inicia** base de datos PostgreSQL aislada
+4. **Espera** que la BD esté lista
+5. **Levanta** backend Django + frontend SvelteKit
+6. **Carga** datos de ejemplo automáticamente
 
+---
+
+## 🛠️ **Comandos Útiles (Si algo no funciona)**
+
+### **Ver qué está pasando:**
 ```bash
-# Ver estado de contenedores
-sudo docker ps
-
-# Ver logs si hay problemas
-sudo docker logs giga_back
-sudo docker logs giga_front
-
-# Reiniciar servicios
-sudo docker-compose restart
-
-# Reset completo (si algo se rompe)
-sudo docker-compose down -v
-sudo docker-compose up -d --build
-
-# Verificar datos cargados
-docker exec giga_back python manage.py shell -c "
-from personas.models import Usuario
-print(f'Usuarios en sistema: {Usuario.objects.count()}')
-"
+docker ps                    # ¿Qué está corriendo?
+docker logs giga_backend_dev # Logs del backend
+docker logs giga_frontend_dev# Logs del frontend
 ```
 
-## Gestión de Datos
-
-### Datos Automáticos
-Al hacer `docker compose up` se cargan automáticamente:
-- **6 usuarios** con roles (Tayra y Micaela como Administradores)
-- **5 roles** del sistema (Administrador, Director, Jefatura, Agente Avanzado, Agente)
-- **1 área** organizacional (Secretaría de Protección Civil)
-- **Licencias de ejemplo** para cada usuario
-
-### Sincronizar Cambios
+### **Reiniciar solo un servicio:**
 ```bash
-# Crear backup después de modificar datos
-docker exec giga_back python manage.py export_data
-git add data_backup/ && git commit -m "Update: nuevos datos"
-
-# Después de git pull, los datos se actualizan automáticamente
-docker-compose down && docker-compose up -d
+docker-compose -f docker-compose.dev.yml restart backend  # Solo backend
+docker-compose -f docker-compose.dev.yml restart frontend # Solo frontend
 ```
 
-## Tecnologías
+### **Si nada funciona (reset total):**
+```bash
+# 🔄 Repetir el comando universal de arriba
+cd db && docker-compose down -v && docker-compose up -d && sleep 15 && cd .. && docker-compose -f docker-compose.dev.yml down -v && docker-compose -f docker-compose.dev.yml up -d --build
+```
 
-- **Backend**: Django 5.2.7 + PostgreSQL 16
-- **Frontend**: SvelteKit + JavaScript
-- **Contenedores**: Docker + Docker Compose
+## � **Datos Precargados**
+
+El sistema incluye datos de ejemplo:
+- **6 usuarios** (Tayra, Cristian, María, Juan, Ana, admin)
+- **5 roles** (Administrador, Supervisor, Agente, etc.)
+- **Licencias de prueba** para cada usuario
+
+**Login de prueba:**
+- Usuario: `admin` | Password: `admin123`
+- Usuario: `tayra.aguila` | Password: `password123`
+
+## 🛠️ Stack Tecnológico
+
+### **Arquitectura de Microservicios**
+- **Base de Datos**: PostgreSQL 16-alpine (servicio independiente)
+- **Backend**: Django 5.2.7 REST API (sin BD embebida)
+- **Frontend**: SvelteKit + Vite (desarrollo con hot-reload)
+- **Contenedores**: Docker Compose v2 + redes aisladas
+- **Proxy**: Nginx (solo en producción)
+
+### **Ventajas de la Nueva Arquitectura**
+- ✅ **BD Aislada**: PostgreSQL independiente del backend
+- ✅ **Escalabilidad**: Cada servicio puede escalar independientemente  
+- ✅ **Desarrollo**: Hot-reload sin afectar datos
+- ✅ **Backup**: Datos centralizados en un solo lugar
+- ✅ **Performance**: Conexiones persistentes optimizadas
 
 ## Funcionalidades
 
@@ -86,43 +93,53 @@ docker-compose down && docker-compose up -d
 - **Auditoría**: Trazabilidad de cambios
 - **Convenio IA**: Consultas inteligentes sobre convenios
 
-## Solución de Problemas
+## � **Solución de Problemas**
 
-- **Backend no inicia**: `./normalize_repo.sh && docker-compose down -v && docker-compose up -d --build`
-- **Puerto ocupado**: Cambiar puertos en `docker-compose.yml`
-- **Login no funciona**: `docker-compose restart back`
-- **Más ayuda**: Ver [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)
+### **Si algo no funciona:**
+1. **Repetir el comando universal** (limpia y resetea todo)
+2. **Verificar puertos libres**: 5173, 8000, 5434
+3. **Verificar Docker**: `docker --version`
 
-## Requisitos
+### **Problemas específicos:**
+- **Puerto ocupado**: Cambiar números en `docker-compose.dev.yml`
+- **No carga la web**: Esperar 2-3 minutos después del comando
+- **Login falla**: Usuario `admin` / Password `admin123`
 
-- **Docker** y **Docker Compose**
-- **Git**
+## 📋 **Requisitos**
 
-### Instalar Docker
-- **Windows/Mac**: [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- **Linux**: `sudo apt install docker.io docker-compose`
+**Instalar antes de empezar:**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/Mac)
+- Docker Engine (Linux): `sudo apt install docker.io docker-compose-v2`
+- Git: Para clonar el repositorio
 
-
-## Estructura del Proyecto
-
+**Verificar que funciona:**
+```bash
+docker --version     # Debe mostrar Docker 20.10+
+git --version        # Cualquier versión reciente
 ```
-giga/
-├── docker-compose.yml         # Configuración Docker
-├── .env.example              # Plantilla variables de entorno
-├── DOCKER.md                 # Documentación Docker
-├── back/                     # Backend Django
-│   ├── Dockerfile
-│   ├── personas/                # Gestión de personal
-│   ├── asistencia/              # Control horario
-│   ├── guardias/                # Sistema de guardias
-│   ├── auditoria/               # Auditoría
-│   ├── reportes/                # Reportes
-│   └── convenio_ia/             # IA Convenios
-├── front/                    # Frontend SvelteKit
-│   ├── Dockerfile
-│   └── src/routes/              # Páginas web
-└── documentacion/            # Diseño y documentación
-    ├── db.puml                  # Diseño de base de datos
-    └── integracionDB.md         # Guía de implementación
-```
+
+
+## 🏗️ **Qué Incluye**
+
+### **Módulos del Sistema:**
+- � **Personas**: Gestión de empleados y roles
+- 📅 **Asistencia**: Control horario y licencias  
+- 🛡️ **Guardias**: Sistema de turnos
+- 📊 **Reportes**: Informes automáticos
+- 🔍 **Auditoría**: Registro de cambios
+- 🤖 **Convenio IA**: Consultas inteligentes
+
+### **Stack Técnico:**
+- **Backend**: Django 5.2 + PostgreSQL 16
+- **Frontend**: SvelteKit + hot-reload
+- **Contenedores**: Docker + Docker Compose
+
+---
+
+## 📚 **Documentación Adicional**
+
+Para desarrollo avanzado:
+- [DOCKER.md](DOCKER.md) - Guía técnica completa
+- [INICIO_RAPIDO.md](INICIO_RAPIDO.md) - Tutorial para desarrolladores
+- [data_backup/](data_backup/) - Estructura de la base de datos
 

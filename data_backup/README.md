@@ -1,38 +1,34 @@
-# Datos de la Base de Datos
+# 💾 Backup de Base de Datos - GIGA
 
-Este directorio contiene los backups de la base de datos del proyecto GIGA.
+## ✅ **Backup Completo del Sistema**
 
-## Archivos
+Este directorio contiene el **backup completo** de la base de datos PostgreSQL extraído el **30 de octubre de 2024** antes de migrar a la nueva arquitectura.
 
-- `initial_data.json`: Datos iniciales del sistema (usuarios, roles, licencias básicas)
+### 📊 **Datos Incluidos:**
+- **39 registros** extraídos exitosamente
+- **6 usuarios** con roles y permisos
+- **3 tipos de licencias** + 12 licencias de ejemplo
+- **1 área organizacional** (Protección Civil)
 
-## Uso
+### 📁 **Archivos Principales:**
+- `personas_data.json` - 24 registros (usuarios, agentes, roles)
+- `asistencia_data.json` - 15 registros (licencias)
+- `database_structure.puml` - Diagrama completo de la BD
+- `*_models.md` - Documentación de cada app Django
 
-### Para crear un backup de los datos actuales:
+## 🚀 **Uso con Nueva Arquitectura**
+
+Los datos se cargan **automáticamente** al ejecutar:
 ```bash
-docker exec giga_back python manage.py export_data
+cd giga && ./start.sh
 ```
 
-### Para restaurar datos desde backup:
+O manualmente:
 ```bash
-docker exec giga_back python manage.py import_data --latest
+docker exec giga_backend_dev python manage.py loaddata /app/data_backup/personas_data.json
+docker exec giga_backend_dev python manage.py loaddata /app/data_backup/asistencia_data.json
 ```
 
-## Flujo de Trabajo
+## 📚 **Documentación**
 
-1. **Al hacer cambios en la BD**: Después de modificar datos importantes, crear un backup:
-   ```bash
-   docker exec giga_back python manage.py export_data
-   git add data_backup/
-   git commit -m "feat: actualizar datos de la base de datos"
-   git push
-   ```
-
-2. **Al hacer pull**: Los nuevos datos se cargarán automáticamente en el próximo `docker compose up`
-
-## Importante
-
-- Los datos se cargan automáticamente al hacer `docker compose up`
-- Los fixtures están versionados en Git
-- Los cambios en la BD se pueden compartir entre desarrolladores
-- El volumen de PostgreSQL mantiene persistencia local
+Ver `README_BACKUP.md` para documentación completa del backup.
