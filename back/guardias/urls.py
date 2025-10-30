@@ -4,5 +4,5 @@ from . import views
 app_name = 'guardias'
 
 urlpatterns = [
-   # URLs falta hacer porque hay que hacer los serializers 
-   ]
+    path('cronogramas/planificar/', views.PlanificarCronogramaView.as_view(), name='cronogramas_planificar'),
+]

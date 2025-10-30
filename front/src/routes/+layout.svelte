@@ -1,8 +1,8 @@
 <script>
-	import Navbar from "$lib/componentes/navbar.svelte";
-	import Footer from "$lib/componentes/footer.svelte";
-	import Menu from "$lib/componentes/menu.svelte";
-	import "$lib/componentes/componentes.css";
+	import Navbar from "$lib/components/navbar.svelte";
+	import Footer from "$lib/components/footer.svelte";
+	import Menu from "$lib/components/menu.svelte";
+	import "$lib/components/componentes.css";
 	import { onMount } from "svelte";
 	import AuthService, {
 		isAuthenticated as authStore,

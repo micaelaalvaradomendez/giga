@@ -62,6 +62,7 @@ export const guardiasService = {
   getCronograma: (id) => api.get(`/guardias/cronogramas/${id}/`),
   createCronograma: (data) => api.post('/guardias/cronogramas/', data),
   updateCronograma: (id, data) => api.put(`/guardias/cronogramas/${id}/`, data),
+  planificar: (payload) => api.post('/guardias/cronogramas/planificar/', payload),
 
   // Guardias
   getGuardias: () => api.get('/guardias/guardias/'),

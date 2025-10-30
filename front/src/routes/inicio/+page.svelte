@@ -2,8 +2,8 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import AuthService from '../../lib/login/authService.js';
-    import EditarPerfil from '../../lib/componentes/EditarPerfil.svelte';
-    import CambioContrasenaObligatorio from '../../lib/componentes/CambioContrasenaObligatorio.svelte';
+    import EditarPerfil from '../../lib/components/EditarPerfil.svelte';
+    import CambioContrasenaObligatorio from '../../lib/components/CambioContrasenaObligatorio.svelte';
     
     let user = null;
     let isLoading = true;
