@@ -65,15 +65,20 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20
 }
 
-# Configuración de CORS
+# Configuración de CORS - Compatible con desarrollo y producción
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "http://localhost:5173",       # Frontend desarrollo directo
+    "http://127.0.0.1:5173",       # Frontend desarrollo directo
+    "http://localhost",            # Nginx en producción
+    "http://127.0.0.1",            # Nginx local
+    "http://localhost:80",         # Nginx explícito
+    "http://localhost:8080",       # Puerto desarrollo directo
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Solo en desarrollo
+# En desarrollo permitir todos los orígenes, en producción solo los especificados
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 # Headers adicionales permitidos por CORS
 CORS_ALLOW_HEADERS = [
@@ -146,17 +151,22 @@ TEMPLATES = [
 WSGI_APPLICATION = 'giga.wsgi.application'
 
 
-# Database
+# Database Configuration
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Configuración de PostgreSQL (única base de datos soportada)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': config('DB_NAME', default='giga'),
         'USER': config('DB_USER', default='giga_user'),
         'PASSWORD': config('DB_PASSWORD', default='giga_pass'),
-        'HOST': config('DB_HOST', default='db'),
+        'HOST': config('DB_HOST', default='giga-db'),  # Nombre del servicio de DB
         'PORT': config('DB_PORT', default='5432'),
+        'OPTIONS': {
+            'connect_timeout': 60,
+        },
+        'CONN_MAX_AGE': 60,  # Conexiones persistentes por 60 segundos
     }
 }
 

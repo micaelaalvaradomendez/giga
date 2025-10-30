@@ -1,0 +1,100 @@
+version: "3.9"
+
+# Docker Compose para DESARROLLO
+# Uso: docker-compose -f docker-compose.dev.yml up
+
+services:
+  # Base de datos PostgreSQL (usando el servicio aislado)
+  giga-db:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    container_name: giga_db_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-giga}
+      POSTGRES_USER: ${DB_USER:-giga_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-giga_pass}
+      TZ: America/Argentina/Buenos_Aires
+      PGTZ: America/Argentina/Buenos_Aires
+    ports:
+      - "5434:5432"  # Puerto expuesto para desarrollo
+    volumes:
+      - giga_db_data_dev:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./db/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - giga_db_logs_dev:/var/log/postgresql
+    networks:
+      - giga_dev_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Backend Django (desarrollo)
+  backend:
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+      target: development
+    container_name: giga_backend_dev
+    restart: unless-stopped
+    environment:
+      DEBUG: "1"
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
+      DB_NAME: ${DB_NAME:-giga}
+      DB_USER: ${DB_USER:-giga_user}
+      DB_PASSWORD: ${DB_PASSWORD:-giga_pass}
+      DB_HOST: giga-db
+      DB_PORT: "5432"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,backend,nginx,*"
+    ports:
+      - "8000:8000"  # Puerto expuesto para desarrollo
+    volumes:
+      - ./back:/app
+      - backend_logs_dev:/app/logs
+    networks:
+      - giga_dev_network
+    depends_on:
+      giga-db:
+        condition: service_healthy
+
+  # Frontend SvelteKit (desarrollo)
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+      target: development
+    container_name: giga_frontend_dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8000}
+    ports:
+      - "5173:5173"  # Puerto expuesto para desarrollo
+    volumes:
+      # Montar archivos específicos para desarrollo hot-reload, sin conflictos de permisos
+      - ./front/src:/app/src
+      - ./front/static:/app/static
+      - ./front/package.json:/app/package.json
+      - ./front/pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./front/vite.config.js:/app/vite.config.js
+      - ./front/svelte.config.js:/app/svelte.config.js
+      - frontend_node_modules_dev:/app/node_modules
+    networks:
+      - giga_dev_network
+    depends_on:
+      - backend
+
+networks:
+  giga_dev_network:
+    driver: bridge
+
+volumes:
+  giga_db_data_dev:
+  giga_db_logs_dev:
+  frontend_node_modules_dev:
+  backend_logs_dev:

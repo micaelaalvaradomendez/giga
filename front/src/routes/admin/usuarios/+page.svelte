@@ -1,6 +1,6 @@
 <script>
 	import { personasService } from '$lib/services.js';
-	import { AuthService } from '$lib/login/authService.js';
+	import AuthService from '$lib/login/authService.js';
 	import ModalVerAgente from '$lib/componentes/ModalVerAgente.svelte';
 	import ModalEditarAgente from '$lib/componentes/ModalEditarAgente.svelte';
 	import ModalEliminarAgente from '$lib/componentes/ModalEliminarAgente.svelte';

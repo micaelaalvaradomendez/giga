@@ -1,0 +1,489 @@
+@startuml database_giga
+!define ENTITY class
+!define RELATION -->
+
+' ==== PERSONAS APP ====
+ENTITY Usuario {
+  +id : UUID [PK]
+  --
+  email : String [UNIQUE]
+  cuil : String(11) [UNIQUE]
+  username : String
+  password : String
+  first_name : String
+  last_name : String
+  password_hash : String
+  password_reset : Boolean
+  activo : Boolean
+  is_active : Boolean
+  is_staff : Boolean
+  is_superuser : Boolean
+  date_joined : DateTime
+  last_login : DateTime
+  creado_en : DateTime
+  actualizado_en : DateTime
+  actualizado_por : UUID [FK]
+}
+
+ENTITY Area {
+  +id : UUID [PK]
+  --
+  nombre : String(150)
+  area_padre : UUID [FK]
+  activa : Boolean
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY Agente {
+  +id : UUID [PK]
+  --
+  usuario : UUID [FK] [UNIQUE]
+  dni : String(8) [UNIQUE]
+  legajo : String(20) [UNIQUE]
+  apellido : String(50)
+  nombre : String(50)
+  fecha_nac : Date
+  telefono : String(20)
+  email : String [UNIQUE]
+  provincia : String(50)
+  ciudad : String(50)
+  calle : String(100)
+  numero : String(10)
+  horario_entrada : Time
+  horario_salida : Time
+  categoria_revista : String(5)
+  agrupacion : String(5) [EPU,POMYS,PAYT]
+  es_jefe : Boolean
+  id_jefe : UUID [FK]
+  categoria_usuf : String(5)
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY Permiso {
+  +id : UUID [PK]
+  --
+  codigo : String(100) [UNIQUE]
+  descripcion : Text
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY Rol {
+  +id : UUID [PK]
+  --
+  nombre : String(60) [UNIQUE]
+  descripcion : Text
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY PermisoRol {
+  +id : UUID [PK]
+  --
+  rol : UUID [FK]
+  permiso : UUID [FK]
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY AgenteRol {
+  +id : UUID [PK]
+  --
+  usuario : UUID [FK]
+  rol : UUID [FK]
+  area : UUID [FK]
+  asignado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+' ==== ASISTENCIA APP ====
+ENTITY TipoLicencia {
+  +id : UUID [PK]
+  --
+  codigo : String(255) [UNIQUE]
+  descripcion : String(255)
+}
+
+ENTITY Marca {
+  +id : UUID [PK]
+  --
+  agente : UUID [FK]
+  fecha : Date
+  hora : Time
+  tipo : String(10) [entrada,salida]
+  observaciones : Text
+  creado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY ParteDiario {
+  +id : UUID [PK]
+  --
+  fecha_parte : Date
+  estado : String(20) [borrador,confirmado,anulado]
+  observaciones : Text
+  area : UUID [FK]
+  agente : UUID [FK]
+  tipo_licencia : UUID [FK]
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY Asistencia {
+  +id : UUID [PK]
+  --
+  agente : UUID [FK]
+  fecha : Date
+  horario_entrada : Time
+  horario_salida : Time
+  minutos_tarde : Integer
+  minutos_extras : Integer
+  estado : String(20) [presente,ausente,tardanza,licencia]
+  observaciones : Text
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY Licencia {
+  +id : UUID [PK]
+  --
+  agente : UUID [FK]
+  fecha_inicio : Date
+  fecha_fin : Date
+  motivo : Text
+  observaciones : Text
+  estado : String(20) [pendiente,aprobada,rechazada,anulada]
+  tipo_licencia : UUID [FK]
+  con_goce_haberes : Boolean
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY Novedad {
+  +id : UUID [PK]
+  --
+  agente : UUID [FK]
+  fecha_inicio : Date
+  fecha_fin : Date
+  motivo : Text
+  observaciones : Text
+  estado : String(20) [pendiente,aprobada,rechazada,anulada]
+  tipo_novedad : String(20) [medica,familiar,capacitacion,otra]
+  requiere_justificativo : Boolean
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY Adjunto {
+  +id : UUID [PK]
+  --
+  content_type : UUID [FK]
+  object_id : UUID
+  archivo : FileField
+  nombre_original : String(255)
+  descripcion : String(255)
+  tamaño : BigInteger
+  tipo_archivo : String(100)
+  creado_en : DateTime
+  creado_por : UUID [FK]
+}
+
+ENTITY ParametrosControlHorario {
+  +id : UUID [PK]
+  --
+  area : UUID [FK]
+  ventana_entrada_inicio : Time
+  ventana_entrada_fin : Time
+  ventana_salida_inicio : Time
+  ventana_salida_fin : Time
+  tolerancia_entrada_min : Integer
+  tolerancia_salida_min : Integer
+  requiere_justificacion_fuera_ventana : Boolean
+  horas_trabajo_por_dia : Decimal(4,2)
+  vigente_desde : Date
+  vigente_hasta : Date
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+' ==== GUARDIAS APP ====
+ENTITY Feriado {
+  +id : UUID [PK]
+  --
+  fecha : Date [UNIQUE]
+  descripcion : String(255)
+  es_nacional : Boolean
+  es_provincial : Boolean
+  es_local : Boolean
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY ReglaPlus {
+  +id : UUID [PK]
+  --
+  nombre : String(100) [UNIQUE]
+  descripcion : Text
+  horas_minimas_diarias : Decimal(4,2)
+  horas_minimas_mensuales : Decimal(5,2)
+  aplica_areas_operativas : Boolean
+  aplica_areas_administrativas : Boolean
+  porcentaje_plus : Decimal(5,2)
+  vigente_desde : Date
+  vigente_hasta : Date
+  activa : Boolean
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY CronogramaGuardias {
+  +id : UUID [PK]
+  --
+  area : UUID [FK]
+  fecha : Date
+  hora_inicio : Time
+  hora_fin : Time
+  tipo : String(40)
+  estado : String(30) [generada,aprobada,rechazada,publicada]
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+  aprobado_por : UUID [FK]
+  aprobado_en : DateTime
+  creado_en : DateTime
+  actualizado_en : DateTime
+}
+
+ENTITY Guardia {
+  +id : UUID [PK]
+  --
+  cronograma : UUID [FK]
+  usuario : UUID [FK]
+  fecha : Date
+  hora_inicio : Time
+  hora_fin : Time
+  tipo : String(40)
+  activa : Boolean
+  estado : String(20) [borrador,aprobada,publicada,anulada]
+  horas_planificadas : Decimal(5,2)
+  horas_efectivas : Decimal(5,2)
+  observaciones : Text
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+  creado_en : DateTime
+  actualizado_en : DateTime
+}
+
+ENTITY HorasGuardias {
+  +id : UUID [PK]
+  --
+  agente : UUID [FK]
+  area : UUID [FK]
+  año : Integer
+  mes : Integer
+  horas_planificadas : Decimal(6,2)
+  horas_efectivas : Decimal(6,2)
+  guardias_totales : Integer
+  guardias_cumplidas : Integer
+  plus_aplicable : Boolean
+  porcentaje_plus : Decimal(5,2)
+  regla_plus_aplicada : UUID [FK]
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+ENTITY AsignacionPlus {
+  +id : UUID [PK]
+  --
+  agente : UUID [FK]
+  resumen_horas : UUID [FK]
+  regla_plus : UUID [FK]
+  porcentaje_aplicado : Decimal(5,2)
+  monto_base : Decimal(10,2)
+  monto_plus : Decimal(10,2)
+  estado : String(20) [calculado,aprobado,pagado,anulado]
+  observaciones : Text
+  creado_en : DateTime
+  actualizado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+' ==== AUDITORIA APP ====
+ENTITY Auditoria {
+  +id : UUID [PK]
+  --
+  nombre_tabla : String(255)
+  pk_afectada : String(255)
+  accion : String(20) [create,update,delete]
+  valor_previo : JSON
+  valor_nuevo : JSON
+  creado_en : DateTime
+  creado_por : UUID [FK]
+  actualizado_por : UUID [FK]
+}
+
+' ==== REPORTES APP ====
+ENTITY Reporte {
+  +id : UUID [PK]
+  --
+  tipo : String(20) [INDIVIDUAL,AREA,DIRECCION,CONSOLIDADO]
+  filtros : JSON
+  formato : String(10) [PDF,XLSX]
+  generado_por : UUID [FK]
+  generado_en : DateTime
+  ruta_archivo : FileField
+  estado : String(10) [LISTO,ERROR]
+  error : Text
+}
+
+ENTITY PlantillaCorreo {
+  +id : UUID [PK]
+  --
+  nombre : String(200) [UNIQUE]
+  asunto_tpl : String(500)
+  cuerpo_tpl : Text
+  variables : JSON
+  version : Integer
+  vigente_desde : Date
+  vigente_hasta : Date
+}
+
+ENTITY Notificacion {
+  +id : UUID [PK]
+  --
+  remitente : UUID [FK]
+  destinatario : UUID [FK]
+  asunto : String(500)
+  cuerpo : Text
+  medio : String(10) [EMAIL]
+  origen : String(10) [SISTEMA,USUARIO]
+  estado_envio : String(10) [PENDIENTE,ENVIADO,ERROR]
+  intentos : Integer
+  ultimo_intento_en : DateTime
+  error_mensaje : Text
+  plantilla : UUID [FK]
+  creado_en : DateTime
+}
+
+ENTITY EnvioLoteNotificaciones {
+  +id : UUID [PK]
+  --
+  cronograma : UUID [FK]
+  creado_en : DateTime
+  total : Integer
+  enviados : Integer
+  fallidos : Integer
+  estado : String(10) [PENDIENTE,PARCIAL,COMPLETO]
+}
+
+' ==== CONVENIO_IA APP ====
+ENTITY Convenio {
+  +id : UUID [PK]
+  --
+  version : String(50)
+  vigencia_desde : Date
+  vigencia_hasta : Date
+  archivo_ruta : FileField
+  hash : String(64)
+  estado : String(20) [VIGENTE,OBSOLETO]
+  creado_en : DateTime
+  actualizado_en : DateTime
+}
+
+ENTITY IndiceConvenio {
+  +id : UUID [PK]
+  --
+  convenio : UUID [FK] [UNIQUE]
+  metodo : String(20) [BM25,EMBEDDINGS]
+  hash_indice : String(64)
+  construido_en : DateTime
+  version_motor : String(50)
+}
+
+ENTITY ConsultaConvenio {
+  +id : UUID [PK]
+  --
+  usuario : UUID [FK]
+  pregunta : Text
+  respuesta : Text
+  citas : JSON
+  creado_en : DateTime
+}
+
+' ==== RELACIONES ====
+' Personas
+Usuario ||--o{ Usuario : "actualizado_por"
+Area ||--o{ Area : "area_padre"
+Usuario ||--|| Agente : "usuario"
+Agente ||--o{ Agente : "id_jefe"
+Rol ||--o{ PermisoRol : "rol"
+Permiso ||--o{ PermisoRol : "permiso"
+Usuario ||--o{ AgenteRol : "usuario"
+Rol ||--o{ AgenteRol : "rol"
+Area ||--o{ AgenteRol : "area"
+
+' Asistencia
+Agente ||--o{ Marca : "agente"
+Agente ||--o{ ParteDiario : "agente"
+Area ||--o{ ParteDiario : "area"
+TipoLicencia ||--o{ ParteDiario : "tipo_licencia"
+Agente ||--o{ Asistencia : "agente"
+Agente ||--o{ Licencia : "agente"
+TipoLicencia ||--o{ Licencia : "tipo_licencia"
+Agente ||--o{ Novedad : "agente"
+Area ||--o{ ParametrosControlHorario : "area"
+
+' Guardias
+Area ||--o{ CronogramaGuardias : "area"
+CronogramaGuardias ||--o{ Guardia : "cronograma"
+Usuario ||--o{ Guardia : "usuario"
+Usuario ||--o{ HorasGuardias : "agente"
+Area ||--o{ HorasGuardias : "area"
+ReglaPlus ||--o{ HorasGuardias : "regla_plus_aplicada"
+Usuario ||--o{ AsignacionPlus : "agente"
+HorasGuardias ||--o{ AsignacionPlus : "resumen_horas"
+ReglaPlus ||--o{ AsignacionPlus : "regla_plus"
+
+' Reportes
+Agente ||--o{ Reporte : "generado_por"
+Agente ||--o{ Notificacion : "remitente"
+Agente ||--o{ Notificacion : "destinatario"
+PlantillaCorreo ||--o{ Notificacion : "plantilla"
+CronogramaGuardias ||--o{ EnvioLoteNotificaciones : "cronograma"
+
+' Convenio IA
+Convenio ||--|| IndiceConvenio : "convenio"
+Agente ||--o{ ConsultaConvenio : "usuario"
+
+@enduml

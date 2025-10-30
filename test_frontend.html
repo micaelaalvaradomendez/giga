@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Frontend GIGA</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Test Frontend GIGA</h1>
+    <div id="results"></div>
+
+    <script>
+    async function testAPIs() {
+        const results = document.getElementById('results');
+        
+        try {
+            // Test 1: Login
+            results.innerHTML += '<h2>Test 1: Login Admin</h2>';
+            const loginResponse = await axios.post('http://localhost:8000/api/auth/login/', {
+                cuil: '20000000001',
+                password: '123456'
+            }, {
+                withCredentials: true
+            });
+            
+            if (loginResponse.data.success) {
+                results.innerHTML += '<p>✅ Login exitoso</p>';
+                
+                // Test 2: Obtener usuarios
+                results.innerHTML += '<h2>Test 2: Obtener Usuarios</h2>';
+                const usuariosResponse = await axios.get('http://localhost:8000/api/personas/usuarios/', {
+                    withCredentials: true
+                });
+                
+                results.innerHTML += `<p>✅ Usuarios obtenidos: ${usuariosResponse.data.count}</p>`;
+                
+                // Test 3: Obtener roles
+                results.innerHTML += '<h2>Test 3: Obtener Roles</h2>';
+                const rolesResponse = await axios.get('http://localhost:8000/api/personas/roles/', {
+                    withCredentials: true
+                });
+                
+                results.innerHTML += `<p>✅ Roles obtenidos: ${rolesResponse.data.count || rolesResponse.data.results?.length || 0}</p>`;
+                
+                // Test 4: Obtener agentes
+                results.innerHTML += '<h2>Test 4: Obtener Agentes</h2>';
+                const agentesResponse = await axios.get('http://localhost:8000/api/personas/agentes/', {
+                    withCredentials: true
+                });
+                
+                results.innerHTML += `<p>✅ Agentes obtenidos: ${agentesResponse.data.count || agentesResponse.data.results?.length || 0}</p>`;
+                
+            } else {
+                results.innerHTML += '<p>❌ Login falló</p>';
+            }
+            
+        } catch (error) {
+            results.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+            console.error(error);
+        }
+    }
+    
+    // Test de recuperar contraseña
+    async function testRecoverPassword() {
+        try {
+            results.innerHTML += '<h2>Test: Recuperar Contraseña</h2>';
+            const response = await axios.post('http://localhost:8000/api/auth/recover-password/', {
+                cuil: '27123456784'  // CUIL de Tayra
+            });
+            
+            if (response.data.success) {
+                results.innerHTML += '<p>✅ Recuperación de contraseña exitosa</p>';
+                results.innerHTML += `<p>Email: ${response.data.email}</p>`;
+            } else {
+                results.innerHTML += '<p>❌ Recuperación de contraseña falló</p>';
+            }
+        } catch (error) {
+            results.innerHTML += `<p>❌ Error en recuperar contraseña: ${error.message}</p>`;
+        }
+    }
+    
+    // Ejecutar tests
+    testAPIs();
+    testRecoverPassword();
+    </script>
+</body>
+</html>

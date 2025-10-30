@@ -1,0 +1,72 @@
+# Docker Compose para la Base de Datos PostgreSQL
+# Servicio independiente de base de datos para GIGA
+
+version: "3.9"
+
+services:
+  # Base de datos PostgreSQL aislada
+  giga-db:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: giga_database
+    restart: unless-stopped
+    environment:
+      # Configuración de la base de datos
+      POSTGRES_DB: ${DB_NAME:-giga}
+      POSTGRES_USER: ${DB_USER:-giga_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-giga_pass}
+      
+      # Configuración de timezone
+      TZ: America/Argentina/Buenos_Aires
+      PGTZ: America/Argentina/Buenos_Aires
+      
+      # Configuraciones adicionales
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=es_AR.UTF-8"
+      
+    ports:
+      # Puerto expuesto para conexiones externas
+      - "${DB_PORT:-5432}:5432"
+      
+    volumes:
+      # Persistencia de datos
+      - giga_db_data:/var/lib/postgresql/data
+      
+      # Scripts de inicialización
+      - ./init:/docker-entrypoint-initdb.d:ro
+      
+      # Configuraciones personalizadas
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      
+      # Logs
+      - giga_db_logs:/var/log/postgresql
+      
+    networks:
+      - giga_network
+      
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+      
+    # Configuración de recursos
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+networks:
+  giga_network:
+    driver: bridge
+    name: giga_network
+
+volumes:
+  giga_db_data:
+    name: giga_db_data
+  giga_db_logs:
+    name: giga_db_logs

@@ -1,11 +1,21 @@
 import axios from 'axios';
 import { browser } from '$app/environment';
 
-// Cuando el código se ejecuta en el servidor (dentro de Docker), usamos el nombre del servicio 'back'.
-// Cuando se ejecuta en el navegador del cliente, usamos la URL pública 'localhost'.
-const API_BASE_URL = browser
-	? import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-	: 'http://back:8000/api';
+// Configuración de API que funciona tanto en desarrollo como en producción
+const getApiBaseUrl = () => {
+	// En el navegador (cliente)
+	if (browser) {
+		// Usar la variable de entorno o el valor por defecto
+		return import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
+	}
+	
+	// En el servidor (SSR)
+	// En Docker (tanto dev como prod): usar el nombre del servicio del contenedor
+	// El frontend está en un contenedor y necesita hablar con el backend usando nombres de Docker
+	return 'http://backend:8000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Crea una instancia de Axios configurada.
