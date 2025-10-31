@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third party apps
     'rest_framework',
+    'drf_spectacular',
     'corsheaders',
     # Core components
     'core',
@@ -61,11 +62,24 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20
 }
 
+<<<<<<< HEAD
 # Configuración de CORS - Compatible con desarrollo y producción
+=======
+# drf-spectacular (OpenAPI/Swagger)
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'GIGA API',
+    'DESCRIPTION': 'Documentación de endpoints del sistema GIGA',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# Configuración de CORS
+>>>>>>> origin/feat/planificadorGuardias
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",       # Frontend desarrollo directo
     "http://127.0.0.1:5173",       # Frontend desarrollo directo

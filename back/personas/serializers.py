@@ -4,7 +4,11 @@ Usando serializers base y eliminando duplicaciones
 """
 from core.serializers import BaseSerializer, PersonaBaseSerializer, CatalogoSerializer
 from rest_framework import serializers
+<<<<<<< HEAD
 from .models import Agente, Area, Rol, Usuario, AgenteRol
+=======
+from .models import Agente, Area, Rol, AgenteRol
+>>>>>>> origin/feat/planificadorGuardias
 
 
 class UsuarioSerializer(BaseSerializer):
@@ -45,12 +49,15 @@ class AgenteSerializer(PersonaBaseSerializer):
     """
     Serializador   para el modelo Agente
     """
+<<<<<<< HEAD
     usuario_email = serializers.EmailField(source='usuario.email', read_only=True)
     categoria_display = serializers.CharField(source='get_categoria_revista_display', read_only=True)
     agrupacion_display = serializers.CharField(source='get_agrupacion_display', read_only=True)
     direccion = serializers.SerializerMethodField()
     roles = serializers.SerializerMethodField()
     
+=======
+>>>>>>> origin/feat/planificadorGuardias
     class Meta:
         model = Agente
         fields = '__all__'
@@ -95,6 +102,7 @@ class RolSerializer(BaseSerializer):
         return obj.agenterol_set.count()
 
 
+<<<<<<< HEAD
 class AsignacionRolSerializer(BaseSerializer):
     """
     Serializador   para asignaciones de roles
@@ -107,3 +115,48 @@ class AsignacionRolSerializer(BaseSerializer):
         model = AgenteRol
         fields = ['id', 'usuario', 'rol', 'area', 'asignado_en', 
                  'usuario_nombre', 'rol_nombre', 'area_nombre']
+=======
+class SubordinadoSerializer(serializers.ModelSerializer):
+    """
+    Serializador simplificado para listar subordinados de un jefe.
+    Incluye usuario_id, nombre completo y las áreas asignadas vía AgenteRol.
+    """
+    usuario_id = serializers.UUIDField(source='usuario.id', read_only=True)
+    nombre_completo = serializers.SerializerMethodField()
+    areas = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Agente
+        fields = [
+            'id', 'usuario_id', 'apellido', 'nombre', 'nombre_completo',
+            'dni', 'email', 'legajo', 'es_jefe', 'categoria_revista', 'areas'
+        ]
+
+    def get_nombre_completo(self, obj):
+        return f"{obj.apellido}, {obj.nombre}"
+
+    def get_areas(self, obj):
+        asignaciones = AgenteRol.objects.filter(usuario=obj.usuario).select_related('area')
+        return [
+            {
+                'id': str(asig.area.id),
+                'nombre': asig.area.nombre,
+            }
+            for asig in asignaciones if asig.area is not None
+        ]
+
+
+# FALTA MODELO CuentaAcceso
+# class CuentaAccesoSerializer(serializers.ModelSerializer):
+#     """
+#     Serializador para el modelo CuentaAcceso
+#     """
+#     agente_nombre = serializers.CharField(source='agente.nombre_completo', read_only=True)
+#     
+#     class Meta:
+#         model = CuentaAcceso
+#         fields = '__all__'
+#         extra_kwargs = {
+#             'password': {'write_only': True}
+#         }
+>>>>>>> origin/feat/planificadorGuardias

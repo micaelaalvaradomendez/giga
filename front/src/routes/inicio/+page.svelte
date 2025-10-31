@@ -1,9 +1,18 @@
 <script>
+<<<<<<< HEAD
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
     import AuthService from "../../lib/login/authService.js";
     import CalendarioBase from "../../lib/componentes/calendarioBase.svelte";
 
+=======
+    import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
+    import AuthService from '../../lib/login/authService.js';
+    import EditarPerfil from '../../lib/components/EditarPerfil.svelte';
+    import CambioContrasenaObligatorio from '../../lib/components/CambioContrasenaObligatorio.svelte';
+    
+>>>>>>> origin/feat/planificadorGuardias
     let user = null;
     let isLoading = true;
     let errorMessage = "";

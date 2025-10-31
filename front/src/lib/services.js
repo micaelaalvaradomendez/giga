@@ -45,6 +45,7 @@ export const personasService = {
   deleteArea: (id, token = null) => createApiClient(token).delete(`/personas/areas/${id}/`),
 
   // Roles
+<<<<<<< HEAD
   getRoles: (token = null) => createApiClient(token).get('/personas/roles/'),
   getRol: (id, token = null) => createApiClient(token).get(`/personas/roles/${id}/`),
   createRol: (data, token = null) => createApiClient(token).post('/personas/roles/', data),
@@ -55,6 +56,19 @@ export const personasService = {
   getAsignaciones: (token = null) => createApiClient(token).get('/personas/asignaciones/'),
   createAsignacion: (data, token = null) => createApiClient(token).post('/personas/asignaciones/', data),
   deleteAsignacion: (id, token = null) => createApiClient(token).delete(`/personas/asignaciones/${id}/`),
+=======
+  getRoles: () => api.get('/personas/roles/'),
+  getRol: (id) => api.get(`/personas/roles/${id}/`),
+  createRol: (data) => api.post('/personas/roles/', data),
+  updateRol: (id, data) => api.put(`/personas/roles/${id}/`, data),
+  deleteRol: (id) => api.delete(`/personas/roles/${id}/`),
+  
+  // Subordinados del usuario autenticado
+  getSubordinados: (areaId = null) => {
+    const qs = areaId ? `?area_id=${encodeURIComponent(areaId)}` : '';
+    return api.get(`/personas/subordinados/${qs}`);
+  },
+>>>>>>> origin/feat/planificadorGuardias
 };
 
 // SERVICIOS PARA ASISTENCIA
@@ -89,6 +103,7 @@ export const guardiasService = {
   getCronograma: (id) => api.get(`/guardias/cronogramas/${id}/`),
   createCronograma: (data) => api.post('/guardias/cronogramas/', data),
   updateCronograma: (id, data) => api.put(`/guardias/cronogramas/${id}/`, data),
+  planificar: (payload) => api.post('/guardias/cronogramas/planificar/', payload),
 
   // Guardias
   getGuardias: () => api.get('/guardias/guardias/'),

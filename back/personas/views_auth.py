@@ -1,4 +1,4 @@
-from rest_framework import status
+from rest_framework import status, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -13,7 +13,9 @@ from django.db import transaction
 from auditoria.models import Auditoria
 from .models import Usuario, Agente, AgenteRol
 import json
+from drf_spectacular.utils import extend_schema, OpenApiExample
 
+<<<<<<< HEAD
 # ============ FUNCIONES AUXILIARES ============
 
 def clean_cuil(cuil_input):
@@ -105,6 +107,58 @@ def mask_email(email):
 # ============ ENDPOINTS API ============
 
 @api_view(['POST', 'OPTIONS'])
+=======
+
+class UserSummarySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    username = serializers.CharField()
+    email = serializers.EmailField()
+    first_name = serializers.CharField(allow_blank=True)
+    last_name = serializers.CharField(allow_blank=True)
+    cuil = serializers.CharField(allow_blank=True, allow_null=True)
+    rol_principal = serializers.CharField()
+    roles = serializers.ListField(child=serializers.CharField())
+    nombre_completo = serializers.CharField()
+    password_reset = serializers.BooleanField()
+
+
+class LoginRequestSerializer(serializers.Serializer):
+    cuil = serializers.CharField(help_text="CUIL sin guiones (11 dígitos)")
+    password = serializers.CharField()
+
+
+class LoginSuccessResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField()
+    requires_password_change = serializers.BooleanField()
+    password_reset_reason = serializers.CharField(allow_null=True, allow_blank=True)
+    user = UserSummarySerializer()
+
+
+class ErrorResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=False)
+    message = serializers.CharField()
+
+@extend_schema(
+    request=LoginRequestSerializer,
+    responses={
+        200: LoginSuccessResponseSerializer,
+        400: ErrorResponseSerializer,
+        401: ErrorResponseSerializer,
+        500: ErrorResponseSerializer,
+    },
+    examples=[
+        OpenApiExample(
+            'Login OK',
+            request_only=True,
+            value={'cuil': '20123456789', 'password': 'Secreta123'},
+        )
+    ],
+    description='Inicia sesión por CUIL y contraseña. Crea cookie de sesión para usar en el resto de la API.'
+)
+@csrf_exempt
+@api_view(['POST'])
+>>>>>>> origin/feat/planificadorGuardias
 @permission_classes([AllowAny])
 def login_view(request):
     """
