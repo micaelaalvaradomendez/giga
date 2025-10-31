@@ -4,11 +4,7 @@
 	import Menu from "$lib/componentes/menu.svelte";
 	import "$lib/componentes/componentes.css";
 	import { onMount } from "svelte";
-	import AuthService, {
-		isAuthenticated as authStore,
-		user as userStore,
-	} from "$lib/login/authService.js";
-
+	import { AuthService } from "$lib/login/authService.js";
 	let isMenuOpen = false;
 
 	onMount(async () => {
