@@ -1,0 +1,33 @@
+# Django Backend - GIGA Project
+# Requirements para el backend Django que se conecta a PostgreSQL externa
+
+# Django Framework
+Django==4.2.7
+djangorestframework==3.14.0
+
+# Database
+psycopg2-binary==2.9.7
+
+# Environment Variables
+python-decouple==3.8
+
+# CORS (para conectar con frontend)
+django-cors-headers==4.3.1
+
+# Development Tools
+django-extensions==3.2.3
+
+# Production Server
+gunicorn==21.2.0
+
+# Security & Auth
+django-allauth==0.57.0
+PyJWT==2.8.0
+
+# Utils
+Pillow==10.1.0
+requests==2.31.0
+
+# Linting & Code Quality (development)
+flake8==6.1.0
+black==23.10.1

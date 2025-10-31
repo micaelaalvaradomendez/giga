@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: giga-nginx
+    ports:
+      - "80:80"         # Puerto principal para la aplicación
+      - "8080:8080"     # Puerto de monitoreo
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - giga-network
+    volumes:
+      - ./logs:/var/log/nginx/giga
+    environment:
+      - NGINX_WORKER_PROCESSES=auto
+      - NGINX_WORKER_CONNECTIONS=1024
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Servicio frontend (referencia externa)
+  frontend:
+    image: giga-frontend:latest
+    container_name: giga-frontend
+    expose:
+      - "3000"
+    networks:
+      - giga-network
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
+
+  # Servicio backend (referencia externa)
+  backend:
+    image: giga-django:latest
+    container_name: giga-django
+    expose:
+      - "8000"
+    networks:
+      - giga-network
+    environment:
+      - DJANGO_SETTINGS_MODULE=giga.settings
+    restart: unless-stopped
+
+networks:
+  giga-network:
+    external: true
+    name: giga-network
+
+volumes:
+  nginx_logs:
+    driver: local
