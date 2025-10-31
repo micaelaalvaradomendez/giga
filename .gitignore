@@ -217,9 +217,13 @@ back/staticfiles/
 # Secret keys
 secret_key.txt
 
-# PostgreSQL dumps
+# PostgreSQL dumps (pero NO los scripts de inicialización)
 *.sql
 *.dump
+
+# Excepciones: mantener scripts de inicialización de BD
+!bd/init-scripts/*.sql
+!*/init-scripts/*.sql
 
 # Node modules (if using npm/yarn for frontend)
 node_modules/
@@ -254,8 +258,13 @@ docs/_build/
 # PROYECTO GIGA - CONFIGURACIONES ESPECÍFICAS
 # ====================================
 
-# Docker
-.dockerignore
+# Docker (mantener los .dockerignore del proyecto)
+# .dockerignore
+
+# Mantener .dockerignore del proyecto
+!.dockerignore
+!front/.dockerignore
+!back/.dockerignore
 
 # Scripts personalizados que no deben subirse
 *-local.sh
@@ -310,3 +319,28 @@ logs/
 !README.md
 !documentacion/
 !docs/
+
+# ====================================
+# FRONTEND SVELTE - CONFIGURACIONES
+# ====================================
+
+# Svelte build artifacts
+.svelte-kit/
+build/
+dist/
+
+# Pero mantener archivos de configuración de Svelte
+!svelte.config.js
+!vite.config.js
+!front/svelte.config.js
+!front/vite.config.js
+
+# Mantener archivos fuente de Svelte
+!front/src/
+!src/
+
+# Mantener archivos de componentes importantes
+!front/src/lib/
+!front/src/routes/
+!front/src/app.html
+!front/src/app.d.ts
