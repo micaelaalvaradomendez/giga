@@ -55,37 +55,37 @@ BEGIN
     
     -- Insertar agentes reales adaptados a la estructura actual
     INSERT INTO agente (
-        legajo, nombre, apellido, email, dni, password_hash, telefono, 
+        legajo, nombre, apellido, email, dni, cuil, password_hash, telefono, 
         fecha_nacimiento, provincia, ciudad, calle, numero, 
         agrupacion, activo, id_area
     ) VALUES 
         ('001', 'Tayra', 'Aguila', 'tayra.aguila@proteccioncivil.tdf.gov.ar', 
-         '12345678', 'pbkdf2_sha256$1000000$TDYqnUwElaDks7JCXRHmjZ$DognNfhfOXm6tCZJ/BRJrez+cteBVqiH1DIal5dMeiU=', 
+         '12345678', '27123456784','pbkdf2_sha256$1000000$TDYqnUwElaDks7JCXRHmjZ$DognNfhfOXm6tCZJ/BRJrez+cteBVqiH1DIal5dMeiU=', 
          '2964123456', '1990-01-15', 'Tierra del Fuego', 'Ushuaia', 'San Martín', '123', 
          'EPU', true, area_id),
         
         ('002', 'Micaela', 'Alvarado', 'micaela.alvarado@proteccioncivil.tdf.gov.ar', 
-         '23456789', 'pbkdf2_sha256$1000000$9ZD1gGhiDBST9A5HUZQsd9$8owfKPCKi7nRbvvZGfSARgBZoLDmX0bfh5Bwf92SryE=', 
+         '23456789', '27234567894','pbkdf2_sha256$1000000$9ZD1gGhiDBST9A5HUZQsd9$8owfKPCKi7nRbvvZGfSARgBZoLDmX0bfh5Bwf92SryE=', 
          '2964234567', '1985-03-22', 'Tierra del Fuego', 'Ushuaia', 'Belgrano', '456', 
          'EPU', true, area_id),
          
         ('003', 'Cristian', 'Garcia', 'cristian.garcia@proteccioncivil.tdf.gov.ar', 
-         '34567890', 'pbkdf2_sha256$1000000$3MNefVZa2AIQDYGyaSLQcT$EtkU+jh7MbxVbQhQj73YuWu+qQhRVCsCwIJKyd6dtXc=', 
+         '34567890', '27345678904','pbkdf2_sha256$1000000$3MNefVZa2AIQDYGyaSLQcT$EtkU+jh7MbxVbQhQj73YuWu+qQhRVCsCwIJKyd6dtXc=', 
          '2964345678', '1988-07-10', 'Tierra del Fuego', 'Ushuaia', 'Rivadavia', '789', 
          'POMYS', true, area_id),
          
         ('004', 'Leandro', 'Gomez', 'leandro.gomez@proteccioncivil.tdf.gov.ar', 
-         '45678901', 'pbkdf2_sha256$1000000$P8Buwpis9Cm8HLGxW0ndoX$qJxR0ex+s9TPGy76d2OsOf2uPKMz3Wk1NYSppuhdr1I=', 
+         '45678901', '27456789014','pbkdf2_sha256$1000000$P8Buwpis9Cm8HLGxW0ndoX$qJxR0ex+s9TPGy76d2OsOf2uPKMz3Wk1NYSppuhdr1I=', 
          '2964456789', '1992-11-05', 'Tierra del Fuego', 'Ushuaia', 'Maipú', '321', 
          'PAYT', true, area_id),
          
         ('005', 'Teresa', 'Criniti', 'teresa.criniti@proteccioncivil.tdf.gov.ar', 
-         '56789012', 'pbkdf2_sha256$1000000$cY78hNwJKXCLijREgLFggk$AkHqFVGitqHl/orwTLr74pqEeU+JN2kAAJk7r0TsN7k=', 
+         '56789012','27567890124', 'pbkdf2_sha256$1000000$cY78hNwJKXCLijREgLFggk$AkHqFVGitqHl/orwTLr74pqEeU+JN2kAAJk7r0TsN7k=', 
          '2964567890', '1980-09-18', 'Tierra del Fuego', 'Ushuaia', 'Yaganes', '654', 
          'EPU', true, area_id),
          
         ('006', 'Pamela', 'Frers', 'pamela.frers@proteccioncivil.tdf.gov.ar', 
-         '67890123', 'pbkdf2_sha256$1000000$PR3R1yPZeUhy1a1oY3Vj0W$WxsEWCjKX8nEMFmJ7wBsUXZkRFrvox0x4UBoc/b0BAk=', 
+         '67890123', '27678901234', 'pbkdf2_sha256$1000000$PR3R1yPZeUhy1a1oY3Vj0W$WxsEWCjKX8nEMFmJ7wBsUXZkRFrvox0x4UBoc/b0BAk=', 
          '2964678901', '1995-12-30', 'Tierra del Fuego', 'Ushuaia', 'Onashaga', '987', 
          'POMYS', true, area_id)
     ON CONFLICT (legajo) DO NOTHING;

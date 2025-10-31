@@ -26,8 +26,20 @@ cd giga
 # Linux/macOS
 ./giga-system.sh dev
 
-# Windows (Git Bash/WSL)
-bash giga-system.sh dev
+# Windows (PowerShell)
+.\giga-system.ps1 dev
+
+# Windows (CMD)
+giga-system.bat dev
+```
+
+### Opción 2: Command Prompt (CMD)
+```cmd
+# Navegar al directorio del proyecto
+cd C:\ruta\a\tu\proyecto\giga
+
+# Ejecutar el script
+giga-system.bat dev
 ```
 
 #### Opción B: Docker Compose Manual
@@ -132,7 +144,7 @@ Credenciales para acceder a los servicios adicionales en el entorno de desarroll
 
 ## 🛠️ Comandos de Gestión
 
-### Script Principal (`giga-system.sh`)
+### Script Principal Linux (`giga-system.sh`)
 
 ```bash
 # Desarrollo completo
@@ -162,6 +174,25 @@ Credenciales para acceder a los servicios adicionales en el entorno de desarroll
 # Desarrollo
 ./giga-system.sh shell-backend     # Shell Django
 ./giga-system.sh shell-frontend    # Shell Svelte
+```
+### Script Principal windows (`giga-system.sh`)
+
+```bash
+# Desarrollo completo
+.\giga-system.ps1 dev
+
+# Ver logs específicos
+.\giga-system.ps1 logs backend
+.\giga-system.ps1 logs postgres
+
+# Gestión básica
+.\giga-system.ps1 start
+.\giga-system.ps1 stop
+.\giga-system.ps1 status
+
+# Base de datos
+.\giga-system.ps1 migrate
+.\giga-system.ps1 db-shell
 ```
 
 ### Docker Compose Directo

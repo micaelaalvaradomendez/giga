@@ -36,12 +36,12 @@ services:
     container_name: giga-pgadmin
     restart: unless-stopped
     environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@giga.local
+      - PGADMIN_DEFAULT_EMAIL=admin@giga.dev
       - PGADMIN_DEFAULT_PASSWORD=admin2025
       - PGADMIN_CONFIG_SERVER_MODE=False
       - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
     ports:
-      - "8080:80"
+      - "8081:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
@@ -60,5 +60,4 @@ volumes:
 
 networks:
   giga-network:
-    driver: bridge
-    external: false
+    external: true

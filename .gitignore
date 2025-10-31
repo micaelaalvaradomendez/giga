@@ -1,1 +1,251 @@
+# ========================================
+# GIGA PROJECT - Complete .gitignore
+# ========================================
 
+# ========================================
+# DOCKER & CONTAINERS
+# ========================================
+# Docker volumes y datos persistentes
+**/postgres_data/
+**/pgadmin_data/
+**/static_volume/
+**/media_volume/
+**/frontend_node_modules/
+
+# Docker Compose override files (configuraciones locales)
+docker-compose.override.yml
+docker-compose.local.yml
+**/docker-compose.override.yml
+**/docker-compose.local.yml
+
+# Archivos de entorno Docker
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+**/.env
+**/.env.*
+
+# ========================================
+# BASE DE DATOS
+# ========================================
+# Archivos de configuración de PostgreSQL que pueden variar por entorno
+postgresql.conf.local
+pg_hba.conf.local
+**/postgresql.conf.local
+**/pg_hba.conf.local
+
+# Backups de base de datos
+*.sql
+*.backup
+*.dump
+backups/
+**/backups/
+
+# Logs de base de datos
+pg_log/
+**/pg_log/
+
+# ========================================
+# DJANGO (BACKEND)
+# ========================================
+# Settings locales
+back/giga/settings_local.py
+back/giga/local_settings.py
+**/settings_local.py
+**/local_settings.py
+
+
+# Media files (uploads, archivos generados)
+back/media/
+back/staticfiles/
+**/media/
+**/staticfiles/
+
+# Logs de Django
+back/logs/
+**/logs/
+*.log
+
+# Cache de Python
+__pycache__/
+*.py[cod]
+*args*
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+
+# ========================================
+# SVELTE/NODE.JS (FRONTEND)
+# ========================================
+
+# Package manager lockfiles (pueden causar conflictos)
+package-lock.json
+yarn.lock
+# Mantener pnpm-lock.yaml pero ignorar si hay conflictos
+# pnpm-lock.yaml
+
+# Logs de npm/yarn/pnpm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory usado por herramientas como istanbul
+coverage/
+*.lcov
+
+# Archivos de configuración específicos del entorno
+front/.env
+front/.env.local
+front/.env.development.local
+front/.env.test.local
+front/.env.production.local
+
+# ========================================
+# ARCHIVOS DEL SISTEMA
+# ========================================
+# MacOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Linux
+*~
+.directory
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ========================================
+# HERRAMIENTAS DE DESARROLLO
+# ========================================
+# VS Code settings (mantener configuración de workspace pero no personal)
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# PyCharm
+.idea/
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ========================================
+# ARCHIVOS TEMPORALES Y CACHE
+# ========================================
+# Archivos temporales generales
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Cache de aplicaciones
+.cache/
+cache/
+
+# ========================================
+# CONFIGURACIONES LOCALES ESPECÍFICAS
+# ========================================
+# Archivos de configuración que pueden variar por máquina
+config/local/
+**/config/local/
+*.local.json
+*.local.yml
+*.local.yaml
+
+# Scripts personalizados que no deben ser compartidos
+scripts/local/
+**/scripts/local/
+*local*
+
+# ========================================
+# ARCHIVOS DE BACKUP Y TESTING
+# ========================================
+
+# Archivos de test que no deben commitearse
+test-results/
+coverage-reports/
+*.test.local.*
+
+# ========================================
+# SECRETS Y CREDENCIALES
+# ========================================
+# Nunca committear secrets
+secrets/
+**/secrets/
+*.secret
+credentials/
+**/credentials/
+keys/
+**/keys/
+
+# Archivos de configuración con credenciales
+config.json
+**/config.json
+auth.json
+**/auth.json
+
+# ========================================
+# PROYECTO ESPECÍFICO GIGA
+# ========================================
+# Archivos específicos de tu proyecto que pueden causar conflictos
+
+# Configuraciones de Azure/Docker específicas del entorno
+.azure/
+azure-config.json
+
+# Archivos de migración temporal
+migrations/temp/
+**/migrations/temp/
+
+# Datos de prueba que no deben estar en producción
+fixtures/local/
+**/fixtures/local/
+
+# Configuraciones de desarrollo local
+giga-system.local.sh
+db-utils.local.sh
+**/giga-system.local.sh
+**/db-utils.local.sh

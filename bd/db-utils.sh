@@ -163,9 +163,9 @@ reset_database() {
 # Función para iniciar PgAdmin
 start_admin() {
     echo -e "${BLUE}🎛️  Iniciando PgAdmin...${NC}"
-    docker-compose --profile admin up -d pgadmin
-    echo -e "${GREEN}✅ PgAdmin disponible en: http://localhost:8080${NC}"
-    echo -e "${YELLOW}📧 Usuario: admin@giga.local${NC}"
+    docker-compose --profile admin up -d --no-deps pgadmin
+    echo -e "${GREEN}✅ PgAdmin disponible en: http://localhost:8081${NC}"
+    echo -e "${YELLOW}📧 Usuario: admin@giga.dev${NC}"
     echo -e "${YELLOW}🔑 Contraseña: admin2025${NC}"
 }
 
