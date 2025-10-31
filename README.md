@@ -110,6 +110,26 @@ El sistema usa **CUIL + DNI** para autenticación:
 | Teresa Criniti | `27567890124` | `56789012` | Agente Avanzado |
 | Pamela Frers | `27678901234` | `67890123` | Agente |
 
+## 🛠️ **Credenciales de Servicios de Desarrollo**
+
+Credenciales para acceder a los servicios adicionales en el entorno de desarrollo local. **No usar en producción.**
+
+### MinIO (Almacenamiento de Objetos)
+
+- **URL:** `http://localhost:9090`
+- **Usuario:** `giga-user`
+- **Contraseña:** `giga-password-change-me`
+
+### n8n (Motor de Automatización)
+
+- **URL:** `http://localhost:5678`
+- **Nota:** La autenticación está deshabilitada por defecto en el entorno de desarrollo. No es necesario iniciar sesión.
+- **Datos de la cuenta 'owner' (si se reactiva la autenticación):**
+  - **Nombre:** `Admin`
+  - **Apellido:** `Giga`
+  - **Email:** `admin@giga.com`
+  - **Contraseña:** `Admin123`
+
 ## 🛠️ Comandos de Gestión
 
 ### Script Principal (`giga-system.sh`)

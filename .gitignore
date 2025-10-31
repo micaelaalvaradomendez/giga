@@ -127,6 +127,7 @@ celerybeat.pid
 
 # Environments
 .env
+minio.env
 .venv
 env/
 venv/
@@ -282,6 +283,10 @@ local_settings.py
 # Logs específicos del proyecto
 logs/
 *.log
+
+# Volúmenes de Docker
+minio_data/
+n8n_data/
 
 # ====================================
 # MANTENER ESTOS ARCHIVOS IMPORTANTES
