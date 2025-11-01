@@ -19,6 +19,8 @@ docker exec -it giga-minio /bin/bash
 mc alias set myminio http://localhost:9000 giga-user giga-password-change-me
 mc admin user add local-minio n8n-user n8n12345
 mc admin policy attach local-minio full-access --user n8n-user
+mc anonymous set public myminio/convenio
+mc anonymous set download myminio/convenio
 mc ls myminio
 mc ls myminio/convenio
 
