@@ -1,0 +1,25 @@
+USUARIOS
+
+MINIO USUARIO
+
+Usuario: giga-user
+Contraseña: giga-password-change-me
+
+
+N8N USUARIO
+
+Nombre: Admin
+Apellido: Giga
+Email: admin@giga.com
+Contraseña: Admin123
+
+para poder ver el n8n se debe:
+    - se debe ingresar a n8n 
+    - luego se crea un workflow
+    - se importa el archivo My workflow.json
+    - ingresar al LLM y ingresar la api key (se puede crear en https://aistudio.google.com/api-keys)
+
+importante!!!
+ingresar a minio y:
+    - crear bucket llamado 'convenio'
+    - subir el archivo del convenio (RES MTYE N°425-2022 (1).docx)
