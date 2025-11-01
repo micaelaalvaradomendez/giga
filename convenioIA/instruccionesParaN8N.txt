@@ -13,13 +13,39 @@ Apellido: Giga
 Email: admin@giga.com
 Contraseña: Admin123
 
+EJECUTAR SI O SI
+ENTRAR AL BASH
+docker exec -it giga-minio /bin/bash
+mc alias set myminio http://localhost:9000 giga-user giga-password-change-me
+mc admin user add local-minio n8n-user n8n12345
+mc admin policy attach local-minio full-access --user n8n-user
+mc ls myminio
+mc ls myminio/convenio
+
 para poder ver el n8n se debe:
     - se debe ingresar a n8n 
     - luego se crea un workflow
     - se importa el archivo My workflow.json
+    -en custom auth se debe crear credencial va a pedir un JSON se pone:
+            {
+            "access_key": "n8n-user",
+            "secret_key": "n8n12345",
+            "region": "us-east-1",
+            "service": "s3"
+            }
     - ingresar al LLM y ingresar la api key (se puede crear en https://aistudio.google.com/api-keys)
 
 importante!!!
 ingresar a minio y:
     - crear bucket llamado 'convenio'
     - subir el archivo del convenio (RES MTYE N°425-2022 (1).docx)
+
+
+para ver de forma local:
+    - instalar extension thunder client
+    - abrir extension
+    - hacer new request
+    - cambiar get a POST
+    - ingresar la url (http://localhost:5678/webhook-test/3ebdf75e-f0e2-4d18-b070-498f1486d845)
+    - en body se puede consultar como json 
+    - se activa el test en n8n y luego se envia desde vs
