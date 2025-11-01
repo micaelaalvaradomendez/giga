@@ -19,9 +19,5 @@ urlpatterns = create_standard_urls(app_name, [
     ('guardias', GuardiaViewSet, 'guardia'),
     ('cuadros', CuadroGuardiaViewSet, 'cuadro'),
     ('asignaciones', AsignacionGuardiaViewSet, 'asignacion'),
+    ('planificar', PlanificarCronogramaView, 'planificar'),
 ])
-
-urlpatterns += [
-    path('cronogramas/planificar/', PlanificarCronogramaView.as_view(), name='cronogramas_planificar'),
-]
-

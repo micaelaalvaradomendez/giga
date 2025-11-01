@@ -185,9 +185,7 @@ class AsignacionGuardiaViewSet(GIGABaseViewSet):
         }, status=status.HTTP_201_CREATED)
     
 
-class PlanificarCronogramaView(APIView):
-    permission_classes = [IsAuthenticated]
-
+class PlanificarCronogramaView(GIGABaseViewSet):
     @extend_schema(
         description='Crea un cronograma y guardias en estado borrador para aprobación posterior.',
         request={
