@@ -38,37 +38,29 @@ export const personasService = {
 	},
 
   // Áreas
-  getAreas: (token = null) => createApiClient(token).get('/personas/areas/'),
-  getArea: (id, token = null) => createApiClient(token).get(`/personas/areas/${id}/`),
-  createArea: (data, token = null) => createApiClient(token).post('/personas/areas/', data),
-  updateArea: (id, data, token = null) => createApiClient(token).patch(`/personas/areas/${id}/`, data),
-  deleteArea: (id, token = null) => createApiClient(token).delete(`/personas/areas/${id}/`),
+  getAreas: () => createApiClient().get('/personas/areas/'),
+  getArea: (id) => createApiClient().get(`/personas/areas/${id}/`),
+  createArea: (data) => createApiClient().post('/personas/areas/', data),
+  updateArea: (id, data) => createApiClient().patch(`/personas/areas/${id}/`, data),
+  deleteArea: (id) => createApiClient().delete(`/personas/areas/${id}/`),
 
   // Roles
-<<<<<<< HEAD
-  getRoles: (token = null) => createApiClient(token).get('/personas/roles/'),
-  getRol: (id, token = null) => createApiClient(token).get(`/personas/roles/${id}/`),
-  createRol: (data, token = null) => createApiClient(token).post('/personas/roles/', data),
-  updateRol: (id, data, token = null) => createApiClient(token).patch(`/personas/roles/${id}/`, data),
-  deleteRol: (id, token = null) => createApiClient(token).delete(`/personas/roles/${id}/`),
+  getRoles: () => createApiClient().get('/personas/roles/'),
+  getRol: (id) => createApiClient().get(`/personas/roles/${id}/`),
+  createRol: (data) => createApiClient().post('/personas/roles/', data),
+  updateRol: (id, data) => createApiClient().patch(`/personas/roles/${id}/`, data),
+  deleteRol: (id) => createApiClient().delete(`/personas/roles/${id}/`),
 
   // Asignaciones de roles
-  getAsignaciones: (token = null) => createApiClient(token).get('/personas/asignaciones/'),
-  createAsignacion: (data, token = null) => createApiClient(token).post('/personas/asignaciones/', data),
-  deleteAsignacion: (id, token = null) => createApiClient(token).delete(`/personas/asignaciones/${id}/`),
-=======
-  getRoles: () => api.get('/personas/roles/'),
-  getRol: (id) => api.get(`/personas/roles/${id}/`),
-  createRol: (data) => api.post('/personas/roles/', data),
-  updateRol: (id, data) => api.put(`/personas/roles/${id}/`, data),
-  deleteRol: (id) => api.delete(`/personas/roles/${id}/`),
+  getAsignaciones: () => createApiClient().get('/personas/asignaciones/'),
+  createAsignacion: (data) => createApiClient().post('/personas/asignaciones/', data),
+  deleteAsignacion: (id) => createApiClient().delete(`/personas/asignaciones/${id}/`),
   
   // Subordinados del usuario autenticado
   getSubordinados: (areaId = null) => {
     const qs = areaId ? `?area_id=${encodeURIComponent(areaId)}` : '';
     return api.get(`/personas/subordinados/${qs}`);
   },
->>>>>>> origin/feat/planificadorGuardias
 };
 
 // SERVICIOS PARA ASISTENCIA

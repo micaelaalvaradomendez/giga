@@ -1,10 +1,10 @@
 <script>
 	import { personasService } from '$lib/services.js';
 	import AuthService from '$lib/login/authService.js';
-	import ModalVerAgente from '$lib/componentes/ModalVerAgente.svelte';
-	import ModalEditarAgente from '$lib/componentes/ModalEditarAgente.svelte';
-	import ModalEliminarAgente from '$lib/componentes/ModalEliminarAgente.svelte';
-	import ModalAgregarAgente from '$lib/componentes/ModalAgregarAgente.svelte';
+	import ModalVerAgente from '$lib/components/ModalVerAgente.svelte';
+	import ModalEditarAgente from '$lib/components/ModalEditarAgente.svelte';
+	import ModalEliminarAgente from '$lib/components/ModalEliminarAgente.svelte';
+	import ModalAgregarAgente from '$lib/components/ModalAgregarAgente.svelte';
 
 	/** @type {import('./$types').PageData} */
 	export let data;
