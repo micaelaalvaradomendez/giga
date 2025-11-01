@@ -117,9 +117,7 @@
                     >
                         <span class="menu-item-icon">📋</span>
                         <div class="menu-item-text">
-                            <div class="menu-item-title">
-                                Asistencia (Registro)
-                            </div>
+                            <div class="menu-item-title">Asistencia</div>
                         </div>
                     </a>
 
@@ -138,25 +136,28 @@
                         </a>
                     {/if}
 
-                    {#if isJefatura}
-                        <a
-                            href="/guardias"
-                            class="menu-item"
-                            on:click={closeMenu}
-                        >
-                            <span class="menu-item-icon">🛡️</span>
-                            <div class="menu-item-text">
-                                <div class="menu-item-title">
-                                    Guardias (Planificación/Aprobación)
-                                </div>
-                            </div>
-                        </a>
-                    {/if}
+                    <a href="/guardias" class="menu-item" on:click={closeMenu}>
+                        <span class="menu-item-icon">🛡️</span>
+                        <div class="menu-item-text">
+                            <div class="menu-item-title">Guardias</div>
+                        </div>
+                    </a>
 
                     <a href="/reportes" class="menu-item" on:click={closeMenu}>
                         <span class="menu-item-icon">📊</span>
                         <div class="menu-item-text">
                             <div class="menu-item-title">Reportes</div>
+                        </div>
+                    </a>
+
+                    <a
+                        href="/admin/organigrama"
+                        class="menu-item"
+                        on:click={closeMenu}
+                    >
+                        <span class="menu-item-icon">🏛️</span>
+                        <div class="menu-item-text">
+                            <div class="menu-item-title">Organigrama</div>
                         </div>
                     </a>
                 </div>
@@ -174,38 +175,9 @@
                         >
                             <span class="menu-item-icon">🔍</span>
                             <div class="menu-item-text">
-                                <div class="menu-item-title">
-                                    Auditoría (Trazabilidad)
-                                </div>
+                                <div class="menu-item-title">Auditoría</div>
                             </div>
                         </a>
-
-                        {#if isAdmin}
-                            <a
-                                href="/admin/usuarios"
-                                class="menu-item"
-                                on:click={closeMenu}
-                            >
-                                <span class="menu-item-icon">👥</span>
-                                <div class="menu-item-text">
-                                    <div class="menu-item-title">
-                                        Gestión de Usuarios
-                                    </div>
-                                </div>
-                            </a>
-                            <a
-                                href="/admin/organigrama"
-                                class="menu-item"
-                                on:click={closeMenu}
-                            >
-                                <span class="menu-item-icon">🏛️</span>
-                                <div class="menu-item-text">
-                                    <div class="menu-item-title">
-                                        Organigrama
-                                    </div>
-                                </div>
-                            </a>
-                        {/if}
 
                         {#if isDirector}
                             <a
@@ -224,20 +196,44 @@
 
                         {#if isAdmin}
                             <a
-                                href="/admin/documentos"
+                                href="/admin"
                                 class="menu-item"
                                 on:click={closeMenu}
                             >
-                                <span class="menu-item-icon">⚖️</span>
+                                <span class="menu-item-icon">👥</span>
                                 <div class="menu-item-text">
                                     <div class="menu-item-title">
-                                        Documentos Legales
+                                        Panel Administrativo
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a
+                                href="/admin/roles-permisos"
+                                class="menu-item"
+                                on:click={closeMenu}
+                            >
+                                <span class="menu-item-icon">🛡️</span>
+                                <div class="menu-item-text">
+                                    <div class="menu-item-title">
+                                        Roles y Permisos
                                     </div>
                                 </div>
                             </a>
                         {/if}
                     </div>
                 {/if}
+            {/if}
+            {#if !isAuth}
+                <div class="menu-section">
+                    <div class="menu-section-title">Acceso</div>
+                    <a href="/" class="menu-item" on:click={closeMenu}>
+                        <span class="menu-item-icon">🔐</span>
+                        <div class="menu-item-text">
+                            <div class="menu-item-title">Iniciar Sesión</div>
+                        </div>
+                    </a>
+                </div>
             {/if}
             <div class="menu-section">
                 <div class="menu-section-title">Herramientas</div>
@@ -248,6 +244,25 @@
                     </div>
                 </a>
             </div>
+
+            {#if isAuth}
+                <div class="menu-section">
+                    <div class="menu-section-title">Sesión</div>
+                    <button 
+                        class="menu-item logout-button" 
+                        on:click={async () => {
+                            await AuthService.logout();
+                            closeMenu();
+                            goto('/');
+                        }}
+                    >
+                        <span class="menu-item-icon">🚪</span>
+                        <div class="menu-item-text">
+                            <div class="menu-item-title">Cerrar Sesión</div>
+                        </div>
+                    </button>
+                </div>
+            {/if}
         </div>
     </div>
 {/if}
@@ -428,6 +443,19 @@
     .menu-item-highlight:hover {
         background: #feeaea;
         border-left-color: #dc2626;
+    }
+
+    .logout-button {
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+    }
+
+    .logout-button:hover {
+        background: #fff1f1;
+        border-left-color: #ef4444;
+        color: #dc2626;
     }
 
     .overlay {

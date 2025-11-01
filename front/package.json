@@ -1,13 +1,22 @@
 {
-	"name": "front",
+	"name": "giga-frontend",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
+	"packageManager": "pnpm@8.15.0",
+	"engines": {
+		"node": ">=18.0.0",
+		"pnpm": ">=8.0.0"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''"
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
+		"lint": "eslint .",
+		"format": "prettier --write ."
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^6.1.1",

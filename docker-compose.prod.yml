@@ -1,0 +1,101 @@
+version: "3.9"
+
+# Docker Compose para PRODUCCIÓN
+# Uso: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  # Base de datos PostgreSQL
+  db:
+    image: postgres:16-alpine
+    container_name: giga_db_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    networks:
+      - giga_prod_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Django (producción)
+  backend:
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+      target: production
+    container_name: giga_backend_prod
+    restart: unless-stopped
+    environment:
+      DEBUG: "0"
+      SECRET_KEY: ${SECRET_KEY}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      DB_PORT: "5432"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,backend,nginx,yourdomain.com"
+      CORS_ALLOWED_ORIGINS: "https://yourdomain.com,http://localhost"
+    volumes:
+      - backend_static_prod:/app/staticfiles
+      - backend_media_prod:/app/media
+      - backend_logs_prod:/app/logs
+    networks:
+      - giga_prod_network
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Frontend SvelteKit (producción)
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+      target: production
+    container_name: giga_frontend_prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      VITE_API_BASE: ${VITE_API_BASE:-http://localhost/api}
+    networks:
+      - giga_prod_network
+    depends_on:
+      - backend
+
+  # Proxy reverso Nginx
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: giga_nginx_prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - backend_static_prod:/var/www/static:ro
+      - backend_media_prod:/var/www/media:ro
+      - nginx_logs_prod:/var/log/nginx
+    networks:
+      - giga_prod_network
+    depends_on:
+      - backend
+      - frontend
+
+networks:
+  giga_prod_network:
+    driver: bridge
+
+volumes:
+  pgdata_prod:
+  backend_static_prod:
+  backend_media_prod:
+  backend_logs_prod:
+  nginx_logs_prod:

@@ -1,0 +1,1 @@
+# Módulo core para componentes compartidos del sistema GIGA

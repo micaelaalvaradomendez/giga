@@ -1,62 +1,120 @@
 version: "3.9"
 
 services:
+  # Base de datos PostgreSQL
   db:
     image: postgres:16-alpine
     container_name: giga_db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-giga}
       POSTGRES_USER: ${DB_USER:-giga_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-giga_pass}
-    ports:
-      - "5434:5432"
     volumes:
-      - pgdata2:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - giga_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
+      start_period: 30s
 
-  back:
+  # Backend Django
+  backend:
     build:
-      context: .
-      dockerfile: back/Dockerfile
-    container_name: giga_back
+      context: ./back
+      dockerfile: Dockerfile
+    container_name: giga_backend
+    restart: unless-stopped
     environment:
       DEBUG: "1"
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
       DB_NAME: ${DB_NAME:-giga}
       DB_USER: ${DB_USER:-giga_user}
       DB_PASSWORD: ${DB_PASSWORD:-giga_pass}
       DB_HOST: db
       DB_PORT: "5432"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,backend,nginx"
+      CORS_ALLOWED_ORIGINS: "http://localhost,http://127.0.0.1,http://localhost:80,http://localhost:3000"
+    volumes:
+      - ./back:/app
+      - backend_static:/app/staticfiles
+      - backend_media:/app/media
+      - backend_logs:/app/logs
+    networks:
+      - giga_network
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./back:/app
-      - back_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "check", "--deploy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
-  front:
+  # Frontend SvelteKit
+  frontend:
     build:
-      context: .
-      dockerfile: front/Dockerfile
-    container_name: giga_front
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: giga_frontend
+    restart: unless-stopped
     environment:
-      VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8000}
-    ports:
-      - "5173:5173"
+      NODE_ENV: development
+      VITE_API_BASE: http://localhost/api
     volumes:
       - ./front:/app
-      - front_node_modules:/app/node_modules
+      - frontend_node_modules:/app/node_modules
+    networks:
+      - giga_network
     depends_on:
-      - back
+      - backend
+    healthcheck:
+      test: ["CMD", "pnpm", "exec", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Proxy reverso Nginx
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: giga_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - backend_static:/var/www/static:ro
+      - backend_media:/var/www/media:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - giga_network
+    depends_on:
+      - backend
+      - frontend
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  giga_network:
+    driver: bridge
 
 volumes:
-  pgdata2:
-  front_node_modules:
-  back_logs:
+  pgdata:
+  frontend_node_modules:
+  backend_static:
+  backend_media:
+  backend_logs:
+  nginx_logs:
 

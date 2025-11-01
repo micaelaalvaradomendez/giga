@@ -1,18 +1,18 @@
-from django.urls import path
-from . import views
+"""
+URLs   para el módulo reportes
+"""
+from core.urls import create_standard_urls
+from .views import (ReporteViewSet, NotificacionViewSet, PlantillaCorreoViewSet,
+                   EnvioLoteViewSet, RenderCorreoViewSet, VistaViewSet, ReportesViewSet)
 
 app_name = 'reportes'
 
-urlpatterns = [
-    # URLs para Reportes
-    path('reportes/', views.ReporteListView.as_view(), name='reporte-list'),
-    path('reportes/<uuid:pk>/', views.ReporteDetailView.as_view(), name='reporte-detail'),
-    
-    # URLs para Notificaciones
-    path('notificaciones/', views.NotificacionListView.as_view(), name='notificacion-list'),
-    path('notificaciones/<uuid:pk>/', views.NotificacionDetailView.as_view(), name='notificacion-detail'),
-    
-    # URLs para Plantillas de Correo
-    path('plantillas-correo/', views.PlantillaCorreoListView.as_view(), name='plantilla-correo-list'),
-    path('plantillas-correo/<uuid:pk>/', views.PlantillaCorreoDetailView.as_view(), name='plantilla-correo-detail'),
-]
+urlpatterns = create_standard_urls(app_name, [
+    ('reportes', ReporteViewSet),
+    ('notificaciones', NotificacionViewSet),
+    ('plantillas', PlantillaCorreoViewSet),
+    ('envios-lote', EnvioLoteViewSet),
+    ('renders', RenderCorreoViewSet),
+    ('vistas', VistaViewSet),
+    ('dinamicos', ReportesViewSet, 'reportes-dinamicos'),
+])

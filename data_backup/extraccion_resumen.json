@@ -1,0 +1,13 @@
+{
+  "fecha_extraccion": "2025-10-30 05:14:53.887719+00:00",
+  "total_registros": 39,
+  "apps_procesadas": [
+    "personas",
+    "asistencia",
+    "guardias",
+    "auditoria",
+    "reportes",
+    "convenio_ia"
+  ],
+  "directorio_salida": "/tmp/data_export"
+}

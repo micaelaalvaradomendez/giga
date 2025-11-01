@@ -1,17 +1,13 @@
-from django.urls import path
-from . import views
+"""
+URLs   para el módulo convenio_ia
+"""
+from core.urls import create_standard_urls
+from .views import ConvenioViewSet, ConsultaConvenioViewSet, IndiceConvenioViewSet
 
 app_name = 'convenio_ia'
 
-urlpatterns = [
-    # URLs para Convenios
-    path('convenios/', views.ConvenioListView.as_view(), name='convenio-list'),
-    path('convenios/<uuid:pk>/', views.ConvenioDetailView.as_view(), name='convenio-detail'),
-    
-    # URLs para Consultas de Convenio
-    path('consultas/', views.ConsultaConvenioListView.as_view(), name='consulta-list'),
-    path('consultas/<uuid:pk>/', views.ConsultaConvenioDetailView.as_view(), name='consulta-detail'),
-    
-    # URL para realizar consultas
-    path('consultar/', views.ConsultarConvenioView.as_view(), name='consultar-convenio'),
-]
+urlpatterns = create_standard_urls(app_name, [
+    ('convenios', ConvenioViewSet),
+    ('consultas', ConsultaConvenioViewSet),
+    ('indices', IndiceConvenioViewSet),
+])

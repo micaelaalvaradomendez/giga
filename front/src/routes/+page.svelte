@@ -175,6 +175,15 @@
         box-sizing: border-box;
     }
 
+    .help-text {
+        display: block;
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 0.25rem;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+
     .password-container {
         position: relative;
         width: 100%;

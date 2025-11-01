@@ -1,32 +1,65 @@
-import api from './api.js';
+import { createApiClient } from './api.js';
 
 // SERVICIOS PARA PERSONAS
 export const personasService = {
   // Agentes
-  getAgentes: () => api.get('/personas/agentes/'),
-  getAgente: (id) => api.get(`/personas/agentes/${id}/`),
-  createAgente: (data) => api.post('/personas/agentes/', data),
-  updateAgente: (id, data) => api.put(`/personas/agentes/${id}/`, data),
-  deleteAgente: (id) => api.delete(`/personas/agentes/${id}/`),
+  getAllAgentes: (token = null) => createApiClient(token).get('/personas/agentes/'),
+  getAgentes: (token = null) => createApiClient(token).get('/personas/agentes/'), // Alias para consistencia
+  getAgente: (id, token = null) => createApiClient(token).get(`/personas/agentes/${id}/`),
+  createAgente: (data, token = null) => createApiClient(token).post('/personas/agentes/', data),
+  updateAgente: (id, data, token = null) => createApiClient(token).patch(`/personas/agentes/${id}/`, data),
+  deleteAgente: (id, token = null) => createApiClient(token).delete(`/personas/agentes/${id}/`),
+
+  	// Crear agente con rol asignado
+	async createAgenteConRol(agenteData) {
+		try {
+			console.log('Datos enviados a createAgente:', agenteData);
+			// Primero crear el agente
+			const response = await this.createAgente(agenteData);
+			console.log('Respuesta del agente creado:', response);
+			
+			if (response && response.usuario && agenteData.rol_id) {
+				// Luego asignar el rol usando el usuario_id del agente creado
+				const asignacionData = {
+					usuario: response.usuario,  // Usar el ID del usuario, no del agente
+					rol: agenteData.rol_id,
+					area: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', // ID por defecto del área: Secretaría de Protección Civil
+				};
+				
+				console.log('Datos de asignación:', asignacionData);
+				await this.createAsignacion(asignacionData);
+			}
+			
+			return response;
+		} catch (error) {
+			console.error('Error creando agente con rol:', error);
+			throw error;
+		}
+	},
 
   // Áreas
-  getAreas: () => api.get('/personas/areas/'),
-  getArea: (id) => api.get(`/personas/areas/${id}/`),
-  createArea: (data) => api.post('/personas/areas/', data),
-  updateArea: (id, data) => api.put(`/personas/areas/${id}/`, data),
-  deleteArea: (id) => api.delete(`/personas/areas/${id}/`),
+  getAreas: (token = null) => createApiClient(token).get('/personas/areas/'),
+  getArea: (id, token = null) => createApiClient(token).get(`/personas/areas/${id}/`),
+  createArea: (data, token = null) => createApiClient(token).post('/personas/areas/', data),
+  updateArea: (id, data, token = null) => createApiClient(token).patch(`/personas/areas/${id}/`, data),
+  deleteArea: (id, token = null) => createApiClient(token).delete(`/personas/areas/${id}/`),
 
   // Roles
-  getRoles: () => api.get('/personas/roles/'),
-  getRol: (id) => api.get(`/personas/roles/${id}/`),
-  createRol: (data) => api.post('/personas/roles/', data),
-  updateRol: (id, data) => api.put(`/personas/roles/${id}/`, data),
-  deleteRol: (id) => api.delete(`/personas/roles/${id}/`),
-  
+  getRoles: (token = null) => createApiClient(token).get('/personas/roles/'),
+  getRol: (id, token = null) => createApiClient(token).get(`/personas/roles/${id}/`),
+  createRol: (data, token = null) => createApiClient(token).post('/personas/roles/', data),
+  updateRol: (id, data, token = null) => createApiClient(token).patch(`/personas/roles/${id}/`, data),
+  deleteRol: (id, token = null) => createApiClient(token).delete(`/personas/roles/${id}/`),
+
+  // Asignaciones de roles
+  getAsignaciones: (token = null) => createApiClient(token).get('/personas/asignaciones/'),
+  createAsignacion: (data, token = null) => createApiClient(token).post('/personas/asignaciones/', data),
+  deleteAsignacion: (id, token = null) => createApiClient(token).delete(`/personas/asignaciones/${id}/`),
+
   // Subordinados del usuario autenticado
-  getSubordinados: (areaId = null) => {
+  getSubordinados: (areaId = null, token = null) => {
     const qs = areaId ? `?area_id=${encodeURIComponent(areaId)}` : '';
-    return api.get(`/personas/subordinados/${qs}`);
+    return createApiClient(token).get(`/personas/subordinados/${qs}`);
   },
 };
 

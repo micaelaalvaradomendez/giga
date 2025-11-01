@@ -4,6 +4,14 @@ from django.core.exceptions import MultipleObjectsReturned
 
 Usuario = get_user_model()
 
+def clean_cuil(cuil_input):
+    """
+    Limpia un CUIL removiendo guiones, espacios y caracteres no numéricos
+    """
+    if not cuil_input:
+        return ''
+    return ''.join(filter(str.isdigit, str(cuil_input).strip()))
+
 class CUILAuthenticationBackend(BaseBackend):
     """
     Backend de autenticación personalizado que permite login con CUIL
@@ -16,8 +24,8 @@ class CUILAuthenticationBackend(BaseBackend):
         if username is None or password is None:
             return None
         
-        # Limpiar CUIL (remover guiones y espacios)
-        cuil_limpio = username.replace('-', '').replace(' ', '')
+        # Limpiar CUIL
+        cuil_limpio = clean_cuil(username)
         
         try:
             # Buscar usuario por CUIL

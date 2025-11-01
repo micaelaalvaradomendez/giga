@@ -26,7 +26,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-*^_-c!q^2ubt+l)9qmai2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', 'backend', 'giga_backend_dev']
 
 
 # Application definition
@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
     'corsheaders',
+    # Core components
+    'core',
     # Apps del sistema
     'personas',
     'asistencia',
@@ -73,15 +75,20 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
-# Configuración de CORS
+# Configuración de CORS - Compatible con desarrollo y producción
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "http://localhost:5173",       # Frontend desarrollo directo
+    "http://127.0.0.1:5173",       # Frontend desarrollo directo
+    "http://localhost",            # Nginx en producción
+    "http://127.0.0.1",            # Nginx local
+    "http://localhost:80",         # Nginx explícito
+    "http://localhost:8080",       # Puerto desarrollo directo
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Solo en desarrollo
+# En desarrollo permitir todos los orígenes, en producción solo los especificados
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 # Headers adicionales permitidos por CORS
 CORS_ALLOW_HEADERS = [
@@ -154,17 +161,22 @@ TEMPLATES = [
 WSGI_APPLICATION = 'giga.wsgi.application'
 
 
-# Database
+# Database Configuration
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Configuración de PostgreSQL (única base de datos soportada)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': config('DB_NAME', default='giga'),
         'USER': config('DB_USER', default='giga_user'),
         'PASSWORD': config('DB_PASSWORD', default='giga_pass'),
-        'HOST': config('DB_HOST', default='db'),
+        'HOST': config('DB_HOST', default='giga-db'),  # Nombre del servicio de DB
         'PORT': config('DB_PORT', default='5432'),
+        'OPTIONS': {
+            'connect_timeout': 60,
+        },
+        'CONN_MAX_AGE': 60,  # Conexiones persistentes por 60 segundos
     }
 }
 

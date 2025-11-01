@@ -1,13 +1,14 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
+# Compatible con Windows/Linux/Mac
 # Script de inicialización de la base de datos
-# Este script se ejecuta automáticamente cuando se inicia el contenedor backend
 
-echo "Iniciando configuración de base de datos..."
+set -e
+
+echo "🚀 Iniciando configuración de base de datos GIGA..."
 
 # Esperar a que la base de datos esté lista
-echo "Esperando a que la base de datos esté disponible..."
-python docker/wait_for_db.py
+echo "⏳ Esperando a que la base de datos esté disponible..."
+python /wait_for_db.py
 
 # Aplicar migraciones
 echo "Aplicando migraciones..."

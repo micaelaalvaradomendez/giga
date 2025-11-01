@@ -70,7 +70,7 @@ class Agente(models.Model):
     email = models.EmailField(unique=True)
     
     # Dirección
-    provincia = models.CharField(max_length=50, default='Tierra del Fuego')
+    provincia = models.CharField(max_length=50, blank=True, null=True)
     ciudad = models.CharField(max_length=50, blank=True, null=True)
     calle = models.CharField(max_length=100, blank=True, null=True)
     numero = models.CharField(max_length=10, blank=True, null=True)
