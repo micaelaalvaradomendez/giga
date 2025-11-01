@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
     import AuthService from "$lib/login/authService.js";
-    // import CalendarioBase from "$lib/componentes/calendarioBase.svelte"; // Comentado temporalmente
+    import CalendarioBase from "$lib/components/CalendarioBase.svelte";
 
     let user = null;
     let isLoading = true;
@@ -191,7 +191,7 @@
                 </div>
             </div>
             <div class="right-panel">
-                <!-- <CalendarioBase /> -->
+                <CalendarioBase />
             </div>
         </div>
     </div>
