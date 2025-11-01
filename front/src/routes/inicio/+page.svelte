@@ -1,18 +1,9 @@
 <script>
-<<<<<<< HEAD
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
-    import AuthService from "../../lib/login/authService.js";
-    import CalendarioBase from "../../lib/componentes/calendarioBase.svelte";
+    import AuthService from "$lib/login/authService.js";
+    // import CalendarioBase from "$lib/componentes/calendarioBase.svelte"; // Comentado temporalmente
 
-=======
-    import { onMount } from 'svelte';
-    import { goto } from '$app/navigation';
-    import AuthService from '../../lib/login/authService.js';
-    import EditarPerfil from '../../lib/components/EditarPerfil.svelte';
-    import CambioContrasenaObligatorio from '../../lib/components/CambioContrasenaObligatorio.svelte';
-    
->>>>>>> origin/feat/planificadorGuardias
     let user = null;
     let isLoading = true;
     let errorMessage = "";
@@ -24,16 +15,8 @@
         try {
             const sessionCheck = await AuthService.checkSession();
 
-            if (sessionCheck.authenticated) {
+            if (sessionCheck && sessionCheck.authenticated && sessionCheck.user) {
                 user = sessionCheck.user;
-
-                // Verificar si se requiere cambio obligatorio de contraseña
-                if (
-                    sessionCheck.requires_password_change ||
-                    AuthService.requiresPasswordChange()
-                ) {
-                    showMandatoryPasswordChange = true;
-                }
             } else {
                 // Si no está autenticado, redirigir al login
                 goto("/");
@@ -208,7 +191,7 @@
                 </div>
             </div>
             <div class="right-panel">
-                <CalendarioBase />
+                <!-- <CalendarioBase /> -->
             </div>
         </div>
     </div>

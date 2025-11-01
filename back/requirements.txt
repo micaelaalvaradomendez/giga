@@ -4,7 +4,6 @@ djangorestframework==3.14.0
 django-cors-headers==4.3.1
 django-filter==24.3
 python-decouple==3.8
-<<<<<<< HEAD
 
 # Database drivers - instalar según necesidad
 # PostgreSQL (predeterminado)
@@ -22,7 +21,5 @@ psycopg2-binary==2.9.9
 # Herramientas adicionales
 Pillow==10.0.1  # Para campos ImageField
 python-dateutil==2.8.2  # Para manejo de fechas
-=======
-psycopg2-binary==2.9.9
+
 drf-spectacular==0.27.2
->>>>>>> origin/feat/planificadorGuardias

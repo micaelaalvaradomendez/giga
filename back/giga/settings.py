@@ -67,19 +67,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20
 }
 
-<<<<<<< HEAD
 # Configuración de CORS - Compatible con desarrollo y producción
-=======
-# drf-spectacular (OpenAPI/Swagger)
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'GIGA API',
-    'DESCRIPTION': 'Documentación de endpoints del sistema GIGA',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-}
-
-# Configuración de CORS
->>>>>>> origin/feat/planificadorGuardias
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",       # Frontend desarrollo directo
     "http://127.0.0.1:5173",       # Frontend desarrollo directo
@@ -92,7 +80,7 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # En desarrollo permitir todos los orígenes, en producción solo los especificados
-CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOW_ALL_ORIGINS = False
 
 # Headers adicionales permitidos por CORS
 CORS_ALLOW_HEADERS = [
@@ -118,8 +106,7 @@ CORS_ALLOW_METHODS = [
 
 # Configuración de CSRF
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "http://localhost:5173",  # Origen del frontend de desarrollo
 ]
 
 # Deshabilitar CSRF para desarrollo de API
@@ -246,29 +233,10 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
-USE_I18N = True
-
-USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-STATIC_URL = 'static/'
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 
 # Email configuration
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
@@ -278,3 +246,6 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Sistema GIGA <noreply@giga.com>')
+
+# Configuración explícita para la cookie de sesión en desarrollo
+SESSION_COOKIE_SAMESITE = 'Lax'

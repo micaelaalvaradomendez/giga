@@ -15,100 +15,6 @@ from .models import Usuario, Agente, AgenteRol
 import json
 from drf_spectacular.utils import extend_schema, OpenApiExample
 
-<<<<<<< HEAD
-# ============ FUNCIONES AUXILIARES ============
-
-def clean_cuil(cuil_input):
-    """
-    Limpia un CUIL removiendo guiones, espacios y caracteres no numéricos
-    """
-    if not cuil_input:
-        return ''
-    return ''.join(filter(str.isdigit, str(cuil_input).strip()))
-
-def extract_dni_from_cuil(cuil):
-    """
-    Extrae el DNI de un CUIL (dígitos 3 al 10)
-    """
-    clean = clean_cuil(cuil)
-    return clean[2:10] if len(clean) == 11 else ''
-
-def get_user_roles(usuario):
-    """
-    Obtiene los roles de un usuario y retorna información estructurada
-    """
-    try:
-        agente = Agente.objects.get(usuario=usuario)
-        agente_roles = AgenteRol.objects.filter(usuario=usuario).select_related('rol')
-        
-        roles = [agente_rol.rol.nombre for agente_rol in agente_roles]
-        rol_principal = roles[0] if roles else 'Sin rol'
-        
-        return {
-            'roles': roles,
-            'rol_principal': rol_principal,
-            'has_agente': True
-        }
-        
-    except Agente.DoesNotExist:
-        return {
-            'roles': [],
-            'rol_principal': 'Sin rol',
-            'has_agente': False
-        }
-
-def build_user_response_data(usuario, include_password_info=True):
-    """
-    Construye la estructura de datos del usuario para respuestas API
-    """
-    user_roles = get_user_roles(usuario)
-    
-    user_data = {
-        'id': usuario.id,
-        'username': usuario.username,
-        'email': usuario.email,
-        'first_name': usuario.first_name,
-        'last_name': usuario.last_name,
-        'cuil': usuario.cuil,
-        'rol_principal': user_roles['rol_principal'],
-        'roles': user_roles['roles'],
-        'nombre_completo': f"{usuario.first_name} {usuario.last_name}".strip()
-    }
-    
-    if include_password_info:
-        user_data['password_reset'] = usuario.password_reset
-    
-    return user_data
-
-def check_password_needs_change(usuario, password):
-    """
-    Verifica si la contraseña necesita ser cambiada
-    """
-    dni = extract_dni_from_cuil(usuario.cuil)
-    password_equals_dni = (password == dni)
-    
-    return {
-        'requires_change': usuario.password_reset or password_equals_dni,
-        'reason': 'Contraseña temporal por seguridad' if (usuario.password_reset or password_equals_dni) else None
-    }
-
-def mask_email(email):
-    """
-    Oculta parcialmente un email para respuestas de seguridad
-    """
-    if not email:
-        return "***@***.***"
-    
-    email_parts = email.split('@')
-    if len(email_parts) == 2:
-        return f"{email_parts[0][:2]}***@{email_parts[1]}"
-    return "***@***.***"
-
-# ============ ENDPOINTS API ============
-
-@api_view(['POST', 'OPTIONS'])
-=======
-
 class UserSummarySerializer(serializers.Serializer):
     id = serializers.UUIDField()
     username = serializers.CharField()
@@ -116,10 +22,30 @@ class UserSummarySerializer(serializers.Serializer):
     first_name = serializers.CharField(allow_blank=True)
     last_name = serializers.CharField(allow_blank=True)
     cuil = serializers.CharField(allow_blank=True, allow_null=True)
-    rol_principal = serializers.CharField()
-    roles = serializers.ListField(child=serializers.CharField())
-    nombre_completo = serializers.CharField()
-    password_reset = serializers.BooleanField()
+    rol_principal = serializers.SerializerMethodField()
+    roles = serializers.SerializerMethodField()
+    nombre_completo = serializers.SerializerMethodField()
+
+    def get_rol_principal(self, obj):
+        """
+        Obtiene el nombre del primer rol asignado al usuario.
+        """
+        # Usamos 'select_related' para optimizar la consulta a la base de datos.
+        asignacion = AgenteRol.objects.filter(usuario=obj).select_related('rol').first()
+        if asignacion and asignacion.rol:
+            return asignacion.rol.nombre
+        return "Sin rol asignado"
+
+    def get_roles(self, obj):
+        """
+        Obtiene una lista de todos los roles asignados al usuario.
+        """
+        asignaciones = AgenteRol.objects.filter(usuario=obj).select_related('rol')
+        return [asignacion.rol.nombre for asignacion in asignaciones if asignacion.rol]
+
+    def get_nombre_completo(self, obj):
+        """Obtiene el nombre completo del usuario."""
+        return obj.get_full_name() or obj.username
 
 
 class LoginRequestSerializer(serializers.Serializer):
@@ -158,68 +84,53 @@ class ErrorResponseSerializer(serializers.Serializer):
 )
 @csrf_exempt
 @api_view(['POST'])
->>>>>>> origin/feat/planificadorGuardias
 @permission_classes([AllowAny])
 def login_view(request):
     """
-    API endpoint para login con CUIL y contraseña
+    API endpoint para login con CUIL y contraseña.
+    Utiliza el backend de autenticación personalizado.
     """
-    # Manejar preflight requests
     if request.method == 'OPTIONS':
         return Response(status=status.HTTP_200_OK)
-    
+
     try:
         data = json.loads(request.body)
-        cuil_raw = data.get('cuil', '')
+        cuil = data.get('cuil', '')
         password = data.get('password', '')
-        
-        if not cuil_raw or not password:
+
+        if not cuil or not password:
             return Response({
                 'success': False,
                 'message': 'CUIL y contraseña son requeridos'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Limpiar CUIL
-        cuil = clean_cuil(cuil_raw)
-        
-        # Buscar usuario por CUIL
-        try:
-            usuario = Usuario.objects.get(cuil=cuil)
-        except Usuario.DoesNotExist:
+
+        # Usar el sistema de autenticación de Django, que a su vez usará
+        # nuestro CUILAuthenticationBackend configurado en settings.py
+        user = authenticate(request, username=cuil, password=password)
+
+        if user is not None:
+            # El usuario es válido, iniciar sesión
+            login(request, user)
+            
+            # Serializar los datos del usuario para la respuesta
+            try:
+                user_data = UserSummarySerializer(user).data
+            except Exception as e:
+                # Si la serialización falla, es un error del servidor
+                raise e
+
+            return Response({
+                'success': True,
+                'message': 'Login exitoso',
+                'user': user_data
+            }, status=status.HTTP_200_OK)
+        else:
+            # La autenticación falló
             return Response({
                 'success': False,
-                'message': 'CUIL no encontrado'
+                'message': 'CUIL o contraseña incorrectos.'
             }, status=status.HTTP_401_UNAUTHORIZED)
-        
-        # Verificar contraseña
-        if not usuario.check_password(password):
-            return Response({
-                'success': False,
-                'message': 'Contraseña incorrecta'
-            }, status=status.HTTP_401_UNAUTHORIZED)
-        
-        # Verificar que el usuario esté activo
-        if not usuario.is_active:
-            return Response({
-                'success': False,
-                'message': 'Usuario inactivo'
-            }, status=status.HTTP_401_UNAUTHORIZED)
-        
-        # Verificar si necesita cambio obligatorio de contraseña
-        password_check = check_password_needs_change(usuario, password)
-        
-        # Login exitoso - crear sesión
-        usuario.backend = 'personas.backends.CUILAuthenticationBackend'
-        login(request, usuario)
-        
-        return Response({
-            'success': True,
-            'message': 'Login exitoso',
-            'requires_password_change': password_check['requires_change'],
-            'password_reset_reason': password_check['reason'],
-            'user': build_user_response_data(usuario)
-        }, status=status.HTTP_200_OK)
-        
+
     except json.JSONDecodeError:
         return Response({
             'success': False,
@@ -271,8 +182,8 @@ def check_session(request):
     if request.user.is_authenticated:
         return Response({
             'authenticated': True,
-            'requires_password_change': request.user.password_reset,
-            'user': build_user_response_data(request.user)
+            # Usamos el mismo serializador que en el login para consistencia
+            'user': UserSummarySerializer(request.user).data
         })
     else:
         return Response({
@@ -362,7 +273,9 @@ def update_profile(request):
                     }, status=status.HTTP_400_BAD_REQUEST)
                 
                 # Verificar que no use el DNI como contraseña
-                dni = extract_dni_from_cuil(request.user.cuil)
+                # Lógica de extract_dni_from_cuil directamente aquí
+                cuil_limpio = ''.join(filter(str.isdigit, str(request.user.cuil)))
+                dni = cuil_limpio[2:10] if len(cuil_limpio) == 11 else ''
                 if new_password == dni:
                     return Response({
                         'success': False,
@@ -370,7 +283,6 @@ def update_profile(request):
                     }, status=status.HTTP_400_BAD_REQUEST)
                 
                 request.user.set_password(new_password)
-                request.user.password_reset = False  # Ya no requiere cambio obligatorio
                 changes_made.append('contraseña')
                 password_changed = True
                 
@@ -438,7 +350,8 @@ def update_profile(request):
             'changes': changes_made,
             'password_changed': password_changed,
             'email_changed': email_changed,
-            'user': build_user_response_data(request.user, include_password_info=False)
+ #           'user': build_user_response_data(request.user, include_password_info=False)
+            'user': UserSummarySerializer(request.user).data
         }, status=status.HTTP_200_OK)
         
     except json.JSONDecodeError:
@@ -474,7 +387,8 @@ def recover_password(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Limpiar CUIL
-        cuil_clean = clean_cuil(cuil_raw)
+        # Lógica de clean_cuil directamente aquí
+        cuil_clean = ''.join(filter(str.isdigit, str(cuil_raw)))
         
         if len(cuil_clean) != 11:
             return Response({
@@ -487,7 +401,8 @@ def recover_password(request):
             usuario = Usuario.objects.get(cuil=cuil_clean)
             
             # Extraer DNI del CUIL
-            dni = extract_dni_from_cuil(cuil_clean)
+            # Lógica de extract_dni_from_cuil directamente aquí
+            dni = cuil_clean[2:10] if len(cuil_clean) == 11 else ''
             
             with transaction.atomic():
                 # Cambiar contraseña al DNI
@@ -526,7 +441,10 @@ def recover_password(request):
             return Response({
                 'success': True,
                 'message': 'Contraseña restablecida exitosamente',
-                'email': mask_email(usuario.email),
+                # Lógica de mask_email directamente aquí
+                'email': (f"{usuario.email.split('@')[0][:2]}***@{usuario.email.split('@')[1]}" 
+                          if '@' in usuario.email 
+                          else "***@***.***"),
                 'user_found': True
             }, status=status.HTTP_200_OK)
             

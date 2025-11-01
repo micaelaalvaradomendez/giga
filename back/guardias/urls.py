@@ -6,15 +6,9 @@ from .views import ModalidadViewSet, GuardiaViewSet, CuadroGuardiaViewSet, Asign
 
 app_name = 'guardias'
 
-<<<<<<< HEAD
 urlpatterns = create_standard_urls(app_name, [
     ('modalidades', ModalidadViewSet, 'modalidad'),
     ('guardias', GuardiaViewSet, 'guardia'),
     ('cuadros', CuadroGuardiaViewSet, 'cuadro'),
     ('asignaciones', AsignacionGuardiaViewSet, 'asignacion'),
 ])
-=======
-urlpatterns = [
-    path('cronogramas/planificar/', views.PlanificarCronogramaView.as_view(), name='cronogramas_planificar'),
-]
->>>>>>> origin/feat/planificadorGuardias
