@@ -66,7 +66,8 @@
 		modalEditarAgente.isSaving = true;
 		
 		try {
-			await personasService.updateAgente(agente.id, formData);
+			const idParaActualizar = agente.usuario; // El campo 'usuario' contiene el UUID del modelo Usuario
+			await personasService.updateAgente(idParaActualizar, formData);
 			
 			// Si se cambió el rol, actualizar la asignación
 			if (formData.rol_id) {
@@ -136,7 +137,7 @@
 			
 			alert(errorMessage);
 		} finally {
-			modalEditarAgente.isSaving = false;
+			modalEditarAgente.isSaving = true;
 		}
 	}
 
@@ -245,36 +246,6 @@
 	</button>
 </div>
 
-<!-- Resumen de estadísticas -->
-{#if agentes && agentes.length > 0}
-<div class="stats-container">
-	<div class="stat-card">
-		<h3>Total Agentes</h3>
-		<p class="stat-number">{agentes.length}</p>
-	</div>
-	<div class="stat-card">
-		<h3>EPU</h3>
-		<p class="stat-number">{agentes.filter(a => a.agrupacion === 'EPU').length}</p>
-	</div>
-	<div class="stat-card">
-		<h3>POMyS</h3>
-		<p class="stat-number">{agentes.filter(a => a.agrupacion === 'POMYS').length}</p>
-	</div>
-	<div class="stat-card">
-		<h3>PAyT</h3>
-		<p class="stat-number">{agentes.filter(a => a.agrupacion === 'PAYT').length}</p>
-	</div>
-	<div class="stat-card">
-		<h3>Con Roles</h3>
-		<p class="stat-number">{agentes.filter(a => a.roles && a.roles.length > 0).length}</p>
-	</div>
-	<div class="stat-card">
-		<h3>Administradores</h3>
-		<p class="stat-number">{agentes.filter(a => a.roles && a.roles.some(r => r.nombre === 'Administrador')).length}</p>
-	</div>
-</div>
-{/if}
-
 <div class="table-container">
 	<table>
 		<thead>
@@ -282,13 +253,13 @@
 				<th>Legajo</th>
 				<th>Nombre Completo</th>
 				<th>DNI</th>
-				<th>Roles</th>
 				<th>Categoría</th>
 				<th>Fecha Nac.</th>
 				<th>Email</th>
 				<th>Teléfono</th>
 				<th>Dirección</th>
-				<th>Agrupación</th>
+				<th>Agrupamiento</th>
+				<th>Rol</th> 
 				<th>Acciones</th>
 			</tr>
 		</thead>
@@ -304,26 +275,26 @@
 							<span class="badge badge-current-user">Tú</span>
 						{/if}
 					</td>
-						<td>{agente.dni}</td>
-						<td>
-							{#if agente.roles && agente.roles.length > 0}
-								<div class="roles-container">
-									{#each agente.roles as rol}
-										<div class="role-item">
-											<span class="badge badge-role">{rol.nombre}</span>
-										</div>
-									{/each}
-								</div>
-							{:else}
-								<span class="badge badge-sin-rol">Sin roles</span>
-							{/if}
-						</td>
-						<td>{agente.categoria_revista}</td>
-						<td><small>{agente.fecha_nac ? new Date(agente.fecha_nac).toLocaleDateString('es-AR') : 'N/A'}</small></td>
-						<td><small>{agente.email}</small></td>
-						<td>{agente.telefono}</td>
-						<td><small>{agente.direccion || 'N/A'}</small></td>
-						<td><span class="badge badge-{agente.agrupacion?.toLowerCase()}">{agente.agrupacion_display || 'Sin agrupación'}</span></td>
+					<td>{agente.dni}</td>
+					<td>{agente.categoria_revista}</td>
+					<td><small>{agente.fecha_nac ? new Date(agente.fecha_nac).toLocaleDateString('es-AR') : 'N/A'}</small></td>
+					<td><small>{agente.email}</small></td>
+					<td>{agente.telefono}</td>
+					<td><small>{agente.direccion || 'N/A'}</small></td>
+					<td><span class="badge badge-{agente.agrupacion?.toLowerCase()}">{agente.agrupacion_display || 'Sin agrupamiento'}</span></td>
+					<td>
+						{#if agente.roles && agente.roles.length > 0}
+							<div class="roles-container">
+								{#each agente.roles as rol}
+									<div class="role-item">
+										<span class="badge badge-role">{rol.nombre}</span>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<span class="badge badge-sin-rol">Sin rol</span>
+						{/if}
+					</td>
 					<td class="actions">
 						<button class="btn-icon" title="Editar" on:click={() => editarAgente(agente)}>✏️</button>
 						<button class="btn-icon" title="Ver detalles" on:click={() => verAgente(agente)}>👁️</button>
@@ -346,7 +317,12 @@
 	</table>
 </div>
 
-<!-- Modales -->
+<div class="footer-actions">
+	<a href="/admin" class="btn-secondary">
+		← Volver al Menú
+	</a>
+</div>
+
 <ModalVerAgente 
 	bind:isOpen={modalVerAgente.isOpen}
 	agente={modalVerAgente.agente}
@@ -437,6 +413,7 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		flex-wrap: wrap; 
 		margin-bottom: 2rem;
 		padding-bottom: 1rem;
 		border-bottom: 2px solid #e9ecef;
@@ -447,39 +424,6 @@
 		color: #2c3e50;
 		font-size: 2rem;
 		font-weight: 600;
-	}
-
-	/* Estilos para estadísticas */
-	.stats-container {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-		gap: 1rem;
-		margin-bottom: 2rem;
-	}
-
-	.stat-card {
-		background: white;
-		border: 1px solid #e9ecef;
-		border-radius: 8px;
-		padding: 1rem;
-		text-align: center;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-	}
-
-	.stat-card h3 {
-		margin: 0 0 0.5rem 0;
-		font-size: 0.875rem;
-		color: #6c757d;
-		font-weight: 500;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-
-	.stat-number {
-		margin: 0;
-		font-size: 1.75rem;
-		font-weight: 700;
-		color: #e79043;
 	}
 
 	.btn-primary {
@@ -526,6 +470,7 @@
 
 	td {
 		padding: 1rem;
+		font-size: 0.9rem;
 		border-bottom: 1px solid #e9ecef;
 	}
 
@@ -651,13 +596,6 @@
 		font-style: italic;
 	}
 
-	/* Responsive Design */
-	@media (max-width: 1200px) {
-		.stats-container {
-			grid-template-columns: repeat(3, 1fr);
-		}
-	}
-
 	@media (max-width: 768px) {
 		.page-header {
 			flex-direction: column;
@@ -665,16 +603,12 @@
 			align-items: stretch;
 		}
 		
-		.stats-container {
-			grid-template-columns: repeat(2, 1fr);
-		}
-		
 		.table-container {
 			overflow-x: auto;
 		}
 		
 		table {
-			min-width: 800px; /* Reducir ancho mínimo para móviles */
+			min-width: 700px;
 		}
 		
 		th, td {
@@ -687,37 +621,19 @@
 		}
 	}
 
-	@media (max-width: 480px) {
-		.stats-container {
-			grid-template-columns: 1fr;
-		}
-		
-		.stat-card {
-			padding: 0.75rem;
-		}
-		
-		.stat-number {
-			font-size: 1.5rem;
-		}
-	}
-
-	th:nth-child(4), td:nth-child(4) { /* Email */
-		max-width: 200px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	th:nth-child(6), td:nth-child(6) { /* Dirección */
+	th:nth-child(7), td:nth-child(7) { /* Email */
 		max-width: 180px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
-	th:nth-child(7), td:nth-child(7) { /* Agrupación */
-		text-align: center;
+	th:nth-child(9), td:nth-child(9) { /* Dirección */
+		max-width: 180px;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
-	th:nth-child(9), td:nth-child(9) { /* Roles */
+	th:nth-child(11), td:nth-child(11) { /* Rol */
 		max-width: 200px;
 	}
 </style>
