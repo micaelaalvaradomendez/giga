@@ -235,92 +235,94 @@
 	}
 </script>
 
-<div class="logo">
-    <a href="/admin">Panel de Administración</a>
-</div>
+<div class="admin-page-container">
+	<div class="logo">
+		<a href="/admin">Panel de Administración</a>
+	</div>
 
-<div class="page-header">
-	<h1>Gestión de Agentes</h1>
-	<button class="btn-primary" on:click={agregarAgente}>
-		+ Añadir Agente
-	</button>
-</div>
+	<div class="page-header">
+		<h1>Gestión de Agentes</h1>
+		<button class="btn-primary" on:click={agregarAgente}>
+			+ Añadir Agente
+		</button>
+	</div>
 
-<div class="table-container">
-	<table>
-		<thead>
-			<tr>
-				<th>Legajo</th>
-				<th>Nombre Completo</th>
-				<th>DNI</th>
-				<th>Categoría</th>
-				<th>Fecha Nac.</th>
-				<th>Email</th>
-				<th>Teléfono</th>
-				<th>Dirección</th>
-				<th>Agrupamiento</th>
-				<th>Rol</th> 
-				<th>Acciones</th>
-			</tr>
-		</thead>
-		<tbody>
-		{#if agentes && agentes.length > 0}
-			{#each agentes as agente}
-				{@const currentUser = AuthService.getCurrentUser()}
-				<tr class={currentUser && (agente.email === currentUser.email || agente.id === currentUser.id) ? 'current-user' : ''}>
-					<td><strong>{agente.legajo || 'N/A'}</strong></td>
-					<td>
-						<strong>{agente.nombre} {agente.apellido}</strong>
-						{#if currentUser && (agente.email === currentUser.email || agente.id === currentUser.id)}
-							<span class="badge badge-current-user">Tú</span>
-						{/if}
-					</td>
-					<td>{agente.dni}</td>
-					<td>{agente.categoria_revista}</td>
-					<td><small>{agente.fecha_nac ? new Date(agente.fecha_nac).toLocaleDateString('es-AR') : 'N/A'}</small></td>
-					<td><small>{agente.email}</small></td>
-					<td>{agente.telefono}</td>
-					<td><small>{agente.direccion || 'N/A'}</small></td>
-					<td><span class="badge badge-{agente.agrupacion?.toLowerCase()}">{agente.agrupacion_display || 'Sin agrupamiento'}</span></td>
-					<td>
-						{#if agente.roles && agente.roles.length > 0}
-							<div class="roles-container">
-								{#each agente.roles as rol}
-									<div class="role-item">
-										<span class="badge badge-role">{rol.nombre}</span>
-									</div>
-								{/each}
-							</div>
-						{:else}
-							<span class="badge badge-sin-rol">Sin rol</span>
-						{/if}
-					</td>
-					<td class="actions">
-						<button class="btn-icon" title="Editar" on:click={() => editarAgente(agente)}>✏️</button>
-						<button class="btn-icon" title="Ver detalles" on:click={() => verAgente(agente)}>👁️</button>
-						{#if currentUser && (agente.email === currentUser.email || agente.id === currentUser.id)}
-							<button class="btn-icon-disabled" title="No puedes eliminarte a ti mismo" disabled>🔒</button>
-						{:else}
-							<button class="btn-icon-danger" title="Eliminar" on:click={() => eliminarAgente(agente)}>🗑️</button>
-						{/if}
-					</td>
-					</tr>
-				{/each}
-			{:else}
+	<div class="table-container">
+		<table>
+			<thead>
 				<tr>
-					<td colspan="11" style="text-align: center; padding: 2rem;">
-						No se encontraron agentes. Total: {agentes ? agentes.length : 'undefined'}
-					</td>
+					<th>Legajo</th>
+					<th>Nombre Completo</th>
+					<th>DNI</th>
+					<th>Categoría</th>
+					<th>Fecha Nac.</th>
+					<th>Email</th>
+					<th>Teléfono</th>
+					<th>Dirección</th>
+					<th>Agrupamiento</th>
+					<th>Rol</th> 
+					<th>Acciones</th>
 				</tr>
-			{/if}
-		</tbody>
-	</table>
-</div>
+			</thead>
+			<tbody>
+			{#if agentes && agentes.length > 0}
+				{#each agentes as agente}
+					{@const currentUser = AuthService.getCurrentUser()}
+					<tr class={currentUser && (agente.email === currentUser.email || agente.id === currentUser.id) ? 'current-user' : ''}>
+						<td><strong>{agente.legajo || 'N/A'}</strong></td>
+						<td>
+							<strong>{agente.nombre} {agente.apellido}</strong>
+							{#if currentUser && (agente.email === currentUser.email || agente.id === currentUser.id)}
+								<span class="badge badge-current-user">Tú</span>
+							{/if}
+						</td>
+						<td>{agente.dni}</td>
+						<td>{agente.categoria_revista}</td>
+						<td><small>{agente.fecha_nac ? new Date(agente.fecha_nac).toLocaleDateString('es-AR') : 'N/A'}</small></td>
+						<td><small>{agente.email}</small></td>
+						<td>{agente.telefono}</td>
+						<td><small>{agente.direccion || 'N/A'}</small></td>
+						<td><span class="badge badge-{agente.agrupacion?.toLowerCase()}">{agente.agrupacion_display || 'Sin agrupamiento'}</span></td>
+						<td>
+							{#if agente.roles && agente.roles.length > 0}
+								<div class="roles-container">
+									{#each agente.roles as rol}
+										<div class="role-item">
+											<span class="badge badge-role">{rol.nombre}</span>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<span class="badge badge-sin-rol">Sin rol</span>
+							{/if}
+						</td>
+						<td class="actions">
+							<button class="btn-icon" title="Editar" on:click={() => editarAgente(agente)}>✏️</button>
+							<button class="btn-icon" title="Ver detalles" on:click={() => verAgente(agente)}>👁️</button>
+							{#if currentUser && (agente.email === currentUser.email || agente.id === currentUser.id)}
+								<button class="btn-icon-disabled" title="No puedes eliminarte a ti mismo" disabled>🔒</button>
+							{:else}
+								<button class="btn-icon-danger" title="Eliminar" on:click={() => eliminarAgente(agente)}>🗑️</button>
+							{/if}
+						</td>
+						</tr>
+					{/each}
+				{:else}
+					<tr>
+						<td colspan="11" style="text-align: center; padding: 2rem;">
+							No se encontraron agentes. Total: {agentes ? agentes.length : 'undefined'}
+						</td>
+					</tr>
+				{/if}
+			</tbody>
+		</table>
+	</div>
 
-<div class="footer-actions">
-	<a href="/admin" class="btn-secondary">
-		← Volver al Menú
-	</a>
+	<div class="footer-actions">
+		<a href="/admin" class="btn-secondary">
+			← Volver al Menú
+		</a>
+	</div>
 </div>
 
 <ModalVerAgente 
@@ -369,7 +371,7 @@
 	:global(.admin-header) {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
+		align-items: center; 
 		padding: 0 1.5rem;
 		height: 70px;
 		background: linear-gradient(135deg, #e79043, #f39c12);
@@ -409,25 +411,32 @@
 		display: none; /* Ocultar porque ya está en el header */
 	}
 
+	.admin-page-container {
+		width: 80%;
+		max-width: 1400px; /* Un poco más ancho para tablas */
+		margin: 0 auto;
+	}
+
 	.page-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		flex-wrap: wrap; 
-		margin-bottom: 2rem;
-		padding-bottom: 1rem;
-		border-bottom: 2px solid #e9ecef;
+		margin-bottom: 1rem;
+		padding: 1.5rem;
+		background: linear-gradient(135deg, #e79043, #d17a2e);
+		border-radius: 12px;
 	}
 
 	.page-header h1 {
 		margin: 0;
-		color: #2c3e50;
+		color: #333; /* Fuente negra */
 		font-size: 2rem;
 		font-weight: 600;
 	}
 
 	.btn-primary {
-		background: linear-gradient(135deg, #e79043, #f39c12);
+		background: #2c5282; /* Azul consistente */
 		color: white;
 		border: none;
 		padding: 0.75rem 1.5rem;
@@ -440,7 +449,7 @@
 	}
 
 	.btn-primary:hover {
-		transform: translateY(-1px);
+		background: #1a365d;
 		box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 	}
 

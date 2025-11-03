@@ -63,21 +63,22 @@
 	];
 </script>
 
-<div class="dashboard-welcome">
-	<h1>Panel de Administración GIGA</h1>
-	<p>Sistema de Gestión Integral de Guardias y Asistencias</p>
-</div>
+<div class="admin-dashboard-container">
+	<div class="dashboard-welcome">
+		<h1>Panel de Administración</h1>
+	</div>
 
-<div class="modules-grid">
-	{#each modules as module}
-		<a href={module.path} class="module-card">
-			<div class="module-icon">{module.icon}</div>
-			<div class="module-info">
-				<h2>{module.name}</h2>
-				<p>{module.description}</p>
-			</div>
-		</a>
-	{/each}
+	<div class="modules-grid">
+		{#each modules as module}
+			<a href={module.path} class="module-card">
+				<div class="module-icon">{module.icon}</div>
+				<div class="module-info">
+					<h2>{module.name}</h2>
+					<p>{module.description}</p>
+				</div>
+			</a>
+		{/each}
+	</div>
 </div>
 
 <style>
@@ -101,7 +102,7 @@
 		align-items: center;
 		padding: 0 1.5rem;
 		height: 70px;
-		background: linear-gradient(135deg, #e79043, #f39c12);
+		background: linear-gradient(135deg, #e79043, #d17a2e);
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
@@ -131,11 +132,17 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
 
+	.admin-dashboard-container {
+		width: 80%;
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+
 	.dashboard-welcome {
 		text-align: center;
 		margin-bottom: 3rem;
 		padding: 5px 0px 15px 0px;
-		background: linear-gradient(135deg, #e79043, #f39c12);
+		background: linear-gradient(135deg, #e79043, #d17a2e);
 		border-radius: 12px;
 		color: white;
 		margin-bottom: 6px;
@@ -145,6 +152,7 @@
 		font-size: 2.5rem;
 		margin-bottom: 0.5rem;
 		font-weight: 700;
+		color: #333; 
 	}
 
 	.dashboard-welcome p {
@@ -210,7 +218,7 @@
 		font-size: 0.95rem;
 		color: white;
 		line-height: 1.4;
-		background: linear-gradient(135deg, #e79043, #f39c12);
+		background: linear-gradient(135deg, #e79043, #d17a2e);
 		padding: 0.5rem 0.75rem;
 		border-radius: 7px;
 		margin: 1px;
