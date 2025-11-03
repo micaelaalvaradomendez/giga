@@ -92,13 +92,16 @@
 {:else if user}
     <div class="profile-container">
         <div class="profile-header">
-            <h1>Perfil de Usuario</h1>
+            <h1>Perfil del Usuario {user.nombre_completo}</h1>
         </div>
+        <!--
         <div class="profile-details">
             <div class="detail-item">
                 <span class="label">Nombre completo:</span>
                 <span class="value">{user.nombre_completo}</span>
             </div>
+        -->
+        <div class="profile-details">
             <div class="detail-item">
                 <span class="label">Email:</span>
                 <span class="value">{user.email}</span>
@@ -137,7 +140,7 @@
             </button>
         </div>
     </div>
-    <div>
+    <div class="calendar-wrapper">
         <CalendarioBase />
     </div>
 {/if}
@@ -158,16 +161,17 @@
 
 <style>
     .profile-container {
-        max-width: 1000px;
-        margin: 1.5rem auto;
-        padding: 1.5rem;
+        width: 80%; 
+        max-width: 900px; 
+        margin: 1rem auto; 
+        padding: 1.25rem; 
         background: #e79043;
         border-radius: 15px;
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         font-family: sans-serif;
     }
     .profile-header h1 {
-        font-size: 2rem;
+        font-size: 1.75rem; 
         font-weight: 700;
         color: #333;
         margin-bottom: 1.5rem;
@@ -175,24 +179,26 @@
     }
     .profile-details {
         display: grid;
-        gap: 1rem;
+        gap: 0.75rem; 
     }
     .detail-item {
         display: flex;
         align-items: center;
         gap: 1rem;
-        padding: 0.75rem 1rem;
+        padding: 0.6rem 1rem; 
         background-color: #f8f9fa;
         border-radius: 10px;
     }
     .label {
         font-weight: 600;
         min-width: 150px;
-        color: #555;
+        color: #4a5568; 
+        font-size: 0.9rem; 
     }
     .value {
         font-weight: 500;
         color: #333;
+        font-size: 0.9rem; 
     }
     .actions {
         display: flex;
@@ -265,5 +271,11 @@
     .error-container {
         text-align: center;
         padding: 2rem;
+    }
+    .calendar-wrapper {
+        width: 80%; 
+        max-width: 940px; 
+        margin: 2rem auto; 
+        padding: 0 1rem; 
     }
 </style>
