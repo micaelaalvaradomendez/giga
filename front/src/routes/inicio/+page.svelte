@@ -83,11 +83,15 @@
     <div class="welcome-container">
         <header class="welcome-header">
             <div class="user-info">
-                <h1>¡Bienvenido/a, {user.first_name}!</h1>
+                <h1>¡Bienvenido/a, <strong>{user.nombre_completo}</strong>!</h1>
                 <div class="user-details">
                     <div class="detail-item">
-                        <span class="label">Nombre completo:</span>
-                        <span class="value">{user.nombre_completo}</span>
+                        <span class="label">Rol principal:</span>
+                        <span
+                            class="role-badge {getRoleBadgeClass(user.rol_principal)}"
+                        >
+                            {user.rol_principal}
+                        </span>
                     </div>
                     <div class="detail-item">
                         <span class="label">Email:</span>
@@ -98,16 +102,6 @@
                         <span class="value"
                             >{AuthService.formatCuil(user.cuil)}</span
                         >
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Rol principal:</span>
-                        <span
-                            class="role-badge {getRoleBadgeClass(
-                                user.rol_principal,
-                            )}"
-                        >
-                            {user.rol_principal}
-                        </span>
                     </div>
                     {#if user.roles && user.roles.length > 1}
                         <div class="detail-item">
@@ -125,32 +119,30 @@
                     {/if}
                 </div>
             </div>
-            <div class="actions">
-                <button class="edit-profile-button" on:click={openEditProfile}>
-                    Editar Perfil
-                </button>
-                <button class="logout-button" on:click={handleLogout}>
-                    Cerrar Sesión
-                </button>
-            </div>
-        </header>
-
-        <main class="dashboard-content">
-            <div class="welcome-message">
-                <h2>Sesión iniciada correctamente</h2>
-                <p>Has ingresado exitosamente al sistema GIGA.</p>
-                <div class="session-info">
-                    <p>
-                        <strong>Fecha de acceso:</strong>
-                        {new Date().toLocaleString("es-AR")}
-                    </p>
-                    <p>
-                        <strong>Estado:</strong>
-                        <span class="status-active">Activo</span>
-                    </p>
+            <div class="header-right-group">
+                <div class="header-meta">
+                    <span>Estado: <span class="status-active">Activo</span></span>
+                    {#if user.last_login}
+                        <span>Último acceso: {new Date(user.last_login).toLocaleString('es-AR', { 
+                            timeZone: 'America/Argentina/Buenos_Aires', 
+                            hour12: false,
+                            day: '2-digit', month: '2-digit', year: 'numeric', 
+                            hour: '2-digit', minute: '2-digit' 
+                        })} hs</span>
+                    {:else}
+                        <span>Primer inicio de sesión</span>
+                    {/if}
+                </div>
+                <div class="actions">
+                    <button class="edit-profile-button" on:click={openEditProfile}>
+                        Editar Perfil
+                    </button>
+                    <button class="logout-button" on:click={handleLogout}>
+                        Cerrar Sesión
+                    </button>
                 </div>
             </div>
-        </main>
+        </header>
 
         <div class="container">
             <div class="left-panel">
@@ -176,7 +168,7 @@
                                 >Generar Reportes</button
                             >
                         </div>
-                        {#if AuthService.hasRole("Administrador")}
+                        {#if user.roles && user.roles.includes("Administrador")}
                             <a href="/admin">
                                 <div class="action-card admin-card">
                                     <h4>Administración</h4>
@@ -254,7 +246,7 @@
     .welcome-container {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 2rem;
+        padding: 1rem 2rem 2rem; 
         font-family: sans-serif;
     }
 
@@ -274,7 +266,12 @@
 
     .user-info h1 {
         margin: 0 0 1rem 0;
-        font-size: 2.5rem;
+        font-size: 2.2rem; 
+        font-weight: normal;
+        color: #333; 
+    }
+
+    .user-info h1 strong {
         font-weight: 700;
     }
 
@@ -293,6 +290,7 @@
     .label {
         font-weight: 600;
         min-width: 120px;
+        /* Color blanco por defecto heredado de .welcome-header */
     }
 
     .value {
@@ -300,6 +298,7 @@
         padding: 0.3rem 0.8rem;
         border-radius: 8px;
         font-weight: 500;
+        /* Color blanco por defecto heredado de .welcome-header */
     }
 
     .role-badge {
@@ -309,36 +308,31 @@
         font-size: 0.9rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        color: white;
     }
 
     .role-admin {
         background: #d32f2f;
-        color: white;
     }
 
     .role-director {
         background: #7b1fa2;
-        color: white;
     }
 
     .role-jefatura {
         background: #303f9f;
-        color: white;
     }
 
     .role-agente-avanzado {
         background: #388e3c;
-        color: white;
     }
 
     .role-agente {
         background: #1976d2;
-        color: white;
     }
 
     .role-default {
         background: #616161;
-        color: white;
     }
 
     .roles-list {
@@ -383,36 +377,6 @@
     .logout-button:hover {
         background: white;
         color: #e79043;
-    }
-
-    .dashboard-content {
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-    }
-
-    .welcome-message {
-        background: white;
-        padding: 2rem;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        text-align: center;
-    }
-
-    .welcome-message h2 {
-        color: #e79043;
-        margin: 0 0 1rem 0;
-        font-size: 1.8rem;
-    }
-
-    .session-info {
-        margin-top: 1.5rem;
-        padding-top: 1rem;
-        border-top: 1px solid #eee;
-        display: flex;
-        justify-content: center;
-        gap: 2rem;
-        flex-wrap: wrap;
     }
 
     .status-active {
@@ -472,7 +436,7 @@
     }
 
     .action-button {
-        background: #e79043;
+        background: #1976d2; 
         color: white;
         border: none;
         padding: 0.7rem 1.5rem;
@@ -484,7 +448,7 @@
     }
 
     .action-button:hover {
-        background: #d17a2e;
+        background: #1565c0; 
         transform: translateY(-1px);
     }
 
@@ -496,6 +460,21 @@
         background: #b71c1c;
     }
 
+    .header-right-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 1rem;
+    }
+
+    .header-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        font-size: 0.9rem;
+        gap: 0.25rem;
+    }
+
     @media (max-width: 768px) {
         .welcome-header {
             flex-direction: column;
@@ -504,11 +483,6 @@
 
         .user-info h1 {
             font-size: 2rem;
-        }
-
-        .session-info {
-            flex-direction: column;
-            gap: 0.5rem;
         }
 
         .actions-grid {

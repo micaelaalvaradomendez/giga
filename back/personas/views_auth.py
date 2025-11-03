@@ -24,6 +24,7 @@ class UserSummarySerializer(serializers.Serializer):
     cuil = serializers.CharField(allow_blank=True, allow_null=True)
     rol_principal = serializers.SerializerMethodField()
     roles = serializers.SerializerMethodField()
+    last_login = serializers.DateTimeField(read_only=True)
     nombre_completo = serializers.SerializerMethodField()
 
     def get_rol_principal(self, obj):
