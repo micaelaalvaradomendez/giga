@@ -15,13 +15,14 @@ from .views import (
 
 app_name = 'personas'
 
-# Configuración de main (create_standard_urls) + endpoint extra de subordinados
+# Configuración simplificada usando utilidad centralizada
 urlpatterns = create_standard_urls(app_name, [
     ('usuarios', UsuarioViewSet),
     ('agentes', AgenteViewSet),
     ('areas', AreaViewSet),
     ('roles', RolViewSet),
     ('asignaciones', AsignacionRolViewSet, 'asignaciones-rol'),
+    ('subordinados', AsignacionRolViewSet, 'asignaciones-rol'),
 ])
 
 urlpatterns += [

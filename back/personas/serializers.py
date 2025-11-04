@@ -40,13 +40,15 @@ class AreaSerializer(BaseSerializer):
 
 
 class AgenteSerializer(PersonaBaseSerializer):
-    """Serializador para el modelo Agente"""
+    """
+    Serializador   para el modelo Agente
+    """
     usuario_email = serializers.EmailField(source='usuario.email', read_only=True)
     categoria_display = serializers.CharField(source='get_categoria_revista_display', read_only=True)
     agrupacion_display = serializers.CharField(source='get_agrupacion_display', read_only=True)
     direccion = serializers.SerializerMethodField()
     roles = serializers.SerializerMethodField()
-
+    
     class Meta:
         model = Agente
         fields = '__all__'
@@ -93,7 +95,9 @@ class RolSerializer(BaseSerializer):
 
 
 class AsignacionRolSerializer(BaseSerializer):
-    """Serializador para asignaciones de roles"""
+    """
+    Serializador   para asignaciones de roles
+    """
     usuario_nombre = serializers.CharField(source='usuario.get_full_name', read_only=True)
     rol_nombre = serializers.CharField(source='rol.nombre', read_only=True)
     area_nombre = serializers.CharField(source='area.nombre', read_only=True)

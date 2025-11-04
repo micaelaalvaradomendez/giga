@@ -1,14 +1,12 @@
-"""
-URLs para autenticación
-"""
 from django.urls import path
-from . import views_auth
+from .views_auth import login_view, logout_view, recover_password, update_profile, check_session
+
+app_name = 'personas_auth'
 
 urlpatterns = [
-    path('login/', views_auth.login_view, name='api_login'),
-    path('logout/', views_auth.logout_view, name='api_logout'),
-    path('check-session/', views_auth.check_session, name='api_check_session'),
-    path('update-profile/', views_auth.update_profile, name='api_update_profile'),
-    path('recover-password/', views_auth.recover_password, name='api_recover_password'),
+    path('login/', login_view, name='login'),
+    path('logout/', logout_view, name='logout'),
+    path('check-session/', check_session, name='check_session'),
+    path('recover-password/', recover_password, name='recover_password'),
+    path('update-profile/', update_profile, name='update_profile'),
 ]
-

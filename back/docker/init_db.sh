@@ -24,25 +24,8 @@ print(Usuario.objects.count())
 
 if [ "$USUARIOS_COUNT" -eq "0" ]; then
     echo "Cargando datos iniciales..."
-    
-    # Cargar fixtures en orden correcto
-    echo "   → Cargando roles básicos..."
-    python manage.py loaddata personas/fixtures/roles_basicos.json
-    
-    echo "   → Cargando área básica..."
-    python manage.py loaddata personas/fixtures/area_basica.json
-    
-    echo "   → Cargando usuarios y agentes..."
-    python manage.py loaddata personas/fixtures/usuarios_agentes.json
-    
-    echo "   → Cargando asignaciones de roles..."
-    python manage.py loaddata personas/fixtures/asignacion_roles.json
-    
-    echo "   → Cargando tipos de licencia..."
-    python manage.py loaddata asistencia/fixtures/tipos_licencia.json
-    
-    echo "   → Cargando licencias básicas..."
-    python manage.py loaddata asistencia/fixtures/licencias_basicas.json
+    # Cargar el fixture principal que contiene todos los datos necesarios
+    python manage.py loaddata /app/data_backup/initial_data.json
     
     echo "Datos iniciales cargados correctamente!"
 else

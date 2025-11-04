@@ -42,7 +42,7 @@
 
         // Validar que se proporcione la contraseña actual
         if (!formData.currentPassword) {
-            errors.currentPassword = 'La contraseña actual es requerida';
+            errors.currentPassword = 'Ingrese su contraseña actual para continuar.';
         }
 
         // Validar email si se cambió
@@ -70,7 +70,7 @@
         const passwordChanged = formData.password.length > 0;
         
         if (!emailChanged && !passwordChanged) {
-            errors.general = 'Debe cambiar al menos el email o la contraseña';
+            errors.general = 'Debe cambiar el email o la contraseña';
         }
 
         return Object.keys(errors).length === 0;
@@ -160,12 +160,9 @@
 {#if showModal}
     <!-- Overlay -->
     <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div class="modal-overlay" on:click={closeModal}>
+    <div class="modal-backdrop" on:click={closeModal}>
         <!-- Modal -->
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <!-- svelte-ignore a11y-no-static-element-interactions -->
-        <div class="modal" on:click|stopPropagation>
+        <div class="modal-content" on:click|stopPropagation>
             <div class="modal-header">
                 <h2>Editar Perfil</h2>
                 <button class="close-button" on:click={closeModal} disabled={loading}>
@@ -175,7 +172,7 @@
 
             <div class="modal-body">
                 {#if successMessage}
-                    <div class="success-message">
+                    <div class="message success">
                         <p>{successMessage}</p>
                         {#if successMessage.includes('contraseña')}
                             <p><strong>Cerrando sesión en 3 segundos...</strong></p>
@@ -185,7 +182,7 @@
                     <form on:submit|preventDefault={handleSubmit}>
                         <!-- Email -->
                         <div class="form-group">
-                            <label for="email">Email:</label>
+                            <label for="email">Email</label>
                             <input
                                 type="email"
                                 id="email"
@@ -200,7 +197,7 @@
 
                         <!-- Nueva contraseña -->
                         <div class="form-group">
-                            <label for="password">Nueva contraseña (opcional):</label>
+                            <label for="password">Nueva Contraseña (opcional)</label>
                             <input
                                 type="password"
                                 id="password"
@@ -217,7 +214,7 @@
                         <!-- Confirmar nueva contraseña -->
                         {#if formData.password}
                             <div class="form-group">
-                                <label for="confirmPassword">Confirmar nueva contraseña:</label>
+                                <label for="confirmPassword">Confirmar Nueva Contraseña</label>
                                 <input
                                     type="password"
                                     id="confirmPassword"
@@ -232,8 +229,8 @@
                         {/if}
 
                         <!-- Contraseña actual -->
-                        <div class="form-group">
-                            <label for="currentPassword">Contraseña actual *:</label>
+                        <div class="form-group current-password-group">
+                            <label for="currentPassword">Contraseña Actual (obligatoria)</label>
                             <input
                                 type="password"
                                 id="currentPassword"
@@ -249,7 +246,7 @@
 
                         <!-- Error general -->
                         {#if errors.general}
-                            <div class="error-message">
+                            <div class="message error">
                                 {errors.general}
                             </div>
                         {/if}
@@ -266,7 +263,7 @@
                             </button>
                             <button 
                                 type="submit" 
-                                class="submit-button"
+                                class="save-button"
                                 disabled={loading}
                             >
                                 {loading ? 'Actualizando...' : 'Actualizar Perfil'}
@@ -280,183 +277,148 @@
 {/if}
 
 <style>
-    .modal-overlay {
+    .modal-backdrop {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
+        background-color: rgba(0, 0, 0, 0.6);
         display: flex;
         justify-content: center;
         align-items: center;
         z-index: 1000;
     }
 
-    .modal {
-        background: white;
-        border-radius: 8px;
-        max-width: 500px;
+    .modal-content {
+        /* Estilo principal similar al profile-container */
+        background: #ffffff;
+        padding: 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
         width: 90%;
-        max-height: 80vh;
-        overflow-y: auto;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        max-width: 500px;
+        font-family: sans-serif;
     }
 
     .modal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 20px;
-        border-bottom: 1px solid #e0e0e0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
     }
 
     .modal-header h2 {
-        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
         color: #333;
-        font-size: 1.5em;
+        margin: 0;
     }
 
     .close-button {
         background: none;
         border: none;
-        font-size: 24px;
+        font-size: 2rem;
+        color: #333;
         cursor: pointer;
-        color: #666;
-        padding: 0;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .close-button:hover {
-        color: #000;
-    }
-
-    .close-button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .modal-body {
-        padding: 20px;
+        line-height: 1;
     }
 
     .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 1.25rem;
     }
 
     .form-group label {
         display: block;
-        margin-bottom: 5px;
-        font-weight: 500;
-        color: #333;
+        font-weight: 600;
+        color: #4a5568;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
     }
 
     .form-group input {
         width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-        box-sizing: border-box;
-    }
-
-    .form-group input:focus {
-        outline: none;
-        border-color: #007bff;
-        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        padding: 0.75rem 1rem;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        background-color: #f8f9fa;
+        font-size: 1rem;
+        box-sizing: border-box; /* Importante para que el padding no afecte el ancho */
     }
 
     .form-group input.error {
         border-color: #dc3545;
     }
-
-    .form-group input:disabled {
-        background-color: #f8f9fa;
-        opacity: 0.7;
+    
+    .current-password-group {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
     }
 
     .error-text {
         display: block;
         color: #dc3545;
-        font-size: 12px;
-        margin-top: 5px;
-    }
-
-    .error-message {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 10px;
-        border-radius: 4px;
-        margin-bottom: 20px;
-        border: 1px solid #f5c6cb;
-    }
-
-    .success-message {
-        background-color: #d4edda;
-        color: #155724;
-        padding: 15px;
-        border-radius: 4px;
-        margin-bottom: 20px;
-        border: 1px solid #c3e6cb;
-        text-align: center;
-    }
-
-    .success-message p {
-        margin: 0 0 10px 0;
-    }
-
-    .success-message p:last-child {
-        margin-bottom: 0;
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
     }
 
     .modal-actions {
         display: flex;
         justify-content: flex-end;
-        gap: 10px;
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #e0e0e0;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .cancel-button,
+    .save-button {
+        padding: 0.7rem 1.3rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
     }
 
     .cancel-button {
-        background: #6c757d;
+        background-color: #6c757d;
         color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
+        border-color: #5a6268;
     }
-
     .cancel-button:hover {
-        background: #5a6268;
+        background-color: #5a6268;
     }
 
-    .submit-button {
-        background: #007bff;
+    .save-button {
+        background-color: #2c5282;
         color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
+        border-color: #1a365d;
     }
-
-    .submit-button:hover {
-        background: #0056b3;
+    .save-button:hover {
+        background-color: #1a365d;
     }
 
     .cancel-button:disabled,
-    .submit-button:disabled {
+    .save-button:disabled {
         opacity: 0.6;
         cursor: not-allowed;
     }
 
-    .submit-button:disabled:hover {
-        background: #007bff;
+    .message {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        text-align: center;
+        font-weight: 500;
+    }
+    .error {
+        background-color: #fed7d7;
+        color: #c53030;
+    }
+    .success {
+        background-color: #c6f6d5;
+        color: #2f855a;
     }
 </style>
