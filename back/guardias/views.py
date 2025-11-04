@@ -7,13 +7,25 @@ from core.common import (
     status, require_authenticated, validate_required_params,
     create_success_response, create_error_response, transaction
 )
-from .models import Guardia, CronogramaGuardias, HorasGuardias, Feriado, ReglaPlus, AsignacionPlus
-from .serializers import GuardiaSerializer, ModalidadSerializer, CuadroGuardiaSerializer, AsignacionGuardiaSerializer
+from .models import (
+    Guardia, CronogramaGuardias, HorasGuardias, Feriado, ReglaPlus, AsignacionPlus
+)
+from .serializers import (
+    GuardiaSerializer, ModalidadSerializer, CuadroGuardiaSerializer, 
+    AsignacionGuardiaSerializer, FeriadoSerializer
+)
 
 # Alias para compatibilidad con ViewSets existentes
 Modalidad = CronogramaGuardias
 CuadroGuardia = CronogramaGuardias  
 AsignacionGuardia = Guardia
+
+
+class FeriadoViewSet(GIGABaseViewSet):
+    """ViewSet para el ABM de Feriados."""
+    queryset = Feriado.objects.all().order_by('fecha')
+    serializer_class = FeriadoSerializer
+    ordering_fields = ['fecha', 'descripcion']
 
 
 class ModalidadViewSet(GIGABaseViewSet):

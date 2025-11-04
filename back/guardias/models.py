@@ -11,7 +11,7 @@ class Feriado(models.Model):
     """Días feriados que afectan guardias"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     fecha = models.DateField(unique=True)
-    descripcion = models.CharField(max_length=255)
+    descripcion = models.CharField(max_length=255, blank=False, null=False)
     es_nacional = models.BooleanField(default=True)
     es_provincial = models.BooleanField(default=False)
     es_local = models.BooleanField(default=False)

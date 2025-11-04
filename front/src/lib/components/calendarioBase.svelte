@@ -1,8 +1,10 @@
 <script>
     import { createEventDispatcher, onMount } from "svelte";
 
-    var dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-    let monthNames = [
+    export let feriados = [];
+
+    const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    const monthNames = [
         "Enero",
         "Febrero",
         "Marzo",
@@ -17,180 +19,89 @@
         "Diciembre",
     ];
 
-    let headers = [];
+    const dispatch = createEventDispatcher();
+
     let now = new Date();
     let year = now.getFullYear();
     let month = now.getMonth();
-    let eventText = "Click an item or date";
+    
+    let days = [];
+    let feriadosMap = new Map();
 
-    var days = [];
-
-    function randInt(max) {
-        return Math.floor(Math.random() * max) + 1;
+    // Función para obtener la fecha en formato YYYY-MM-DD, ignorando la zona horaria
+    function toISODateString(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
     }
 
-    var items = [];
-
-    function initMonthItems() {
-        let y = year;
-        let m = month;
-        let d1 = new Date(y, m, randInt(7) + 7);
-        items = [
-            {
-                title: "11:00 Task Early in month",
-                className: "task--primary",
-                date: new Date(y, m, randInt(6)),
-                len: randInt(4) + 1,
-            },
-            {
-                title: "7:30 Wk 2 tasks",
-                className: "task--warning",
-                date: d1,
-                len: randInt(4) + 2,
-            },
-            {
-                title: "Overlapping Stuff (isBottom:true)",
-                date: d1,
-                className: "task--info",
-                len: 4,
-                isBottom: true,
-            },
-            {
-                title: "10:00 More Stuff to do",
-                date: new Date(y, m, randInt(7) + 14),
-                className: "task--info",
-                len: randInt(4) + 1,
-                detailHeader: "Difficult",
-                detailContent: "But not especially so",
-            },
-            {
-                title: "All day task",
-                date: new Date(y, m, randInt(7) + 21),
-                className: "task--danger",
-                len: 1,
-                vlen: 2,
-            },
-        ];
-
-        for (let i of items) {
-            let rc = findRowCol(i.date);
-            if (rc == null) {
-                console.log("didn`t find date for ", i);
-                console.log(i.date);
-                console.log(days);
-                i.startCol = i.startRow = 0;
-            } else {
-                i.startCol = rc.col;
-                i.startRow = rc.row;
+    // Bloque reactivo: se ejecuta cada vez que la prop 'feriados' cambia
+    $: {
+        feriadosMap.clear();
+        if (feriados && feriados.length > 0) {
+            for (const feriado of feriados) {
+                feriadosMap.set(feriado.fecha, feriado.descripcion);
             }
+        }
+        if (days.length > 0) {
+            initMonth(); // Redibuja el calendario si ya estaba visible
         }
     }
 
-    $: month, year, initContent();
+    // Bloque reactivo: se ejecuta cuando 'month' o 'year' cambian
+    $: month, year, initMonth();
 
-    function initContent() {
-        headers = dayNames;
+    onMount(() => {
         initMonth();
-        initMonthItems();
-    }
+    });
 
     function initMonth() {
         days = [];
-        let monthAbbrev = monthNames[month].slice(0, 3);
-        let nextMonthAbbrev = monthNames[(month + 1) % 12].slice(0, 3);
-        var firstDay = new Date(year, month, 1).getDay();
-        var daysInThisMonth = new Date(year, month + 1, 0).getDate();
-        var daysInLastMonth = new Date(year, month, 0).getDate();
-        var prevMonth = month == 0 ? 11 : month - 1;
+        const firstDayOfMonth = new Date(year, month, 1);
+        const firstDayOfWeek = firstDayOfMonth.getDay();
+        const daysInThisMonth = new Date(year, month + 1, 0).getDate();
+        const prevMonthDate = new Date(year, month, 0);
+        const daysInLastMonth = prevMonthDate.getDate();
         let today = new Date();
 
-        for (let i = daysInLastMonth - firstDay; i < daysInLastMonth; i++) {
+        // Días del mes anterior
+        for (let i = firstDayOfWeek; i > 0; i--) {
+            const dayNum = daysInLastMonth - i + 1;
             let d = new Date(
-                prevMonth == 11 ? year - 1 : year,
-                prevMonth,
-                i + 1,
+                prevMonthDate.getFullYear(),
+                prevMonthDate.getMonth(),
+                dayNum,
             );
+            days.push({ name: String(dayNum), enabled: false, date: d });
+        }
+
+        // Días del mes actual
+        for (let i = 1; i <= daysInThisMonth; i++) {
+            const d = new Date(year, month, i);
+            const dateString = toISODateString(d);
+            const isToday = toISODateString(today) === dateString;
+            const esFeriado = feriadosMap.has(dateString);
+
             days.push({
-                name: "" + (i + 1),
-                enabled: false,
+                name: String(i),
+                enabled: true,
                 date: d,
-                isToday: false,
+                isToday: isToday,
+                isFeriado: esFeriado,
+                feriadoNombre: esFeriado ? feriadosMap.get(dateString) : null,
             });
         }
-        for (let i = 0; i < daysInThisMonth; i++) {
-            let d = new Date(year, month, i + 1);
-            let isToday =
-                d.getDate() == today.getDate() &&
-                d.getMonth() == today.getMonth() &&
-                d.getFullYear() == today.getFullYear();
-            if (i == 0)
-                days.push({
-                    name: monthAbbrev + " " + (i + 1),
-                    enabled: true,
-                    date: d,
-                    isToday: isToday,
-                });
-            else
-                days.push({
-                    name: "" + (i + 1),
-                    enabled: true,
-                    date: d,
-                    isToday: isToday,
-                });
-        }
-        for (let i = 0; days.length % 7; i++) {
-            let d = new Date(
-                month == 11 ? year + 1 : year,
-                (month + 1) % 12,
-                i + 1,
-            );
-            if (i == 0)
-                days.push({
-                    name: nextMonthAbbrev + " " + (i + 1),
-                    enabled: false,
-                    date: d,
-                    isToday: false,
-                });
-            else
-                days.push({
-                    name: "" + (i + 1),
-                    enabled: false,
-                    date: d,
-                    isToday: false,
-                });
+
+        // Días del mes siguiente
+        const nextMonthDate = new Date(year, month + 1, 1);
+        while (days.length % 7 !== 0) {
+            const dayNum = days.length - (firstDayOfWeek + daysInThisMonth) + 1;
+            const d = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth(), dayNum);
+            days.push({ name: String(dayNum), enabled: false, date: d });
         }
     }
 
-    function findRowCol(dt) {
-        for (let i = 0; i < days.length; i++) {
-            let d = days[i].date;
-            if (
-                d.getYear() === dt.getYear() &&
-                d.getMonth() === dt.getMonth() &&
-                d.getDate() === dt.getDate()
-            )
-                return { row: Math.floor(i / 7) + 2, col: (i % 7) + 1 };
-        }
-        return null;
-    }
-
-    function itemClick(e) {
-        eventText =
-            "itemClick " +
-            JSON.stringify(e) +
-            " localtime=" +
-            e.date.toString();
-    }
-    function dayClick(e) {
-        eventText =
-            "onDayClick " +
-            JSON.stringify(e) +
-            " localtime=" +
-            e.date.toString();
-    }
-    function headerClick(e) {
-        eventText = "onHheaderClick " + JSON.stringify(e);
-    }
     function next() {
         month++;
         if (month == 12) {
@@ -199,12 +110,22 @@
         }
     }
     function prev() {
-        if (month == 0) {
-            month = 11;
+        month--;
+        if (month === -1) {
             year--;
-        } else {
-            month--;
+            month = 11;
         }
+    }
+
+    function handleDayClick(day) {
+        if (!day.enabled) return; // No hacer nada en días deshabilitados
+
+        // Despachar (emitir) el evento 'dayclick' con la información del día
+        dispatch('dayclick', {
+            date: day.date,
+            isFeriado: day.isFeriado,
+            feriado: day.isFeriado ? feriados.find(f => f.fecha === toISODateString(day.date)) : null
+        });
     }
 </script>
 
@@ -218,11 +139,10 @@
             <button on:click={() => next()}>&gt;</button>
             <button on:click={() => year++}>&gt;&gt;</button>
         </h1>
-        {eventText}
     </div>
     <div class="calendar-grid">
         <div class="calendar-header-row">
-            {#each headers as header}
+            {#each dayNames as header}
                 <div class="calendar-header-cell">{header}</div>
             {/each}
         </div>
@@ -232,8 +152,13 @@
                     class="calendar-day"
                     class:disabled={!day.enabled}
                     class:today={day.isToday}
+                    class:feriado={day.isFeriado}
+                    on:click={() => handleDayClick(day)}
                 >
-                    {day.name}
+                    <div class="day-number">{day.name}</div>
+                    {#if day.isFeriado}
+                        <div class="feriado-name">{day.feriadoNombre}</div>
+                    {/if}
                 </div>
             {/each}
         </div>
@@ -295,11 +220,13 @@
         display: contents;
     }
     .calendar-day {
-        text-align: center;
-        padding: 20px 10px;
+        padding: 10px;
         background-color: white;
-        min-height: 120px;
+        min-height: 100px;
         transition: background-color 0.3s;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
     .calendar-day:not(.disabled):hover {
         background-color: #ebd4ab;
@@ -312,10 +239,26 @@
     .calendar-day.today {
         background-color: #e79043;
         color: white;
+    }
+    .calendar-day.today .day-number {
         font-weight: bold;
     }
-
-    .calendar-day.today:hover {
-        background-color: #dfb28a;
+    .day-number {
+        align-self: flex-start;
+        font-size: 0.9rem;
+    }
+    .feriado {
+        background-color: #b3e5fc;
+        border: 1px solid #81d4fa;
+    }
+    .feriado-name {
+        font-size: 0.85rem; 
+        font-weight: 600; 
+        color: #01579b; 
+        align-self: center;
+        text-align: center;
+        padding: 3px 5px;
+        background-color: rgba(255, 255, 255, 0.6);
+        border-radius: 5px;
     }
 </style>

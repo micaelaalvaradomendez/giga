@@ -40,6 +40,10 @@ class FeriadoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feriado
         fields = '__all__'
+        read_only_fields = ('creado_por', 'actualizado_por', 'creado_en', 'actualizado_en')
+        extra_kwargs = {
+            'descripcion': {'required': True}
+        }
 
 
 class ReglaPlusSerializer(serializers.ModelSerializer):
