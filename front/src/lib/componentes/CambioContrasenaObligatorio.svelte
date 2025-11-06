@@ -66,7 +66,7 @@
                 confirm_password: formData.confirmPassword
             };
 
-            const response = await fetch('/api/auth/change-password/', {
+            const response = await fetch('/api/personas/auth/change-password/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

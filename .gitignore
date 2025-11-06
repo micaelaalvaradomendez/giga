@@ -1,1 +1,490 @@
-/documentacion
+# ============================================================================
+# GIGA PROJECT - GITIGNORE
+# Compatible: Windows, Linux (Ubuntu), macOS
+# Updated: 2025-11-06
+# ============================================================================
+
+# ============================================================================
+# DOCUMENTACIÓN Y ARCHIVOS TEMPORALES
+# ============================================================================
+/documentacion/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# ============================================================================
+# SISTEMAS OPERATIVOS
+# ============================================================================
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================================================
+# ENTORNOS DE DESARROLLO
+# ============================================================================
+
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+*.vsix
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Sublime Text
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
+*.sublime-project
+
+# ============================================================================
+# NODE.JS / FRONTEND
+# ============================================================================
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output
+
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+out
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Vite
+dist/
+dist-ssr/
+*.local
+
+# Rollup.js default build output
+dist/
+
+# Storybook build outputs
+.out
+.storybook-out
+storybook-static
+
+# SvelteKit build output
+.svelte-kit/
+build/
+
+# ============================================================================
+# PYTHON / DJANGO BACKEND
+# ============================================================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+.pdm-python
+.pdm-build/
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# ============================================================================
+# DOCKER
+# ============================================================================
+
+# Docker compose override files
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# Docker volumes data (si los hay)
+/volumes/
+/data/
+
+# ============================================================================
+# BASES DE DATOS
+# ============================================================================
+
+# PostgreSQL
+*.dump
+*.sql.gz
+*.backup
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Database logs y temporales
+/bd/logs/
+/back/logs/
+*.log
+
+# Archivos de backup automático
+backup_*.sql
+dump_*.sql
+
+# ============================================================================
+# ARCHIVOS DE CONFIGURACIÓN SENSIBLES
+# ============================================================================
+
+# Variables de entorno con datos sensibles
+.env.local
+.env.production
+.env.development
+minio.env
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Configuraciones locales
+config.local.json
+settings.local.py
+local_config.py
+
+# Certificados SSL
+*.crt
+*.cert
+*.ca-bundle
+*.p7b
+*.p7s
+*.spc
+
+# ============================================================================
+# ARCHIVOS DE LOGS Y TEMPORALES
+# ============================================================================
+
+# Logs generales
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs específicos del proyecto
+/back/logs/
+/bd/logs/
+/nginx/logs/
+
+# Archivos temporales
+tmp/
+temp/
+.tmp/
+
+# ============================================================================
+# ARCHIVOS DE MEDIA Y UPLOADS
+# ============================================================================
+
+# Uploads de usuarios (si los hay)
+/media/
+/uploads/
+/static/uploads/
+
+# Archivos grandes que no deben versionarse
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.iso
+*.dmg
+
+# ============================================================================
+# ARCHIVOS ESPECÍFICOS DEL PROYECTO GIGA
+# ============================================================================
+
+# Datos de test y desarrollo
+/test-data/
+/sample-data/
+
+# Configuraciones específicas de desarrollo local
+django-utils.local.sh
+db-utils.local.sh
+
+# Archivos de configuración de producción
+production.yml
+prod.env
+
+# Respaldos locales
+backup/
+backups/
+
+# ============================================================================
+# HERRAMIENTAS DE BUILD Y CI/CD
+# ============================================================================
+
+# Webpack
+.webpack/
+
+# ESBuild
+.esbuild/
+
+# Turborepo
+.turbo/
+
+# Rush
+common/deploy/
+common/temp/
+common/autoinstallers/*/.npmrc
+**/.rush/temp/
+
+# Stores task runner logs
+.grunt
+.sass-cache
+
+# ============================================================================
+# ARCHIVOS DE LOCK DE DEPENDENCIAS (OPCIONALES)
+# ============================================================================
+# Descomenta si quieres ignorar archivos de lock específicos
+# package-lock.json
+# pnpm-lock.yaml
+# yarn.lock
+
+# ============================================================================
+# FIN DEL GITIGNORE
+# ============================================================================

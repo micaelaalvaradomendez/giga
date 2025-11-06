@@ -1,0 +1,348 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-11-06T10:00:00Z",
+  "updatedBy": "Sistema",
+  "organigrama": {
+    "id": "root",
+    "nombre": "Secretaria de Protección Civil",
+    "tipo": "secretaria",
+    "nivel": 0,
+    "descripcion": "Máxima autoridad de la Secretaría de Protección Civil",
+    "titular": "",
+    "email": "",
+    "telefono": "",
+    "children": [
+      {
+        "id": "subsec-seguridad-vial",
+        "nombre": "Subsecretaria de Seguridad Vial",
+        "tipo": "subsecretaria",
+        "nivel": 1,
+        "descripcion": "Responsable de la seguridad vial provincial",
+        "titular": "",
+        "email": "",
+        "telefono": "",
+        "children": [
+          {
+            "id": "dir-provincial-sv",
+            "nombre": "Dirección Provincial de Seguridad Vial",
+            "tipo": "direccion",
+            "nivel": 2,
+            "descripcion": "Dirección Provincial encargada de la seguridad vial",
+            "titular": "",
+            "email": "",
+            "telefono": "",
+            "children": [
+              {
+                "id": "dir-gral-planif-sv",
+                "nombre": "Dirección General de Planificación de Transporte y Seguridad Vial",
+                "tipo": "direccion_general",
+                "nivel": 3,
+                "descripcion": "Planificación integral del transporte y seguridad vial",
+                "titular": "",
+                "email": "",
+                "telefono": "",
+                "children": [
+                  {
+                    "id": "subdir-gral-planif-sv",
+                    "nombre": "Subdirección General de Planificación de Transporte y Seguridad Vial",
+                    "tipo": "subdireccion",
+                    "nivel": 4,
+                    "descripcion": "Apoyo a la planificación del transporte",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": [
+                      {
+                        "id": "depto-planificacion",
+                        "nombre": "Departamento de Planificación",
+                        "tipo": "departamento",
+                        "nivel": 5,
+                        "descripcion": "Área de planificación estratégica",
+                        "titular": "",
+                        "email": "",
+                        "telefono": "",
+                        "children": [
+                          {
+                            "id": "div-planificacion",
+                            "nombre": "División de Planificación",
+                            "tipo": "division",
+                            "nivel": 6,
+                            "descripcion": "División operativa de planificación",
+                            "titular": "",
+                            "email": "",
+                            "telefono": "",
+                            "children": []
+                          },
+                          {
+                            "id": "div-choferes-norte",
+                            "nombre": "División de Choferes Zona Norte",
+                            "tipo": "division",
+                            "nivel": 6,
+                            "descripcion": "Gestión de choferes zona norte",
+                            "titular": "",
+                            "email": "",
+                            "telefono": "",
+                            "children": []
+                          },
+                          {
+                            "id": "div-choferes-sur",
+                            "nombre": "División de Choferes Zona Sur",
+                            "tipo": "division",
+                            "nivel": 6,
+                            "descripcion": "Gestión de choferes zona sur",
+                            "titular": "",
+                            "email": "",
+                            "telefono": "",
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "dir-operativa-sv-norte",
+                "nombre": "Dirección Operativa y Seguridad Vial Zona Norte",
+                "tipo": "direccion",
+                "nivel": 3,
+                "descripcion": "Operaciones de seguridad vial zona norte",
+                "titular": "",
+                "email": "",
+                "telefono": "",
+                "children": [
+                  {
+                    "id": "depto-operativo-norte",
+                    "nombre": "Departamento Operativo Zona Norte",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Departamento operativo zona norte",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "dir-operativa-sv-sur",
+                "nombre": "Dirección Operativa y Seguridad Vial Zona Sur",
+                "tipo": "direccion",
+                "nivel": 3,
+                "descripcion": "Operaciones de seguridad vial zona sur",
+                "titular": "",
+                "email": "",
+                "telefono": "",
+                "children": [
+                  {
+                    "id": "depto-operativo-sur",
+                    "nombre": "Departamento Operativo Zona Sur",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Departamento operativo zona sur",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "dir-habilitaciones-norte",
+                "nombre": "Dirección Habilitaciones Zona Norte",
+                "tipo": "direccion",
+                "nivel": 3,
+                "descripcion": "Gestión de habilitaciones zona norte",
+                "titular": "",
+                "email": "",
+                "telefono": "",
+                "children": [
+                  {
+                    "id": "depto-habilitaciones-norte",
+                    "nombre": "Departamento Habilitaciones Zona Norte",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Procesamiento de habilitaciones zona norte",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  },
+                  {
+                    "id": "depto-inspeccion-norte",
+                    "nombre": "Departamento Inspección Zona Norte",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Inspecciones zona norte",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "dir-habilitaciones-sur",
+                "nombre": "Dirección Habilitaciones Zona Sur",
+                "tipo": "direccion",
+                "nivel": 3,
+                "descripcion": "Gestión de habilitaciones zona sur",
+                "titular": "",
+                "email": "",
+                "telefono": "",
+                "children": [
+                  {
+                    "id": "depto-habilitaciones-sur",
+                    "nombre": "Departamento Habilitaciones Zona Sur",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Procesamiento de habilitaciones zona sur",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  },
+                  {
+                    "id": "depto-habilitaciones-centro",
+                    "nombre": "Departamento Habilitaciones Zona Centro",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Procesamiento de habilitaciones zona centro",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  },
+                  {
+                    "id": "depto-inspeccion-sur",
+                    "nombre": "Departamento Inspección Zona Sur",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Inspecciones zona sur",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  },
+                  {
+                    "id": "depto-inspeccion-centro",
+                    "nombre": "Departamento Inspección Zona Centro",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Inspecciones zona centro",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "dir-administrativa-contable",
+                "nombre": "Dirección Administrativa y Contable",
+                "tipo": "direccion",
+                "nivel": 3,
+                "descripcion": "Gestión administrativa y contable",
+                "titular": "",
+                "email": "",
+                "telefono": "",
+                "children": [
+                  {
+                    "id": "depto-administrativo-contable",
+                    "nombre": "Departamento Administrativo y Contable",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Área administrativa y contable",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  },
+                  {
+                    "id": "depto-admin-mesa-entradas-norte",
+                    "nombre": "Departamento Administración y Mesa de Entradas Zona Norte",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Mesa de entradas y administración zona norte",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  },
+                  {
+                    "id": "depto-recursos-humanos",
+                    "nombre": "Departamento de Recursos Humanos",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Gestión de recursos humanos",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "dir-observatorio-vial",
+                "nombre": "Dirección Observatorio Vial",
+                "tipo": "direccion",
+                "nivel": 3,
+                "descripcion": "Observatorio y análisis vial",
+                "titular": "",
+                "email": "",
+                "telefono": "",
+                "children": [
+                  {
+                    "id": "depto-repat-norte",
+                    "nombre": "Departamento RePAT Zona Norte",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "RePAT zona norte",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": [
+                      {
+                        "id": "div-repat-norte",
+                        "nombre": "División RePAT Zona Norte",
+                        "tipo": "division",
+                        "nivel": 5,
+                        "descripcion": "División operativa RePAT norte",
+                        "titular": "",
+                        "email": "",
+                        "telefono": "",
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "depto-repat-sur",
+                    "nombre": "Departamento RePAT Zona Sur",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "RePAT zona sur",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  },
+                  {
+                    "id": "depto-promocion-difusion",
+                    "nombre": "Departamento Promoción y Difusión",
+                    "tipo": "departamento",
+                    "nivel": 4,
+                    "descripcion": "Promoción y difusión de seguridad vial",
+                    "titular": "",
+                    "email": "",
+                    "telefono": "",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

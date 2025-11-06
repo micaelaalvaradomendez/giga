@@ -115,6 +115,16 @@
                             </div>
                         </div>
                     </a>
+                    <a
+                        href="/organigrama"
+                        class="menu-item"
+                        on:click={closeMenu}
+                    >
+                        <span class="menu-item-icon">🏛️</span>
+                        <div class="menu-item-text">
+                            <div class="menu-item-title">Organigrama</div>
+                        </div>
+                    </a>
                 </div>
 
                 <div class="menu-section">
@@ -159,16 +169,7 @@
                         </div>
                     </a>
 
-                    <a
-                        href="/paneladmin/organigrama"
-                        class="menu-item"
-                        on:click={closeMenu}
-                    >
-                        <span class="menu-item-icon">🏛️</span>
-                        <div class="menu-item-text">
-                            <div class="menu-item-title">Organigrama</div>
-                        </div>
-                    </a>
+                    
                 </div>
 
                 {#if isJefatura}
@@ -214,6 +215,16 @@
                                     <div class="menu-item-title">
                                         Panel Administrativo
                                     </div>
+                                </div>
+                            </a>
+                            <a
+                                href="/paneladmin/organigrama"
+                                class="menu-item"
+                                on:click={closeMenu}
+                            >
+                                <span class="menu-item-icon">🏛️</span>
+                                <div class="menu-item-text">
+                                    <div class="menu-item-title">Editar Organigrama</div>
                                 </div>
                             </a>
                             
