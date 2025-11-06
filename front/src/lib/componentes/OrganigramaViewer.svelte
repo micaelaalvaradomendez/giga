@@ -70,11 +70,6 @@
 				<span class="fecha-actualizacion">
 					Última actualización: {new Date(data.lastUpdated).toLocaleDateString('es-AR')}
 				</span>
-				{#if data.updatedBy}
-					<span class="actualizado-por">
-						Actualizado por: {data.updatedBy}
-					</span>
-				{/if}
 			</div>
 		</div>
 

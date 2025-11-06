@@ -285,15 +285,8 @@
 	<div class="admin-header">
 		<h1>Administrar Organigrama</h1>
 		<div class="admin-actions">
-			<button class="btn btn-secondary" on:click={exportData}>
-				📥 Exportar
-			</button>
-			<label class="btn btn-secondary">
-				📤 Importar
-				<input type="file" accept=".json" on:change={importData} style="display: none;">
-			</label>
 			<button class="btn btn-primary" on:click={() => openAddModal()}>
-				➕ Agregar Nodo Raíz
+				➕ Agregar
 			</button>
 		</div>
 	</div>

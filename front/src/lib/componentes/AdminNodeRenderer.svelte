@@ -43,21 +43,21 @@
 					<button 
 						class="action-btn add-btn" 
 						on:click={() => openAddModal(node)}
-						title="Agregar nodo hijo"
+						title="Agregar hijo"
 					>
 						➕
 					</button>
 					<button 
 						class="action-btn edit-btn" 
 						on:click={() => openEditModal(node)}
-						title="Editar nodo"
+						title="Editar"
 					>
 						✏️
 					</button>
 					<button 
 						class="action-btn delete-btn" 
 						on:click={() => openDeleteModal(node)}
-						title="Eliminar nodo"
+						title="Eliminar"
 					>
 						🗑️
 					</button>
