@@ -44,12 +44,13 @@ class Rol(models.Model):
 
 class Agente(models.Model):
     """
-    Agentes de Protección Civil - MODELO SIMPLE.
-    No hereda de User para evitar conflictos con managed=False.
+    Agentes de Protección Civil - Database First.
+    Refleja exactamente la estructura de la tabla 'agente' en PostgreSQL.
     """
     id_agente = models.BigAutoField(primary_key=True)
     email = models.CharField(unique=True, max_length=100)
     dni = models.CharField(unique=True, max_length=20)
+    cuil = models.CharField(unique=True, max_length=20)
     legajo = models.CharField(unique=True, max_length=50)
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
@@ -98,12 +99,7 @@ class Agente(models.Model):
         parts = [self.calle, self.numero, self.ciudad, self.provincia]
         return ', '.join([part for part in parts if part])
     
-    @property
-    def cuil(self):
-        """CUIL generado a partir del DNI (placeholder)"""
-        if self.dni:
-            return f"27{self.dni}4"  # Formato simplificado
-        return None
+
     
     @property
     def fecha_ingreso(self):
@@ -119,14 +115,32 @@ class Agente(models.Model):
         return f"{self.nombre} {self.apellido}"
     
     def check_password(self, raw_password):
-        """Verificar contraseña (implementar hash según la BD)"""
-        # Por ahora comparación simple, mejorar con hash apropiado
-        return self.password_hash == raw_password
+        """Verificar contraseña usando Django's password hasher"""
+        from django.contrib.auth.hashers import check_password
+        return check_password(raw_password, self.password_hash)
     
     def set_password(self, raw_password):
-        """Establecer contraseña (implementar hash según la BD)"""
-        # Por ahora almacenamiento simple, mejorar con hash apropiado
-        self.password_hash = raw_password
+        """Establecer contraseña usando Django's password hasher"""
+        from django.contrib.auth.hashers import make_password
+        self.password_hash = make_password(raw_password)
+
+
+class Agrupacion(models.Model):
+    """Agrupaciones organizacionales."""
+    id_agrupacion = models.BigAutoField(primary_key=True)
+    nombre = models.CharField(unique=True, max_length=100)
+    descripcion = models.TextField(blank=True, null=True)
+    color = models.CharField(max_length=7, default='#e79043')  # Color hexadecimal
+    activo = models.BooleanField(default=True)
+    creado_en = models.DateTimeField(blank=True, null=True)
+    actualizado_en = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'agrupacion'
+        
+    def __str__(self):
+        return self.nombre
 
 
 class AgenteRol(models.Model):

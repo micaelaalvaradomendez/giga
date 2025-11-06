@@ -4,7 +4,8 @@ const isBrowser = typeof window !== 'undefined';
 export const isAuthenticated = writable(false);
 export const user = writable(null);
 
-const API_BASE_URL = 'http://localhost:8000/api';
+// Usar la URL a través de nginx (puerto 80) en lugar de directo al backend
+const API_BASE_URL = '/api';
 
 export class AuthService {
 
@@ -15,7 +16,7 @@ export class AuthService {
                 cuil: cleanCuil,
                 password: password
             };
-            const response = await fetch(`${API_BASE_URL}/auth/login/`, {
+            const response = await fetch(`${API_BASE_URL}/personas/auth/login/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -48,7 +49,7 @@ export class AuthService {
 
     static async logout() {
         try {
-            await fetch(`${API_BASE_URL}/auth/logout/`, {
+            await fetch(`${API_BASE_URL}/personas/auth/logout/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include'
@@ -70,7 +71,7 @@ export class AuthService {
         if (!isBrowser) return { authenticated: false };
 
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/check-session/`, {
+            const response = await fetch(`${API_BASE_URL}/personas/auth/check-session/`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include'
@@ -160,6 +161,64 @@ export class AuthService {
         if (!isBrowser) return false;
         const requiresChange = localStorage.getItem('requires_password_change');
         return requiresChange === 'true';
+    }
+
+    static async changePassword(currentPassword, newPassword, confirmPassword) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/personas/auth/change-password/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password: newPassword,
+                    confirm_password: confirmPassword
+                })
+            });
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            return { success: false, message: 'Error de conexión. Verifique su conexión a internet.' };
+        }
+    }
+
+    static async updateProfile() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/personas/auth/update-profile/`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            
+            if (data.success && isBrowser) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                user.set(data.user);
+            }
+            
+            return data;
+        } catch (error) {
+            return { success: false, message: 'Error de conexión.' };
+        }
+    }
+
+    static async recoverPassword(cuil) {
+        try {
+            const cleanCuil = cuil.replace(/\D/g, '');
+            const response = await fetch(`${API_BASE_URL}/personas/auth/recover-password/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ cuil: cleanCuil })
+            });
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            return { success: false, message: 'Error de conexión. Verifique su conexión a internet.' };
+        }
     }
 }
 

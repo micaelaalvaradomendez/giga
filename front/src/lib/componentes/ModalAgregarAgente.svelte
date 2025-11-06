@@ -4,6 +4,8 @@
 
 	export let isOpen = false;
 	export let isSaving = false;
+	export let areasDisponibles = []; // Recibir áreas como prop desde el controlador
+	export let rolesDisponibles = []; // Recibir roles como prop desde el controlador
 
 	const dispatch = createEventDispatcher();
 
@@ -20,10 +22,10 @@
 		dni: '',
 		legajo: '',
 		telefono: '',
-		fecha_nac: '',
+		fecha_nacimiento: '',
 		categoria_revista: '',
 		agrupacion: '',
-		es_jefe: false,
+		area_id: null,
 		// Dirección
 		calle: '',
 		numero: '',
@@ -32,24 +34,14 @@
 		// Laborales
 		horario_entrada: '08:00',
 		horario_salida: '16:00',
-		categoria_usuf: ''
+		activo: true
 	};
 	
 	let activeTab = 'personal';
 	let validateTimeout;
 	let isFormValid = false;
-	let rolesDisponibles = [];
-
-	// Cargar roles disponibles cuando se monta el componente
-	onMount(async () => {
-		try {
-			const response = await personasService.getRoles();
-			rolesDisponibles = response.data.results || [];
-		} catch (error) {
-			console.error('Error cargando roles:', error);
-			rolesDisponibles = [];
-		}
-	});
+	
+	// Ya no necesitamos cargar roles - vienen como props
 
 	function setActiveTab(tab) {
 		activeTab = tab;
@@ -58,6 +50,11 @@
 	function validateForm() {
 		// La contraseña se genera automáticamente del DNI
 		formData.password = formData.dni;
+		
+		// Generar legajo automático si no existe
+		if (!formData.legajo && formData.dni) {
+			formData.legajo = `LEG-${formData.dni}`;
+		}
 		
 		isFormValid = !!(
 			formData.email && 
@@ -91,10 +88,10 @@
 			formData = {
 				email: '', cuil: '', password: '', rol_id: '',
 				nombre: '', apellido: '', dni: '', legajo: '',
-				telefono: '', fecha_nac: '', categoria_revista: '',
-				agrupacion: '', es_jefe: false, calle: '', numero: '',
+				telefono: '', fecha_nacimiento: '', categoria_revista: '',
+				agrupacion: '', area_id: null, calle: '', numero: '',
 				ciudad: '', provincia: '',
-				horario_entrada: '08:00', horario_salida: '16:00', categoria_usuf: ''
+				horario_entrada: '08:00', horario_salida: '16:00', activo: true
 			};
 			activeTab = 'personal';
 			dispatch('cerrar');
@@ -103,7 +100,15 @@
 
 	function guardarAgente() {
 		if (isFormValid && !isSaving) {
+			console.log('💾 Guardando agente con datos:', formData);
+			console.log('📊 Validaciones:', {
+				isFormValid,
+				rolesCount: rolesDisponibles.length,
+				areasCount: areasDisponibles.length
+			});
 			dispatch('guardar', { formData });
+		} else {
+			console.warn('⚠️ No se puede guardar:', { isFormValid, isSaving });
 		}
 	}
 
@@ -266,11 +271,11 @@
 									<small class="help-text">Dirección de correo electrónico institucional</small>
 								</div>
 								<div class="form-group">
-									<label for="fecha_nac">Fecha de Nacimiento</label>
+									<label for="fecha_nacimiento">Fecha de Nacimiento</label>
 									<input 
 										type="date" 
-										id="fecha_nac" 
-										bind:value={formData.fecha_nac} 
+										id="fecha_nacimiento" 
+										bind:value={formData.fecha_nacimiento} 
 										disabled={isSaving}
 									/>
 									<small class="help-text">Fecha de nacimiento (opcional)</small>
@@ -304,22 +309,22 @@
 								</div>
 							</div>
 
-							<div class="form-group">
-								<label for="rol_id">Rol del Usuario *</label>
-								<select 
-									id="rol_id" 
-									bind:value={formData.rol_id} 
-									on:change={handleInputChange}
-									required
-									disabled={isSaving}
-								>
-									<option value="">Seleccionar rol...</option>
-									{#each rolesDisponibles as rol}
-										<option value={rol.id}>{rol.nombre} - {rol.descripcion}</option>
-									{/each}
-								</select>
-								<small class="help-text">Define los permisos y nivel de acceso del usuario en el sistema</small>
-							</div>
+								<div class="form-group">
+									<label for="rol_id">Rol del Usuario *</label>
+									<select 
+										id="rol_id" 
+										bind:value={formData.rol_id} 
+										on:change={handleInputChange}
+										required
+										disabled={isSaving}
+									>
+										<option value="">Seleccionar rol...</option>
+										{#each rolesDisponibles as rol}
+											<option value={rol.id_rol}>{rol.nombre} - {rol.descripcion || ''}</option>
+										{/each}
+									</select>
+									<small class="help-text">Define los permisos y nivel de acceso del usuario en el sistema (Roles disponibles: {rolesDisponibles.length})</small>
+								</div>
 						</div>
 						{/if}
 
@@ -362,15 +367,41 @@
 									<small class="help-text">Agrupación laboral según escalafón</small>
 								</div>
 								<div class="form-group">
-									<label for="categoria_usuf">Categoría Usufructo</label>
+									<label for="area_id">Área</label>
+									<select 
+										id="area_id" 
+										bind:value={formData.area_id} 
+										disabled={isSaving}
+									>
+										<option value="">Sin área asignada...</option>
+										{#each areasDisponibles as area}
+											<option value={area.id_area}>{area.nombre}</option>
+										{/each}
+									</select>
+									<small class="help-text">Área de trabajo del agente (Áreas disponibles: {areasDisponibles.length})</small>
+								</div>
+							</div>
+
+							<div class="form-row">
+								<div class="form-group">
+									<label for="horario_entrada">Horario Entrada</label>
 									<input 
-										type="text" 
-										id="categoria_usuf" 
-										bind:value={formData.categoria_usuf} 
-										placeholder="U1, U2..."
+										type="time" 
+										id="horario_entrada" 
+										bind:value={formData.horario_entrada} 
 										disabled={isSaving}
 									/>
-									<small class="help-text">Categoría de usufructo (opcional)</small>
+									<small class="help-text">Hora de entrada al trabajo</small>
+								</div>
+								<div class="form-group">
+									<label for="horario_salida">Horario Salida</label>
+									<input 
+										type="time" 
+										id="horario_salida" 
+										bind:value={formData.horario_salida} 
+										disabled={isSaving}
+									/>
+									<small class="help-text">Hora de salida del trabajo</small>
 								</div>
 							</div>
 
@@ -378,12 +409,12 @@
 								<label class="checkbox-label">
 									<input 
 										type="checkbox" 
-										bind:checked={formData.es_jefe} 
+										bind:checked={formData.activo} 
 										disabled={isSaving}
 									/>
-									Es Jefe
+									Agente Activo
 								</label>
-								<small class="help-text">Marcar si el agente tiene rol de jefatura</small>
+								<small class="help-text">Indica si el agente estará activo en el sistema</small>
 							</div>
 						</div>
 						{/if}

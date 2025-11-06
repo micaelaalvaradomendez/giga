@@ -174,8 +174,56 @@ SELECT setval('agente_id_agente_seq', COALESCE((SELECT MAX(id_agente) FROM agent
 SELECT setval('agente_rol_id_agente_rol_seq', COALESCE((SELECT MAX(id_agente_rol) FROM agente_rol), 1), true);
 SELECT setval('licencia_id_licencia_seq', COALESCE((SELECT MAX(id_licencia) FROM licencia), 1), true);
 
+-- =====================================================
+-- DATOS ADICIONALES PARA CRONOGRAMAS Y PLUS
+-- =====================================================
+
+-- Insertar agrupaciones desde datos existentes de agentes
+INSERT INTO agrupacion (nombre, descripcion) 
+SELECT DISTINCT 
+    agrupacion as nombre,
+    'Agrupación ' || agrupacion as descripcion
+FROM agente 
+WHERE agrupacion IS NOT NULL 
+AND agrupacion != ''
+AND NOT EXISTS (
+    SELECT 1 FROM agrupacion WHERE nombre = agente.agrupacion
+)
+ORDER BY agrupacion;
+
+-- Feriados básicos 2024-2025
+INSERT INTO feriado (fecha, descripcion, es_nacional) VALUES 
+    ('2024-12-25', 'Navidad', true),
+    ('2025-01-01', 'Año Nuevo', true),
+    ('2025-05-01', 'Día del Trabajador', true),
+    ('2025-07-09', 'Día de la Independencia', true),
+    ('2025-12-25', 'Navidad', true)
+ON CONFLICT (fecha) DO NOTHING;
+
+-- Parámetros por defecto para área de Protección Civil
+INSERT INTO parametros_area (id_area, ventana_entrada_inicio, ventana_entrada_fin, ventana_salida_inicio, ventana_salida_fin)
+SELECT 
+    id_area, 
+    '07:30:00'::TIME, 
+    '09:00:00'::TIME, 
+    '16:00:00'::TIME, 
+    '18:30:00'::TIME
+FROM area 
+WHERE nombre = 'Secretaría de Protección Civil'
+AND NOT EXISTS (
+    SELECT 1 FROM parametros_area WHERE id_area = area.id_area
+);
+
+-- Reglas plus por defecto 
+INSERT INTO reglas_plus (nombre, horas_minimas_diarias, horas_minimas_mensuales, porcentaje_plus)
+VALUES 
+    ('Plus 20% Guardias', 8.0, 160.0, 20.0),
+    ('Plus 40% Guardias Especiales', 12.0, 200.0, 40.0)
+ON CONFLICT DO NOTHING;
+
 -- Mensaje de confirmación
 DO $$
 BEGIN
     RAISE NOTICE 'MIGRACIÓN DE DATOS COMPLETADA EXITOSAMENTE - Sistema GIGA Protección Civil';
+    RAISE NOTICE 'Datos adicionales: agrupaciones, feriados, parámetros de área, reglas plus';
 END $$;

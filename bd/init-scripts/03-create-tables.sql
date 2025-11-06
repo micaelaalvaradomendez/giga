@@ -67,6 +67,10 @@ CREATE TABLE IF NOT EXISTS agente (
     agrupacion VARCHAR(100),
     activo BOOLEAN DEFAULT true,
     id_area BIGINT,
+    -- Nuevos campos para control horario
+    tolerancia_entrada_min INTEGER DEFAULT 10,
+    tolerancia_salida_min INTEGER DEFAULT 10,
+    horas_trabajo_dia DECIMAL(4,2) DEFAULT 8.0,
     FOREIGN KEY (id_area) REFERENCES area(id_area) ON DELETE RESTRICT
 );
 
@@ -159,9 +163,17 @@ CREATE TABLE IF NOT EXISTS resumen_guardia_mes (
     id_agente BIGINT NOT NULL,
     mes INTEGER NOT NULL,
     anio INTEGER NOT NULL,
+    -- Campos legacy mantenidos
     plus20 BOOLEAN DEFAULT false,
     plus40 BOOLEAN DEFAULT false,
     total_horas_guardia INTEGER DEFAULT 0,
+    -- Nuevos campos para cálculo automático de plus
+    horas_efectivas DECIMAL(6,2) DEFAULT 0,
+    porcentaje_plus DECIMAL(5,2) DEFAULT 0,
+    monto_calculado DECIMAL(10,2),
+    estado_plus VARCHAR(30) DEFAULT 'pendiente',
+    fecha_calculo TIMESTAMP,
+    aprobado_en TIMESTAMP,
     UNIQUE (id_agente, mes, anio),
     FOREIGN KEY (id_agente) REFERENCES agente(id_agente) ON DELETE RESTRICT
 );
@@ -193,6 +205,64 @@ CREATE TABLE IF NOT EXISTS licencia (
     id_agente BIGINT NOT NULL,
     FOREIGN KEY (id_agente) REFERENCES agente(id_agente) ON DELETE RESTRICT,
     FOREIGN KEY (id_tipo_licencia) REFERENCES tipo_licencia(id_tipo_licencia) ON DELETE RESTRICT
+);
+
+-- 13. Tabla agrupacion (organizacional)
+CREATE TABLE IF NOT EXISTS agrupacion (
+    id_agrupacion BIGSERIAL PRIMARY KEY,
+    nombre VARCHAR(100) UNIQUE NOT NULL,
+    descripcion TEXT,
+    color VARCHAR(7) DEFAULT '#e79043',
+    activo BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 14. Tabla feriado (nueva - gestión de feriados)
+CREATE TABLE IF NOT EXISTS feriado (
+    id_feriado BIGSERIAL PRIMARY KEY,
+    fecha DATE UNIQUE NOT NULL,
+    descripcion VARCHAR(200) NOT NULL,
+    es_nacional BOOLEAN DEFAULT false,
+    es_provincial BOOLEAN DEFAULT false,
+    es_local BOOLEAN DEFAULT false,
+    activo BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 15. Tabla parametros_area (nueva - control horario por área)
+CREATE TABLE IF NOT EXISTS parametros_area (
+    id_parametros_area BIGSERIAL PRIMARY KEY,
+    id_area BIGINT NOT NULL,
+    ventana_entrada_inicio TIME DEFAULT '07:30:00',
+    ventana_entrada_fin TIME DEFAULT '09:00:00', 
+    ventana_salida_inicio TIME DEFAULT '16:00:00',
+    ventana_salida_fin TIME DEFAULT '18:30:00',
+    tolerancia_entrada_min INTEGER DEFAULT 15,
+    tolerancia_salida_min INTEGER DEFAULT 15,
+    horas_trabajo_dia DECIMAL(4,2) DEFAULT 8.0,
+    vigente_desde DATE DEFAULT CURRENT_DATE,
+    vigente_hasta DATE,
+    activo BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_area) REFERENCES area(id_area) ON DELETE RESTRICT
+);
+
+-- 16. Tabla reglas_plus (nueva - cálculo automático de plus)
+CREATE TABLE IF NOT EXISTS reglas_plus (
+    id_regla_plus BIGSERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    horas_minimas_diarias DECIMAL(5,2) DEFAULT 8.0,
+    horas_minimas_mensuales DECIMAL(6,2) DEFAULT 160.0,
+    porcentaje_plus DECIMAL(5,2) DEFAULT 20.0,
+    aplica_areas_operativas BOOLEAN DEFAULT true,
+    aplica_areas_administrativas BOOLEAN DEFAULT false,
+    vigente_desde DATE DEFAULT CURRENT_DATE,
+    vigente_hasta DATE,
+    activa BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =====================================================
@@ -228,6 +298,20 @@ CREATE INDEX IF NOT EXISTS idx_licencia_fechas ON licencia(fecha_desde, fecha_ha
 CREATE INDEX IF NOT EXISTS idx_licencia_tipo ON licencia(id_tipo_licencia);
 
 CREATE INDEX IF NOT EXISTS idx_resumen_guardia_agente_periodo ON resumen_guardia_mes(id_agente, anio, mes);
+
+-- Índices para nuevas tablas
+CREATE INDEX IF NOT EXISTS idx_agrupacion_nombre ON agrupacion(nombre);
+CREATE INDEX IF NOT EXISTS idx_agrupacion_activo ON agrupacion(activo);
+
+CREATE INDEX IF NOT EXISTS idx_feriado_fecha ON feriado(fecha);
+CREATE INDEX IF NOT EXISTS idx_feriado_activo ON feriado(activo);
+
+CREATE INDEX IF NOT EXISTS idx_parametros_area_area ON parametros_area(id_area);
+CREATE INDEX IF NOT EXISTS idx_parametros_area_vigencia ON parametros_area(vigente_desde, vigente_hasta);
+CREATE INDEX IF NOT EXISTS idx_parametros_area_activo ON parametros_area(activo);
+
+CREATE INDEX IF NOT EXISTS idx_reglas_plus_vigencia ON reglas_plus(vigente_desde, vigente_hasta);
+CREATE INDEX IF NOT EXISTS idx_reglas_plus_activa ON reglas_plus(activa);
 
 -- Índices para texto (usando pg_trgm para búsquedas parciales)
 CREATE INDEX IF NOT EXISTS idx_agente_nombre_trgm ON agente USING gin ((nombre || ' ' || apellido) gin_trgm_ops);

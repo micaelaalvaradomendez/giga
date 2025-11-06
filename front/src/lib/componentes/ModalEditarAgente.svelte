@@ -4,6 +4,8 @@
 	export let agente = null;
 	export let isOpen = false;
 	export let isSaving = false;
+	export let areasDisponibles = []; // Recibir áreas como prop desde el controlador
+	export let rolesDisponibles = []; // Recibir roles como prop desde el controlador
 
 	const dispatch = createEventDispatcher();
 
@@ -11,51 +13,37 @@
 	let formData = {};
 	let initialized = false;
 	let isFormValid = false;
-	let rolesDisponibles = [];
-	let rolActual = null;
-	
-	// Cargar roles disponibles cuando se monta el componente
-	onMount(async () => {
-		try {
-			const { personasService } = await import('$lib/services.js');
-			const response = await personasService.getRoles();
-			rolesDisponibles = response.data.results || [];
-			
-			// Obtener rol actual del agente si existe
-			if (agente?.roles && agente.roles.length > 0) {
-				// Usar el primer rol (principal) del agente
-				rolActual = agente.roles[0].id;
-			}
-		} catch (error) {
-			console.error('Error cargando roles:', error);
-			rolesDisponibles = [];
-		}
-	});
 
 	// Inicializar datos solo cuando se necesita
 	function initializeFormData() {
 		if (!agente || initialized) return;
 		
+		// Determinar el área del agente
+		let areaId = agente.area_id || null;
+		
+
+		
 		formData = {
 			nombre: agente.nombre || '',
 			apellido: agente.apellido || '',
 			dni: agente.dni || '',
-			legajo: agente.legajo || '',
+			cuil: agente.cuil || '',
 			email: agente.email || '',
 			telefono: agente.telefono || '',
-			fecha_nac: agente.fecha_nac || '',
+			fecha_nacimiento: agente.fecha_nacimiento || '',
 			categoria_revista: agente.categoria_revista || '',
 			agrupacion: agente.agrupacion || '',
-			es_jefe: agente.es_jefe || false,
 			calle: agente.calle || '',
 			numero: agente.numero || '',
 			ciudad: agente.ciudad || '',
 			provincia: agente.provincia || '',
 			horario_entrada: agente.horario_entrada || '',
 			horario_salida: agente.horario_salida || '',
-			categoria_usuf: agente.categoria_usuf || '',
-			rol_id: rolActual || ''
+			area_id: areaId,
+			activo: agente.activo !== false
 		};
+		
+		console.log('🎯 FormData inicializado - area_id:', areaId, 'agente.area_id:', agente.area_id);
 		initialized = true;
 		validateForm();
 	}
@@ -90,6 +78,7 @@
 
 	// Observar cambios de modal
 	$: if (isOpen && agente && !initialized) {
+		// Inicializar formulario directamente (las áreas ya están disponibles como prop)
 		initializeFormData();
 	}
 
@@ -129,6 +118,8 @@
 	function setActiveTab(tab) {
 		activeTab = tab;
 	}
+
+	// Ya no necesitamos cargar áreas - vienen como prop
 </script>
 
 {#if isOpen && agente && initialized}
@@ -229,11 +220,27 @@
 									<small class="help-text">Documento Nacional de Identidad (7-8 dígitos, sin puntos)</small>
 								</div>
 								<div class="form-group">
-									<label for="fecha_nac">Fecha de Nacimiento</label>
+									<label for="cuil">CUIL</label>
+									<input 
+										type="text" 
+										id="cuil" 
+										bind:value={formData.cuil} 
+										pattern="[0-9]{11}"
+										placeholder="20123456789"
+										maxlength="11"
+										disabled={isSaving}
+									/>
+									<small class="help-text">Código Único de Identificación Laboral (11 dígitos, sin guiones)</small>
+								</div>
+							</div>
+
+							<div class="form-row">
+								<div class="form-group">
+									<label for="fecha_nacimiento">Fecha de Nacimiento</label>
 									<input 
 										type="date" 
-										id="fecha_nac" 
-										bind:value={formData.fecha_nac} 
+										id="fecha_nacimiento" 
+										bind:value={formData.fecha_nacimiento} 
 										disabled={isSaving}
 									/>
 									<small class="help-text">Fecha de nacimiento (opcional)</small>
@@ -289,12 +296,11 @@
 
 							<div class="form-row">
 								<div class="form-group">
-									<label for="agrupacion">Agrupación *</label>
+									<label for="agrupacion">Agrupación</label>
 									<select 
 										id="agrupacion" 
 										bind:value={formData.agrupacion} 
 										on:change={handleInputChange}
-										required
 										disabled={isSaving}
 									>
 										<option value="">Seleccionar agrupación...</option>
@@ -305,26 +311,59 @@
 									<small class="help-text">Agrupación laboral según escalafón</small>
 								</div>
 								<div class="form-group">
-									<label for="categoria_usuf">Categoría Usufructo</label>
-									<input 
-										type="text" 
-										id="categoria_usuf" 
-										bind:value={formData.categoria_usuf} 
+									<label for="area_id">Área</label>
+									<select 
+										id="area_id" 
+										bind:value={formData.area_id} 
 										disabled={isSaving}
-									/>
+									>
+										<option value="">Sin área asignada...</option>
+										{#each areasDisponibles as area}
+											<option value={area.id_area}>{area.nombre}</option>
+										{/each}
+									</select>
+									<small class="help-text">Área de trabajo del agente (Total áreas: {areasDisponibles.length})</small>
 								</div>
 							</div>
 
-							<div class="form-group">
-								<label class="checkbox-label">
+							<div class="form-row">
+								<div class="form-group">
+									<label for="horario_entrada">Horario Entrada</label>
 									<input 
-										type="checkbox" 
-										bind:checked={formData.es_jefe} 
+										type="time" 
+										id="horario_entrada" 
+										bind:value={formData.horario_entrada} 
 										disabled={isSaving}
 									/>
-									Es Jefe
-								</label>
+									<small class="help-text">Hora de entrada al trabajo</small>
+								</div>
+								<div class="form-group">
+									<label for="horario_salida">Horario Salida</label>
+									<input 
+										type="time" 
+										id="horario_salida" 
+										bind:value={formData.horario_salida} 
+										disabled={isSaving}
+									/>
+									<small class="help-text">Hora de salida del trabajo</small>
+								</div>
 							</div>
+
+							<div class="form-row">
+								<div class="form-group">
+									<label class="checkbox-label">
+										<input 
+											type="checkbox" 
+											bind:checked={formData.activo} 
+											disabled={isSaving}
+										/>
+										Agente Activo
+									</label>
+									<small class="help-text">Indica si el agente está activo en el sistema</small>
+								</div>
+							</div>
+
+
 						</div>
 						{/if}
 

@@ -12,11 +12,17 @@
     $: currentUser = $userStore;
     $: isAuth = $authStore;
 
-    $: isAdmin = currentUser?.rol_principal === "Administrador";
-    $: isDirector = currentUser?.rol_principal === "Director" || isAdmin;
-    $: isJefatura = currentUser?.rol_principal === "Jefatura" || isDirector;
-    $: isAgenteAvanzado =
-        currentUser?.rol_principal === "Agente Avanzado" || isJefatura;
+    // Función para obtener el rol principal del usuario
+    function getUserRole(user) {
+        if (!user || !user.roles || user.roles.length === 0) return null;
+        return user.roles[0].nombre;
+    }
+
+    $: userRole = getUserRole(currentUser);
+    $: isAdmin = userRole === "Administrador";
+    $: isDirector = userRole === "Director" || isAdmin;
+    $: isJefatura = userRole === "Jefatura" || isDirector;
+    $: isAgenteAvanzado = userRole === "Agente Avanzado" || isJefatura;
 
     export function toggleMenu() {
         isActive = !isActive;
@@ -49,7 +55,8 @@
         }
     });
 
-    function getRoleBadgeClass(rol) {
+    function getRoleBadgeClass(user) {
+        const role = getUserRole(user);
         const roleClasses = {
             Administrador: "role-admin",
             Director: "role-director",
@@ -57,7 +64,7 @@
             "Agente Avanzado": "role-agente-avanzado",
             Agente: "role-agente",
         };
-        return roleClasses[rol] || "role-default";
+        return roleClasses[role] || "role-default";
     }
 </script>
 
@@ -73,7 +80,7 @@
             <div class="sidebar-tab-icon">☰</div>
         </button>
         {#if currentUser}
-            <div class={getRoleBadgeClass(currentUser.rol_principal)}></div>
+            <div class={getRoleBadgeClass(currentUser)}></div>
         {/if}
         <div class="sidebar">
             <div class="sidebar-header">
@@ -153,7 +160,7 @@
                     </a>
 
                     <a
-                        href="/admin/organigrama"
+                        href="/paneladmin/organigrama"
                         class="menu-item"
                         on:click={closeMenu}
                     >
@@ -171,7 +178,7 @@
                         </div>
 
                         <a
-                            href="/admin/auditoria"
+                            href="/paneladmin/auditoria"
                             class="menu-item"
                             on:click={closeMenu}
                         >
@@ -183,14 +190,14 @@
 
                         {#if isDirector}
                             <a
-                                href="/admin/parametros"
+                                href="/paneladmin/parametros"
                                 class="menu-item"
                                 on:click={closeMenu}
                             >
                                 <span class="menu-item-icon">⏱️</span>
                                 <div class="menu-item-text">
                                     <div class="menu-item-title">
-                                        Parámetros Horarios
+                                        Parámetros
                                     </div>
                                 </div>
                             </a>
@@ -198,7 +205,7 @@
 
                         {#if isAdmin}
                             <a
-                                href="/admin"
+                                href="/paneladmin"
                                 class="menu-item"
                                 on:click={closeMenu}
                             >
@@ -211,14 +218,14 @@
                             </a>
                             
                             <a
-                                href="/admin/roles-permisos"
+                                href="/paneladmin/roles"
                                 class="menu-item"
                                 on:click={closeMenu}
                             >
                                 <span class="menu-item-icon">🛡️</span>
                                 <div class="menu-item-text">
                                     <div class="menu-item-title">
-                                        Roles y Permisos
+                                        Roles
                                     </div>
                                 </div>
                             </a>

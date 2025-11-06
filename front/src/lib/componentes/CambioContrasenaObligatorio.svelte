@@ -62,10 +62,11 @@
         try {
             const updateData = {
                 current_password: formData.currentPassword,
-                password: formData.newPassword
+                new_password: formData.newPassword,
+                confirm_password: formData.confirmPassword
             };
 
-            const response = await fetch('http://localhost:8000/api/auth/update-profile/', {
+            const response = await fetch('/api/auth/change-password/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

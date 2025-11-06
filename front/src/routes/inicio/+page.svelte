@@ -3,6 +3,7 @@
     import { goto } from "$app/navigation";
     import AuthService from "../../lib/login/authService.js";
     import CalendarioBase from "../../lib/componentes/calendarioBase.svelte";
+    import CambioContrasenaObligatorio from "../../lib/componentes/CambioContrasenaObligatorio.svelte";
 
     let user = null;
     let isLoading = true;
@@ -53,11 +54,11 @@
 
     function getRoleBadgeClass(rol) {
         const roleClasses = {
-            Administrador: "role-admin",
-            Director: "role-director",
-            Jefatura: "role-jefatura",
+            "Administrador": "role-admin",
+            "Director": "role-director", 
+            "Jefatura": "role-jefatura",
             "Agente Avanzado": "role-agente-avanzado",
-            Agente: "role-agente",
+            "Agente": "role-agente",
         };
         return roleClasses[rol] || "role-default";
     }
@@ -107,36 +108,35 @@
                             >{AuthService.formatCuil(user.cuil)}</span
                         >
                     </div>
-                    <div class="detail-item">
-                        <span class="label">Rol principal:</span>
-                        <span
-                            class="role-badge {getRoleBadgeClass(
-                                user.rol_principal,
-                            )}"
-                        >
-                            {user.rol_principal}
-                        </span>
-                    </div>
-                    {#if user.roles && user.roles.length > 1}
+                    {#if user.roles && user.roles.length > 0}
                         <div class="detail-item">
-                            <span class="label">Otros roles:</span>
-                            <div class="roles-list">
-                                {#each user.roles.filter((role) => role !== user.rol_principal) as role}
-                                    <span
-                                        class="role-badge {getRoleBadgeClass(
-                                            role,
-                                        )}">{role}</span
-                                    >
-                                {/each}
-                            </div>
+                            <span class="label">Rol principal:</span>
+                            <span
+                                class="role-badge {getRoleBadgeClass(
+                                    user.roles[0].nombre,
+                                )}"
+                            >
+                                {user.roles[0].nombre}
+                            </span>
                         </div>
+                        {#if user.roles.length > 1}
+                            <div class="detail-item">
+                                <span class="label">Otros roles:</span>
+                                <div class="roles-list">
+                                    {#each user.roles.slice(1) as role}
+                                        <span
+                                            class="role-badge {getRoleBadgeClass(
+                                                role.nombre,
+                                            )}">{role.nombre}</span
+                                        >
+                                    {/each}
+                                </div>
+                            </div>
+                        {/if}
                     {/if}
                 </div>
             </div>
             <div class="actions">
-                <button class="edit-profile-button" on:click={openEditProfile}>
-                    Editar Perfil
-                </button>
                 <button class="logout-button" on:click={handleLogout}>
                     Cerrar Sesión
                 </button>
@@ -185,7 +185,7 @@
                             >
                         </div>
                         {#if AuthService.hasRole("Administrador")}
-                            <a href="/admin">
+                            <a href="/paneladmin">
                                 <div class="action-card admin-card">
                                     <h4>Administración</h4>
                                     <p>Panel de administrador</p>
@@ -210,6 +210,12 @@
         <button on:click={() => goto("/")}>Ir al Login</button>
     </div>
 {/if}
+
+<!-- Componente para cambio obligatorio de contraseña -->
+<CambioContrasenaObligatorio 
+    showAlert={showMandatoryPasswordChange}
+    {user}
+/>
 
 <style>
     .container {

@@ -55,11 +55,11 @@
 
     function getRoleBadgeClass(rol) {
         const roleClasses = {
-            Administrador: "role-admin",
-            Director: "role-director",
-            Jefatura: "role-jefatura",
+            "Administrador": "role-admin",
+            "Director": "role-director",
+            "Jefatura": "role-jefatura",
             "Agente Avanzado": "role-agente-avanzado",
-            Agente: "role-agente",
+            "Agente": "role-agente",
         };
         return roleClasses[rol] || "role-default";
     }
@@ -107,25 +107,27 @@
                 <span class="label">CUIL:</span>
                 <span class="value">{AuthService.formatCuil(user.cuil)}</span>
             </div>
-            <div class="detail-item">
-                <span class="label">Rol principal:</span>
-                <span
-                    class="role-badge {getRoleBadgeClass(user.rol_principal)}"
-                >
-                    {user.rol_principal}
-                </span>
-            </div>
-            {#if user.roles && user.roles.length > 1}
+            {#if user.roles && user.roles.length > 0}
                 <div class="detail-item">
-                    <span class="label">Otros roles:</span>
-                    <div class="roles-list">
-                        {#each user.roles.filter((role) => role !== user.rol_principal) as role}
-                            <span class="role-badge {getRoleBadgeClass(role)}"
-                                >{role}</span
-                            >
-                        {/each}
-                    </div>
+                    <span class="label">Rol principal:</span>
+                    <span
+                        class="role-badge {getRoleBadgeClass(user.roles[0].nombre)}"
+                    >
+                        {user.roles[0].nombre}
+                    </span>
                 </div>
+                {#if user.roles.length > 1}
+                    <div class="detail-item">
+                        <span class="label">Otros roles:</span>
+                        <div class="roles-list">
+                            {#each user.roles.slice(1) as role}
+                                <span class="role-badge {getRoleBadgeClass(role.nombre)}"
+                                    >{role.nombre}</span
+                                >
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
             {/if}
         </div>
         <div class="actions">

@@ -6,9 +6,9 @@ export const personasService = {
   getAllAgentes: (token = null) => createApiClient(token).get('/personas/agentes/'),
   getAgentes: (token = null) => createApiClient(token).get('/personas/agentes/'), // Alias para consistencia
   getAgente: (id, token = null) => createApiClient(token).get(`/personas/agentes/${id}/`),
-  createAgente: (data, token = null) => createApiClient(token).post('/personas/agentes/', data),
-  updateAgente: (id, data, token = null) => createApiClient(token).patch(`/personas/agentes/${id}/`, data),
-  deleteAgente: (id, token = null) => createApiClient(token).delete(`/personas/agentes/${id}/`),
+  createAgente: (data, token = null) => createApiClient(token).post('/personas/agentes/create/', data),
+  updateAgente: (id, data, token = null) => createApiClient(token).patch(`/personas/agentes/${id}/update/`, data),
+  deleteAgente: (id, token = null) => createApiClient(token).delete(`/personas/agentes/${id}/delete/`),
 
   	// Crear agente con rol asignado
 	async createAgenteConRol(agenteData) {
@@ -38,23 +38,32 @@ export const personasService = {
 	},
 
   // Áreas
-  getAreas: (token = null) => createApiClient(token).get('/personas/areas/'),
-  getArea: (id, token = null) => createApiClient(token).get(`/personas/areas/${id}/`),
-  createArea: (data, token = null) => createApiClient(token).post('/personas/areas/', data),
-  updateArea: (id, data, token = null) => createApiClient(token).patch(`/personas/areas/${id}/`, data),
-  deleteArea: (id, token = null) => createApiClient(token).delete(`/personas/areas/${id}/`),
+  getAreas: (token = null) => createApiClient(token).get('/personas/catalogs/areas/'),
+  getArea: (id, token = null) => createApiClient(token).get(`/personas/catalogs/areas/${id}/`),
+  createArea: (data, token = null) => createApiClient(token).post('/personas/parametros/areas/create/', data),
+  updateArea: (id, data, token = null) => createApiClient(token).put(`/personas/parametros/areas/${id}/update/`, data),
+  deleteArea: (id, token = null) => createApiClient(token).delete(`/personas/parametros/areas/${id}/delete/`),
+  updateAreaSchedule: (id, data, token = null) => createApiClient(token).post(`/personas/parametros/areas/${id}/schedule/`, data),
 
   // Roles
-  getRoles: (token = null) => createApiClient(token).get('/personas/roles/'),
-  getRol: (id, token = null) => createApiClient(token).get(`/personas/roles/${id}/`),
-  createRol: (data, token = null) => createApiClient(token).post('/personas/roles/', data),
-  updateRol: (id, data, token = null) => createApiClient(token).patch(`/personas/roles/${id}/`, data),
-  deleteRol: (id, token = null) => createApiClient(token).delete(`/personas/roles/${id}/`),
+  getRoles: (token = null) => createApiClient(token).get('/personas/catalogs/roles/'),
+  getRol: (id, token = null) => createApiClient(token).get(`/personas/catalogs/roles/${id}/`),
+  createRol: (data, token = null) => createApiClient(token).post('/personas/catalogs/roles/', data),
+  updateRol: (id, data, token = null) => createApiClient(token).patch(`/personas/catalogs/roles/${id}/`, data),
+  deleteRol: (id, token = null) => createApiClient(token).delete(`/personas/catalogs/roles/${id}/`),
 
   // Asignaciones de roles
   getAsignaciones: (token = null) => createApiClient(token).get('/personas/asignaciones/'),
-  createAsignacion: (data, token = null) => createApiClient(token).post('/personas/asignaciones/', data),
-  deleteAsignacion: (id, token = null) => createApiClient(token).delete(`/personas/asignaciones/${id}/`),
+  createAsignacion: (data, token = null) => createApiClient(token).post('/personas/asignaciones/create/', data),
+  deleteAsignacion: (id, token = null) => createApiClient(token).delete(`/personas/asignaciones/${id}/delete/`),
+
+  // Agrupaciones organizacionales
+  getAgrupaciones: (token = null) => createApiClient(token).get('/personas/parametros/agrupaciones/'),
+  createAgrupacion: (data, token = null) => createApiClient(token).post('/personas/parametros/agrupaciones/create/', data),
+  updateAgrupacion: (id, data, token = null) => createApiClient(token).put(`/personas/parametros/agrupaciones/${id}/update/`, data),
+  deleteAgrupacion: (id, data = null, token = null) => createApiClient(token).delete(`/personas/parametros/agrupaciones/${id}/delete/`, { data }),
+  updateAgrupacionSchedule: (data, token = null) => createApiClient(token).post('/personas/parametros/agrupaciones/schedule/', data),
+  renameAgrupacion: (data, token = null) => createApiClient(token).post('/personas/parametros/agrupaciones/rename/', data),
 };
 
 // SERVICIOS PARA ASISTENCIA

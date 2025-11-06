@@ -56,7 +56,15 @@
             const result = await AuthService.login(cuil, password);
 
             if (result.success) {
-                // Login exitoso - redirigir a la página de inicio
+                // Guardar información de cambio de contraseña en localStorage si es necesario
+                if (result.requires_password_change) {
+                    localStorage.setItem('requires_password_change', 'true');
+                    localStorage.setItem('password_reset_reason', result.password_reset_reason || 'Debe cambiar su contraseña por seguridad');
+                } else {
+                    localStorage.setItem('requires_password_change', 'false');
+                }
+                
+                // Login exitoso - redirigir siempre a inicio
                 window.location.href = "/inicio";
             } else {
                 errorMessage = result.message || "Error en el login";

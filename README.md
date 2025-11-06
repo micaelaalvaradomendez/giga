@@ -29,8 +29,6 @@ cd giga
 # Windows (PowerShell)
 .\giga-system.ps1 dev
 
-# Windows (CMD)
-giga-system.bat dev
 ```
 
 ### Opción 2: Command Prompt (CMD)

@@ -20,6 +20,13 @@
 		if (!hora) return 'N/A';
 		return hora;
 	}
+
+	function abrirGoogleMaps(direccion) {
+		if (!direccion) return;
+		const direccionCodificada = encodeURIComponent(direccion);
+		const urlMaps = `https://www.google.com/maps/search/?api=1&query=${direccionCodificada}`;
+		window.open(urlMaps, '_blank');
+	}
 </script>
 
 {#if isOpen && agente}
@@ -48,16 +55,37 @@
 							<span class="value">{agente.dni}</span>
 						</div>
 						<div class="info-row">
+							<span class="label">CUIL:</span>
+							<span class="value">{agente.cuil || 'N/A'}</span>
+						</div>
+						<div class="info-row">
 							<span class="label">Fecha de Nacimiento:</span>
-							<span class="value">{formatearFecha(agente.fecha_nac)}</span>
+							<span class="value">{formatearFecha(agente.fecha_nacimiento)}</span>
 						</div>
 						<div class="info-row">
 							<span class="label">Email:</span>
-							<span class="value">{agente.email}</span>
+							<span class="value email-value" title={agente.email}>{agente.email}</span>
 						</div>
 						<div class="info-row">
 							<span class="label">Teléfono:</span>
 							<span class="value">{agente.telefono || 'N/A'}</span>
+						</div>
+						<div class="info-row">
+							<span class="label">Dirección:</span>
+							<span class="value direccion-value">
+								{#if agente.direccion_completa}
+									<span class="direccion-text" title={agente.direccion_completa}>{agente.direccion_completa}</span>
+									<button 
+										class="btn-maps" 
+										title="Ver en Google Maps"
+										on:click={() => abrirGoogleMaps(agente.direccion_completa)}
+									>
+										🗺️
+									</button>
+								{:else}
+									N/A
+								{/if}
+							</span>
 						</div>
 					</div>
 
@@ -69,12 +97,48 @@
 							<span class="value">{agente.legajo || 'N/A'}</span>
 						</div>
 						<div class="info-row">
-							<span class="label">Agrupación:</span>
-							<span class="value badge badge-{agente.agrupacion?.toLowerCase()}">{agente.agrupacion_display}</span>
+							<span class="label">Roles:</span>
+							{#if agente.roles && agente.roles.length > 0}
+								<div class="roles-list">
+									{#each agente.roles as rol}
+										<div class="role-card">
+											<span class="badge badge-role">{rol.nombre}</span>
+											{#if rol.descripcion}
+												<small class="area-text">{rol.descripcion}</small>
+											{/if}
+											{#if rol.asignado_en}
+												<small class="fecha-text">Desde: {formatearFecha(rol.asignado_en)}</small>
+											{/if}
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<p class="no-roles">Sin roles asignados</p>
+							{/if}
 						</div>
 						<div class="info-row">
-							<span class="label">Categoría Revista:</span>
-							<span class="value">{agente.categoria_revista}</span>
+							<span class="label">Agrupación:</span>
+							<span class="value">
+								{#if agente.agrupacion_display}
+									<span class="badge badge-{agente.agrupacion?.toLowerCase()}">{agente.agrupacion_display}</span>
+								{:else}
+									N/A
+								{/if}
+							</span>
+						</div>
+						<div class="info-row">
+							<span class="label">Área:</span>
+							<span class="value">
+								{#if agente.area_nombre}
+									<span class="badge badge-area">{agente.area_nombre}</span>
+								{:else}
+									Sin área asignada
+								{/if}
+							</span>
+						</div>
+						<div class="info-row">
+							<span class="label">Categoría:</span>
+							<span class="value">{agente.categoria_revista || 'N/A'}</span>
 						</div>
 						<div class="info-row">
 							<span class="label">Horario Entrada:</span>
@@ -85,51 +149,15 @@
 							<span class="value">{formatearHora(agente.horario_salida)}</span>
 						</div>
 						<div class="info-row">
-							<span class="label">Es Jefe:</span>
+							<span class="label">Estado:</span>
 							<span class="value">
-								{#if agente.es_jefe}
-									<span class="badge badge-jefe">👑 Jefe</span>
+								{#if agente.activo}
+									<span class="badge badge-activo">✅ Activo</span>
 								{:else}
-									<span class="badge badge-agente">Agente</span>
+									<span class="badge badge-inactivo">❌ Inactivo</span>
 								{/if}
 							</span>
 						</div>
-					</div>
-
-					<!-- Dirección -->
-					<div class="info-section">
-						<h3>Dirección</h3>
-						<div class="info-row">
-							<span class="label">Dirección:</span>
-							<span class="value">{agente.direccion || 'N/A'}</span>
-						</div>
-						<div class="info-row">
-							<span class="label">Ciudad:</span>
-							<span class="value">{agente.ciudad || 'N/A'}</span>
-						</div>
-						<div class="info-row">
-							<span class="label">Provincia:</span>
-							<span class="value">{agente.provincia}</span>
-						</div>
-					</div>
-
-					<!-- Roles -->
-					<div class="info-section">
-						<h3>Roles Asignados</h3>
-						{#if agente.roles && agente.roles.length > 0}
-							<div class="roles-list">
-								{#each agente.roles as rol}
-									<div class="role-card">
-										<span class="badge badge-role">{rol.nombre}</span>
-										{#if rol.area}
-											<small class="area-text">en {rol.area}</small>
-										{/if}
-									</div>
-								{/each}
-							</div>
-						{:else}
-							<p class="no-roles">Sin roles asignados</p>
-						{/if}
 					</div>
 				</div>
 			</div>
@@ -224,10 +252,11 @@
 	.info-row {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
+		align-items: flex-start;
 		margin-bottom: 0.75rem;
 		padding: 0.5rem 0;
 		border-bottom: 1px solid #e9ecef;
+		gap: 0.5rem;
 	}
 
 	.info-row:last-child {
@@ -245,6 +274,47 @@
 	.value {
 		text-align: right;
 		color: #212529;
+		word-break: break-word;
+		overflow-wrap: break-word;
+	}
+
+	.email-value {
+		max-width: 200px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.direccion-value {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.direccion-text {
+		max-width: 180px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		flex-shrink: 1;
+	}
+
+	.btn-maps {
+		background: none;
+		border: none;
+		font-size: 1.2rem;
+		cursor: pointer;
+		padding: 0.25rem;
+		border-radius: 4px;
+		transition: all 0.2s;
+		flex-shrink: 0;
+	}
+
+	.btn-maps:hover {
+		background-color: #e9ecef;
+		transform: scale(1.1);
 	}
 
 	.roles-list {
@@ -345,5 +415,71 @@
 		background-color: #cff4fc;
 		color: #055160;
 		border: 1px solid #b6effb;
+	}
+
+	.badge-area {
+		background-color: #d1ecf1;
+		color: #0c5460;
+		border: 1px solid #bee5eb;
+	}
+
+	.badge-activo {
+		background-color: #d4edda;
+		color: #155724;
+		border: 1px solid #c3e6cb;
+	}
+
+	.badge-inactivo {
+		background-color: #f8d7da;
+		color: #721c24;
+		border: 1px solid #f5c6cb;
+	}
+
+	.fecha-text {
+		color: #6c757d;
+		font-style: italic;
+		display: block;
+		margin-top: 0.25rem;
+	}
+
+	/* Responsive Design */
+	@media (max-width: 768px) {
+		.modal-content {
+			width: 95%;
+			margin: 1rem;
+		}
+
+		.info-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.info-row {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.25rem;
+		}
+
+		.label {
+			margin-right: 0;
+			font-size: 0.9rem;
+		}
+
+		.value {
+			text-align: left;
+			width: 100%;
+		}
+
+		.email-value {
+			max-width: none;
+		}
+
+		.direccion-text {
+			max-width: none;
+		}
+
+		.direccion-value {
+			justify-content: flex-start;
+			width: 100%;
+		}
 	}
 </style>

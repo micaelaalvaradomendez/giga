@@ -6,13 +6,13 @@ import { browser } from '$app/environment';
 const getApiBaseUrl = () => {
 	// En el navegador (cliente)
 	if (browser) {
-		// Usar la variable de entorno o el valor por defecto
-		return import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
+		// Usar la variable de entorno o el valor por defecto (nginx)
+		return import.meta.env.VITE_API_BASE || '/api';
 	}
 	
 	// En el servidor (SSR)
 	// En Docker (tanto dev como prod): usar el nombre del servicio del contenedor
-	return 'http://backend:8000/api';
+	return 'http://giga-django:8000/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

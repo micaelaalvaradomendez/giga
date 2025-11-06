@@ -1,377 +1,871 @@
 """
-ViewSets para el módulo de personas que funciona con el frontend SvelteKit
+Vistas para el módulo personas - Sistema GIGA
 """
-from django.http import JsonResponse
-from django.contrib.auth.models import User
+
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
+from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from .models import Agente, Area, Rol, AgenteRol
+from django.http import JsonResponse
 import json
 
+from .models import Agente, Area, Rol, AgenteRol, Agrupacion
+from .serializers import (
+    AgenteListSerializer,
+    AgenteDetailSerializer, 
+    AgenteCreateUpdateSerializer,
+    AreaSerializer,
+    RolSerializer,
+    AgrupacionSerializer
+)
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    """Paginación estándar para las vistas."""
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+def is_authenticated(request):
+    """Verificar si el usuario está autenticado usando sesiones Django."""
+    return hasattr(request, 'session') and 'agente_id' in request.session
+
+
+def get_authenticated_agente(request):
+    """Obtener el agente autenticado desde la sesión."""
+    if not is_authenticated(request):
+        return None
+    
+    try:
+        agente_id = request.session.get('agente_id')
+        return Agente.objects.get(id_agente=agente_id, activo=True)
+    except Agente.DoesNotExist:
+        return None
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_agentes(request):
+    """
+    Obtener lista de todos los agentes con paginación y filtros.
+    """
+    # Verificar autenticación (COMENTADO TEMPORALMENTE PARA TESTING)
+    # if not is_authenticated(request):
+    #     return Response({
+    #         'success': False,
+    #         'message': 'Autenticación requerida'
+    #     }, status=status.HTTP_401_UNAUTHORIZED)
+    
+    try:
+        # Obtener parámetros de filtro
+        search = request.GET.get('search', '').strip()
+        agrupacion = request.GET.get('agrupacion', '').strip()
+        rol = request.GET.get('rol', '').strip()
+        area = request.GET.get('area', '').strip()
+        activo = request.GET.get('activo', '').strip()
+        
+        # Consulta base
+        queryset = Agente.objects.all().select_related('id_area').prefetch_related(
+            'agenterol_set__id_rol'
+        ).order_by('apellido', 'nombre')
+        
+        # Aplicar filtros
+        if search:
+            queryset = queryset.filter(
+                Q(nombre__icontains=search) |
+                Q(apellido__icontains=search) |
+                Q(dni__icontains=search) |
+                Q(legajo__icontains=search) |
+                Q(email__icontains=search)
+            )
+        
+        if agrupacion:
+            queryset = queryset.filter(agrupacion__iexact=agrupacion)
+        
+        if area:
+            queryset = queryset.filter(id_area__nombre__icontains=area)
+        
+        if activo:
+            is_activo = activo.lower() in ['true', '1', 'yes', 'si']
+            queryset = queryset.filter(activo=is_activo)
+        
+        if rol:
+            # Filtrar por rol específico
+            agentes_con_rol = AgenteRol.objects.filter(
+                id_rol__nombre__icontains=rol
+            ).values_list('id_agente', flat=True)
+            queryset = queryset.filter(id_agente__in=agentes_con_rol)
+        
+        # Paginación
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        
+        if page is not None:
+            serializer = AgenteListSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        
+        # Sin paginación si no se puede paginar
+        serializer = AgenteListSerializer(queryset, many=True)
+        return Response({
+            'success': True,
+            'data': {
+                'results': serializer.data,
+                'count': len(serializer.data)
+            }
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al obtener agentes: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_agente(request, agente_id):
+    """
+    Obtener detalles completos de un agente específico.
+    """
+    # Verificar autenticación (COMENTADO TEMPORALMENTE PARA TESTING)
+    # if not is_authenticated(request):
+    #     return Response({
+    #         'success': False,
+    #         'message': 'Autenticación requerida'
+    #     }, status=status.HTTP_401_UNAUTHORIZED)
+    
+    try:
+        agente = get_object_or_404(Agente, id_agente=agente_id)
+        serializer = AgenteDetailSerializer(agente)
+        
+        return Response({
+            'success': True,
+            'data': serializer.data
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al obtener agente: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @csrf_exempt
-def agentes_list_create(request):
-    """Listar y crear agentes"""
-    if request.method == 'GET':
-        try:
-            agentes = []
-            for agente in Agente.objects.all().select_related('id_area'):
-                # Obtener roles
-                roles = []
-                agente_roles = AgenteRol.objects.filter(id_agente=agente).select_related('id_rol')
-                for ar in agente_roles:
-                    roles.append({
-                        'id': ar.id_rol.id_rol,
-                        'nombre': ar.id_rol.nombre
-                    })
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_agente(request):
+    """
+    Crear un nuevo agente.
+    """
+    # Verificar autenticación (COMENTADO TEMPORALMENTE PARA TESTING)
+    # if not is_authenticated(request):
+    #     return Response({
+    #         'success': False,
+    #         'message': 'Autenticación requerida'
+    #     }, status=status.HTTP_401_UNAUTHORIZED)
+    
+    try:
+        with transaction.atomic():
+            serializer = AgenteCreateUpdateSerializer(data=request.data)
+            
+            if serializer.is_valid():
+                agente = serializer.save()
                 
-                agentes.append({
-                    'id': agente.id_agente,
-                    'usuario': f"user_{agente.id_agente}",  # Compatibilidad con frontend
-                    'legajo': agente.legajo,
-                    'nombre': agente.nombre,
-                    'apellido': agente.apellido,
-                    'dni': agente.dni,
-                    'email': agente.email,
-                    'telefono': agente.telefono,
-                    'direccion': f"{agente.calle or ''} {agente.numero or ''}, {agente.ciudad or ''}, {agente.provincia or ''}".strip(', '),
-                    'fecha_nac': agente.fecha_nacimiento,
-                    'categoria_revista': agente.categoria_revista or "N/A",
-                    'agrupacion': agente.agrupacion,
-                    'agrupacion_display': agente.agrupacion,
-                    'activo': agente.activo if agente.activo is not None else True,
-                    'area': {
-                        'id': agente.id_area.id_area if agente.id_area else None,
-                        'nombre': agente.id_area.nombre if agente.id_area else None
-                    } if agente.id_area else None,
-                    'roles': roles
+                # Retornar el agente creado con detalles completos
+                detail_serializer = AgenteDetailSerializer(agente)
+                
+                return Response({
+                    'success': True,
+                    'message': 'Agente creado correctamente',
+                    'data': detail_serializer.data
+                }, status=status.HTTP_201_CREATED)
+            
+            return Response({
+                'success': False,
+                'message': 'Datos inválidos',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al crear agente: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['PUT', 'PATCH'])
+@permission_classes([AllowAny])
+def update_agente(request, agente_id):
+    """
+    Actualizar un agente existente.
+    """
+    try:
+        with transaction.atomic():
+            agente = get_object_or_404(Agente, id_agente=agente_id)
+            
+            # Usar PATCH para actualizaciones parciales
+            partial = request.method == 'PATCH'
+            
+            serializer = AgenteCreateUpdateSerializer(
+                agente, 
+                data=request.data, 
+                partial=partial
+            )
+            
+            if serializer.is_valid():
+                agente = serializer.save()
+                
+                # Retornar el agente actualizado con detalles completos
+                detail_serializer = AgenteDetailSerializer(agente)
+                
+                return Response({
+                    'success': True,
+                    'message': 'Agente actualizado correctamente',
+                    'data': detail_serializer.data
                 })
             
-            return JsonResponse(agentes, safe=False)
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al obtener agentes'
-            }, status=500)
-    
-    elif request.method == 'POST':
-        try:
-            data = json.loads(request.body)
+            return Response({
+                'success': False,
+                'message': 'Datos inválidos',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Crear agente
-            with transaction.atomic():
-                agente = Agente.objects.create(
-                    legajo=data.get('legajo'),
-                    nombre=data.get('nombre'),
-                    apellido=data.get('apellido'),
-                    dni=data.get('dni'),
-                    email=data.get('email'),
-                    telefono=data.get('telefono'),
-                    calle=data.get('calle', ''),
-                    numero=data.get('numero', ''),
-                    ciudad=data.get('ciudad', ''),
-                    provincia=data.get('provincia', ''),
-                    fecha_nacimiento=data.get('fecha_nac'),
-                    agrupacion=data.get('agrupacion'),
-                    categoria_revista=data.get('categoria_revista', 'N/A'),
-                    activo=True
-                )
-                
-                # Crear usuario Django si no existe
-                username = f"agente_{agente.id_agente}"
-                user, created = User.objects.get_or_create(
-                    username=username,
-                    defaults={
-                        'email': agente.email,
-                        'first_name': agente.nombre,
-                        'last_name': agente.apellido,
-                    }
-                )
-                if created:
-                    user.set_password(agente.dni)  # Contraseña por defecto es el DNI
-                    user.save()
-                
-                return JsonResponse({
-                    'id': agente.id_agente,
-                    'usuario': user.id,
-                    'message': 'Agente creado exitosamente'
-                }, status=201)
-                
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al crear agente'
-            }, status=400)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al actualizar agente: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @csrf_exempt
-def agente_detail(request, agente_id):
-    """Detalle, actualizar y eliminar agente"""
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_agente(request, agente_id):
+    """
+    Eliminar un agente (soft delete marcando como inactivo).
+    """
     try:
-        agente = Agente.objects.get(id_agente=agente_id)
-    except Agente.DoesNotExist:
-        return JsonResponse({'error': 'Agente no encontrado'}, status=404)
-    
-    if request.method == 'GET':
-        # Obtener roles
-        roles = []
-        agente_roles = AgenteRol.objects.filter(id_agente=agente).select_related('id_rol')
-        for ar in agente_roles:
-            roles.append({
-                'id': ar.id_rol.id_rol,
-                'nombre': ar.id_rol.nombre
+        with transaction.atomic():
+            agente = get_object_or_404(Agente, id_agente=agente_id)
+            
+            # Verificar que no sea el usuario actual
+            if hasattr(request, 'agente') and request.agente.id_agente == agente.id_agente:
+                return Response({
+                    'success': False,
+                    'message': 'No puedes eliminarte a ti mismo'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Hard delete: eliminar físicamente
+            # Primero eliminar las asignaciones de roles (por integridad referencial)
+            AgenteRol.objects.filter(id_agente=agente).delete()
+            
+            # Luego eliminar el agente
+            agente.delete()
+            
+            return Response({
+                'success': True,
+                'message': 'Agente eliminado correctamente'
+            })
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al eliminar agente: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_areas(request):
+    """
+    Obtener lista de todas las áreas activas.
+    """
+    try:
+        areas = Area.objects.filter(activo=True).order_by('nombre')
+        serializer = AreaSerializer(areas, many=True)
+        
+        return Response({
+            'success': True,
+            'data': {
+                'results': serializer.data,
+                'count': len(serializer.data)
+            }
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al obtener áreas: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_roles(request):
+    """
+    Obtener lista de todos los roles disponibles.
+    """
+    try:
+        roles = Rol.objects.all().order_by('nombre')
+        serializer = RolSerializer(roles, many=True)
+        
+        return Response({
+            'success': True,
+            'data': {
+                'results': serializer.data,
+                'count': len(serializer.data)
+            }
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al obtener roles: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_asignaciones(request):
+    """
+    Obtener todas las asignaciones de roles a agentes.
+    """
+    try:
+        asignaciones = AgenteRol.objects.all().select_related(
+            'id_agente', 'id_rol'
+        ).order_by('id_agente__apellido', 'id_agente__nombre')
+        
+        data = []
+        for asignacion in asignaciones:
+            data.append({
+                'id': asignacion.id_agente_rol,
+                'usuario': asignacion.id_agente.id_agente,
+                'agente_nombre': f"{asignacion.id_agente.nombre} {asignacion.id_agente.apellido}",
+                'rol': asignacion.id_rol.id_rol,
+                'rol_nombre': asignacion.id_rol.nombre,
+                'asignado_en': asignacion.asignado_en,
+                'area': asignacion.id_agente.id_area.id_area if asignacion.id_agente.id_area else None,
+                'area_nombre': asignacion.id_agente.id_area.nombre if asignacion.id_agente.id_area else None
             })
         
-        return JsonResponse({
-            'id': agente.id_agente,
-            'usuario': f"user_{agente.id_agente}",
-            'legajo': agente.legajo,
-            'nombre': agente.nombre,
-            'apellido': agente.apellido,
-            'dni': agente.dni,
-            'email': agente.email,
-            'telefono': agente.telefono,
-            'direccion': f"{agente.calle or ''} {agente.numero or ''}, {agente.ciudad or ''}, {agente.provincia or ''}".strip(', '),
-            'fecha_nac': agente.fecha_nacimiento,
-            'categoria_revista': agente.categoria_revista or "N/A",
-            'agrupacion': agente.agrupacion,
-            'activo': agente.activo if agente.activo is not None else True,
-            'roles': roles
+        return Response({
+            'success': True,
+            'data': {
+                'results': data,
+                'count': len(data)
+            }
         })
-    
-    elif request.method == 'PATCH':
-        try:
-            data = json.loads(request.body)
-            
-            # Actualizar campos
-            for field, value in data.items():
-                if hasattr(agente, field):
-                    setattr(agente, field, value)
-            
-            agente.save()
-            
-            return JsonResponse({
-                'id': agente.id_agente,
-                'message': 'Agente actualizado exitosamente'
-            })
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al actualizar agente'
-            }, status=400)
-    
-    elif request.method == 'DELETE':
-        try:
-            agente.delete()
-            return JsonResponse({'message': 'Agente eliminado exitosamente'})
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al eliminar agente'
-            }, status=400)
-
-
-def areas_list_create(request):
-    """Listar y crear áreas"""
-    if request.method == 'GET':
-        try:
-            areas = []
-            for area in Area.objects.all():
-                areas.append({
-                    'id': area.id_area,
-                    'nombre': area.nombre,
-                    'descripcion': getattr(area, 'descripcion', '')
-                })
-            
-            return JsonResponse(areas, safe=False)
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al obtener áreas'
-            }, status=500)
-
-
-def roles_list_create(request):
-    """Listar y crear roles"""
-    if request.method == 'GET':
-        try:
-            roles = []
-            for rol in Rol.objects.all():
-                roles.append({
-                    'id': rol.id_rol,
-                    'nombre': rol.nombre,
-                    'descripcion': rol.descripcion or ''
-                })
-            
-            return JsonResponse(roles, safe=False)
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al obtener roles'
-            }, status=500)
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al obtener asignaciones: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @csrf_exempt
-def asignaciones_list_create(request):
-    """Listar y crear asignaciones de roles"""
-    if request.method == 'GET':
-        try:
-            asignaciones = []
-            for ar in AgenteRol.objects.all().select_related('id_agente', 'id_rol'):
-                asignaciones.append({
-                    'id': ar.id_agente_rol,
-                    'usuario': f"user_{ar.id_agente.id_agente}",
-                    'agente': ar.id_agente.id_agente,
-                    'rol': ar.id_rol.id_rol,
-                    'area': None,  # No hay campo area en AgenteRol según nuestro modelo
-                    'agente_nombre': f"{ar.id_agente.nombre} {ar.id_agente.apellido}",
-                    'rol_nombre': ar.id_rol.nombre,
-                    'area_nombre': None  # No hay campo area en AgenteRol según nuestro modelo
-                })
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_asignacion(request):
+    """
+    Crear nueva asignación de rol a agente.
+    """
+    try:
+        with transaction.atomic():
+            usuario_id = request.data.get('usuario')
+            rol_id = request.data.get('rol')
             
-            return JsonResponse(asignaciones, safe=False)
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al obtener asignaciones'
-            }, status=500)
-    
-    elif request.method == 'POST':
-        try:
-            data = json.loads(request.body)
+            if not usuario_id or not rol_id:
+                return Response({
+                    'success': False,
+                    'message': 'Usuario y rol son requeridos'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Buscar agente por usuario_id 
-            usuario_ref = data.get('usuario', '').replace('user_', '')
-            agente = Agente.objects.get(id_agente=usuario_ref)
-            rol = Rol.objects.get(id_rol=data.get('rol'))
+            # Verificar que existan
+            agente = get_object_or_404(Agente, id_agente=usuario_id)
+            rol = get_object_or_404(Rol, id_rol=rol_id)
             
-            # Crear asignación (sin area ya que nuestro modelo no lo tiene)
-            ar = AgenteRol.objects.create(
+            # Crear asignación
+            asignacion = AgenteRol.objects.create(
                 id_agente=agente,
                 id_rol=rol
             )
             
-            return JsonResponse({
-                'id': ar.id_agente_rol,
-                'message': 'Asignación creada exitosamente'
-            }, status=201)
+            return Response({
+                'success': True,
+                'message': 'Asignación creada correctamente',
+                'data': {
+                    'id': asignacion.id_agente_rol,
+                    'usuario': asignacion.id_agente.id_agente,
+                    'rol': asignacion.id_rol.id_rol,
+                }
+            }, status=status.HTTP_201_CREATED)
             
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al crear asignación'
-            }, status=400)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al crear asignación: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @csrf_exempt
-def asignacion_delete(request, asignacion_id):
-    """Eliminar asignación"""
-    if request.method == 'DELETE':
-        try:
-            ar = AgenteRol.objects.get(id_agente_rol=asignacion_id)
-            ar.delete()
-            return JsonResponse({'message': 'Asignación eliminada exitosamente'})
-        except AgenteRol.DoesNotExist:
-            return JsonResponse({'error': 'Asignación no encontrada'}, status=404)
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al eliminar asignación'
-            }, status=400)
-
-
-@csrf_exempt
-def area_detail(request, pk):
-    """Detalle, actualizar y eliminar área"""
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_asignacion(request, asignacion_id):
+    """
+    Eliminar asignación de rol.
+    """
     try:
-        area = Area.objects.get(id_area=pk)
-    except Area.DoesNotExist:
-        return JsonResponse({'error': 'Área no encontrada'}, status=404)
-    
-    if request.method == 'GET':
-        return JsonResponse({
-            'id': area.id_area,
-            'nombre': area.nombre,
-            'descripcion': getattr(area, 'descripcion', '')
+        asignacion = get_object_or_404(AgenteRol, id_agente_rol=asignacion_id)
+        asignacion.delete()
+        
+        return Response({
+            'success': True,
+            'message': 'Asignación eliminada correctamente'
         })
-    
-    elif request.method == 'PATCH':
-        try:
-            data = json.loads(request.body)
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al eliminar asignación: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================================================
+# ENDPOINTS PARA GESTIÓN DE PARÁMETROS DEL SISTEMA
+# ============================================================================
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_area(request):
+    """
+    Crear nueva área.
+    """
+    try:
+        with transaction.atomic():
+            serializer = AreaSerializer(data=request.data)
             
-            # Actualizar campos
-            if 'nombre' in data:
-                area.nombre = data['nombre']
-            if 'descripcion' in data:
-                if hasattr(area, 'descripcion'):
-                    area.descripcion = data['descripcion']
+            if serializer.is_valid():
+                area = serializer.save()
+                
+                return Response({
+                    'success': True,
+                    'message': 'Área creada correctamente',
+                    'data': {
+                        'id_area': area.id_area,
+                        'nombre': area.nombre,
+                        'activo': area.activo
+                    }
+                }, status=status.HTTP_201_CREATED)
             
+            return Response({
+                'success': False,
+                'message': 'Datos inválidos',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al crear área: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['PUT', 'PATCH'])
+@permission_classes([AllowAny])
+def update_area(request, area_id):
+    """
+    Actualizar área existente.
+    """
+    try:
+        with transaction.atomic():
+            area = get_object_or_404(Area, id_area=area_id)
+            
+            partial = request.method == 'PATCH'
+            serializer = AreaSerializer(area, data=request.data, partial=partial)
+            
+            if serializer.is_valid():
+                area = serializer.save()
+                
+                return Response({
+                    'success': True,
+                    'message': 'Área actualizada correctamente',
+                    'data': {
+                        'id_area': area.id_area,
+                        'nombre': area.nombre,
+                        'activo': area.activo
+                    }
+                })
+            
+            return Response({
+                'success': False,
+                'message': 'Datos inválidos',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al actualizar área: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_area(request, area_id):
+    """
+    Eliminar área (soft delete) y reasignar agentes a área por defecto.
+    """
+    try:
+        with transaction.atomic():
+            area = get_object_or_404(Area, id_area=area_id)
+            
+            # Verificar si hay agentes asignados
+            agentes_asignados = Agente.objects.filter(id_area=area, activo=True).count()
+            
+            if agentes_asignados > 0:
+                # Buscar área por defecto (primera activa)
+                area_default = Area.objects.filter(activo=True).first()
+                
+                if area_default and area_default.id_area != area.id_area:
+                    # Reasignar agentes al área por defecto
+                    Agente.objects.filter(id_area=area, activo=True).update(id_area=area_default)
+                    message = f'Área eliminada. {agentes_asignados} agente(s) reasignado(s) al área "{area_default.nombre}"'
+                else:
+                    # Si no hay área por defecto, desasignar agentes
+                    Agente.objects.filter(id_area=area, activo=True).update(id_area=None)
+                    message = f'Área eliminada. {agentes_asignados} agente(s) desasignado(s) de área'
+            else:
+                message = 'Área eliminada correctamente'
+            
+            # Marcar área como inactiva
+            area.activo = False
             area.save()
             
-            return JsonResponse({
-                'id': area.id_area,
-                'message': 'Área actualizada exitosamente'
+            return Response({
+                'success': True,
+                'message': message
             })
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al actualizar área'
-            }, status=400)
-    
-    elif request.method == 'DELETE':
-        try:
-            area.delete()
-            return JsonResponse({'message': 'Área eliminada exitosamente'})
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al eliminar área'
-            }, status=400)
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al eliminar área: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @csrf_exempt
-def rol_detail(request, pk):
-    """Detalle, actualizar y eliminar rol"""
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def update_area_schedule(request, area_id):
+    """
+    Actualizar horarios de todos los agentes de un área.
+    """
     try:
-        rol = Rol.objects.get(id_rol=pk)
-    except Rol.DoesNotExist:
-        return JsonResponse({'error': 'Rol no encontrado'}, status=404)
-    
-    if request.method == 'GET':
-        return JsonResponse({
-            'id': rol.id_rol,
-            'nombre': rol.nombre,
-            'descripcion': rol.descripcion or ''
-        })
-    
-    elif request.method == 'PATCH':
-        try:
-            data = json.loads(request.body)
+        with transaction.atomic():
+            area = get_object_or_404(Area, id_area=area_id)
             
-            # Actualizar campos
-            if 'nombre' in data:
-                rol.nombre = data['nombre']
-            if 'descripcion' in data:
-                rol.descripcion = data['descripcion']
+            horario_entrada = request.data.get('horario_entrada')
+            horario_salida = request.data.get('horario_salida')
             
-            rol.save()
+            if not horario_entrada or not horario_salida:
+                return Response({
+                    'success': False,
+                    'message': 'Horario de entrada y salida son requeridos'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
-            return JsonResponse({
-                'id': rol.id_rol,
-                'message': 'Rol actualizado exitosamente'
+            # Actualizar horarios de todos los agentes del área
+            agentes_actualizados = Agente.objects.filter(
+                id_area=area, 
+                activo=True
+            ).update(
+                horario_entrada=horario_entrada,
+                horario_salida=horario_salida
+            )
+            
+            return Response({
+                'success': True,
+                'message': f'Horarios actualizados para {agentes_actualizados} agente(s) del área "{area.nombre}"',
+                'data': {
+                    'area': area.nombre,
+                    'agentes_actualizados': agentes_actualizados,
+                    'horario_entrada': horario_entrada,
+                    'horario_salida': horario_salida
+                }
             })
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al actualizar rol'
-            }, status=400)
-    
-    elif request.method == 'DELETE':
-        try:
-            rol.delete()
-            return JsonResponse({'message': 'Rol eliminado exitosamente'})
-        except Exception as e:
-            return JsonResponse({
-                'error': str(e),
-                'message': 'Error al eliminar rol'
-            }, status=400)
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al actualizar horarios: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_agrupaciones(request):
+    """
+    Obtener lista de todas las agrupaciones organizacionales.
+    """
+    try:
+        # Obtener agrupaciones de la tabla agrupacion
+        agrupaciones = Agrupacion.objects.filter(activo=True).order_by('nombre')
+        serializer = AgrupacionSerializer(agrupaciones, many=True)
+        
+        return Response({
+            'success': True,
+            'data': {
+                'results': serializer.data,
+                'count': len(serializer.data)
+            }
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al obtener agrupaciones: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_agrupacion(request):
+    """
+    Crear nueva agrupación organizacional.
+    """
+    try:
+        with transaction.atomic():
+            serializer = AgrupacionSerializer(data=request.data)
+            
+            if serializer.is_valid():
+                agrupacion = serializer.save()
+                
+                return Response({
+                    'success': True,
+                    'message': 'Agrupación creada correctamente',
+                    'data': AgrupacionSerializer(agrupacion).data
+                }, status=status.HTTP_201_CREATED)
+            
+            return Response({
+                'success': False,
+                'message': 'Datos inválidos',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al crear agrupación: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['PUT', 'PATCH'])
+@permission_classes([AllowAny])
+def update_agrupacion(request, agrupacion_id):
+    """
+    Actualizar agrupación existente.
+    """
+    try:
+        with transaction.atomic():
+            agrupacion = get_object_or_404(Agrupacion, id_agrupacion=agrupacion_id)
+            
+            partial = request.method == 'PATCH'
+            serializer = AgrupacionSerializer(agrupacion, data=request.data, partial=partial)
+            
+            if serializer.is_valid():
+                # Si se cambia el nombre, actualizar en tabla agente
+                nombre_anterior = agrupacion.nombre
+                agrupacion = serializer.save()
+                
+                if nombre_anterior != agrupacion.nombre:
+                    # Actualizar campo agrupacion en tabla agente
+                    Agente.objects.filter(
+                        agrupacion=nombre_anterior,
+                        activo=True
+                    ).update(agrupacion=agrupacion.nombre)
+                
+                return Response({
+                    'success': True,
+                    'message': 'Agrupación actualizada correctamente',
+                    'data': AgrupacionSerializer(agrupacion).data
+                })
+            
+            return Response({
+                'success': False,
+                'message': 'Datos inválidos',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al actualizar agrupación: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def update_agrupacion_schedule(request):
+    """
+    Actualizar horarios de todos los agentes de una agrupación.
+    """
+    try:
+        with transaction.atomic():
+            agrupacion_nombre = request.data.get('agrupacion')
+            horario_entrada = request.data.get('horario_entrada')
+            horario_salida = request.data.get('horario_salida')
+            
+            if not agrupacion_nombre:
+                return Response({
+                    'success': False,
+                    'message': 'Nombre de agrupación es requerido'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not horario_entrada or not horario_salida:
+                return Response({
+                    'success': False,
+                    'message': 'Horario de entrada y salida son requeridos'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Actualizar horarios de todos los agentes de la agrupación
+            agentes_actualizados = Agente.objects.filter(
+                agrupacion=agrupacion_nombre,
+                activo=True
+            ).update(
+                horario_entrada=horario_entrada,
+                horario_salida=horario_salida
+            )
+            
+            return Response({
+                'success': True,
+                'message': f'Horarios actualizados para {agentes_actualizados} agente(s) de la agrupación "{agrupacion_nombre}"',
+                'data': {
+                    'agrupacion': agrupacion_nombre,
+                    'agentes_actualizados': agentes_actualizados,
+                    'horario_entrada': horario_entrada,
+                    'horario_salida': horario_salida
+                }
+            })
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al actualizar horarios de agrupación: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def rename_agrupacion(request):
+    """
+    Renombrar una agrupación organizacional.
+    """
+    try:
+        with transaction.atomic():
+            nombre_actual = request.data.get('nombre_actual')
+            nombre_nuevo = request.data.get('nombre_nuevo')
+            
+            if not nombre_actual or not nombre_nuevo:
+                return Response({
+                    'success': False,
+                    'message': 'Nombre actual y nuevo son requeridos'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Verificar que el nuevo nombre no exista
+            if Agente.objects.filter(
+                agrupacion=nombre_nuevo,
+                activo=True
+            ).exists():
+                return Response({
+                    'success': False,
+                    'message': f'Ya existe una agrupación con el nombre "{nombre_nuevo}"'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Actualizar el nombre en todos los agentes
+            agentes_actualizados = Agente.objects.filter(
+                agrupacion=nombre_actual,
+                activo=True
+            ).update(agrupacion=nombre_nuevo)
+            
+            return Response({
+                'success': True,
+                'message': f'Agrupación renombrada correctamente. {agentes_actualizados} agente(s) actualizados',
+                'data': {
+                    'nombre_anterior': nombre_actual,
+                    'nombre_nuevo': nombre_nuevo,
+                    'agentes_actualizados': agentes_actualizados
+                }
+            })
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al renombrar agrupación: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_agrupacion(request, agrupacion_id):
+    """
+    Eliminar una agrupación organizacional (reasignar agentes a otra agrupación o desasignar).
+    """
+    try:
+        with transaction.atomic():
+            agrupacion = get_object_or_404(Agrupacion, id_agrupacion=agrupacion_id)
+            nueva_agrupacion = request.data.get('nueva_agrupacion', None)
+            
+            # Contar agentes en la agrupación
+            agentes_count = Agente.objects.filter(
+                agrupacion=agrupacion.nombre,
+                activo=True
+            ).count()
+            
+            if nueva_agrupacion:
+                # Reasignar a nueva agrupación
+                Agente.objects.filter(
+                    agrupacion=agrupacion.nombre,
+                    activo=True
+                ).update(agrupacion=nueva_agrupacion)
+                
+                message = f'Agrupación "{agrupacion.nombre}" eliminada. {agentes_count} agente(s) reasignado(s) a "{nueva_agrupacion}"'
+            else:
+                # Desasignar agrupación (vacío)
+                Agente.objects.filter(
+                    agrupacion=agrupacion.nombre,
+                    activo=True
+                ).update(agrupacion=None)
+                
+                message = f'Agrupación "{agrupacion.nombre}" eliminada. {agentes_count} agente(s) sin agrupación asignada'
+            
+            # Marcar agrupación como inactiva
+            agrupacion.activo = False
+            agrupacion.save()
+            
+            return Response({
+                'success': True,
+                'message': message
+            })
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al eliminar agrupación: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

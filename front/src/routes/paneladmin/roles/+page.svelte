@@ -1,122 +1,40 @@
 <script>
 	import { onMount } from 'svelte';
-	import { personasService } from '$lib/services.js';
-	import AuthService from '$lib/login/authService.js';
+	import { rolesController } from '$lib/paneladmin/controllers';
 	import { goto } from '$app/navigation';
 
-	let agentes = [];
-	let rolesDisponibles = [];
-	let loading = true;
-	let error = null;
-	let searchTerm = '';
-	let filteredAgentes = [];
-	let editingRoleId = null;
-	let savingRoleId = null;
+	// Obtener referencias a los stores individuales para usar con $
+	const { agentes, rolesDisponibles, areasDisponibles, loading, error, filteredAgentes, estadisticas, searchTerm, filtroArea, editingRoleId, savingRoleId, currentUser } = rolesController;
 
 	// Verificar autenticación al montar
 	onMount(async () => {
-		if (!AuthService.isAuthenticated()) {
-			goto('/');
-			return;
+		try {
+			console.log('🚀 Iniciando controlador de roles...');
+			await rolesController.init();
+			console.log('✅ Controlador de roles inicializado');
+		} catch (err) {
+			console.error('❌ Error inicializando controlador:', err);
+			if (err.message === 'Usuario no autenticado' || err.message === 'Sesión expirada') {
+				goto('/');
+				return;
+			}
+			// El controlador maneja el error automáticamente
 		}
-		await cargarDatos();
 	});
 
-	async function cargarDatos() {
-		try {
-			loading = true;
-			error = null;
-			
-			// Cargar agentes y roles en paralelo
-			const [agentesResponse, rolesResponse] = await Promise.all([
-				personasService.getAgentes(),
-				personasService.getRoles()
-			]);
-
-			agentes = agentesResponse.data.results || [];
-			rolesDisponibles = rolesResponse.data.results || [];
-			filteredAgentes = [...agentes];
-		} catch (err) {
-			console.error('Error cargando datos:', err);
-			error = 'Error al cargar los datos. Por favor, intenta nuevamente.';
-		} finally {
-			loading = false;
-		}
+	// Funciones reactivas para actualizar filtros en el controlador
+	function actualizarBusqueda(event) {
+		rolesController.actualizarBusqueda(event.target.value);
 	}
 
-	// Filtrar agentes por término de búsqueda
-	$: {
-		if (searchTerm.trim()) {
-			const term = searchTerm.toLowerCase();
-			filteredAgentes = agentes.filter(agente => 
-				agente.nombre?.toLowerCase().includes(term) ||
-				agente.apellido?.toLowerCase().includes(term) ||
-				agente.legajo?.toLowerCase().includes(term) ||
-				agente.usuario?.cuil?.includes(term) ||
-				agente.categoria_revista?.toLowerCase().includes(term)
-			);
-		} else {
-			filteredAgentes = [...agentes];
-		}
+	function actualizarFiltroArea(event) {
+		rolesController.actualizarFiltroArea(event.target.value);
 	}
 
-	function obtenerRolActual(agente) {
-		if (agente.roles && agente.roles.length > 0) {
-			return agente.roles[0];
-		}
-		return null;
+	function limpiarFiltros() {
+		rolesController.limpiarFiltros();
 	}
 
-	function obtenerNombreRol(rolId) {
-		if (!rolId) return 'Sin rol asignado';
-		const rol = rolesDisponibles.find(r => r.id === rolId);
-		return rol ? rol.nombre : 'Rol desconocido';
-	}
-
-	function iniciarEdicionRol(agenteId) {
-		editingRoleId = agenteId;
-	}
-
-	function cancelarEdicionRol() {
-		editingRoleId = null;
-	}
-
-	async function guardarCambioRol(agente, nuevoRolId) {
-		if (!nuevoRolId) {
-			alert('Por favor, selecciona un rol válido.');
-			return;
-		}
-
-		try {
-			savingRoleId = agente.id;
-			
-			// Crear nueva asignación de rol
-			const asignacionData = {
-				usuario: agente.usuario.id,
-				rol: parseInt(nuevoRolId),
-				area: null // Por ahora sin área específica
-			};
-
-			await personasService.createAsignacion(asignacionData);
-			
-			// Recargar datos para mostrar el cambio
-			await cargarDatos();
-			editingRoleId = null;
-		} catch (err) {
-			console.error('Error al cambiar rol:', err);
-			alert('Error al cambiar el rol. Por favor, intenta nuevamente.');
-		} finally {
-			savingRoleId = null;
-		}
-	}
-
-	function handleKeyPress(event, agente, nuevoRolId) {
-		if (event.key === 'Enter') {
-			guardarCambioRol(agente, nuevoRolId);
-		} else if (event.key === 'Escape') {
-			cancelarEdicionRol();
-		}
-	}
 </script>
 
 <svelte:head>
@@ -131,8 +49,8 @@
 				<p>Administra los roles y permisos de los usuarios del sistema</p>
 			</div>
 			<div class="header-actions">
-				<button class="btn btn-secondary" on:click={cargarDatos} disabled={loading}>
-					{#if loading}
+				<button class="btn btn-secondary" on:click={() => rolesController.cargarDatos()} disabled={$loading}>
+					{#if $loading}
 						<span class="spinner"></span>
 					{:else}
 						🔄
@@ -144,10 +62,10 @@
 	</div>
 
 	<div class="page-content">
-		{#if error}
+		{#if $error}
 			<div class="alert alert-error">
-				<strong>❌ Error:</strong> {error}
-				<button class="btn btn-sm btn-primary" on:click={cargarDatos}>
+				<strong>❌ Error:</strong> {$error}
+				<button class="btn btn-sm btn-primary" on:click={() => rolesController.cargarDatos()}>
 					Reintentar
 				</button>
 			</div>
@@ -155,37 +73,57 @@
 
 		<!-- Filtros y búsqueda -->
 		<div class="filters-section">
-			<div class="search-box">
-				<input
-					type="text"
-					placeholder="🔍 Buscar por nombre, apellido, legajo, CUIL o categoría..."
-					bind:value={searchTerm}
-					class="search-input"
-				/>
-				<span class="search-results">
-					{filteredAgentes.length} de {agentes.length} agentes
-				</span>
+			<div class="filters-row">
+				<div class="search-box">
+					<input
+						type="text"
+						placeholder="🔍 Buscar por nombre, apellido, legajo, DNI, email o categoría..."
+						value={$searchTerm}
+						on:input={actualizarBusqueda}
+						class="search-input"
+					/>
+				</div>
+				<div class="filter-box">
+					<label for="filtroArea">Filtrar por Área:</label>
+					<select id="filtroArea" value={$filtroArea} on:change={actualizarFiltroArea} class="filter-select">
+						<option value="">Todas las áreas ({$areasDisponibles.length})</option>
+						{#each $areasDisponibles as area}
+							<option value={area.id_area}>{area.nombre}</option>
+						{/each}
+					</select>
+					{#if $areasDisponibles.length === 0}
+						<small style="color: red;">❌ No se cargaron áreas</small>
+					{/if}
+				</div>
+				<div class="filter-actions">
+					<button class="btn btn-secondary btn-sm" on:click={limpiarFiltros}>
+						🗑️ Limpiar
+					</button>
+				</div>
+			</div>
+			<div class="search-results">
+				{$estadisticas.mostrados} de {$estadisticas.total} agentes
 			</div>
 		</div>
 
-		{#if loading}
+		{#if $loading}
 			<div class="loading-container">
 				<div class="spinner-large"></div>
 				<p>Cargando información de roles...</p>
 			</div>
-		{:else if filteredAgentes.length === 0 && !loading}
+		{:else if $filteredAgentes.length === 0 && !$loading}
 			<div class="empty-state">
 				<div class="empty-icon">👥</div>
 				<h3>No se encontraron agentes</h3>
 				<p>
-					{#if searchTerm}
-						No hay agentes que coincidan con tu búsqueda "{searchTerm}".
+					{#if $searchTerm}
+						No hay agentes que coincidan con tu búsqueda "{$searchTerm}".
 					{:else}
 						No hay agentes registrados en el sistema.
 					{/if}
 				</p>
-				{#if searchTerm}
-					<button class="btn btn-primary" on:click={() => searchTerm = ''}>
+				{#if $searchTerm}
+					<button class="btn btn-primary" on:click={() => rolesController.limpiarBusqueda()}>
 						Limpiar búsqueda
 					</button>
 				{/if}
@@ -198,15 +136,16 @@
 						<tr>
 							<th>Legajo</th>
 							<th>Nombre Completo</th>
-							<th>CUIL</th>
+							<th>DNI</th>
 							<th>Categoría</th>
+							<th>Área</th>
 							<th>Rol Actual</th>
 							<th>Acciones</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each filteredAgentes as agente (agente.id)}
-							{@const rolActual = obtenerRolActual(agente)}
+						{#each $filteredAgentes as agente (agente.id_agente)}
+							{@const rolActual = rolesController.obtenerRolActual(agente)}
 							<tr class="agente-row">
 								<td class="legajo">
 									<span class="legajo-badge">{agente.legajo || 'N/A'}</span>
@@ -214,41 +153,49 @@
 								<td class="nombre">
 									<div class="nombre-info">
 										<strong>{agente.nombre} {agente.apellido}</strong>
-										<small>{agente.usuario?.email || 'Sin email'}</small>
+										<small>{agente.email || 'Sin email'}</small>
 									</div>
 								</td>
-								<td class="cuil">
-									{agente.usuario?.cuil || 'No disponible'}
+								<td class="dni">
+									<span class="dni-text">{agente.dni || 'No disponible'}</span>
 								</td>
 								<td class="categoria">
 									<span class="categoria-badge">
 										{agente.categoria_revista || 'N/A'}
 									</span>
 								</td>
+								<td class="area">
+									<span class="area-badge">
+										{agente.area_nombre || rolesController.obtenerNombreArea(agente.area_id) || 'Sin área'}
+									</span>
+								</td>
 								<td class="rol">
-									{#if editingRoleId === agente.id}
+									{#if $editingRoleId === agente.id_agente}
 										<div class="rol-editor">
 											<select 
 												class="rol-select" 
-												value={rolActual?.id || ''}
-												on:keydown={(e) => handleKeyPress(e, agente, e.target.value)}
-												disabled={savingRoleId === agente.id}
+												value={rolActual?.id || rolActual?.id_rol || ''}
+												on:keydown={(e) => rolesController.handleKeyPress(e, agente, e.target.value)}
+												disabled={$savingRoleId === agente.id_agente}
 											>
-												<option value="">Sin rol</option>
-												{#each rolesDisponibles as rol}
-													<option value={rol.id}>{rol.nombre}</option>
+												<option value="">Sin rol ({$rolesDisponibles.length} disponibles)</option>
+												{#each $rolesDisponibles as rol}
+													<option value={rol.id_rol}>{rol.nombre}</option>
 												{/each}
+												{#if $rolesDisponibles.length === 0}
+													<option disabled>❌ No hay roles cargados</option>
+												{/if}
 											</select>
 											<div class="rol-actions">
 												<button 
 													class="btn btn-sm btn-success"
 													on:click={(e) => {
 														const select = e.target.closest('.rol-editor').querySelector('.rol-select');
-														guardarCambioRol(agente, select.value);
+														rolesController.guardarCambioRol(agente, select.value);
 													}}
-													disabled={savingRoleId === agente.id}
+													disabled={$savingRoleId === agente.id_agente}
 												>
-													{#if savingRoleId === agente.id}
+													{#if $savingRoleId === agente.id_agente}
 														<span class="spinner-sm"></span>
 													{:else}
 														✓
@@ -256,8 +203,8 @@
 												</button>
 												<button 
 													class="btn btn-sm btn-secondary"
-													on:click={cancelarEdicionRol}
-													disabled={savingRoleId === agente.id}
+													on:click={rolesController.cancelarEdicionRol}
+													disabled={$savingRoleId === agente.id_agente}
 												>
 													✕
 												</button>
@@ -266,20 +213,24 @@
 									{:else}
 										<div class="rol-display">
 											<span class="rol-badge {rolActual ? 'rol-asignado' : 'sin-rol'}">
-												{obtenerNombreRol(rolActual?.id)}
+												{rolActual ? rolActual.nombre : 'Sin rol asignado'}
 											</span>
 										</div>
 									{/if}
 								</td>
 								<td class="acciones">
-									{#if editingRoleId !== agente.id}
-										<button 
-											class="btn btn-sm btn-primary"
-											on:click={() => iniciarEdicionRol(agente.id)}
-											disabled={savingRoleId !== null}
-										>
-											✏️ Cambiar Rol
-										</button>
+									{#if $editingRoleId !== agente.id_agente}
+										{#if rolesController.puedeEditarRol(agente, $currentUser)}
+											<button 
+												class="btn btn-sm btn-primary"
+												on:click={() => rolesController.iniciarEdicionRol(agente.id_agente)}
+												disabled={$savingRoleId !== null}
+											>
+												✏️ Cambiar Rol
+											</button>
+										{:else}
+											<span class="text-muted">Tu propio rol</span>
+										{/if}
 									{/if}
 								</td>
 							</tr>
@@ -341,6 +292,12 @@
 		border: 1px solid #f5c6cb;
 	}
 
+	.alert-info {
+		background: #d1ecf1;
+		color: #0c5460;
+		border: 1px solid #bee5eb;
+	}
+
 	.filters-section {
 		background: white;
 		padding: 1.5rem;
@@ -349,31 +306,60 @@
 		margin-bottom: 2rem;
 	}
 
-	.search-box {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
+	.filters-row {
+		display: grid;
+		grid-template-columns: 1fr auto auto;
+		gap: 1.5rem;
+		align-items: end;
+		margin-bottom: 1rem;
 	}
 
-	.search-input {
-		flex: 1;
+	.search-box {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.filter-box {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		min-width: 200px;
+	}
+
+	.filter-box label {
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: #495057;
+	}
+
+	.filter-actions {
+		display: flex;
+		align-items: end;
+	}
+
+	.search-input, .filter-select {
 		padding: 0.75rem 1rem;
 		border: 2px solid #e9ecef;
 		border-radius: 8px;
 		font-size: 1rem;
 		transition: border-color 0.2s;
+		background: white;
 	}
 
-	.search-input:focus {
+	.search-input:focus, .filter-select:focus {
 		outline: none;
-		border-color: #007bff;
-		box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+		border-color: #e79043;
+		box-shadow: 0 0 0 3px rgba(231, 144, 67, 0.1);
 	}
 
 	.search-results {
 		color: #6c757d;
 		font-size: 0.9rem;
-		white-space: nowrap;
+		text-align: center;
+		padding: 0.5rem;
+		background: #f8f9fa;
+		border-radius: 6px;
 	}
 
 	.loading-container {
@@ -385,7 +371,7 @@
 		width: 3rem;
 		height: 3rem;
 		border: 4px solid #e9ecef;
-		border-top: 4px solid #007bff;
+		border-top: 4px solid #e79043;
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
 		margin: 0 auto 1rem;
@@ -427,7 +413,7 @@
 	}
 
 	.roles-table th {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, #e79043, #f39c12);
 		color: white;
 		padding: 1rem;
 		text-align: left;
@@ -446,7 +432,8 @@
 	}
 
 	.legajo-badge {
-		background: #e9ecef;
+		background: linear-gradient(135deg, #e79043, #f39c12);
+		color: white;
 		padding: 0.25rem 0.5rem;
 		border-radius: 4px;
 		font-weight: 600;
@@ -464,13 +451,33 @@
 		font-size: 0.8rem;
 	}
 
+	.dni-text {
+		font-weight: 500;
+		color: #495057;
+		font-family: monospace;
+	}
+
 	.categoria-badge {
-		background: #007bff;
+		background: #6c757d;
 		color: white;
 		padding: 0.25rem 0.5rem;
 		border-radius: 4px;
 		font-size: 0.85rem;
 		font-weight: 500;
+	}
+
+	.area-badge {
+		background: #17a2b8;
+		color: white;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		font-size: 0.85rem;
+		font-weight: 500;
+		display: inline-block;
+		max-width: 150px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.rol-display {
@@ -505,7 +512,7 @@
 
 	.rol-select {
 		padding: 0.5rem;
-		border: 2px solid #007bff;
+		border: 2px solid #e79043;
 		border-radius: 4px;
 		font-size: 0.85rem;
 		min-width: 150px;
@@ -513,12 +520,18 @@
 
 	.rol-select:focus {
 		outline: none;
-		box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+		box-shadow: 0 0 0 2px rgba(231, 144, 67, 0.25);
 	}
 
 	.rol-actions {
 		display: flex;
 		gap: 0.25rem;
+	}
+
+	.text-muted {
+		color: #6c757d;
+		font-size: 0.85rem;
+		font-style: italic;
 	}
 
 	.btn {
@@ -546,13 +559,14 @@
 	}
 
 	.btn-primary {
-		background: #007bff;
+		background: linear-gradient(135deg, #e79043, #f39c12);
 		color: white;
 	}
 
 	.btn-primary:hover:not(:disabled) {
-		background: #0056b3;
+		background: linear-gradient(135deg, #d17d38, #e67e22);
 		transform: translateY(-1px);
+		box-shadow: 0 4px 8px rgba(231, 144, 67, 0.3);
 	}
 
 	.btn-secondary {
@@ -606,6 +620,11 @@
 		.roles-table td {
 			padding: 0.75rem 0.5rem;
 		}
+		
+		.filters-row {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
 	}
 
 	@media (max-width: 768px) {
@@ -618,10 +637,13 @@
 			align-items: stretch;
 		}
 		
-		.search-box {
-			flex-direction: column;
-			align-items: stretch;
-			gap: 0.5rem;
+		.filters-row {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+		
+		.filter-box {
+			min-width: auto;
 		}
 		
 		.table-container {
@@ -629,7 +651,29 @@
 		}
 		
 		.roles-table {
-			min-width: 800px;
+			min-width: 900px;
+		}
+
+		.area-badge {
+			max-width: 120px;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.page-container {
+			padding: 0.5rem;
+		}
+
+		.header-title h1 {
+			font-size: 1.5rem;
+		}
+
+		.roles-table {
+			min-width: 1000px;
+		}
+
+		.filters-section {
+			padding: 1rem;
 		}
 	}
 </style>

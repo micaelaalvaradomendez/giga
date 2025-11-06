@@ -39,23 +39,36 @@ bd/
 docker-compose up -d postgres
 
 # O usando el script de utilidades
+# Linux/macOS
 ./db-utils.sh start
+
+# Windows PowerShell
+.\db-utils.ps1 start
 ```
 
 ### **2. Verificar que funciona**
 ```bash
+# Linux/macOS
 ./db-utils.sh status
+
+# Windows PowerShell
+.\db-utils.ps1 status
 ```
 
 ### **3. Conectar a la base de datos**
 ```bash
+# Linux/macOS
 ./db-utils.sh shell
+
+# Windows PowerShell
+.\db-utils.ps1 shell
 ```
 
 ## 🛠️ Script de Utilidades
 
-El script `db-utils.sh` proporciona comandos fáciles para manejar la base de datos:
+Los scripts de utilidades proporcionan comandos fáciles para manejar la base de datos:
 
+### **Linux/macOS (Bash):**
 ```bash
 # Comandos básicos
 ./db-utils.sh start          # Iniciar servicios
@@ -78,7 +91,42 @@ El script `db-utils.sh` proporciona comandos fáciles para manejar la base de da
 ./db-utils.sh help           # Ayuda completa
 ```
 
+### **Windows (PowerShell):**
+```powershell
+# Comandos básicos
+.\db-utils.ps1 start          # Iniciar servicios
+.\db-utils.ps1 stop           # Detener servicios  
+.\db-utils.ps1 restart        # Reiniciar servicios
+.\db-utils.ps1 status         # Estado de servicios
+.\db-utils.ps1 logs           # Ver logs
+
+# Conexión y administración
+.\db-utils.ps1 shell          # Conectar con psql
+.\db-utils.ps1 admin          # Iniciar PgAdmin (puerto 8080)
+
+# Backups
+.\db-utils.ps1 backup         # Crear backup
+.\db-utils.ps1 restore <file> # Restaurar backup
+
+# Mantenimiento
+.\db-utils.ps1 build          # Construir imagen
+.\db-utils.ps1 reset          # Resetear DB (⚠️ DESTRUCTIVO)
+.\db-utils.ps1 help           # Ayuda completa
+```
+
 ## 🔧 Configuración Manual
+
+### **Configuración inicial para Windows PowerShell**
+```powershell
+# Permitir ejecución de scripts PowerShell (ejecutar como administrador)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
+
+# O solo para el usuario actual
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Verificar configuración
+Get-ExecutionPolicy -List
+```
 
 ### **Variables de entorno**
 ```bash
@@ -126,21 +174,38 @@ Para administración gráfica, puedes iniciar PgAdmin:
 
 ### **Crear backup automático**
 ```bash
+# Linux/macOS
 ./db-utils.sh backup
+
+# Windows PowerShell
+.\db-utils.ps1 backup
 ```
 
 Los backups se guardan en `./backups/` con timestamp y se comprimen automáticamente.
 
 ### **Restaurar backup**
 ```bash
+# Linux/macOS
 ./db-utils.sh restore ./backups/giga_backup_20251030_150000.sql.gz
+
+# Windows PowerShell
+.\db-utils.ps1 restore .\backups\giga_backup_20251030_150000.sql.zip
 ```
 
 ### **Backup programado (opcional)**
-Agregar a crontab para backups automáticos:
+
+**Linux/macOS - Agregar a crontab:**
 ```bash
 # Backup diario a las 2:00 AM
 0 2 * * * cd /ruta/al/proyecto/bd && ./db-utils.sh backup
+```
+
+**Windows - Programador de tareas (Task Scheduler):**
+```powershell
+# Crear tarea programada desde PowerShell (como administrador)
+$action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-File C:\ruta\al\proyecto\bd\db-utils.ps1 backup"
+$trigger = New-ScheduledTaskTrigger -Daily -At "02:00"
+Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "GIGA-DB-Backup" -Description "Backup diario de BD GIGA"
 ```
 
 ## 🔒 Seguridad
@@ -175,7 +240,10 @@ ssl_key_file = '/path/to/server.key'
 docker ps | grep postgres
 
 # Ver logs para errores
+# Linux/macOS
 ./db-utils.sh logs
+# Windows PowerShell
+.\db-utils.ps1 logs
 ```
 
 **Error de permisos:**
@@ -194,7 +262,10 @@ sudo netstat -tlnp | grep :5432
 **Resetear completamente:**
 ```bash
 # ⚠️ CUIDADO: Elimina todos los datos
+# Linux/macOS
 ./db-utils.sh reset
+# Windows PowerShell
+.\db-utils.ps1 reset
 ```
 
 ## 📚 Extensiones Incluidas
