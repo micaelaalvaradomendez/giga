@@ -16,7 +16,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import json
 
-from .models import Agente, Area, Rol, AgenteRol, Agrupacion
+from .models import Agente, Area, Rol, AgenteRol, Agrupacion, Organigrama
+from auditoria.models import Auditoria
 from .serializers import (
     AgenteListSerializer,
     AgenteDetailSerializer, 
@@ -868,4 +869,293 @@ def delete_agrupacion(request, agrupacion_id):
         return Response({
             'success': False,
             'message': f'Error al eliminar agrupación: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================================================
+# FUNCIONES AUXILIARES PARA AUDITORÍA
+# ============================================================================
+
+def crear_auditoria_organigrama(accion, organigrama_id, valor_previo=None, valor_nuevo=None, agente_id=None):
+    """
+    Crear registro de auditoría para cambios en organigrama.
+    """
+    try:
+        from django.utils import timezone
+        
+        Auditoria.objects.create(
+            pk_afectada=organigrama_id,
+            nombre_tabla='organigrama',
+            creado_en=timezone.now(),
+            valor_previo=valor_previo,
+            valor_nuevo=valor_nuevo,
+            accion=accion,
+            id_agente_id=agente_id  # FK al agente que hizo el cambio
+        )
+    except Exception as e:
+        # No fallar si la auditoría falla, solo registrar
+        print(f"Error al crear auditoría: {str(e)}")
+
+
+# ============================================================================
+# ENDPOINTS PARA GESTIÓN DE ORGANIGRAMA
+# ============================================================================
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_organigrama(request):
+    """
+    Obtener la estructura del organigrama activa.
+    """
+    try:
+        # Obtener el organigrama activo más reciente
+        organigrama = Organigrama.objects.filter(activo=True).first()
+        
+        if not organigrama:
+            # Si no existe, devolver estructura por defecto
+            return Response({
+                'success': True,
+                'data': {
+                    'id': None,
+                    'nombre': 'Sin organigrama configurado',
+                    'version': '1.0.0',
+                    'estructura': [],
+                    'creado_por': 'Sistema',
+                    'actualizado_en': None,
+                    'es_nuevo': True
+                }
+            })
+        
+        return Response({
+            'success': True,
+            'data': {
+                'id': organigrama.id_organigrama,
+                'nombre': organigrama.nombre,
+                'version': organigrama.version,
+                'estructura': organigrama.estructura,
+                'creado_por': organigrama.creado_por,
+                'actualizado_en': organigrama.actualizado_en,
+                'es_nuevo': False
+            }
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al obtener organigrama: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST', 'PUT'])
+@permission_classes([AllowAny])
+def save_organigrama(request):
+    """
+    Guardar o actualizar la estructura del organigrama.
+    """
+    try:
+        with transaction.atomic():
+            estructura = request.data.get('estructura')
+            nombre = request.data.get('nombre', 'Organigrama Principal')
+            version = request.data.get('version', '1.0.0')
+            creado_por = request.data.get('creado_por', 'Administrador')
+            
+            if not estructura:
+                return Response({
+                    'success': False,
+                    'message': 'La estructura del organigrama es requerida'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Obtener organigrama anterior para auditoría
+            organigrama_anterior = Organigrama.objects.filter(activo=True).first()
+            valor_previo = None
+            
+            if organigrama_anterior:
+                valor_previo = {
+                    'id': organigrama_anterior.id_organigrama,
+                    'nombre': organigrama_anterior.nombre,
+                    'version': organigrama_anterior.version,
+                    'estructura': organigrama_anterior.estructura,
+                    'creado_por': organigrama_anterior.creado_por
+                }
+            
+            # Desactivar organigramas anteriores
+            Organigrama.objects.filter(activo=True).update(activo=False)
+            
+            # Crear nuevo organigrama
+            organigrama = Organigrama.objects.create(
+                nombre=nombre,
+                estructura=estructura,
+                version=version,
+                creado_por=creado_por,
+                activo=True
+            )
+            
+            # Crear auditoría
+            valor_nuevo = {
+                'id': organigrama.id_organigrama,
+                'nombre': organigrama.nombre,
+                'version': organigrama.version,
+                'estructura': organigrama.estructura,
+                'creado_por': organigrama.creado_por,
+                'actualizado_en': organigrama.actualizado_en.isoformat()
+            }
+            
+            accion = 'ACTUALIZAR' if organigrama_anterior else 'CREAR'
+            crear_auditoria_organigrama(
+                accion=accion,
+                organigrama_id=organigrama.id_organigrama,
+                valor_previo=valor_previo,
+                valor_nuevo=valor_nuevo,
+                agente_id=None  # TODO: Obtener del usuario autenticado
+            )
+            
+            return Response({
+                'success': True,
+                'message': 'Organigrama guardado correctamente',
+                'data': {
+                    'id': organigrama.id_organigrama,
+                    'nombre': organigrama.nombre,
+                    'version': organigrama.version,
+                    'estructura': organigrama.estructura,
+                    'creado_por': organigrama.creado_por,
+                    'actualizado_en': organigrama.actualizado_en
+                }
+            }, status=status.HTTP_201_CREATED)
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al guardar organigrama: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_organigrama_historial(request):
+    """
+    Obtener historial de versiones del organigrama.
+    """
+    try:
+        organigramas = Organigrama.objects.all().order_by('-actualizado_en')
+        
+        data = []
+        for org in organigramas:
+            data.append({
+                'id': org.id_organigrama,
+                'nombre': org.nombre,
+                'version': org.version,
+                'creado_por': org.creado_por,
+                'activo': org.activo,
+                'creado_en': org.creado_en,
+                'actualizado_en': org.actualizado_en,
+                'nodos_count': len(_contar_nodos_recursivo(org.estructura)) if isinstance(org.estructura, list) else len(_contar_nodos_recursivo([org.estructura]))
+            })
+        
+        return Response({
+            'success': True,
+            'data': {
+                'results': data,
+                'count': len(data)
+            }
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al obtener historial: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def _contar_nodos_recursivo(nodos):
+    """
+    Función auxiliar para contar nodos en la estructura recursivamente.
+    """
+    count = 0
+    if isinstance(nodos, list):
+        for nodo in nodos:
+            count += 1
+            if isinstance(nodo, dict) and 'children' in nodo:
+                count += _contar_nodos_recursivo(nodo['children'])
+    elif isinstance(nodos, dict):
+        count += 1
+        if 'children' in nodos:
+            count += _contar_nodos_recursivo(nodos['children'])
+    
+    return count
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def restore_organigrama(request, organigrama_id):
+    """
+    Restaurar una versión específica del organigrama.
+    """
+    try:
+        with transaction.atomic():
+            # Obtener el organigrama a restaurar
+            organigrama_original = get_object_or_404(Organigrama, id_organigrama=organigrama_id)
+            
+            # Obtener organigrama actual para auditoría
+            organigrama_actual = Organigrama.objects.filter(activo=True).first()
+            valor_previo = None
+            
+            if organigrama_actual:
+                valor_previo = {
+                    'id': organigrama_actual.id_organigrama,
+                    'nombre': organigrama_actual.nombre,
+                    'version': organigrama_actual.version,
+                    'estructura': organigrama_actual.estructura,
+                    'creado_por': organigrama_actual.creado_por
+                }
+            
+            # Desactivar organigramas actuales
+            Organigrama.objects.filter(activo=True).update(activo=False)
+            
+            # Crear nueva versión basada en la original
+            nuevo_organigrama = Organigrama.objects.create(
+                nombre=f"{organigrama_original.nombre} (Restaurado)",
+                estructura=organigrama_original.estructura,
+                version=f"{organigrama_original.version}-restored",
+                creado_por=request.data.get('creado_por', 'Administrador'),
+                activo=True
+            )
+            
+            # Crear auditoría de restauración
+            valor_nuevo = {
+                'id': nuevo_organigrama.id_organigrama,
+                'nombre': nuevo_organigrama.nombre,
+                'version': nuevo_organigrama.version,
+                'estructura': nuevo_organigrama.estructura,
+                'creado_por': nuevo_organigrama.creado_por,
+                'actualizado_en': nuevo_organigrama.actualizado_en.isoformat(),
+                'restaurado_desde': organigrama_original.id_organigrama
+            }
+            
+            crear_auditoria_organigrama(
+                accion='RESTAURAR',
+                organigrama_id=nuevo_organigrama.id_organigrama,
+                valor_previo=valor_previo,
+                valor_nuevo=valor_nuevo,
+                agente_id=None  # TODO: Obtener del usuario autenticado
+            )
+            
+            return Response({
+                'success': True,
+                'message': f'Organigrama v{organigrama_original.version} restaurado correctamente',
+                'data': {
+                    'id': nuevo_organigrama.id_organigrama,
+                    'nombre': nuevo_organigrama.nombre,
+                    'version': nuevo_organigrama.version,
+                    'estructura': nuevo_organigrama.estructura,
+                    'creado_por': nuevo_organigrama.creado_por,
+                    'actualizado_en': nuevo_organigrama.actualizado_en
+                }
+            })
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al restaurar organigrama: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

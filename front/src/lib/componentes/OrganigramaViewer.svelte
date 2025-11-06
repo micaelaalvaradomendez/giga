@@ -9,7 +9,11 @@
 	// Expandir automáticamente los primeros 2 niveles
 	onMount(() => {
 		if (data?.organigrama) {
-			expandAllNodes(data.organigrama, 2);
+			if (Array.isArray(data.organigrama)) {
+				data.organigrama.forEach(rootNode => expandAllNodes(rootNode, 2));
+			} else {
+				expandAllNodes(data.organigrama, 2);
+			}
 		}
 	});
 
@@ -75,13 +79,25 @@
 
 		<div class="organigrama-container">
 			<div class="organigrama-tree">
-				<NodeRenderer 
-					node={data.organigrama} 
-					{expandedNodes} 
-					{toggleNode} 
-					{getNodeIcon} 
-					{getNodeColor} 
-				/>
+				{#if Array.isArray(data.organigrama)}
+					{#each data.organigrama as rootNode}
+						<NodeRenderer 
+							node={rootNode} 
+							{expandedNodes} 
+							{toggleNode} 
+							{getNodeIcon} 
+							{getNodeColor} 
+						/>
+					{/each}
+				{:else}
+					<NodeRenderer 
+						node={data.organigrama} 
+						{expandedNodes} 
+						{toggleNode} 
+						{getNodeIcon} 
+						{getNodeColor} 
+					/>
+				{/if}
 			</div>
 		</div>
 	</div>

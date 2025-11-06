@@ -63,6 +63,14 @@ parametros_patterns = [
     path('agrupaciones/rename/', views.rename_agrupacion, name='rename_agrupacion'),
 ]
 
+# URLs de organigrama
+organigrama_patterns = [
+    path('', views.get_organigrama, name='get_organigrama'),
+    path('save/', views.save_organigrama, name='save_organigrama'),
+    path('historial/', views.get_organigrama_historial, name='get_organigrama_historial'),
+    path('<int:organigrama_id>/restore/', views.restore_organigrama, name='restore_organigrama'),
+]
+
 # Import temporal para testing
 from .test_views import get_agentes_test
 
@@ -77,5 +85,6 @@ urlpatterns = [
     path('catalogs/', include(catalog_patterns)),
     path('asignaciones/', include(asignaciones_patterns)),
     path('parametros/', include(parametros_patterns)),
+    path('organigrama/', include(organigrama_patterns)),
     path('test/', include(test_patterns)),
 ]

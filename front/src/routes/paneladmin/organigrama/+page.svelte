@@ -12,6 +12,10 @@
 	let selectedParent = null;
 	let searchTerm = '';
 	let expandedNodes = new Set();
+	let allNodes = []; // Lista plana de todos los nodos para el selector
+	let showParentSelector = false;
+	let fileInput;
+	let showUnsavedWarning = false; // Indicar si hay cambios pendientes de guardar
 
 	// Datos del formulario
 	let formData = {
@@ -41,27 +45,143 @@
 
 	async function loadOrganigrama() {
 		try {
-			const savedData = localStorage.getItem('organigrama');
-			if (savedData) {
-				organigramaData = JSON.parse(savedData);
+			loading = true;
+			console.log('🔄 Cargando organigrama desde API...');
+			
+			// CARGAR DESDE API DEL BACKEND
+			const response = await fetch('/api/personas/organigrama/', {
+				method: 'GET',
+				credentials: 'include'
+			});
+
+			console.log('📡 Response status:', response.status);
+
+			if (response.ok) {
+				const result = await response.json();
+				console.log('📥 API Response:', result);
+				
+				if (result.success) {
+					// Convertir estructura de la API al formato esperado por el frontend
+					organigramaData = {
+						version: result.data.version,
+						lastUpdated: result.data.actualizado_en,
+						updatedBy: result.data.creado_por,
+						organigrama: result.data.estructura
+					};
+					
+					console.log('✅ Organigrama cargado:', organigramaData);
+				} else {
+					throw new Error(result.message || 'Error al cargar organigrama');
+				}
 			} else {
-				// Cargar datos por defecto
-				const { default: defaultData } = await import('$lib/data/organigrama.json');
-				organigramaData = defaultData;
-				saveOrganigrama();
+				throw new Error('Error de conexión con el servidor');
 			}
+			
+			// Actualizar lista de nodos para el selector
+			updateNodesList();
+			
+			console.log('✅ Lista de nodos actualizada:', allNodes.length, 'nodos');
 		} catch (error) {
-			console.error('Error cargando organigrama:', error);
+			console.error('❌ Error cargando organigrama:', error);
+			
+			// Datos de fallback básicos para mostrar algo en caso de error
+			organigramaData = {
+				version: '1.0.0',
+				lastUpdated: new Date().toISOString(),
+				updatedBy: 'Sistema',
+				organigrama: [{
+					id: 'root',
+					tipo: 'secretaria',
+					nombre: 'Secretaría de Protección Civil',
+					titular: 'No disponible',
+					email: '',
+					telefono: '',
+					descripcion: 'Organigrama no disponible temporalmente',
+					nivel: 0,
+					children: []
+				}]
+			};
+			updateNodesList();
+			console.log('✅ Usando datos de fallback básicos');
 		} finally {
 			loading = false;
 		}
 	}
 
-	function saveOrganigrama() {
-		if (browser && organigramaData) {
-			organigramaData.lastUpdated = new Date().toISOString();
-			organigramaData.updatedBy = 'Administrador';
-			localStorage.setItem('organigrama', JSON.stringify(organigramaData));
+	async function saveOrganigrama() {
+		if (!browser || !organigramaData) return;
+
+		try {
+			loading = true;
+
+			// GUARDAR EN LA API DEL BACKEND
+			const response = await fetch('/api/personas/organigrama/save/', {
+				method: 'POST',
+				credentials: 'include',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					nombre: 'Secretaría de Protección Civil',
+					estructura: organigramaData.organigrama,
+					version: organigramaData.version || '1.0.0',
+					creado_por: 'Administrador'
+				})
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				if (result.success) {
+					console.log('✅ Organigrama guardado correctamente');
+					
+					// Actualizar datos locales con la respuesta del servidor
+					organigramaData.lastUpdated = result.data.actualizado_en;
+					organigramaData.updatedBy = result.data.creado_por;
+					showUnsavedWarning = false;
+					
+					updateNodesList();
+					return true;
+				} else {
+					throw new Error(result.message || 'Error al guardar organigrama');
+				}
+			} else {
+				throw new Error('Error de conexión con el servidor');
+			}
+
+		} catch (error) {
+			console.error('❌ Error guardando organigrama:', error);
+			alert('Error al guardar los cambios: ' + error.message);
+			return false;
+		} finally {
+			loading = false;
+		}
+	}
+
+	function updateNodesList() {
+		allNodes = [];
+		if (organigramaData?.organigrama) {
+			// Convertir estructura jerárquica a lista plana
+			function flattenNodes(node, path = '') {
+				const currentPath = path ? `${path} > ${node.nombre}` : node.nombre;
+				allNodes.push({
+					id: node.id,
+					nombre: node.nombre,
+					tipo: node.tipo,
+					nivel: node.nivel || 0,
+					path: currentPath,
+					node: node
+				});
+				
+				if (node.children) {
+					node.children.forEach(child => flattenNodes(child, currentPath));
+				}
+			}
+			
+			if (Array.isArray(organigramaData.organigrama)) {
+				organigramaData.organigrama.forEach(root => flattenNodes(root));
+			} else {
+				flattenNodes(organigramaData.organigrama);
+			}
 		}
 	}
 
@@ -72,6 +192,7 @@
 	function openAddModal(parent = null) {
 		modalType = 'add';
 		selectedParent = parent;
+		showParentSelector = !parent; // Mostrar selector solo si no se especifica padre
 		resetForm();
 		showModal = true;
 	}
@@ -111,6 +232,7 @@
 		showModal = false;
 		selectedNode = null;
 		selectedParent = null;
+		showParentSelector = false;
 		resetForm();
 	}
 
@@ -148,7 +270,7 @@
 		}
 	}
 
-	function handleSubmit() {
+	async function handleSubmit() {
 		if (!formData.nombre.trim()) {
 			alert('El nombre es obligatorio');
 			return;
@@ -168,13 +290,24 @@
 			};
 
 			if (selectedParent) {
+				// Agregar como hijo del nodo seleccionado
 				if (!selectedParent.children) {
 					selectedParent.children = [];
 				}
 				selectedParent.children.push(newNode);
 			} else {
-				// Agregar como raíz (reemplazar)
-				organigramaData.organigrama = newNode;
+				// Agregar como nodo raíz - convertir a array si es necesario
+				if (!organigramaData.organigrama) {
+					organigramaData.organigrama = [];
+				}
+				
+				if (Array.isArray(organigramaData.organigrama)) {
+					organigramaData.organigrama.push(newNode);
+				} else {
+					// Convertir nodo único a array
+					const currentRoot = organigramaData.organigrama;
+					organigramaData.organigrama = [currentRoot, newNode];
+				}
 			}
 		} else if (modalType === 'edit' && selectedNode) {
 			selectedNode.nombre = formData.nombre.trim();
@@ -185,24 +318,41 @@
 			selectedNode.telefono = formData.telefono.trim();
 		}
 
-		saveOrganigrama();
+		// � SOLO ACTUALIZAR LOCALMENTE (no guardar en API todavía)
 		organigramaData = { ...organigramaData }; // Trigger reactivity
+		updateNodesList();
 		closeModal();
+		
+		// Mostrar mensaje de que hay cambios pendientes
+		showUnsavedWarning = true;
 	}
 
-	function handleDelete() {
+	async function handleDelete() {
 		if (selectedNode) {
-			if (selectedNode.id === organigramaData.organigrama.id) {
-				// Eliminar nodo raíz
-				organigramaData.organigrama = null;
+			if (Array.isArray(organigramaData.organigrama)) {
+				// Eliminar de array de raíces
+				organigramaData.organigrama = organigramaData.organigrama.filter(root => 
+					root.id !== selectedNode.id
+				);
+				// También eliminar de hijos si está anidado
+				organigramaData.organigrama.forEach(root => {
+					removeNodeById(root, selectedNode.id);
+				});
 			} else {
-				removeNodeById(organigramaData.organigrama, selectedNode.id);
+				// Estructura de nodo único
+				if (selectedNode.id === organigramaData.organigrama.id) {
+					organigramaData.organigrama = null;
+				} else {
+					removeNodeById(organigramaData.organigrama, selectedNode.id);
+				}
 			}
 			
-			saveOrganigrama();
+			// � SOLO ACTUALIZAR LOCALMENTE
 			organigramaData = { ...organigramaData }; // Trigger reactivity
+			updateNodesList();
+			showUnsavedWarning = true; // Marcar cambios pendientes
+			closeModal();
 		}
-		closeModal();
 	}
 
 	function exportData() {
@@ -216,23 +366,27 @@
 		URL.revokeObjectURL(url);
 	}
 
-	function importData(event) {
+	async function importData(event) {
 		const file = event.target.files[0];
 		if (file) {
 			const reader = new FileReader();
-			reader.onload = (e) => {
+			reader.onload = async (e) => {
 				try {
 					const importedData = JSON.parse(e.target.result);
 					if (importedData.organigrama) {
 						organigramaData = importedData;
-						saveOrganigrama();
-						organigramaData = { ...organigramaData }; // Trigger reactivity
-						alert('Organigrama importado exitosamente');
+						
+						// GUARDAR CON PERSISTENCIA REAL
+						const saved = await saveOrganigrama();
+						if (saved) {
+							organigramaData = { ...organigramaData }; // Trigger reactivity
+							alert('✅ Organigrama importado exitosamente');
+						}
 					} else {
-						alert('Formato de archivo inválido');
+						alert('❌ Formato de archivo inválido');
 					}
 				} catch (error) {
-					alert('Error al importar el archivo: ' + error.message);
+					alert('❌ Error al importar el archivo: ' + error.message);
 				}
 			};
 			reader.readAsText(file);
@@ -284,10 +438,30 @@
 <div class="admin-container">
 	<div class="admin-header">
 		<h1>Administrar Organigrama</h1>
+		
+		{#if showUnsavedWarning}
+			<div class="unsaved-warning">
+				⚠️ <strong>Hay cambios sin guardar</strong> - Haga clic en "💾 Guardar Cambios" para persistir en el sistema
+			</div>
+		{/if}
+		
 		<div class="admin-actions">
 			<button class="btn btn-primary" on:click={() => openAddModal()}>
 				➕ Agregar
 			</button>
+			<button class="btn btn-success" on:click={saveOrganigrama} disabled={loading}>
+				💾 Guardar
+			</button>
+			<button class="btn" style="background: #8b5cf6; color: white;" on:click={loadOrganigrama}>
+				🔄 Recargar
+			</button>
+			<input 
+				type="file" 
+				accept=".json"
+				style="display: none;"
+				on:change={importData}
+				bind:this={fileInput}
+			>
 		</div>
 	</div>
 
@@ -299,22 +473,39 @@
 	{:else if organigramaData?.organigrama}
 		<div class="admin-content">
 			<div class="organigrama-admin">
-				<AdminNodeRenderer 
-					node={organigramaData.organigrama}
-					{expandedNodes}
-					{toggleNode}
-					{getNodeIcon}
-					{getNodeColor}
-					{openAddModal}
-					{openEditModal}
-					{openDeleteModal}
-				/>
+				{#if Array.isArray(organigramaData.organigrama)}
+					{#each organigramaData.organigrama as rootNode}
+						<div class="root-node-container">
+							<AdminNodeRenderer 
+								node={rootNode}
+								{expandedNodes}
+								{toggleNode}
+								{getNodeIcon}
+								{getNodeColor}
+								{openAddModal}
+								{openEditModal}
+								{openDeleteModal}
+							/>
+						</div>
+					{/each}
+				{:else}
+					<AdminNodeRenderer 
+						node={organigramaData.organigrama}
+						{expandedNodes}
+						{toggleNode}
+						{getNodeIcon}
+						{getNodeColor}
+						{openAddModal}
+						{openEditModal}
+						{openDeleteModal}
+					/>
+				{/if}
 			</div>
 		</div>
 	{:else}
-		<div class="no-data">
-			<h3>No hay organigrama configurado</h3>
-			<p>Haga clic en "Agregar Nodo Raíz" para comenzar</p>
+		<div class="no-data" style="background: #fee2e2; padding: 20px; border-radius: 8px; text-align: center;">
+			<h3>❌ No hay organigrama configurado</h3>
+			<p>Haga clic en "Agregar" para comenzar</p>
 		</div>
 	{/if}
 </div>
@@ -326,11 +517,11 @@
 			<div class="modal-header">
 				<h2>
 					{#if modalType === 'add'}
-						Agregar Nodo
+						Agregar
 					{:else if modalType === 'edit'}
-						Editar Nodo
+						Editar
 					{:else}
-						Eliminar Nodo
+						Eliminar
 					{/if}
 				</h2>
 				<button class="modal-close" on:click={closeModal}>✕</button>
@@ -338,9 +529,9 @@
 
 			{#if modalType === 'delete'}
 				<div class="modal-body">
-					<p>¿Está seguro que desea eliminar el nodo "<strong>{selectedNode?.nombre}</strong>"?</p>
+					<p>¿Está seguro que desea eliminar "<strong>{selectedNode?.nombre}</strong>"?</p>
 					{#if selectedNode?.children?.length}
-						<p class="warning">⚠️ Este nodo tiene {selectedNode.children.length} nodos hijos que también serán eliminados.</p>
+						<p class="warning">⚠️ Este tiene {selectedNode.children.length} hijos que también serán eliminados.</p>
 					{/if}
 				</div>
 				<div class="modal-footer">
@@ -350,6 +541,30 @@
 			{:else}
 				<form on:submit|preventDefault={handleSubmit}>
 					<div class="modal-body">
+						{#if showParentSelector}
+							<div class="form-group">
+								<label for="parent">Padre (opcional)</label>
+								<select id="parent" bind:value={selectedParent}>
+									<option value={null}>-- Raíz (sin padre) --</option>
+									{#each allNodes as nodeOption}
+										<option value={nodeOption.node}>
+											{nodeOption.path} ({nodeOption.tipo})
+										</option>
+									{/each}
+								</select>
+								<small class="form-help">
+									Seleccione dónde agregar el nuevo. Si no selecciona nada, será una raíz.
+								</small>
+							</div>
+						{:else if selectedParent}
+							<div class="form-group">
+								<label>Padre Seleccionado:</label>
+								<div class="selected-parent">
+									{getNodeIcon(selectedParent.tipo)} {selectedParent.nombre}
+								</div>
+							</div>
+						{/if}
+
 						<div class="form-group">
 							<label for="nombre">Nombre *</label>
 							<input 
@@ -443,6 +658,24 @@
 		background: white;
 		border-radius: 8px;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	.unsaved-warning {
+		background: #fef3c7;
+		border: 2px solid #f59e0b;
+		color: #92400e;
+		padding: 1rem;
+		border-radius: 8px;
+		margin-bottom: 1rem;
+		text-align: center;
+		font-weight: 500;
+		animation: pulse 2s infinite;
+	}
+
+	@keyframes pulse {
+		0% { opacity: 1; }
+		50% { opacity: 0.8; }
+		100% { opacity: 1; }
 	}
 
 	.admin-header h1 {
@@ -585,6 +818,34 @@
 		margin-top: 0.5rem;
 	}
 
+	.form-help {
+		color: #6b7280;
+		font-size: 0.875rem;
+		margin-top: 0.25rem;
+		display: block;
+	}
+
+	.selected-parent {
+		padding: 0.5rem;
+		background: #f3f4f6;
+		border: 1px solid #d1d5db;
+		border-radius: 4px;
+		color: #374151;
+		font-weight: 500;
+	}
+
+	.root-node-container {
+		margin-bottom: 2rem;
+		padding: 1rem;
+		border: 2px dashed #e5e7eb;
+		border-radius: 8px;
+		background: #fafafa;
+	}
+
+	.root-node-container:first-child {
+		margin-top: 0;
+	}
+
 	/* Button styles */
 	.btn {
 		padding: 0.75rem 1rem;
@@ -606,6 +867,20 @@
 
 	.btn-primary:hover {
 		background: #1d4ed8;
+	}
+
+	.btn-success {
+		background: #10b981;
+		color: white;
+	}
+
+	.btn-success:hover {
+		background: #059669;
+	}
+
+	.btn-success:disabled {
+		background: #9ca3af;
+		cursor: not-allowed;
 	}
 
 	.btn-secondary {

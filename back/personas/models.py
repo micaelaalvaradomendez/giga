@@ -179,3 +179,28 @@ class AgenteRol(models.Model):
         
     def __str__(self):
         return f"{self.id_agente} - {self.id_rol}"
+
+
+class Organigrama(models.Model):
+    """Estructura organizacional del sistema."""
+    id_organigrama = models.BigAutoField(primary_key=True)
+    nombre = models.CharField(max_length=200)
+    estructura = models.JSONField()  # Almacena la estructura JSON del organigrama
+    version = models.CharField(max_length=20, default='1.0.0')
+    activo = models.BooleanField(default=True)
+    creado_por = models.CharField(max_length=100, default='Sistema')
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        managed = True  # Este modelo SÍ es administrado por Django
+        db_table = 'organigrama'
+        ordering = ['-actualizado_en']
+        
+    @property
+    def id(self):
+        """Alias para compatibilidad"""
+        return self.id_organigrama
+        
+    def __str__(self):
+        return f"Organigrama {self.nombre} v{self.version}"

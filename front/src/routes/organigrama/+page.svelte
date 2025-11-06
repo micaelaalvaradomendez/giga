@@ -8,23 +8,59 @@
 
 	onMount(async () => {
 		if (browser) {
-			try {
-				// Cargar desde localStorage si existe, sino desde el archivo JSON
-				const savedData = localStorage.getItem('organigrama');
-				if (savedData) {
-					organigramaData = JSON.parse(savedData);
-				} else {
-					// Cargar datos por defecto
-					const { default: defaultData } = await import('$lib/data/organigrama.json');
-					organigramaData = defaultData;
-				}
-			} catch (error) {
-				console.error('Error cargando organigrama:', error);
-			} finally {
-				loading = false;
-			}
+			await loadOrganigrama();
 		}
 	});
+
+	async function loadOrganigrama() {
+		try {
+			// CARGAR DESDE API DEL BACKEND
+			const response = await fetch('/api/personas/organigrama/', {
+				method: 'GET',
+				credentials: 'include'
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				if (result.success) {
+					// Convertir estructura de la API al formato esperado por el frontend
+					organigramaData = {
+						version: result.data.version,
+						lastUpdated: result.data.actualizado_en,
+						updatedBy: result.data.creado_por,
+						organigrama: result.data.estructura
+					};
+				} else {
+					throw new Error(result.message || 'Error al cargar organigrama');
+				}
+			} else {
+				throw new Error('Error de conexión con el servidor');
+			}
+		} catch (error) {
+			console.error('❌ Error cargando organigrama desde API:', error);
+			
+			// Datos de fallback básicos para mostrar algo en caso de error
+			organigramaData = {
+				version: '1.0.0',
+				lastUpdated: new Date().toISOString(),
+				updatedBy: 'Sistema',
+				organigrama: [{
+					id: 'root',
+					tipo: 'secretaria',
+					nombre: 'Secretaría de Protección Civil',
+					titular: 'No disponible',
+					email: '',
+					telefono: '',
+					descripcion: 'Organigrama no disponible temporalmente',
+					nivel: 0,
+					children: []
+				}]
+			};
+			console.log('✅ Usando datos de fallback básicos');
+		} finally {
+			loading = false;
+		}
+	}
 </script>
 
 <svelte:head>
