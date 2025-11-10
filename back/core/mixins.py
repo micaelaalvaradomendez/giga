@@ -32,7 +32,7 @@ class AuditoriaMixin:
                 nombre_tabla=instance.__class__.__name__,
                 pk_afectada=str(instance.id),
                 accion='create',
-                valor_nuevo=serializer.data
+                valor_nuevo=self._get_valores_auditoria(instance)
             )
         
         return instance
@@ -56,7 +56,7 @@ class AuditoriaMixin:
                 pk_afectada=str(instance.id),
                 accion='update',
                 valor_previo=valores_previos,
-                valor_nuevo=serializer.data
+                valor_nuevo=self._get_valores_auditoria(instance)
             )
         
         return instance
@@ -80,14 +80,18 @@ class AuditoriaMixin:
     def _get_valores_auditoria(self, instance):
         """Obtener valores relevantes para auditoría según el modelo"""
         valores = {}
-        
-        # Campos comunes que siempre queremos auditar
-        campos_comunes = ['nombre', 'email', 'activo', 'activa', 'legajo', 'codigo']
-        
+
+        campos_comunes = [
+            'nombre', 'email', 'activo', 'activa', 'legajo', 'codigo',
+            'fecha', 'descripcion'
+        ]
+
         for campo in campos_comunes:
             if hasattr(instance, campo):
-                valores[campo] = getattr(instance, campo)
-        
+                valor = getattr(instance, campo)
+                # Convertir a string para asegurar compatibilidad con JSON
+                valores[campo] = str(valor)
+
         return valores
 
 
