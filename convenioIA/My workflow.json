@@ -1,171 +1,201 @@
 {
-    "name": "My workflow",
-    "nodes": [
-        {
-            "parameters": {
-                "httpMethod": "POST",
-                "path": "3ebdf75e-f0e2-4d18-b070-498f1486d845",
-                "responseMode": "responseNode",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.webhook",
-            "typeVersion": 2.1,
-            "position": [
-                -256,
-                0
-            ],
-            "id": "963fcdfd-d256-4dea-9cb8-e934761fe0fb",
-            "name": "Webhook",
-            "webhookId": "3ebdf75e-f0e2-4d18-b070-498f1486d845"
-        },
-        {
-            "parameters": {
-                "respondWith": "json",
-                "responseBody": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"response\": \"{{ $('AI Agent').item(0).json.response }}\"\n  }\n}",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.respondToWebhook",
-            "typeVersion": 1.4,
-            "position": [
-                928,
-                0
-            ],
-            "id": "6cb9c14a-2bf5-4827-8c18-b6d33f7089f3",
-            "name": "Respond to Webhook"
-        },
-        {
-            "parameters": {
-                "url": "http://giga-minio:9000/convenio/RES%20MTYE%20N%C2%B0425-2022%20(1).docx",
-                "authentication": "genericCredentialType",
-                "genericAuthType": "httpCustomAuth",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.3,
-            "position": [
-                16,
-                -16
-            ],
-            "id": "165e401c-f719-4201-b3ef-a4e8b5e78e66",
-            "name": "MinIO - HTTP S3",
-            "credentials": {
-                "aws": {
-                    "id": "jmDFs4g0g7wUqhRH",
-                    "name": "AWS account"
-                },
-                "httpCustomAuth": {
-                    "id": "b9SXIqkSjyVw37bS",
-                    "name": "Custom Auth account"
-                }
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b6dbf0c7-49c6-4323-872c-c5a8771ea5d1",
+              "name": "texto_final",
+              "value": "={{ $('Message a model1').first().json.content.parts[0].text }}",
+              "type": "string"
             }
+          ]
         },
-        {
-            "parameters": {
-                "operation": "text",
-                "destinationKey": "text",
-                "options": {
-                    "keepSource": "json"
-                }
-            },
-            "type": "n8n-nodes-base.extractFromFile",
-            "typeVersion": 1,
-            "position": [
-                256,
-                0
-            ],
-            "id": "761a3381-92c6-4e13-9cbb-aa4f1a2924e0",
-            "name": "Extract from File"
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1792,
+        336
+      ],
+      "id": "ae48a4e6-18ae-492b-a7fc-1396ce94e78d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "http://giga-minio:9000/convenio/convenio.pdf",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1072,
+        336
+      ],
+      "id": "9d894303-448e-475e-962c-7f8ab64c42ea",
+      "name": "MinIO - HTTP S",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "5rlJAu144WKQCAtn",
+          "name": "Custom Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "3ebdf75e-f0e2-4d18-b070-498f1486d845",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        336
+      ],
+      "id": "15238d54-a7db-4efa-860c-1decd05fcde4",
+      "name": "Webhook1",
+      "webhookId": "3ebdf75e-f0e2-4d18-b070-498f1486d845",
+      "alwaysOutputData": true,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.texto_final }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1984,
+        336
+      ],
+      "id": "c17ecd8a-1b69-4394-8165-92334c122d3a",
+      "name": "Respond to Webhook1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        336
+      ],
+      "id": "351958a6-911b-4f59-92c1-5e13f0fe98b0",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
         },
-        {
-            "parameters": {
-                "modelId": {
-                    "__rl": true,
-                    "value": "models/gemini-2.5-flash",
-                    "mode": "list",
-                    "cachedResultName": "models/gemini-2.5-flash"
-                },
-                "messages": {
-                    "values": [
-                        {
-                            "content": "=Actúa como un experto en el convenio. Responde la siguiente Pregunta del Usuario SÓLO con la información proporcionada en el Documento de Base. Si no puedes encontrar la respuesta en el documento, indica que la información no está disponible.\n\nDocumento de Base: \n{{ $json.text }}\n\nPregunta del Usuario: \n{{ $('Webhook').item(0).json.body.chatInput }}"
-                        }
-                    ]
-                },
-                "jsonOutput": true,
-                "options": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.googleGemini",
-            "typeVersion": 1,
-            "position": [
-                512,
-                16
-            ],
-            "id": "8c947a63-d107-47a3-b26c-dd1f2ef0911a",
-            "name": "Message a model1",
-            "credentials": {
-                "googlePalmApi": {
-                    "id": "I5a4HcE8UMGxqhkB",
-                    "name": "Google Gemini(PaLM) Api account"
-                }
+        "messages": {
+          "values": [
+            {
+              "content": "=Actúa como un experto en el convenio. Responde la siguiente Pregunta del Usuario SÓLO con la información proporcionada en el Documento de Base. Si no puedes encontrar la respuesta en el documento, indica que la información no está disponible.\n\nDocumento de Base: \n{{ $json.text }}\n\nPregunta del Usuario: \n... Pregunta del Usuario: \\n{{ $(\"Webhook1\").first().json.body.chatInput }}\n\n"
             }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        336
+      ],
+      "id": "a8b81e66-4116-43ef-890b-ac824f3f534e",
+      "name": "Message a model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "fOhvFBGPZhGB7BtB",
+          "name": "Google Gemini(PaLM) Api account"
         }
-    ],
-    "pinData": {},
-    "connections": {
-        "Webhook": {
-            "main": [
-                [
-                    {
-                        "node": "MinIO - HTTP S3",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "MinIO - HTTP S3": {
-            "main": [
-                [
-                    {
-                        "node": "Extract from File",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Extract from File": {
-            "main": [
-                [
-                    {
-                        "node": "Message a model1",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Message a model1": {
-            "main": [
-                [
-                    {
-                        "node": "Respond to Webhook",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "active": true,
-    "settings": {
-        "executionOrder": "v1"
+    "MinIO - HTTP S": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "versionId": "e4aa52c6-14bb-473a-91fb-86cbb76725b5",
-    "meta": {
-        "templateCredsSetupCompleted": true,
-        "instanceId": "a6ec0de5bac7cd823c66e8e6a968993b75120d016b6841ab8f2f09aad85eaf85"
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "MinIO - HTTP S",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "id": "EkRbvVMRWqVhPdDn",
-    "tags": []
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b12c15ac-9135-4b9a-8419-9d034ae57f33",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9985530d5f3273c0de571fc7e67eaa95db8f49b9465ec1ca659fb70dfcbc7539"
+  },
+  "id": "RiUFy1i1OI5xwEwV",
+  "tags": []
 }

@@ -1,53 +1,75 @@
-USUARIOS
-
 MINIO USUARIO
 
 Usuario: giga-user
 Contraseña: giga-password-change-me
 
+CONFIGURACIÓN MINIO 
+
+1. ACCESO AL CONTENEDOR MINIO:
+   docker exec -it giga-minio /bin/bash
+
+2. CONFIGURAR ALIAS MINIO:
+   mc alias set myminio http://localhost:9000 giga-user giga-password-change-me
+
+3. CREAR USUARIO N8N:
+   mc admin user add myminio n8n-user n8n12345
+
+4. ASIGNAR PERMISOS AL USUARIO:
+   mc admin policy attach myminio readwrite --user n8n-user
+
+5. CREAR BUCKET CONVENIO:
+   mc mb myminio/convenio
+
+6. CONFIGURAR ACCESO PÚBLICO:
+   mc anonymous set public myminio/convenio
+   mc anonymous set download myminio/convenio
+
+7. SUBIR ARCHIVO DEL CONVENIO:
+   - Copiar archivo desde host: docker cp "...\giga\convenioIA\convenio.pdf" giga-minio:/tmp/convenio.pdf
+   - Subir a bucket: mc cp /tmp/convenio.pdf myminio/convenio/
+
+8. VERIFICAR CONFIGURACIÓN:
+   mc ls myminio
+   mc ls myminio/convenio
+
+
+CONFIGURACIÓN N8N 
 
 N8N USUARIO
 
+Email: admin@giga.com
 Nombre: Admin
 Apellido: Giga
-Email: admin@giga.com
 Contraseña: Admin123
 
-EJECUTAR SI O SI
-ENTRAR AL BASH
-docker exec -it giga-minio /bin/bash
-mc alias set myminio http://localhost:9000 giga-user giga-password-change-me
-mc admin user add local-minio n8n-user n8n12345
-mc admin policy attach local-minio full-access --user n8n-user
-mc anonymous set public myminio/convenio
-mc anonymous set download myminio/convenio
-mc ls myminio
-mc ls myminio/convenio
-
-para poder ver el n8n se debe:
-    - se debe ingresar a n8n 
-    - luego se crea un workflow
-    - se importa el archivo My workflow.json
-    -en custom auth se debe crear credencial va a pedir un JSON se pone:
+Para poder ver el n8n se debe:
+    - Ingresar a N8N (http://localhost:5678)
+    - Crear un workflow
+    - Importar el archivo My workflow.json
+    - En Custom Auth del nodo MinIO se debe crear credencial va a pedir un JSON se pone:
             {
             "access_key": "n8n-user",
             "secret_key": "n8n12345",
             "region": "us-east-1",
             "service": "s3"
             }
-    - ingresar al LLM y ingresar la api key (se puede crear en https://aistudio.google.com/api-keys)
-
-importante!!!
-ingresar a minio y:
-    - crear bucket llamado 'convenio'
-    - subir el archivo del convenio (RES MTYE N°425-2022 (1).docx)
+    - Ingresar al LLM y ingresar la API key (se puede crear en https://aistudio.google.com/api-keys)
 
 
-para ver de forma local:
-    - instalar extension thunder client
-    - abrir extension
-    - hacer new request
-    - cambiar get a POST
-    - ingresar la url (http://localhost:5678/webhook-test/3ebdf75e-f0e2-4d18-b070-498f1486d845)
-    - en body se puede consultar como json 
-    - se activa el test en n8n y luego se envia desde vs
+TESTING LOCAL:
+Para probar de forma local:
+    - Instalar extensión Thunder Client
+    - Abrir extensión
+    - Hacer new request
+    - Cambiar GET a POST
+    - Ingresar la URL:
+         TEST: http://localhost:5678/webhook-test/3ebdf75e-f0e2-4d18-b070-498f1486d845
+    - En body se puede consultar como JSON:
+        ej: 
+        {
+            "chatInput": "Cuantos dias por embarazo corresponden?"
+        }
+    - Se activa el test en N8N y luego se envía desde VS Code
+
+    -Para prod no necesitan activar nada, solo cambian la URL:
+    PROD: http://localhost:5678/webhook/3ebdf75e-f0e2-4d18-b070-498f1486d845

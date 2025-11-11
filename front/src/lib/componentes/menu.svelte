@@ -68,9 +68,7 @@
     }
 </script>
 
-{#if isLoading}
-    <div class="loading-spinner">Cargando...</div>
-{:else if errorMessage}
+{#if errorMessage}
     <div class="error-message">{errorMessage}</div>
 {:else}
     <div class={"sidebar-container " + (isActive ? "active" : "")}>
@@ -520,14 +518,7 @@
         background: #555;
     }
 
-    .loading-spinner {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: #2563eb;
-        font-size: 18px;
-    }
+
 
     .error-message {
         position: fixed;
