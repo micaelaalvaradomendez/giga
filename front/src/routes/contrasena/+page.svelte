@@ -100,7 +100,7 @@
             </div>
 
             {#if !showResult}
-                <form on:submit={handleSubmit} class="form">
+                <div class="form">
                     <div class="form-group">
                         <label for="cuil">CUIL</label>
                         <input
@@ -122,8 +122,9 @@
 
                     <div class="form-actions">
                         <button
-                            type="submit"
+                            type="button"
                             class="submit-btn"
+                            on:click={handleSubmit}
                             disabled={isLoading}
                         >
                             <span class="text">
@@ -134,7 +135,6 @@
                         </button>
 
                         <button
-                            value="Volver al Login"
                             type="button"
                             class="back-btn"
                             on:click={goToLogin}
@@ -168,7 +168,7 @@
                             </svg>
                         </button>
                     </div>
-                </form>
+                </div>
             {:else}
                 <div class="success-content">
                     <div class="success-icon">✓</div>

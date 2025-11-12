@@ -88,7 +88,7 @@
     <div class="card-wrapper">
         <div class="container">
             <div class="textB">Bienvenido</div>
-            <form class="form" on:submit|preventDefault={handleLogin}>
+            <div class="form">
                 <input
                     id="cuil"
                     type="tel"
@@ -98,7 +98,7 @@
                     maxlength="13"
                     inputmode="numeric"
                     pattern="\d*"
-                    on:input={(e) => handleCuilInput(e)}
+                    on:input={handleCuilInput}
                     disabled={isLoading}
                 />
                 <div class="input-wrapper">
@@ -106,11 +106,11 @@
                         id="contrasenia"
                         placeholder="Contraseña"
                         class="input"
-                        value={password}
-                        on:input={(e) => (password = e.target.value)}
+                        bind:value={password}
                         type={showPassword ? "text" : "password"}
                         autocomplete="current-password"
                         disabled={isLoading}
+                        on:keydown={(e) => e.key === "Enter" && handleLogin()}
                     />
                     <button
                         type="button"
@@ -146,9 +146,9 @@
                     </button>
                 </div>
                 <button
-                    value="Iniciar Sesión"
-                    type="submit"
+                    type="button"
                     class="animated-button"
+                    on:click={handleLogin}
                     disabled={isLoading}
                 >
                     <svg
@@ -184,7 +184,7 @@
                 <div class="recover-password">
                     <a href="/contrasena">Recuperar contraseña</a>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -309,6 +309,7 @@
     }
 
     .animated-button .text {
+        color: #0099ff;
         position: relative;
         z-index: 1;
         transform: translateX(-12px);

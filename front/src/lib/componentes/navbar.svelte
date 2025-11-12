@@ -1,6 +1,6 @@
 <nav class="navbar">
   <div class="navbar-container">
-    <a href="/" class="navbar-left">
+    <a href="/inicio" class="navbar-left">
       <div class="logo-title">GIGA</div>
       <div class="logo-subtitle">Gestión Integral de Guardias y Asistencia</div>
     </a>
