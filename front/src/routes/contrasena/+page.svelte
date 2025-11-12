@@ -1,18 +1,18 @@
 <script>
-    import { onMount } from 'svelte';
-    import { goto } from '$app/navigation';
+    import { onMount } from "svelte";
+    import { goto } from "$app/navigation";
 
-    let cuil = '';
+    let cuil = "";
     let isLoading = false;
-    let successMessage = '';
-    let errorMessage = '';
+    let successMessage = "";
+    let errorMessage = "";
     let showResult = false;
-    let maskedEmail = '';
+    let maskedEmail = "";
 
     function formatCuil(value) {
         // Remover todo excepto números
-        const numbers = value.replace(/\D/g, '');
-        
+        const numbers = value.replace(/\D/g, "");
+
         // Formatear como XX-XXXXXXXX-X
         if (numbers.length <= 2) {
             return numbers;
@@ -31,36 +31,36 @@
 
     async function handleSubmit(event) {
         event.preventDefault();
-        
+
         // Resetear mensajes
-        successMessage = '';
-        errorMessage = '';
+        successMessage = "";
+        errorMessage = "";
         showResult = false;
-        
+
         // Validar CUIL
-        const cleanCuil = cuil.replace(/\D/g, '');
+        const cleanCuil = cuil.replace(/\D/g, "");
         if (!cleanCuil) {
-            errorMessage = 'Por favor ingresa tu CUIL';
+            errorMessage = "Por favor ingresa tu CUIL";
             return;
         }
-        
+
         if (cleanCuil.length !== 11) {
-            errorMessage = 'El CUIL debe tener 11 dígitos';
+            errorMessage = "El CUIL debe tener 11 dígitos";
             return;
         }
 
         isLoading = true;
 
         try {
-            const response = await fetch('/api/auth/recover-password/', {
-                method: 'POST',
+            const response = await fetch("/api/auth/recover-password/", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                 },
-                credentials: 'include',
+                credentials: "include",
                 body: JSON.stringify({
-                    cuil: cleanCuil
-                })
+                    cuil: cleanCuil,
+                }),
             });
 
             const result = await response.json();
@@ -69,41 +69,37 @@
                 successMessage = result.message;
                 maskedEmail = result.email;
                 showResult = true;
-                
+
                 // Limpiar el formulario
-                cuil = '';
+                cuil = "";
             } else {
-                errorMessage = result.message || 'Error al procesar la solicitud';
+                errorMessage =
+                    result.message || "Error al procesar la solicitud";
             }
         } catch (error) {
-            console.error('Error:', error);
-            errorMessage = 'Error de conexión. Intenta nuevamente.';
+            console.error("Error:", error);
+            errorMessage = "Error de conexión. Intenta nuevamente.";
         } finally {
             isLoading = false;
         }
     }
 
     function goToLogin() {
-        goto('/');
+        goto("/");
     }
 </script>
 
-<svelte:head>
-    <title>Recuperar Contraseña - GIGA</title>
-</svelte:head>
-
 <div class="login-container">
     <div class="login-card">
-
-        <!-- Contenido principal -->
         <div class="content">
             <div class="title-section">
-                <h1>Recuperar Contraseña</h1>
-                <p class="subtitle">Sistema de Gestión Integral de Guardias y Asistencias</p>
+                Recuperar Contraseña
+                <p class="subtitle">
+                    Sistema de Gestión Integral de Guardias y Asistencias
+                </p>
             </div>
 
             {#if !showResult}
-                <!-- Formulario de recuperación -->
                 <form on:submit={handleSubmit} class="form">
                     <div class="form-group">
                         <label for="cuil">CUIL</label>
@@ -115,7 +111,6 @@
                             placeholder="XX-XXXXXXXX-X"
                             maxlength="13"
                             disabled={isLoading}
-                            required
                         />
                     </div>
 
@@ -126,55 +121,88 @@
                     {/if}
 
                     <div class="form-actions">
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             class="submit-btn"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Procesando...' : 'Recuperar Contraseña'}
+                            <span class="text">
+                                {isLoading
+                                    ? "Procesando..."
+                                    : "Recuperar Contraseña"}
+                            </span>
                         </button>
-                        
-                        <button 
-                            type="button" 
+
+                        <button
+                            value="Volver al Login"
+                            type="button"
                             class="back-btn"
                             on:click={goToLogin}
                             disabled={isLoading}
                         >
-                            Volver al Login
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="arr-2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    d="M7.82843 10.9999L13.1924 5.63589L11.7782 4.22168L4 11.9999L11.7782 19.778L13.1924 18.3638L7.82843 12.9999H20V10.9999H7.82843Z"
+                                ></path>
+                            </svg>
+                            <span class="text">
+                                {#if isLoading}
+                                    ...
+                                {:else}
+                                    Volver al inicio de sesión
+                                {/if}
+                            </span>
+                            <span class="circle"></span>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="arr-1"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    d="M7.82843 10.9999L13.1924 5.63589L11.7782 4.22168L4 11.9999L11.7782 19.778L13.1924 18.3638L7.82843 12.9999H20V10.9999H7.82843Z"
+                                ></path>
+                            </svg>
                         </button>
                     </div>
                 </form>
             {:else}
-                <!-- Resultado exitoso -->
                 <div class="success-content">
-                    <div class="success-icon">
-                        ✓
-                    </div>
+                    <div class="success-icon">✓</div>
                     <h2>Solicitud Procesada</h2>
                     <div class="success-message">
                         <p>{successMessage}</p>
-                        {#if maskedEmail !== '***@***.***'}
+                        {#if maskedEmail !== "***@***.***"}
                             <p class="email-info">
-                                Se ha enviado un correo a: <strong>{maskedEmail}</strong>
+                                Se ha enviado un correo a: <strong
+                                    >{maskedEmail}</strong
+                                >
                             </p>
                         {/if}
                     </div>
-                    
+
                     <div class="instructions">
                         <h3>Instrucciones:</h3>
                         <ul>
-                            <li>Revisa tu bandeja de entrada (y carpeta de spam)</li>
-                            <li>Tu nueva contraseña te llegara al corre registrado en el Sistema</li>
-                            <li>Por seguridad, deberás cambiarla en el primer inicio de sesión</li>
+                            <li>
+                                Revisa tu bandeja de entrada (y carpeta de spam)
+                            </li>
+                            <li>
+                                Tu nueva contraseña te llegara al corre
+                                registrado en el Sistema
+                            </li>
+                            <li>
+                                Por seguridad, deberás cambiarla en el primer
+                                inicio de sesión
+                            </li>
                         </ul>
                     </div>
 
-                    <button 
-                        type="button" 
-                        class="back-btn"
-                        on:click={goToLogin}
-                    >
-                        Ir al inicio de sesión>
+                    <button type="button" class="back-btn" on:click={goToLogin}>
+                        Ir al inicio de sesión
                     </button>
                 </div>
             {/if}
@@ -184,180 +212,209 @@
 
 <style>
     .login-container {
-        min-height: 100vh;
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 20px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        margin-top: 100px;
     }
 
     .login-card {
-        background: white;
+        background-image: linear-gradient(163deg, #8eb6e4 0%, #3d97ff 90%);
         border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        width: 100%;
-        max-width: 480px;
-        animation: slideUp 0.6s ease-out;
+        transition: all 0.3s;
+        padding: 3px;
     }
 
-    @keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .header {
-        background: linear-gradient(135deg, #e79043, #d17a2e);
-        padding: 30px 20px;
-        text-align: center;
-    }
-
-    .logos {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 15px;
-        flex-wrap: wrap;
-    }
-
-    .logo {
-        height: 50px;
-        width: auto;
-        filter: brightness(0) invert(1);
-        transition: transform 0.3s ease;
-    }
-
-    .logo:hover {
-        transform: scale(1.1);
+    .login-card:hover {
+        box-shadow: 0px 0px 30px 1px rgba(55, 101, 138, 0.3);
     }
 
     .content {
-        padding: 40px 30px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            sans-serif;
+        max-width: 450px;
+        background: linear-gradient(
+            0deg,
+            rgb(255, 255, 255) 0%,
+            rgb(255, 255, 255) 80%
+        );
+        border-radius: 22px;
+        padding: 25px 35px;
+        transition: all 0.2s;
+        margin: 3px;
+    }
+
+    .content:hover {
+        transform: scale(0.98);
+        border-radius: 15px;
     }
 
     .title-section {
         text-align: center;
-        margin-bottom: 35px;
-    }
-
-    .title-section h1 {
-        color: #2c3e50;
-        font-size: 2rem;
         font-weight: 700;
-        margin: 0 0 10px 0;
+        font-size: 40px;
+        color: rgb(16, 137, 211);
     }
 
     .subtitle {
-        color: #7f8c8d;
-        font-size: 0.95rem;
-        margin: 0;
-        line-height: 1.4;
+        font-size: 23px;
+        color: rgb(16, 137, 211);
+        margin-top: 5px;
     }
 
     .form {
-        display: flex;
-        flex-direction: column;
-        gap: 25px;
+        margin-top: 20px;
     }
 
     .form-group {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .form-group label {
-        color: #2c3e50;
-        font-weight: 600;
-        margin-bottom: 8px;
-        font-size: 0.95rem;
+        font-size: 18px;
+        width: 90%;
+        background: white;
+        border: 2px solid #a2b8e7;
+        padding: 15px 20px;
+        border-radius: 20px;
+        margin-top: 15px;
+        box-shadow: #cff0ff 0px 10px 10px -5px;
     }
 
     .form-group input {
-        padding: 15px;
-        border: 2px solid #ecf0f1;
-        border-radius: 10px;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        background: #f8f9fa;
+        width: 100%;
+        border: none;
+        outline: none;
+        font-size: 18px;
     }
 
-    .form-group input:focus {
-        outline: none;
-        border-color: #e79043;
-        background: white;
-        box-shadow: 0 0 0 3px rgba(231, 144, 67, 0.1);
+    .form-group input::placeholder {
+        color: rgb(170, 170, 170);
+    }
+
+    .form-group:focus-within {
+        border-color: #12b1d1;
     }
 
     .form-group input:disabled {
-        opacity: 0.6;
+        background-color: #f5f5f5;
+        color: #888;
         cursor: not-allowed;
-    }
-
-    .error-message {
-        background: #fee;
-        color: #c33;
-        padding: 12px 15px;
-        border-radius: 8px;
-        border: 1px solid #fcc;
-        font-size: 0.9rem;
-        text-align: center;
-    }
-
-    .form-actions {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
     }
 
     .submit-btn {
-        background: linear-gradient(135deg, #e79043, #d17a2e);
-        color: white;
-        border: none;
-        padding: 15px 25px;
-        border-radius: 10px;
-        font-size: 1rem;
-        font-weight: 600;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 16px 32px;
+        margin: 20px 0 10px 0;
+        font-weight: 700;
+        font-size: 18px;
+        color: #ffffff;
+        background-color: #2ba8fb;
+        border: 2px solid rgb(16, 137, 211);
+        border-radius: 100px;
         cursor: pointer;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        transition: all 0.5s;
+        margin-bottom: 15px;
     }
 
-    .submit-btn:hover:not(:disabled) {
-        background: linear-gradient(135deg, #d17a2e, #b8661e);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(231, 144, 67, 0.3);
+    .submit-btn:hover {
+        background-color: #55aee9;
+        box-shadow: 0 0 20px #6fc5ff75;
+        transform: scale(1.05);
+    }
+
+    .submit-btn:active {
+        background-color: #3d94cf;
+        transition: all 0.25s;
+        box-shadow: none;
+        transform: scale(0.97);
     }
 
     .submit-btn:disabled {
-        opacity: 0.7;
+        opacity: 0.6;
         cursor: not-allowed;
-        transform: none;
     }
-
     .back-btn {
-        background: transparent;
-        color: #7f8c8d;
-        border: 2px solid #ecf0f1;
-        padding: 12px 25px;
-        border-radius: 10px;
-        font-size: 0.95rem;
-        font-weight: 500;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 12px 32px;
+        font-size: 16px;
+        border: none;
+        background-color: white;
+        border-radius: 100px;
+        font-weight: 600;
+        color: rgb(16, 137, 211);
+        box-shadow: 0 0 0 2px rgb(16, 137, 211);
         cursor: pointer;
-        transition: all 0.3s ease;
+        overflow: hidden;
+        transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        width: 100%;
+        margin: 10px 0;
     }
 
-    .back-btn:hover:not(:disabled) {
-        color: #2c3e50;
-        border-color: #bdc3c7;
-        background: #f8f9fa;
+    .back-btn svg {
+        position: absolute;
+        width: 24px;
+        fill: rgb(16, 137, 211);
+        z-index: 9;
+        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .back-btn .arr-1 {
+        right: 16px;
+    }
+
+    .back-btn .arr-2 {
+        left: -25%;
+    }
+
+    .back-btn .circle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        background-color: rgba(18, 177, 209, 0.3);
+        border-radius: 50%;
+        opacity: 0;
+        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .back-btn .text {
+        position: relative;
+        z-index: 1;
+        transform: translateX(-12px);
+        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .back-btn:hover {
+        border-radius: 25px;
+    }
+
+    .back-btn:hover .arr-1 {
+        right: -25%;
+    }
+
+    .back-btn:hover .arr-2 {
+        left: 16px;
+    }
+
+    .back-btn:hover .text {
+        transform: translateX(12px);
+    }
+
+    .back-btn:active {
+        scale: 0.96;
+    }
+
+    .back-btn:hover .circle {
+        width: 600px;
+        height: 100px;
+        opacity: 1;
     }
 
     .back-btn:disabled {
@@ -365,131 +422,131 @@
         cursor: not-allowed;
     }
 
+    .back-btn:disabled:hover {
+        border-radius: 100px;
+    }
+
+    .back-btn:disabled:hover .arr-1 {
+        right: 16px;
+    }
+
+    .back-btn:disabled:hover .arr-2 {
+        left: -25%;
+    }
+
+    .back-btn:disabled:hover .text {
+        transform: translateX(-12px);
+    }
+
+    .back-btn:disabled:hover .circle {
+        width: 20px;
+        height: 20px;
+        opacity: 0;
+    }
+
+    .error-message {
+        background: #ff4444;
+        color: white;
+        padding: 14px 18px;
+        border-radius: 15px;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 600;
+        margin-top: 15px;
+        width: 90%;
+        box-shadow: 0 4px 12px rgba(255, 0, 0, 0.25);
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     .success-content {
         text-align: center;
+        padding: 20px 0;
     }
 
     .success-icon {
         width: 80px;
         height: 80px;
-        background: #27ae60;
-        color: white;
+        margin: 0 auto 20px;
+        background: linear-gradient(135deg, #84c5eb, rgb(16, 137, 211));
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 2.5rem;
+        font-size: 48px;
+        color: white;
         font-weight: bold;
-        margin: 0 auto 25px auto;
-        animation: bounce 0.6s ease-out;
-    }
-
-    @keyframes bounce {
-        0%, 20%, 53%, 80%, 100% {
-            transform: translate3d(0, 0, 0);
-        }
-        40%, 43% {
-            transform: translate3d(0, -10px, 0);
-        }
-        70% {
-            transform: translate3d(0, -5px, 0);
-        }
-        90% {
-            transform: translate3d(0, -2px, 0);
-        }
     }
 
     .success-content h2 {
-        color: #2c3e50;
-        font-size: 1.8rem;
-        font-weight: 700;
-        margin: 0 0 20px 0;
+        color: rgb(16, 137, 211);
+        margin-bottom: 20px;
     }
 
     .success-message {
-        background: #d4edda;
-        color: #155724;
+        background: #e8f5ff;
         padding: 20px;
-        border-radius: 10px;
-        border: 1px solid #c3e6cb;
-        margin-bottom: 25px;
+        border-radius: 15px;
+        margin-bottom: 20px;
     }
 
     .success-message p {
-        margin: 0 0 10px 0;
-        line-height: 1.5;
-    }
-
-    .success-message p:last-child {
-        margin-bottom: 0;
+        margin: 10px 0;
+        color: #333;
     }
 
     .email-info {
-        font-weight: 600;
+        color: rgb(16, 137, 211);
+        font-size: 16px;
     }
 
     .instructions {
         text-align: left;
         background: #f8f9fa;
         padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 25px;
+        border-radius: 15px;
+        margin-bottom: 20px;
     }
 
     .instructions h3 {
-        color: #2c3e50;
-        font-size: 1.1rem;
-        margin: 0 0 15px 0;
+        color: rgb(16, 137, 211);
+        margin-bottom: 15px;
     }
 
     .instructions ul {
-        margin: 0;
-        padding-left: 20px;
-        color: #5a6c7d;
+        list-style: none;
+        padding: 0;
     }
 
     .instructions li {
+        padding: 8px 0;
+        padding-left: 25px;
+        position: relative;
+        color: #555;
+    }
+
+    .instructions li::before {
+        content: "→";
+        position: absolute;
+        left: 0;
+        color: rgb(16, 137, 211);
+        font-weight: bold;
+    }
+
+    label {
+        display: block;
         margin-bottom: 8px;
-        line-height: 1.4;
-    }
-
-    .footer {
-        background: #f8f9fa;
-        padding: 20px;
-        text-align: center;
-        border-top: 1px solid #ecf0f1;
-    }
-
-    .footer p {
-        color: #7f8c8d;
-        font-size: 0.85rem;
-        margin: 0;
-    }
-
-    /* Responsive */
-    @media (max-width: 600px) {
-        .login-container {
-            padding: 10px;
-        }
-
-        .content {
-            padding: 30px 20px;
-        }
-
-        .title-section h1 {
-            font-size: 1.7rem;
-        }
-
-        .logos {
-            gap: 10px;
-        }
-
-        .logo {
-            height: 40px;
-        }
-
-        .form-actions {
-            gap: 12px;
-        }
+        color: rgb(16, 137, 211);
+        font-weight: 600;
     }
 </style>
