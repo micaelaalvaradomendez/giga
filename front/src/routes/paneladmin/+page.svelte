@@ -31,7 +31,7 @@
 			description: "Administrar licencias y novedades",
 		},
 		{
-			name: "Guardias (falta)",
+			name: "Guardias (incompleto)",
 			path: "/paneladmin/guardias",
 			icon: "🛡️",
 			description: "Planificar guardias y turnos",
