@@ -513,25 +513,6 @@
 		}
 	}
 
-	.spinner {
-		width: 14px;
-		height: 14px;
-		border: 2px solid rgba(255, 255, 255, 0.45);
-		border-top-color: white;
-		border-radius: 50%;
-		display: inline-block;
-		animation: spin 0.8s linear infinite;
-	}
-
-	@keyframes spin {
-		from {
-			transform: rotate(0deg);
-		}
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
 	.container {
 		max-width: 60%;
 		width: 100%;
