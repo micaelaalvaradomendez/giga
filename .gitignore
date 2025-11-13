@@ -153,7 +153,8 @@ jspm_packages/
 .yarn-integrity
 
 # dotenv environment variable files
-.env
+# .env - PERMITIR archivos .env base para desarrollo
+# .env
 .env.development.local
 .env.test.local
 .env.production.local
