@@ -1,33 +1,27 @@
 <script>
-    import CalendarioBase from '$lib/components/CalendarioBase.svelte';
-    import ModalGestionFeriado from '$lib/components/ModalGestionFeriado.svelte';
-	import { invalidateAll } from '$app/navigation';
+	import { onMount } from 'svelte';
+    import CalendarioBase from '$lib/componentes/calendarioBase.svelte';
+    import ModalGestionFeriado from '$lib/componentes/ModalGestionFeriado.svelte';
+	import { feriadosController } from '$lib/paneladmin/controllers';
 
-	/** @type {import('./$types').PageData} */
-	export let data;
-	
-	$: feriados = data.feriados;
+	// Stores del controlador  
+	const { feriados, loading, error, success, modalGestionFeriado } = feriadosController;
 
-	let isModalOpen = false;
-	let selectedFeriado = null;
-	let selectedDate = null;
+	// Inicializar el controlador
+	onMount(async () => {
+		await feriadosController.init();
+	});
 
 	function handleDayClick(event) {
-		const { date, isFeriado, feriado: feriadoData } = event.detail;
-		selectedDate = date.toISOString().split('T')[0];
-
-		if (isFeriado) {
-			// Si ya hay un feriado, usamos los datos del calendario
-			selectedFeriado = feriados.find(f => f.fecha === selectedDate);
-		} else {
-			selectedFeriado = null;
-		}
-		isModalOpen = true;
+		const { date, isFeriado } = event.detail;
+		const selectedDate = date.toISOString().split('T')[0];
+		const feriado = feriadosController.getFeriadoByDate(selectedDate);
+		
+		feriadosController.openModal(selectedDate, feriado);
 	}
 
 	function closeModal() {
-		isModalOpen = false;
-		invalidateAll();
+		feriadosController.closeModal();
 	}
 	
 </script>
@@ -35,17 +29,30 @@
 <div class="admin-page-container">
     <div class="page-header">
         <h1>Gestión de Feriados</h1>
+		{#if $error}
+			<div class="error-message">{$error}</div>
+		{/if}
+		{#if $success}
+			<div class="success-message">{$success}</div>
+		{/if}
     </div>
 
 	<div class="calendar-wrapper">
-		<CalendarioBase {feriados} on:dayclick={handleDayClick} />
+		{#if $loading}
+			<div class="loading">Cargando feriados...</div>
+		{:else}
+			<CalendarioBase feriados={$feriados} on:dayclick={handleDayClick} />
+		{/if}
 	</div>
 </div>
 
 <ModalGestionFeriado 
-	bind:isOpen={isModalOpen}
-	feriado={selectedFeriado}
-	{selectedDate}
+	bind:isOpen={$modalGestionFeriado.isOpen}
+	feriado={$modalGestionFeriado.feriado}
+	selectedDate={$modalGestionFeriado.selectedDate}
+	isSaving={$modalGestionFeriado.isSaving}
+	isDeleting={$modalGestionFeriado.isDeleting}
+	{feriadosController}
 	on:close={closeModal}
 />
 
@@ -58,13 +65,41 @@
 
     .page-header {
         display: flex;
+        flex-direction: column;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         flex-wrap: wrap; 
         margin-bottom: 1rem;
         padding: 1.5rem;
         background: linear-gradient(135deg, #e79043, #d17a2e);
         border-radius: 12px;
+    }
+
+    .error-message {
+        background-color: #fee;
+        color: #c33;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 1px solid #fcc;
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+
+    .success-message {
+        background-color: #efe;
+        color: #363;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 1px solid #cfc;
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 2rem;
+        font-style: italic;
+        color: #666;
     }
 
     .page-header h1 {

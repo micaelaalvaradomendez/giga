@@ -109,15 +109,16 @@ export const guardiasService = {
   getFeriados: () => api.get('/guardias/feriados/'),
   createFeriado: (data) => api.post('/guardias/feriados/', data),
   updateFeriado: (id, data) => api.put(`/guardias/feriados/${id}/`, data),
+  deleteFeriado: (id) => api.delete(`/guardias/feriados/${id}/`),
 };
 
-// SERVICIOS PARA REPORTES
+/* SERVICIOS PARA REPORTES
 export const reportesService = {
   getReportes: () => api.get('/reportes/reportes/'),
   createReporte: (data) => api.post('/reportes/reportes/', data),
   getNotificaciones: () => api.get('/reportes/notificaciones/'),
   createNotificacion: (data) => api.post('/reportes/notificaciones/', data),
-};
+};*/
 
 // SERVICIOS PARA CONVENIO IA - Conectado a N8N
 export const convenioIaService = {

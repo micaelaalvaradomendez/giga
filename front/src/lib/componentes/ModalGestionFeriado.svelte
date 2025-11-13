@@ -4,21 +4,53 @@
 	export let isOpen = false;
 	export let feriado = null; 
 	export let selectedDate = null; 
+	export let isSaving = false;
+	export let isDeleting = false;
+	export let feriadosController;
 
 	let nombreFeriado = '';
-	let isSaving = false;
-	let isDeleting = false;
 
 	const dispatch = createEventDispatcher();
 	
 	$: if (isOpen) {	
 		nombreFeriado = feriado ? feriado.descripcion : '';
-		isSaving = false;
-		isDeleting = false;
 	}
 
 	function closeModal() {
 		dispatch('close');
+	}
+
+	async function handleSave() {
+		if (!nombreFeriado.trim()) {
+			alert('Por favor ingresa un nombre para el feriado');
+			return;
+		}
+
+		try {
+			await feriadosController.saveFeriado({
+				id: feriado?.id || null,
+				fecha: selectedDate,
+				descripcion: nombreFeriado.trim()
+			});
+		} catch (error) {
+			// El error ya se maneja en el controlador
+			console.error('Error guardando feriado:', error);
+		}
+	}
+
+	async function handleDelete() {
+		if (!feriado?.id) return;
+
+		if (!confirm('¿Estás seguro de que deseas eliminar este feriado?')) {
+			return;
+		}
+
+		try {
+			await feriadosController.deleteFeriadoFromModal(feriado.id);
+		} catch (error) {
+			// El error ya se maneja en el controlador
+			console.error('Error eliminando feriado:', error);
+		}
 	}
 
 </script>
@@ -53,29 +85,36 @@
 				</div>
 			</div>
 			<div class="modal-actions">
-				<!-- Botón de Eliminar (ahora es un formulario separado) -->
+				<!-- Botón de Eliminar -->
 				{#if feriado}
-					<form method="POST" action="?/deleteFeriado" use:enhance on:submit={() => { if (!confirm('¿Estás seguro de que deseas eliminar este feriado?')) event.preventDefault(); else isDeleting = true; }}>
-						<input type="hidden" name="id" value={feriado.id} />
-						<button type="submit" class="btn-danger" disabled={isSaving || isDeleting}>
-							{isDeleting ? 'Eliminando...' : 'Eliminar'}
-						</button>
-					</form>
+					<button 
+						type="button" 
+						class="btn-danger" 
+						disabled={isSaving || isDeleting}
+						on:click={handleDelete}
+					>
+						{isDeleting ? 'Eliminando...' : 'Eliminar'}
+					</button>
 				{/if}
 
-				<!-- Formulario para Guardar/Crear -->
-				<form method="POST" action={feriado ? `?/updateFeriado` : '?/createFeriado'} use:enhance on:submit={() => isSaving = true} class="save-actions">
-					<input type="hidden" name="id" value={feriado?.id} />
-					<input type="hidden" name="fecha" value={selectedDate} />
-					<input type="hidden" name="descripcion" value={nombreFeriado} />
-					
-					<button type="button" class="btn-secondary" on:click={closeModal} disabled={isSaving || isDeleting}>
+				<div class="save-actions">
+					<button 
+						type="button" 
+						class="btn-secondary" 
+						on:click={closeModal} 
+						disabled={isSaving || isDeleting}
+					>
 						Cancelar
 					</button>
-					<button type="submit" class="btn-primary" disabled={isSaving || isDeleting}>
+					<button 
+						type="button" 
+						class="btn-primary" 
+						disabled={isSaving || isDeleting}
+						on:click={handleSave}
+					>
 						{isSaving ? 'Guardando...' : 'Guardar'}
 					</button>
-				</form>
+				</div>
 			</div>
 		</div>
 	</div>
