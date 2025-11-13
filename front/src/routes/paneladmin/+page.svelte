@@ -37,7 +37,7 @@
 			description: "Planificar guardias y turnos",
 		},
 		{
-			name: "Feriados (falta)",
+			name: "Feriados",
 			path: "/paneladmin/feriados",
 			icon: "🎉",
 			description: "Gestionar días no laborables",

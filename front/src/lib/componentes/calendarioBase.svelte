@@ -1,6 +1,10 @@
 <script>
     import { createEventDispatcher, onMount } from "svelte";
 
+    export let feriados = [];
+
+    const dispatch = createEventDispatcher();
+
     var dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
     let monthNames = [
         "Enero",
@@ -21,69 +25,21 @@
     let now = new Date();
     let year = now.getFullYear();
     let month = now.getMonth();
-    let eventText = "Click an item or date";
 
     var days = [];
 
-    function randInt(max) {
-        return Math.floor(Math.random() * max) + 1;
+    // Función para verificar si una fecha es feriado
+    function esFeriado(fecha) {
+        if (!feriados || feriados.length === 0) return false;
+        const fechaStr = fecha.toISOString().split('T')[0];
+        return feriados.some(feriado => feriado.fecha === fechaStr);
     }
 
-    var items = [];
-
-    function initMonthItems() {
-        let y = year;
-        let m = month;
-        let d1 = new Date(y, m, randInt(7) + 7);
-        items = [
-            {
-                title: "11:00 Task Early in month",
-                className: "task--primary",
-                date: new Date(y, m, randInt(6)),
-                len: randInt(4) + 1,
-            },
-            {
-                title: "7:30 Wk 2 tasks",
-                className: "task--warning",
-                date: d1,
-                len: randInt(4) + 2,
-            },
-            {
-                title: "Overlapping Stuff (isBottom:true)",
-                date: d1,
-                className: "task--info",
-                len: 4,
-                isBottom: true,
-            },
-            {
-                title: "10:00 More Stuff to do",
-                date: new Date(y, m, randInt(7) + 14),
-                className: "task--info",
-                len: randInt(4) + 1,
-                detailHeader: "Difficult",
-                detailContent: "But not especially so",
-            },
-            {
-                title: "All day task",
-                date: new Date(y, m, randInt(7) + 21),
-                className: "task--danger",
-                len: 1,
-                vlen: 2,
-            },
-        ];
-
-        for (let i of items) {
-            let rc = findRowCol(i.date);
-            if (rc == null) {
-                console.log("didn`t find date for ", i);
-                console.log(i.date);
-                console.log(days);
-                i.startCol = i.startRow = 0;
-            } else {
-                i.startCol = rc.col;
-                i.startRow = rc.row;
-            }
-        }
+    // Función para obtener el feriado de una fecha específica
+    function getFeriado(fecha) {
+        if (!feriados || feriados.length === 0) return null;
+        const fechaStr = fecha.toISOString().split('T')[0];
+        return feriados.find(feriado => feriado.fecha === fechaStr) || null;
     }
 
     $: month, year, initContent();
@@ -91,7 +47,6 @@
     function initContent() {
         headers = dayNames;
         initMonth();
-        initMonthItems();
     }
 
     function initMonth() {
@@ -104,6 +59,7 @@
         var prevMonth = month == 0 ? 11 : month - 1;
         let today = new Date();
 
+        // Días del mes anterior
         for (let i = daysInLastMonth - firstDay; i < daysInLastMonth; i++) {
             let d = new Date(
                 prevMonth == 11 ? year - 1 : year,
@@ -115,82 +71,83 @@
                 enabled: false,
                 date: d,
                 isToday: false,
+                isFeriado: false,
+                feriado: null,
             });
         }
+
+        // Días del mes actual
         for (let i = 0; i < daysInThisMonth; i++) {
             let d = new Date(year, month, i + 1);
             let isToday =
                 d.getDate() == today.getDate() &&
                 d.getMonth() == today.getMonth() &&
                 d.getFullYear() == today.getFullYear();
-            if (i == 0)
+            
+            let isFeriadoDay = esFeriado(d);
+            let feriadoData = isFeriadoDay ? getFeriado(d) : null;
+
+            if (i == 0) {
                 days.push({
                     name: monthAbbrev + " " + (i + 1),
                     enabled: true,
                     date: d,
                     isToday: isToday,
+                    isFeriado: isFeriadoDay,
+                    feriado: feriadoData,
                 });
-            else
+            } else {
                 days.push({
                     name: "" + (i + 1),
                     enabled: true,
                     date: d,
                     isToday: isToday,
+                    isFeriado: isFeriadoDay,
+                    feriado: feriadoData,
                 });
+            }
         }
+
+        // Días del mes siguiente
         for (let i = 0; days.length % 7; i++) {
             let d = new Date(
                 month == 11 ? year + 1 : year,
                 (month + 1) % 12,
                 i + 1,
             );
-            if (i == 0)
+            if (i == 0) {
                 days.push({
                     name: nextMonthAbbrev + " " + (i + 1),
                     enabled: false,
                     date: d,
                     isToday: false,
+                    isFeriado: false,
+                    feriado: null,
                 });
-            else
+            } else {
                 days.push({
                     name: "" + (i + 1),
                     enabled: false,
                     date: d,
                     isToday: false,
+                    isFeriado: false,
+                    feriado: null,
                 });
+            }
         }
     }
 
-    function findRowCol(dt) {
-        for (let i = 0; i < days.length; i++) {
-            let d = days[i].date;
-            if (
-                d.getYear() === dt.getYear() &&
-                d.getMonth() === dt.getMonth() &&
-                d.getDate() === dt.getDate()
-            )
-                return { row: Math.floor(i / 7) + 2, col: (i % 7) + 1 };
-        }
-        return null;
+    function dayClick(day) {
+        if (!day.enabled) return;
+        
+        dispatch('dayclick', {
+            date: day.date,
+            isFeriado: day.isFeriado,
+            feriado: day.feriado
+        });
     }
 
-    function itemClick(e) {
-        eventText =
-            "itemClick " +
-            JSON.stringify(e) +
-            " localtime=" +
-            e.date.toString();
-    }
-    function dayClick(e) {
-        eventText =
-            "onDayClick " +
-            JSON.stringify(e) +
-            " localtime=" +
-            e.date.toString();
-    }
-    function headerClick(e) {
-        eventText = "onHheaderClick " + JSON.stringify(e);
-    }
+
     function next() {
         month++;
         if (month == 12) {
@@ -218,7 +175,6 @@
             <button on:click={() => next()}>&gt;</button>
             <button on:click={() => year++}>&gt;&gt;</button>
         </h1>
-        {eventText}
     </div>
     <div class="calendar-grid">
         <div class="calendar-header-row">
@@ -232,8 +188,19 @@
                     class="calendar-day"
                     class:disabled={!day.enabled}
                     class:today={day.isToday}
+                    class:feriado={day.isFeriado}
+                    on:click={() => dayClick(day)}
+                    on:keydown={(e) => e.key === 'Enter' && dayClick(day)}
+                    role="button"
+                    tabindex="0"
                 >
-                    {day.name}
+                    <div class="day-number">{day.name}</div>
+                    {#if day.isFeriado && day.feriado}
+                        <div class="feriado-info">
+                            <div class="feriado-descripcion">{day.feriado.descripcion}</div>
+                            <div class="feriado-tipo">{day.feriado.tipo_feriado}</div>
+                        </div>
+                    {/if}
                 </div>
             {/each}
         </div>
@@ -295,20 +262,27 @@
         display: contents;
     }
     .calendar-day {
-        text-align: center;
-        padding: 20px 10px;
+        text-align: left;
+        padding: 8px;
         background-color: white;
         min-height: 120px;
         transition: background-color 0.3s;
+        border: 1px solid transparent;
+        display: flex;
+        flex-direction: column;
+        position: relative;
     }
+    
     .calendar-day:not(.disabled):hover {
         background-color: #ebd4ab;
         cursor: pointer;
     }
+    
     .calendar-day.disabled {
         background-color: #f9f9f9;
         color: #ccc;
     }
+    
     .calendar-day.today {
         background-color: #e79043;
         color: white;
@@ -317,5 +291,52 @@
 
     .calendar-day.today:hover {
         background-color: #dfb28a;
+    }
+
+    .calendar-day.feriado {
+        background-color: #ffe6e6;
+        border-color: #ff9999;
+    }
+
+    .calendar-day.feriado:hover {
+        background-color: #ffcccc;
+    }
+
+    .calendar-day.today.feriado {
+        background-color: #e65c5c;
+        border-color: #cc0000;
+    }
+
+    .day-number {
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .feriado-info {
+        font-size: 0.75rem;
+        line-height: 1.2;
+        flex-grow: 1;
+    }
+
+    .feriado-descripcion {
+        font-weight: 500;
+        color: #d63384;
+        margin-bottom: 2px;
+        word-wrap: break-word;
+        hyphens: auto;
+    }
+
+    .feriado-tipo {
+        font-size: 0.65rem;
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    .calendar-day.today .feriado-descripcion {
+        color: white;
+    }
+
+    .calendar-day.today .feriado-tipo {
+        color: rgba(255, 255, 255, 0.8);
     }
 </style>

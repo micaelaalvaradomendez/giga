@@ -1,5 +1,8 @@
 import { createApiClient } from './api.js';
 
+// Cliente API por defecto para compatibilidad con servicios legacy
+const api = createApiClient();
+
 // SERVICIOS PARA PERSONAS
 export const personasService = {
   // Agentes
@@ -94,30 +97,32 @@ export const asistenciaService = {
 // SERVICIOS PARA GUARDIAS
 export const guardiasService = {
   // Cronogramas
-  getCronogramas: () => api.get('/guardias/cronogramas/'),
-  getCronograma: (id) => api.get(`/guardias/cronogramas/${id}/`),
-  createCronograma: (data) => api.post('/guardias/cronogramas/', data),
-  updateCronograma: (id, data) => api.put(`/guardias/cronogramas/${id}/`, data),
+  getCronogramas: (token = null) => createApiClient(token).get('/guardias/cronogramas/'),
+  getCronograma: (id, token = null) => createApiClient(token).get(`/guardias/cronogramas/${id}/`),
+  createCronograma: (data, token = null) => createApiClient(token).post('/guardias/cronogramas/', data),
+  updateCronograma: (id, data, token = null) => createApiClient(token).put(`/guardias/cronogramas/${id}/`, data),
 
   // Guardias
-  getGuardias: () => api.get('/guardias/guardias/'),
-  getGuardia: (id) => api.get(`/guardias/guardias/${id}/`),
-  createGuardia: (data) => api.post('/guardias/guardias/', data),
-  updateGuardia: (id, data) => api.put(`/guardias/guardias/${id}/`, data),
+  getGuardias: (token = null) => createApiClient(token).get('/guardias/guardias/'),
+  getGuardia: (id, token = null) => createApiClient(token).get(`/guardias/guardias/${id}/`),
+  createGuardia: (data, token = null) => createApiClient(token).post('/guardias/guardias/', data),
+  updateGuardia: (id, data, token = null) => createApiClient(token).put(`/guardias/guardias/${id}/`, data),
 
   // Feriados
-  getFeriados: () => api.get('/guardias/feriados/'),
-  createFeriado: (data) => api.post('/guardias/feriados/', data),
-  updateFeriado: (id, data) => api.put(`/guardias/feriados/${id}/`, data),
+  getFeriados: (token = null) => createApiClient(token).get('/guardias/feriados/'),
+  getFeriado: (id, token = null) => createApiClient(token).get(`/guardias/feriados/${id}/`),
+  createFeriado: (data, token = null) => createApiClient(token).post('/guardias/feriados/', data),
+  updateFeriado: (id, data, token = null) => createApiClient(token).put(`/guardias/feriados/${id}/`, data),
+  deleteFeriado: (id, token = null) => createApiClient(token).delete(`/guardias/feriados/${id}/`),
 };
 
-// SERVICIOS PARA REPORTES
+/* SERVICIOS PARA REPORTES no exite reportes en back
 export const reportesService = {
   getReportes: () => api.get('/reportes/reportes/'),
   createReporte: (data) => api.post('/reportes/reportes/', data),
   getNotificaciones: () => api.get('/reportes/notificaciones/'),
   createNotificacion: (data) => api.post('/reportes/notificaciones/', data),
-};
+};*/
 
 // SERVICIOS PARA CONVENIO IA - Conectado a N8N
 export const convenioIaService = {

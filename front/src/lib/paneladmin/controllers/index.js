@@ -22,16 +22,18 @@ import { usuariosController } from './usuariosController.js';
 import { rolesController } from './rolesController.js';
 import { parametrosController } from './parametrosController.js';
 import { organigramaController } from './organigramaController.js';
+import { feriadosController } from './feriadosController.js';
 
 // Exportar controladores
-export { usuariosController, rolesController, parametrosController, organigramaController };
+export { usuariosController, rolesController, parametrosController, organigramaController, feriadosController };
 
 // Re-exportar para compatibilidad
 export {
 	usuariosController as UsuariosController,
 	rolesController as RolesController,
 	parametrosController as ParametrosController,
-	organigramaController as OrganigramaController
+	organigramaController as OrganigramaController,
+	feriadosController as FeriadosController
 };
 
 /**
@@ -48,7 +50,8 @@ export async function initializeAllControllers() {
 			usuarios: usuariosController,
 			roles: rolesController,
 			parametros: parametrosController,
-			organigrama: organigramaController
+			organigrama: organigramaController,
+			feriados: feriadosController
 		};
 	} catch (error) {
 		console.error('❌ Error inicializando controladores:', error);

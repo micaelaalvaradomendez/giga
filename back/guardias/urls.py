@@ -19,7 +19,7 @@ router.register(r'parametros-area', ParametrosAreaViewSet)
 router.register(r'feriados', FeriadoViewSet)
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
     
     # URLs específicas adicionales si se necesitan
     path('', lambda request: JsonResponse({

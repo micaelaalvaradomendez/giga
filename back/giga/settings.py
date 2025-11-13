@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'django_extensions',
+    'django_filters',
     
     # Local apps - GIGA System Apps
     'personas',
@@ -190,7 +191,7 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ],
     'DEFAULT_FILTER_BACKENDS': [
-        'django_filters.backends.DjangoFilterBackend',
+        'django_filters.rest_framework.DjangoFilterBackend',
     ],
 }
 
