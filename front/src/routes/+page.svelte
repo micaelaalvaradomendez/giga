@@ -84,6 +84,10 @@
     }
 </script>
 
+<svelte:head>
+    <title>Login - Sistema GIGA</title>
+</svelte:head>
+
 <div class="page-wrap">
     <div class="card-wrapper">
         <div class="container">

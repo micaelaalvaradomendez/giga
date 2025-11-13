@@ -89,6 +89,10 @@
     }
 </script>
 
+<svelte:head>
+    <title>Recuperar contraseña - Sistema GIGA</title>
+</svelte:head>
+
 <div class="login-container">
     <div class="login-card">
         <div class="content">
