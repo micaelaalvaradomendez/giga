@@ -235,14 +235,13 @@ bd/init-scripts/
 
 ## Pendientes de Implementación
 
+actualizar : implemento feriados + Interfaz del convenio con IA + sistema de auditoria
+
 ### Funcionalidades Core
-- **Interfaz del convenio con IA**: Frontend para consultas inteligentes al convenio colectivo
 - **Sistema de asistencias**: Control de marcas de entrada/salida y validaciones automáticas
 - **Gestión de licencias**: Tipos de licencia, solicitudes y aprobaciones
 - **Cronograma de guardias**: Interface completa para planificación y asignación
-- **Calendario de feriados**: Gestión y aplicación automática en cálculos
 - **Módulo de reportes**: Generación de informes estadísticos y exportación
-- **Sistema de auditoría**: Trazabilidad completa de acciones del sistema
 
 ### Infraestructura y Despliegue
 - **Deploy en servidores**: Migración a entorno de producción para testing real

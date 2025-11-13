@@ -1,5 +1,5 @@
 import { writable, derived } from 'svelte/store';
-import { createApiClient } from '$lib/api.js';
+import { guardiasService } from '$lib/services.js';
 import AuthService from '$lib/login/authService.js';
 
 /**
@@ -52,6 +52,10 @@ class FeriadosController {
 	async init() {
 		if (this.initialized) return;
 
+		if (!AuthService.isAuthenticated()) {
+			throw new Error('Usuario no autenticado');
+		}
+
 		try {
 			this.loading.set(true);
 			await this.loadFeriados();
@@ -72,8 +76,7 @@ class FeriadosController {
 			this.loading.set(true);
 			this.error.set(null);
 
-			const apiClient = createApiClient();
-			const response = await apiClient.get('/guardias/feriados/');
+			const response = await guardiasService.getFeriados();
 			
 			const feriadosData = response.data?.results || response.data || [];
 			this.feriados.set(feriadosData);
@@ -96,8 +99,7 @@ class FeriadosController {
 			this.error.set(null);
 			this.success.set(null);
 
-			const apiClient = createApiClient();
-			const response = await apiClient.post('/guardias/feriados/', {
+			const response = await guardiasService.createFeriado({
 				fecha: feriadoData.fecha,
 				descripcion: feriadoData.descripcion
 			});
@@ -127,8 +129,7 @@ class FeriadosController {
 			this.error.set(null);
 			this.success.set(null);
 
-			const apiClient = createApiClient();
-			const response = await apiClient.put(`/guardias/feriados/${id}/`, {
+			const response = await guardiasService.updateFeriado(id, {
 				fecha: feriadoData.fecha,
 				descripcion: feriadoData.descripcion
 			});
@@ -158,8 +159,7 @@ class FeriadosController {
 			this.error.set(null);
 			this.success.set(null);
 
-			const apiClient = createApiClient();
-			await apiClient.delete(`/guardias/feriados/${id}/`);
+			await guardiasService.deleteFeriado(id);
 
 			// Actualizar la lista de feriados
 			await this.loadFeriados();
@@ -181,10 +181,15 @@ class FeriadosController {
 	 */
 	getFeriadoByDate(fecha) {
 		let feriado = null;
-		this.feriadosPorFecha.subscribe(feriadosMap => {
-			feriado = feriadosMap.get(fecha) || null;
-		})();
-		return feriado;
+		let feriadosMap = null;
+		
+		// Obtener el valor actual del store sin suscribirse
+		const unsubscribe = this.feriadosPorFecha.subscribe(value => {
+			feriadosMap = value;
+		});
+		unsubscribe();
+		
+		return feriadosMap ? feriadosMap.get(fecha) || null : null;
 	}
 
 	/**

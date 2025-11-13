@@ -41,6 +41,7 @@ class Meta:
    - `ParteDiario` - Partes diarios de trabajo
    - `Licencia` - Licencias solicitadas
    - `Asistencia` - Registro de asistencias
+   - `Reportes` - Generación de reportes y sistema de notificaciones por email
 
 ## Verificación de Funcionamiento
 

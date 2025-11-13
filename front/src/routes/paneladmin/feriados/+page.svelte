@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
     import CalendarioBase from '$lib/componentes/calendarioBase.svelte';
     import ModalGestionFeriado from '$lib/componentes/ModalGestionFeriado.svelte';
 	import { feriadosController } from '$lib/paneladmin/controllers';
@@ -9,7 +10,17 @@
 
 	// Inicializar el controlador
 	onMount(async () => {
-		await feriadosController.init();
+		console.log('🔄 Componente montado, iniciando controlador de feriados...');
+		try {
+			await feriadosController.init();
+			console.log('✅ Controlador de feriados inicializado exitosamente');
+		} catch (err) {
+			console.error('❌ Error inicializando controlador de feriados:', err);
+			if (err.message === 'Usuario no autenticado') {
+				goto('/');
+				return;
+			}
+		}
 	});
 
 	function handleDayClick(event) {
