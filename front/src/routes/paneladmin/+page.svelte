@@ -55,7 +55,7 @@
 			description: "Ajustar la configuración global de Areas y hora de entrada y salida general",
 		},
 		{
-			name: "Auditoría (falta)",
+			name: "Auditoría",
 			path: "/paneladmin/auditoria",
 			icon: "🔍",
 			description: "Rastrear cambios en el sistema",

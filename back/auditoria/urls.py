@@ -1,13 +1,15 @@
 """
 URLs para el módulo auditoria
 """
-from django.urls import path
-from django.http import JsonResponse
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import AuditoriaViewSet, registros_auditoria
 
-def auditoria_placeholder(request):
-    return JsonResponse({
-    })
+# Router para las APIs REST
+router = DefaultRouter()
+router.register(r'auditoria', AuditoriaViewSet)
 
 urlpatterns = [
-    path('', auditoria_placeholder, name='auditoria_placeholder'),
+    path('', include(router.urls)),
+    path('registros/', registros_auditoria, name='registros_auditoria'),
 ]

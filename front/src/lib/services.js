@@ -116,14 +116,6 @@ export const guardiasService = {
   deleteFeriado: (id, token = null) => createApiClient(token).delete(`/guardias/feriados/${id}/`),
 };
 
-/* SERVICIOS PARA REPORTES no exite reportes en back
-export const reportesService = {
-  getReportes: () => api.get('/reportes/reportes/'),
-  createReporte: (data) => api.post('/reportes/reportes/', data),
-  getNotificaciones: () => api.get('/reportes/notificaciones/'),
-  createNotificacion: (data) => api.post('/reportes/notificaciones/', data),
-};*/
-
 // SERVICIOS PARA CONVENIO IA - Conectado a N8N
 export const convenioIaService = {
   // URL del webhook de N8N en modo producción
@@ -242,6 +234,6 @@ export const convenioIaService = {
 
 // SERVICIOS PARA AUDITORÍA
 export const auditoriaService = {
-  getParametros: () => api.get('/auditoria/parametros/'),
-  getRegistrosAuditoria: () => api.get('/auditoria/registros/'),
+  getParametros: (token = null) => createApiClient(token).get('/auditoria/parametros/'),
+  getRegistrosAuditoria: (token = null) => createApiClient(token).get('/auditoria/registros/'),
 };
