@@ -1,6 +1,7 @@
 <script>
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
+    import AuthService from "../../lib/login/authService.js";
 
     let cuil = "";
     let isLoading = false;
@@ -52,22 +53,11 @@
         isLoading = true;
 
         try {
-            const response = await fetch("/api/auth/recover-password/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                credentials: "include",
-                body: JSON.stringify({
-                    cuil: cleanCuil,
-                }),
-            });
-
-            const result = await response.json();
+            const result = await AuthService.recoverPassword(cleanCuil);
 
             if (result.success) {
                 successMessage = result.message;
-                maskedEmail = result.email;
+                maskedEmail = result.email || "***@***.***";
                 showResult = true;
 
                 // Limpiar el formulario

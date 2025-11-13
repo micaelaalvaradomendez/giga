@@ -101,7 +101,7 @@
         successMessage = '';
 
         try {
-            const response = await fetch('/api/auth/update-email/', {
+            const response = await fetch('/api/personas/auth/update-email/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -146,20 +146,11 @@
         successMessage = '';
 
         try {
-            const response = await fetch('/api/auth/change-password/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    current_password: passwordFormData.currentPassword,
-                    new_password: passwordFormData.newPassword,
-                    confirm_password: passwordFormData.confirmPassword
-                })
-            });
-
-            const result = await response.json();
+            const result = await AuthService.changePassword(
+                passwordFormData.currentPassword,
+                passwordFormData.newPassword,
+                passwordFormData.confirmPassword
+            );
 
             if (result.success) {
                 successMessage = 'Contraseña actualizada exitosamente. Cerrando sesión...';
