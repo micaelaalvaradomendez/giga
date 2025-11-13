@@ -182,15 +182,16 @@
                         <h3>Instrucciones:</h3>
                         <ul>
                             <li>
-                                Revisa tu bandeja de entrada (y carpeta de spam)
+                                Revisa tu bandeja de entrada (y carpeta de
+                                spam).
                             </li>
                             <li>
-                                Tu nueva contraseña te llegara al corre
-                                registrado en el Sistema
+                                Tu nueva contraseña te llegará al correo
+                                registrado en el sistema.
                             </li>
                             <li>
                                 Por seguridad, deberás cambiarla en el primer
-                                inicio de sesión
+                                inicio de sesión.
                             </li>
                         </ul>
                     </div>
