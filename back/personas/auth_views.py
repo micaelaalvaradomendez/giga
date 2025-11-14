@@ -52,7 +52,6 @@ def generate_password(length=8):
     characters = string.ascii_letters + string.digits
     return ''.join(secrets.choice(characters) for _ in range(length))
 
-@csrf_exempt
 @api_view(['POST', 'OPTIONS'])
 @permission_classes([AllowAny])
 def login_view(request):
@@ -64,7 +63,7 @@ def login_view(request):
         return Response(status=status.HTTP_200_OK)
 
     try:
-        data = json.loads(request.body)
+        data = request.data
         cuil_dni = data.get('cuil', '')  # Puede ser DNI o CUIL
         password = data.get('password', '')
 
@@ -190,7 +189,6 @@ def login_view(request):
             'message': 'Error interno del servidor'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@csrf_exempt
 @api_view(['POST', 'OPTIONS'])
 @permission_classes([AllowAny])
 def logout_view(request):
@@ -219,7 +217,6 @@ def logout_view(request):
             'message': 'Error al cerrar sesión'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@csrf_exempt
 @api_view(['GET', 'OPTIONS'])
 @permission_classes([AllowAny])
 def check_session(request):
@@ -310,7 +307,6 @@ def check_session(request):
             'message': 'Error verificando sesión'
         })
 
-@csrf_exempt
 @api_view(['POST', 'OPTIONS'])
 @permission_classes([AllowAny])
 def recover_password(request):
@@ -321,7 +317,7 @@ def recover_password(request):
         return Response(status=status.HTTP_200_OK)
 
     try:
-        data = json.loads(request.body)
+        data = request.data
         cuil = data.get('cuil', '')
 
         if not cuil:
@@ -412,7 +408,6 @@ Sistema GIGA - Protección Civil
             'message': 'Error interno del servidor'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@csrf_exempt
 @api_view(['POST', 'OPTIONS'])
 @permission_classes([AllowAny])
 def update_email(request):
@@ -430,7 +425,7 @@ def update_email(request):
                 'message': 'No hay sesión activa'
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        data = json.loads(request.body)
+        data = request.data
         new_email = data.get('new_email', '')
         current_password = data.get('current_password', '')
 
@@ -500,7 +495,6 @@ def update_email(request):
             'message': 'Error interno del servidor'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@csrf_exempt
 @api_view(['POST', 'OPTIONS'])
 @permission_classes([AllowAny])  # Verificaremos sesión manualmente
 def change_password(request):
@@ -518,7 +512,7 @@ def change_password(request):
                 'message': 'No hay sesión activa'
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        data = json.loads(request.body)
+        data = request.data
         current_password = data.get('current_password', '')
         new_password = data.get('new_password', '')
         confirm_password = data.get('confirm_password', '')
@@ -614,7 +608,6 @@ Sistema GIGA - Protección Civil
             'message': 'Error interno del servidor'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@csrf_exempt
 @api_view(['GET', 'OPTIONS'])
 def update_profile(request):
     """

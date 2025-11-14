@@ -8,6 +8,12 @@ export const user = writable(null);
 const API_BASE_URL = '/api';
 
 export class AuthService {
+    // Obtener token CSRF desde cookie (si existe)
+    static getCsrfToken() {
+        if (!isBrowser) return null;
+        const match = document.cookie.match(new RegExp('(^|;)\\s*' + 'csrftoken' + '\\s*=\\s*([^;]+)'));
+        return match ? match.pop() : null;
+    }
 
     static async login(cuil, password) {
         try {
@@ -16,9 +22,13 @@ export class AuthService {
                 cuil: cleanCuil,
                 password: password
             };
+            const headers = { 'Content-Type': 'application/json' };
+            const csrf = this.getCsrfToken();
+            if (csrf) headers['X-CSRFToken'] = csrf;
+
             const response = await fetch(`${API_BASE_URL}/personas/auth/login/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 credentials: 'include',
                 body: JSON.stringify(requestBody)
             });
@@ -49,9 +59,12 @@ export class AuthService {
 
     static async logout() {
         try {
+            const headers = { 'Content-Type': 'application/json' };
+            const csrf = this.getCsrfToken();
+            if (csrf) headers['X-CSRFToken'] = csrf;
             await fetch(`${API_BASE_URL}/personas/auth/logout/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 credentials: 'include'
             });
         } catch (error) {
@@ -165,9 +178,13 @@ export class AuthService {
 
     static async changePassword(currentPassword, newPassword, confirmPassword) {
         try {
+            const headers = { 'Content-Type': 'application/json' };
+            const csrf = this.getCsrfToken();
+            if (csrf) headers['X-CSRFToken'] = csrf;
+
             const response = await fetch(`${API_BASE_URL}/personas/auth/change-password/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 credentials: 'include',
                 body: JSON.stringify({
                     current_password: currentPassword,

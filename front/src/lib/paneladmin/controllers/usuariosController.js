@@ -242,7 +242,28 @@ class UsuariosController {
 		this.modalEditarAgente.update(modal => ({ ...modal, isSaving: true }));
 		
 		try {
-			await personasService.updateAgente(agente.id_agente, formData);
+			// Filtrar datos para excluir campos que no deben actualizarse
+			const datosActualizacion = {
+				nombre: formData.nombre,
+				apellido: formData.apellido,
+				email: formData.email,
+				telefono: formData.telefono,
+				fecha_nacimiento: formData.fecha_nacimiento,
+				categoria_revista: formData.categoria_revista,
+				agrupacion: formData.agrupacion,
+				calle: formData.calle,
+				numero: formData.numero,
+				ciudad: formData.ciudad,
+				provincia: formData.provincia,
+				horario_entrada: formData.horario_entrada || null,
+				horario_salida: formData.horario_salida || null,
+				area_id: formData.area_id,
+				activo: formData.activo !== false
+			};
+
+			console.log('📝 Datos filtrados para actualización:', datosActualizacion);
+			
+			await personasService.updateAgente(agente.id_agente, datosActualizacion);
 			
 			// Si se cambió el rol, actualizar la asignación
 			if (formData.rol_id) {
