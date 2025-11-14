@@ -215,13 +215,19 @@
 
     .login-card {
         background-image: linear-gradient(163deg, #8eb6e4 0%, #3d97ff 90%);
-        border-radius: 20px;
+        border-radius: 24px;
         transition: all 0.3s;
         padding: 3px;
+        box-shadow: 
+            0 8px 32px rgba(64, 123, 255, 0.25),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3);
     }
 
     .login-card:hover {
-        box-shadow: 0px 0px 30px 1px rgba(55, 101, 138, 0.3);
+        box-shadow: 
+            0 12px 48px rgba(64, 123, 255, 0.35),
+            0 0 24px rgba(64, 123, 255, 0.15),
+            inset 0 1px 2px rgba(255, 255, 255, 0.4);
     }
 
     .content {
@@ -233,7 +239,7 @@
             rgb(255, 255, 255) 0%,
             rgb(255, 255, 255) 80%
         );
-        border-radius: 22px;
+        border-radius: 20px;
         padding: 25px 35px;
         transition: all 0.2s;
         margin: 3px;
@@ -267,9 +273,11 @@
         background: white;
         border: 2px solid #a2b8e7;
         padding: 15px 20px;
-        border-radius: 20px;
+        border-radius: 16px;
         margin-top: 15px;
-        box-shadow: #cff0ff 0px 10px 10px -5px;
+        box-shadow: 
+            0 4px 16px rgba(64, 123, 255, 0.12),
+            inset 0 1px 2px rgba(255, 255, 255, 0.8);
     }
 
     .form-group input {
@@ -443,13 +451,15 @@
         background: #ff4444;
         color: white;
         padding: 14px 18px;
-        border-radius: 15px;
+        border-radius: 16px;
         text-align: center;
         font-size: 16px;
         font-weight: 600;
         margin-top: 15px;
         width: 90%;
-        box-shadow: 0 4px 12px rgba(255, 0, 0, 0.25);
+        box-shadow: 
+            0 4px 16px rgba(255, 68, 68, 0.25),
+            inset 0 1px 2px rgba(255, 255, 255, 0.2);
         animation: fadeIn 0.3s ease-in-out;
     }
 
@@ -491,8 +501,11 @@
     .success-message {
         background: #e8f5ff;
         padding: 20px;
-        border-radius: 15px;
+        border-radius: 16px;
         margin-bottom: 20px;
+        box-shadow: 
+            0 4px 16px rgba(64, 123, 255, 0.08),
+            inset 0 1px 2px rgba(255, 255, 255, 0.6);
     }
 
     .success-message p {
@@ -509,8 +522,11 @@
         text-align: left;
         background: #f8f9fa;
         padding: 20px;
-        border-radius: 15px;
+        border-radius: 16px;
         margin-bottom: 20px;
+        box-shadow: 
+            0 4px 16px rgba(64, 123, 255, 0.08),
+            inset 0 1px 2px rgba(255, 255, 255, 0.6);
     }
 
     .instructions h3 {
