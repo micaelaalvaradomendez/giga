@@ -83,7 +83,10 @@
 					<h2>{module.name}</h2>
 					<p>{module.description}</p>
 				</div>
-				<button on:click={() => (window.location.href = module.path)}>
+				<button
+					on:click={() => (window.location.href = module.path)}
+					aria-label="Abrir módulo"
+				>
 					<div class="button-box">
 						<span class="button-elem">
 							<svg
@@ -116,7 +119,7 @@
 	.dashboard-welcome {
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		position: relative;
-		background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
 		padding: 30px 20px;
 		margin: 5px auto 25px auto;

@@ -137,7 +137,7 @@
 <style>
 	.hero {
 		position: relative;
-		background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
 		padding: 40px 20px;
 		margin: 20px auto;

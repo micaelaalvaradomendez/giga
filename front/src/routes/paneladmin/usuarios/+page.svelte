@@ -1,20 +1,29 @@
 <script>
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { usuariosController } from '$lib/paneladmin/controllers';
-	import ModalVerAgente from '$lib/componentes/ModalVerAgente.svelte';
-	import ModalEditarAgente from '$lib/componentes/ModalEditarAgente.svelte';
-	import ModalEliminarAgente from '$lib/componentes/ModalEliminarAgente.svelte';
-	import ModalAgregarAgente from '$lib/componentes/ModalAgregarAgente.svelte';
+	import { onMount } from "svelte";
+	import { goto } from "$app/navigation";
+	import { usuariosController } from "$lib/paneladmin/controllers";
+	import ModalVerAgente from "$lib/componentes/ModalVerAgente.svelte";
+	import ModalEditarAgente from "$lib/componentes/ModalEditarAgente.svelte";
+	import ModalEliminarAgente from "$lib/componentes/ModalEliminarAgente.svelte";
+	import ModalAgregarAgente from "$lib/componentes/ModalAgregarAgente.svelte";
 
 	/** @type {import('./$types').PageData} */
-	export let data = { agentes: [] };
-	
+
 	// Obtener referencias a los stores individuales
 	const {
-		agentes, agentesFiltrados, areasDisponibles, rolesDisponibles, loading, error, estadisticas,
-		busqueda, filtroArea, modalVerAgente, modalEditarAgente, modalEliminarAgente,
-		modalAgregarAgente
+		agentes,
+		agentesFiltrados,
+		areasDisponibles,
+		rolesDisponibles,
+		loading,
+		error,
+		estadisticas,
+		busqueda,
+		filtroArea,
+		modalVerAgente,
+		modalEditarAgente,
+		modalEliminarAgente,
+		modalAgregarAgente,
 	} = usuariosController;
 
 	// Funciones para abrir modales (delegadas al controlador)
@@ -50,14 +59,14 @@
 
 	// Verificar autenticación y cargar datos al montar el componente
 	onMount(async () => {
-		console.log('🔄 Componente montado, iniciando controlador...');
+		console.log("🔄 Componente montado, iniciando controlador...");
 		try {
 			await usuariosController.init();
-			console.log('✅ Controlador inicializado exitosamente');
+			console.log("✅ Controlador inicializado exitosamente");
 		} catch (err) {
-			console.error('❌ Error inicializando controlador:', err);
-			if (err.message === 'Usuario no autenticado') {
-				goto('/');
+			console.error("❌ Error inicializando controlador:", err);
+			if (err.message === "Usuario no autenticado") {
+				goto("/");
 				return;
 			}
 		}
@@ -71,9 +80,12 @@
 	// Función para guardar cambios del agente (delegada al controlador)
 	async function guardarCambiosAgente(event) {
 		const { agente, formData } = event.detail;
-		
+
 		try {
-			const result = await usuariosController.guardarCambiosAgente(agente, formData);
+			const result = await usuariosController.guardarCambiosAgente(
+				agente,
+				formData,
+			);
 			if (result.success) {
 				alert(result.message);
 			}
@@ -85,9 +97,10 @@
 	// Función para confirmar eliminación (delegada al controlador)
 	async function confirmarEliminacionAgente(event) {
 		const { agente } = event.detail;
-		
+
 		try {
-			const result = await usuariosController.confirmarEliminacionAgente(agente);
+			const result =
+				await usuariosController.confirmarEliminacionAgente(agente);
 			if (result.success) {
 				alert(result.message);
 			}
@@ -99,7 +112,7 @@
 	// Función para crear nuevo agente (delegada al controlador)
 	async function crearNuevoAgente(event) {
 		const { formData } = event.detail;
-		
+
 		try {
 			const result = await usuariosController.crearNuevoAgente(formData);
 			if (result.success) {
@@ -112,7 +125,7 @@
 </script>
 
 <div class="logo">
-    <a href="/paneladmin">Panel de Administración</a>
+	<a href="/paneladmin">Panel de Administración</a>
 </div>
 
 <div class="page-header">
@@ -124,55 +137,41 @@
 
 <!-- Resumen de estadísticas -->
 {#if $agentesFiltrados && $agentesFiltrados.length > 0}
-<div class="stats-container">
-	<div class="stat-card">
-		<h3>Total Mostrados</h3>
-		<p class="stat-number">{$estadisticas.total}</p>
+	<div class="stats-container">
+		<div class="stat-card">
+			<h3>Total Mostrados</h3>
+			<p class="stat-number">{$estadisticas.total}</p>
+		</div>
+		<div class="stat-card">
+			<h3>EPU</h3>
+			<p class="stat-number">{$estadisticas.epu}</p>
+		</div>
+		<div class="stat-card">
+			<h3>POMyS</h3>
+			<p class="stat-number">{$estadisticas.pomys}</p>
+		</div>
+		<div class="stat-card">
+			<h3>PAyT</h3>
+			<p class="stat-number">{$estadisticas.payt}</p>
+		</div>
+		<div class="stat-card">
+			<h3>Con Roles</h3>
+			<p class="stat-number">{$estadisticas.conRoles}</p>
+		</div>
+		<div class="stat-card">
+			<h3>Administradores</h3>
+			<p class="stat-number">{$estadisticas.administradores}</p>
+		</div>
 	</div>
-	<div class="stat-card">
-		<h3>EPU</h3>
-		<p class="stat-number">{$estadisticas.epu}</p>
-	</div>
-	<div class="stat-card">
-		<h3>POMyS</h3>
-		<p class="stat-number">{$estadisticas.pomys}</p>
-	</div>
-	<div class="stat-card">
-		<h3>PAyT</h3>
-		<p class="stat-number">{$estadisticas.payt}</p>
-	</div>
-	<div class="stat-card">
-		<h3>Con Roles</h3>
-		<p class="stat-number">{$estadisticas.conRoles}</p>
-	</div>
-	<div class="stat-card">
-		<h3>Administradores</h3>
-		<p class="stat-number">{$estadisticas.administradores}</p>
-	</div>
-</div>
 {/if}
-
-<!-- Debug info (temporal) -->
-<div class="debug-info">
-	<small>🔍 Debug: {$areasDisponibles.length} áreas, {$rolesDisponibles.length} roles cargados 
-	{#if $areasDisponibles.length > 0}
-		| Áreas: (ID: {$areasDisponibles.map(a => a.id_area).join(', ')})
-	{/if}
-	{#if $rolesDisponibles.length > 0}
-		| Roles: ({$rolesDisponibles.map(r => r.nombre).join(', ')})
-	{/if}
-	| Filtros: {$busqueda ? 'Búsqueda="' + $busqueda + '"' : ''} {$filtroArea ? 'Área=' + $filtroArea : 'Sin área'}
-	| Resultados: {$agentesFiltrados ? $agentesFiltrados.length : 0}/{$agentes ? $agentes.length : 0}
-	</small>
-</div>
 
 <!-- Controles de filtrado -->
 <div class="filtros-container">
 	<div class="filtros-row">
 		<div class="filtro-group">
 			<label for="busqueda">🔍 Buscar agente</label>
-			<input 
-				type="text" 
+			<input
+				type="text"
 				id="busqueda"
 				value={$busqueda}
 				on:input={actualizarBusqueda}
@@ -182,13 +181,15 @@
 		</div>
 		<div class="filtro-group">
 			<label for="filtroArea">📍 Filtrar por área</label>
-			<select 
+			<select
 				id="filtroArea"
 				value={$filtroArea}
 				on:change={actualizarFiltroArea}
 				class="select-area"
 			>
-				<option value="">Todas las áreas ({$areasDisponibles.length})</option>
+				<option value=""
+					>Todas las áreas ({$areasDisponibles.length})</option
+				>
 				{#each $areasDisponibles as area}
 					<option value={area.id_area}>{area.nombre}</option>
 				{/each}
@@ -198,7 +199,11 @@
 			</select>
 		</div>
 		<div class="filtro-actions">
-			<button class="btn-limpiar" on:click={limpiarFiltros} title="Limpiar filtros">
+			<button
+				class="btn-limpiar"
+				on:click={limpiarFiltros}
+				title="Limpiar filtros"
+			>
 				🗑️ Limpiar
 			</button>
 		</div>
@@ -219,57 +224,96 @@
 			</tr>
 		</thead>
 		<tbody>
-		{#if $agentesFiltrados && $agentesFiltrados.length > 0}
-		{#each $agentesFiltrados as agente}
-			{@const currentUser = usuariosController.getCurrentUser()}
-			<tr class={usuariosController.isCurrentUser(agente) ? 'current-user' : ''}>
-					<td><strong>{agente.legajo || 'N/A'}</strong></td>
-					<td>
-						<strong>{agente.nombre} {agente.apellido}</strong>
-						{#if usuariosController.isCurrentUser(agente)}
-							<span class="badge badge-current-user">Tú</span>
-						{/if}
-					</td>
-					<td>{agente.dni}</td>
-					<td>
-						{#if agente.roles && agente.roles.length > 0}
-							<span class="badge badge-role">{agente.roles[0].nombre}</span>
-							{#if agente.roles.length > 1}
-								<span class="badge badge-secondary">+{agente.roles.length - 1}</span>
+			{#if $agentesFiltrados && $agentesFiltrados.length > 0}
+				{#each $agentesFiltrados as agente}
+					{@const currentUser = usuariosController.getCurrentUser()}
+					<tr
+						class={usuariosController.isCurrentUser(agente)
+							? "current-user"
+							: ""}
+					>
+						<td><strong>{agente.legajo || "N/A"}</strong></td>
+						<td>
+							<strong>{agente.nombre} {agente.apellido}</strong>
+							{#if usuariosController.isCurrentUser(agente)}
+								<span class="badge badge-current-user">Tú</span>
 							{/if}
-						{:else}
-							<span class="badge badge-sin-rol">Sin rol</span>
-						{/if}
-					</td>
-					<td>{agente.categoria_revista || 'N/A'}</td>
-					<td>
-						{#if agente.area_nombre}
-							<span class="badge badge-area">{agente.area_nombre}</span>
-						{:else if agente.agrupacion_display}
-							<span class="badge badge-{agente.agrupacion?.toLowerCase()}">{agente.agrupacion_display}</span>
-						{:else}
-							<span class="badge badge-sin-area">Sin área</span>
-						{/if}
-					</td>
-					<td class="actions">
-						<button class="btn-icon" title="Editar" on:click={() => editarAgente(agente)}>✏️</button>
-						<button class="btn-icon" title="Ver detalles" on:click={() => verAgente(agente)}>👁️</button>
-						{#if usuariosController.isCurrentUser(agente)}
-							<button class="btn-icon-disabled" title="No puedes eliminarte a ti mismo" disabled>🔒</button>
-						{:else}
-							<button class="btn-icon-danger" title="Eliminar" on:click={() => eliminarAgente(agente)}>🗑️</button>
-						{/if}
-					</td>
-				</tr>
+						</td>
+						<td>{agente.dni}</td>
+						<td>
+							{#if agente.roles && agente.roles.length > 0}
+								<span class="badge badge-role"
+									>{agente.roles[0].nombre}</span
+								>
+								{#if agente.roles.length > 1}
+									<span class="badge badge-secondary"
+										>+{agente.roles.length - 1}</span
+									>
+								{/if}
+							{:else}
+								<span class="badge badge-sin-rol">Sin rol</span>
+							{/if}
+						</td>
+						<td>{agente.categoria_revista || "N/A"}</td>
+						<td>
+							{#if agente.area_nombre}
+								<span class="badge badge-area"
+									>{agente.area_nombre}</span
+								>
+							{:else if agente.agrupacion_display}
+								<span
+									class="badge badge-{agente.agrupacion?.toLowerCase()}"
+									>{agente.agrupacion_display}</span
+								>
+							{:else}
+								<span class="badge badge-sin-area"
+									>Sin área</span
+								>
+							{/if}
+						</td>
+						<td class="actions">
+							<button
+								class="btn-icon"
+								title="Editar"
+								on:click={() => editarAgente(agente)}>✏️</button
+							>
+							<button
+								class="btn-icon"
+								title="Ver detalles"
+								on:click={() => verAgente(agente)}>👁️</button
+							>
+							{#if usuariosController.isCurrentUser(agente)}
+								<button
+									class="btn-icon-disabled"
+									title="No puedes eliminarte a ti mismo"
+									disabled>🔒</button
+								>
+							{:else}
+								<button
+									class="btn-icon-danger"
+									title="Eliminar"
+									on:click={() => eliminarAgente(agente)}
+									>🗑️</button
+								>
+							{/if}
+						</td>
+					</tr>
 				{/each}
 			{:else}
 				<tr>
 					<td colspan="7" style="text-align: center; padding: 2rem;">
 						{#if $busqueda || $filtroArea}
-							No se encontraron agentes que coincidan con los filtros aplicados.
-							<br><button class="btn-link" on:click={limpiarFiltros}>Limpiar filtros</button>
+							No se encontraron agentes que coincidan con los
+							filtros aplicados.
+							<br /><button
+								class="btn-link"
+								on:click={limpiarFiltros}
+								>Limpiar filtros</button
+							>
 						{:else}
-							No se encontraron agentes. Total: {$agentes ? $agentes.length : 'undefined'}
+							No se encontraron agentes. Total: {$agentes
+								? $agentes.length
+								: "undefined"}
 						{/if}
 					</td>
 				</tr>
@@ -279,13 +323,13 @@
 </div>
 
 <!-- Modales -->
-<ModalVerAgente 
+<ModalVerAgente
 	bind:isOpen={$modalVerAgente.isOpen}
 	agente={$modalVerAgente.agente}
 	on:cerrar={cerrarModales}
 />
 
-<ModalEditarAgente 
+<ModalEditarAgente
 	bind:isOpen={$modalEditarAgente.isOpen}
 	agente={$modalEditarAgente.agente}
 	bind:isSaving={$modalEditarAgente.isSaving}
@@ -295,7 +339,7 @@
 	on:guardar={guardarCambiosAgente}
 />
 
-<ModalEliminarAgente 
+<ModalEliminarAgente
 	bind:isOpen={$modalEliminarAgente.isOpen}
 	agente={$modalEliminarAgente.agente}
 	bind:isDeleting={$modalEliminarAgente.isDeleting}
@@ -303,7 +347,7 @@
 	on:confirmar={confirmarEliminacionAgente}
 />
 
-<ModalAgregarAgente 
+<ModalAgregarAgente
 	bind:isOpen={$modalAgregarAgente.isOpen}
 	bind:isSaving={$modalAgregarAgente.isSaving}
 	areasDisponibles={$areasDisponibles}
@@ -315,7 +359,8 @@
 <style>
 	:global(body) {
 		margin: 0;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+			Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 		background-color: #f8f9fa;
 		color: #212529;
 	}
@@ -333,7 +378,7 @@
 		padding: 0 1.5rem;
 		height: 70px;
 		background: linear-gradient(135deg, #e79043, #f39c12);
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
 	:global(.admin-header .logo a) {
@@ -362,21 +407,11 @@
 		background-color: #ffffff;
 		margin: 1rem;
 		border-radius: 8px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
 
 	.logo {
 		display: none; /* Ocultar porque ya está en el header */
-	}
-
-	.debug-info {
-		background: #e7f3ff;
-		border: 1px solid #b6d7ff;
-		border-radius: 4px;
-		padding: 0.5rem;
-		margin-bottom: 1rem;
-		color: #0056b3;
-		font-family: monospace;
 	}
 
 	.page-header {
@@ -390,9 +425,42 @@
 
 	.page-header h1 {
 		margin: 0;
-		color: #2c3e50;
+		color: #ffffff;
+		padding: 20px;
+		border-radius: 10px;
 		font-size: 2rem;
 		font-weight: 600;
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+		position: relative;
+		overflow: hidden;
+		isolation: isolate;
+	}
+
+	.page-header h1::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: linear-gradient(
+				90deg,
+				rgba(255, 255, 255, 0.07) 1px,
+				transparent 1px
+			),
+			linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+		background-size: 50px 50px;
+		animation: moveLines 20s linear infinite;
+		z-index: -1;
+	}
+
+	@keyframes moveLine {
+		0% {
+			left: -40%;
+		}
+		100% {
+			left: 100%;
+		}
 	}
 
 	/* Estilos para filtros */
@@ -402,7 +470,7 @@
 		border-radius: 8px;
 		padding: 1.5rem;
 		margin-bottom: 1.5rem;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
 	.filtros-row {
@@ -425,16 +493,20 @@
 		font-size: 0.9rem;
 	}
 
-	.input-busqueda, .select-area {
+	.input-busqueda,
+	.select-area {
 		padding: 0.75rem;
 		border: 1px solid #ced4da;
 		border-radius: 6px;
 		font-size: 0.9rem;
-		transition: border-color 0.2s, box-shadow 0.2s;
+		transition:
+			border-color 0.2s,
+			box-shadow 0.2s;
 		min-width: 250px;
 	}
 
-	.input-busqueda:focus, .select-area:focus {
+	.input-busqueda:focus,
+	.select-area:focus {
 		outline: none;
 		border-color: #e79043;
 		box-shadow: 0 0 0 2px rgba(231, 144, 67, 0.25);
@@ -510,7 +582,7 @@
 		border-radius: 8px;
 		padding: 1rem;
 		text-align: center;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
 	.stat-card h3 {
@@ -539,12 +611,12 @@
 		font-weight: 500;
 		cursor: pointer;
 		transition: all 0.2s ease;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
 	.btn-primary:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 	}
 
 	.table-container {
@@ -585,7 +657,8 @@
 		gap: 0.5rem;
 	}
 
-	.btn-icon, .btn-icon-danger {
+	.btn-icon,
+	.btn-icon-danger {
 		background: none;
 		border: none;
 		font-size: 1.2rem;
@@ -731,7 +804,7 @@
 			gap: 1rem;
 			align-items: stretch;
 		}
-		
+
 		.stats-container {
 			grid-template-columns: repeat(2, 1fr);
 		}
@@ -745,7 +818,8 @@
 			padding: 1rem;
 		}
 
-		.input-busqueda, .select-area {
+		.input-busqueda,
+		.select-area {
 			min-width: auto;
 			width: 100%;
 		}
@@ -753,21 +827,23 @@
 		.filtro-actions {
 			justify-content: center;
 		}
-		
+
 		.table-container {
 			overflow-x: auto;
 		}
-		
+
 		table {
 			min-width: 800px; /* Reducir ancho mínimo para móviles */
 		}
-		
-		th, td {
+
+		th,
+		td {
 			padding: 0.5rem;
 			font-size: 0.875rem;
 		}
-		
-		.btn-icon, .btn-icon-danger {
+
+		.btn-icon,
+		.btn-icon-danger {
 			padding: 0.5rem;
 		}
 	}
@@ -776,33 +852,41 @@
 		.stats-container {
 			grid-template-columns: 1fr;
 		}
-		
+
 		.stat-card {
 			padding: 0.75rem;
 		}
-		
+
 		.stat-number {
 			font-size: 1.5rem;
 		}
 	}
 
-	th:nth-child(4), td:nth-child(4) { /* Email */
+	th:nth-child(4),
+	td:nth-child(4) {
+		/* Email */
 		max-width: 200px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
-	th:nth-child(6), td:nth-child(6) { /* Dirección */
+	th:nth-child(6),
+	td:nth-child(6) {
+		/* Dirección */
 		max-width: 180px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
-	th:nth-child(7), td:nth-child(7) { /* Agrupación */
+	th:nth-child(7),
+	td:nth-child(7) {
+		/* Agrupación */
 		text-align: center;
 	}
 
-	th:nth-child(9), td:nth-child(9) { /* Roles */
+	th:nth-child(9),
+	td:nth-child(9) {
+		/* Roles */
 		max-width: 200px;
 	}
 </style>
