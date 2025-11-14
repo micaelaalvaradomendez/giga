@@ -440,6 +440,20 @@ def create_asignacion(request):
                 id_rol=rol
             )
             
+            # Crear auditoría para cambio de rol
+            crear_auditoria_rol(
+                accion='ASIGNAR_ROL',
+                agente_id=agente.id_agente,
+                rol_id=rol.id_rol,
+                valor_previo=None,
+                valor_nuevo={
+                    'agente': f"{agente.nombre} {agente.apellido}",
+                    'rol': rol.nombre,
+                    'asignacion_id': asignacion.id_agente_rol
+                },
+                usuario_logueado_id=None  # TODO: Obtener del usuario autenticado
+            )
+            
             return Response({
                 'success': True,
                 'message': 'Asignación creada correctamente',
@@ -466,7 +480,27 @@ def delete_asignacion(request, asignacion_id):
     """
     try:
         asignacion = get_object_or_404(AgenteRol, id_agente_rol=asignacion_id)
+        
+        # Obtener datos para auditoría antes de eliminar
+        agente = asignacion.id_agente
+        rol = asignacion.id_rol
+        
+        # Eliminar asignación
         asignacion.delete()
+        
+        # Crear auditoría para eliminación de rol
+        crear_auditoria_rol(
+            accion='QUITAR_ROL',
+            agente_id=agente.id_agente,
+            rol_id=rol.id_rol,
+            valor_previo={
+                'agente': f"{agente.nombre} {agente.apellido}",
+                'rol': rol.nombre,
+                'asignacion_id': asignacion_id
+            },
+            valor_nuevo=None,
+            usuario_logueado_id=None  # TODO: Obtener del usuario autenticado
+        )
         
         return Response({
             'success': True,
@@ -1029,6 +1063,39 @@ def crear_auditoria_agente(accion, agente_id, valor_previo=None, valor_nuevo=Non
     except Exception as e:
         # No fallar si la auditoría falla, solo registrar
         print(f"Error al crear auditoría: {str(e)}")
+
+
+def crear_auditoria_rol(accion, agente_id, rol_id, valor_previo=None, valor_nuevo=None, usuario_logueado_id=None):
+    """
+    Crear registro de auditoría para cambios de roles.
+    """
+    try:
+        from django.utils import timezone
+        from django.core.serializers.json import DjangoJSONEncoder
+        import json
+        
+        # Convertir datos a JSON serializable
+        valor_previo_json = None
+        valor_nuevo_json = None
+        
+        if valor_previo:
+            valor_previo_json = json.loads(json.dumps(valor_previo, cls=DjangoJSONEncoder))
+        
+        if valor_nuevo:
+            valor_nuevo_json = json.loads(json.dumps(valor_nuevo, cls=DjangoJSONEncoder))
+        
+        Auditoria.objects.create(
+            pk_afectada=agente_id,
+            nombre_tabla='agente_rol',
+            creado_en=timezone.now(),
+            valor_previo=valor_previo_json,
+            valor_nuevo=valor_nuevo_json,
+            accion=accion,
+            id_agente_id=usuario_logueado_id  # FK al agente que hizo el cambio
+        )
+    except Exception as e:
+        # No fallar si la auditoría falla, solo registrar
+        print(f"Error al crear auditoría de rol: {str(e)}")
 
 
 def crear_auditoria_organigrama(accion, organigrama_id, valor_previo=None, valor_nuevo=None, agente_id=None):

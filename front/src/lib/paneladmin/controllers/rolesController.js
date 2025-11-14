@@ -177,6 +177,20 @@ class RolesController {
 	}
 
 	/**
+	 * Obtener nombre de un rol por su ID usando el store actual
+	 */
+	obtenerNombreRolPorId(rolId) {
+		let rolesDisponibles = [];
+		this.rolesDisponibles.subscribe(roles => {
+			rolesDisponibles = roles;
+		})();
+		
+		if (!rolId) return 'Sin rol asignado';
+		const rol = rolesDisponibles.find(r => r.id_rol === rolId || r.id === rolId);
+		return rol ? rol.nombre : 'Rol desconocido';
+	}
+
+	/**
 	 * Obtener nombre de un área por su ID
 	 */
 	obtenerNombreArea(areaId, areasDisponibles) {
@@ -221,10 +235,6 @@ class RolesController {
 	 * Guardar cambio de rol para un agente
 	 */
 	async guardarCambioRol(agente, nuevoRolId) {
-		if (!nuevoRolId) {
-			throw new Error('Por favor, selecciona un rol válido.');
-		}
-
 		// Verificar que no se esté cambiando el rol a sí mismo
 		const currentUserValue = AuthService.getCurrentUser();
 		if (!this.puedeEditarRol(agente, currentUserValue)) {
@@ -234,35 +244,49 @@ class RolesController {
 		this.savingRoleId.set(agente.id_agente);
 		
 		try {
-			// Primero obtener asignaciones actuales
+			// Obtener rol anterior para auditoría
+			const rolAnterior = this.obtenerRolActual(agente);
+			
+			// Obtener asignaciones actuales del agente
 			const asignacionesResponse = await personasService.getAsignaciones();
 			const asignaciones = asignacionesResponse.data?.results || [];
 			
-			// Buscar asignación existente por ID de usuario (más confiable)
-			const asignacionActual = asignaciones.find(a => 
+			// Buscar TODAS las asignaciones del agente (puede tener múltiples roles)
+			const asignacionesAgente = asignaciones.filter(a => 
 				a.usuario === agente.id_agente
 			);
 			
-			// Si ya tiene una asignación, eliminarla primero
-			if (asignacionActual) {
-				await personasService.deleteAsignacion(asignacionActual.id);
+			// Eliminar TODAS las asignaciones previas para asegurar UN SOLO ROL
+			for (const asignacion of asignacionesAgente) {
+				console.log(`Eliminando asignación previa: ${asignacion.id} (rol ${asignacion.rol})`);
+				await personasService.deleteAsignacion(asignacion.id);
 			}
 			
-			// Crear nueva asignación de rol
-			const asignacionData = {
-				usuario: agente.id_agente, // Usar el ID del agente como usuario
-				rol: parseInt(nuevoRolId)
-				// Nota: El área se toma automáticamente del agente en el backend
-			};
+			// Solo crear nueva asignación si se seleccionó un rol (permite "Sin rol")
+			if (nuevoRolId && nuevoRolId.trim() !== '') {
+				const asignacionData = {
+					usuario: agente.id_agente,
+					rol: parseInt(nuevoRolId)
+				};
 
-			console.log('Datos de asignación a enviar:', asignacionData);
-			await personasService.createAsignacion(asignacionData);
+				console.log('Creando nueva asignación:', asignacionData);
+				await personasService.createAsignacion(asignacionData);
+			}
 			
 			// Recargar datos para mostrar el cambio
 			await this.cargarDatos();
 			this.editingRoleId.set(null);
 			
-			return { success: true, message: 'Rol actualizado correctamente' };
+			// Log del cambio para auditoría
+			const rolNuevo = nuevoRolId ? this.obtenerNombreRolPorId(parseInt(nuevoRolId)) : 'Sin rol';
+			const rolAnteriorNombre = rolAnterior ? rolAnterior.nombre : 'Sin rol';
+			
+			console.log(`🔄 Cambio de rol realizado: ${agente.nombre} ${agente.apellido} - ${rolAnteriorNombre} → ${rolNuevo}`);
+			
+			return { 
+				success: true, 
+				message: `Rol actualizado: ${rolAnteriorNombre} → ${rolNuevo}` 
+			};
 		} catch (err) {
 			console.error('Error al cambiar rol:', err);
 			console.error('Respuesta del error:', err.response?.data);
