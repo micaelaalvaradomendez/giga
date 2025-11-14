@@ -15,7 +15,7 @@ services:
     networks:
       - giga-network
     volumes:
-      - ./logs:/var/log/nginx/giga
+      - ./logs:/var/log/nginx
     environment:
       - NGINX_WORKER_PROCESSES=auto
       - NGINX_WORKER_CONNECTIONS=1024

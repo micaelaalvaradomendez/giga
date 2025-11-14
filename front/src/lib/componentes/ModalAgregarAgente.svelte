@@ -23,7 +23,7 @@
 		legajo: '',
 		telefono: '',
 		fecha_nacimiento: '',
-		categoria_revista: '',
+		categoria_revista: '24', // Valor por defecto
 		agrupacion: '',
 		area_id: null,
 		// Dirección
@@ -49,9 +49,11 @@
 
 	function validateForm() {
 		// La contraseña se genera automáticamente del DNI
-		formData.password = formData.dni;
+		if (formData.dni) {
+			formData.password = formData.dni;
+		}
 		
-		// Generar legajo automático si no existe
+		// Generar legajo automático si no existe y tenemos DNI
 		if (!formData.legajo && formData.dni) {
 			formData.legajo = `LEG-${formData.dni}`;
 		}
@@ -64,7 +66,8 @@
 			formData.apellido && 
 			formData.dni && 
 			formData.categoria_revista && 
-			formData.agrupacion
+			formData.agrupacion &&
+			formData.legajo // Asegurar que el legajo existe
 		);
 	}
 
@@ -88,7 +91,7 @@
 			formData = {
 				email: '', cuil: '', password: '', rol_id: '',
 				nombre: '', apellido: '', dni: '', legajo: '',
-				telefono: '', fecha_nacimiento: '', categoria_revista: '',
+				telefono: '', fecha_nacimiento: '', categoria_revista: '24',
 				agrupacion: '', area_id: null, calle: '', numero: '',
 				ciudad: '', provincia: '',
 				horario_entrada: '08:00', horario_salida: '16:00', activo: true
@@ -335,22 +338,6 @@
 							
 							<div class="form-row">
 								<div class="form-group">
-									<label for="categoria_revista">Categoría Revista *</label>
-									<input 
-										type="text" 
-										id="categoria_revista" 
-										bind:value={formData.categoria_revista} 
-										on:input={handleInputChange}
-										required
-										placeholder="A1, B2, C3..."
-										disabled={isSaving}
-									/>
-									<small class="help-text">Categoría según convenio colectivo</small>
-								</div>
-							</div>
-
-							<div class="form-row">
-								<div class="form-group">
 									<label for="agrupacion">Agrupación *</label>
 									<select 
 										id="agrupacion" 
@@ -366,6 +353,22 @@
 									</select>
 									<small class="help-text">Agrupación laboral según escalafón</small>
 								</div>
+								<div class="form-group">
+									<label for="categoria_revista">Categoría *</label>
+									<input 
+										type="text" 
+										id="categoria_revista" 
+										bind:value={formData.categoria_revista} 
+										on:input={handleInputChange}
+										required
+										placeholder="Ej: 24, A1, B2, C3..."
+										disabled={isSaving}
+									/>
+									<small class="help-text">Categoría según convenio colectivo</small>
+								</div>
+							</div>
+							
+							<div class="form-row">
 								<div class="form-group">
 									<label for="area_id">Área</label>
 									<select 

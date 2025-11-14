@@ -48,14 +48,7 @@
 		usuariosController.limpiarFiltros();
 	}
 
-	// Funciones reactivas para actualizar filtros en el controlador
-	function actualizarBusqueda(event) {
-		usuariosController.busqueda.set(event.target.value);
-	}
-
-	function actualizarFiltroArea(event) {
-		usuariosController.filtroArea.set(event.target.value);
-	}
+	// Los filtros ahora usan bind:value directamente con los stores
 
 	// Verificar autenticación y cargar datos al montar el componente
 	onMount(async () => {
@@ -173,8 +166,7 @@
 			<input
 				type="text"
 				id="busqueda"
-				value={$busqueda}
-				on:input={actualizarBusqueda}
+				bind:value={$busqueda}
 				placeholder="Buscar por nombre, apellido, DNI, email o legajo..."
 				class="input-busqueda"
 			/>
@@ -183,8 +175,7 @@
 			<label for="filtroArea">📍 Filtrar por área</label>
 			<select
 				id="filtroArea"
-				value={$filtroArea}
-				on:change={actualizarFiltroArea}
+				bind:value={$filtroArea}
 				class="select-area"
 			>
 				<option value=""

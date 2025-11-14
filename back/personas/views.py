@@ -180,6 +180,16 @@ def create_agente(request):
             if serializer.is_valid():
                 agente = serializer.save()
                 
+                # Crear auditoría de creación
+                agente_data = AgenteDetailSerializer(agente).data
+                crear_auditoria_agente(
+                    accion='CREAR',
+                    agente_id=agente.id_agente,
+                    valor_previo=None,
+                    valor_nuevo=agente_data,
+                    usuario_logueado_id=None  # TODO: Obtener del usuario autenticado
+                )
+                
                 # Retornar el agente creado con detalles completos
                 detail_serializer = AgenteDetailSerializer(agente)
                 
@@ -213,6 +223,9 @@ def update_agente(request, agente_id):
         with transaction.atomic():
             agente = get_object_or_404(Agente, id_agente=agente_id)
             
+            # Capturar datos previos para auditoría
+            agente_previo = AgenteDetailSerializer(agente).data
+            
             # Usar PATCH para actualizaciones parciales
             partial = request.method == 'PATCH'
             
@@ -224,6 +237,18 @@ def update_agente(request, agente_id):
             
             if serializer.is_valid():
                 agente = serializer.save()
+                
+                # Capturar datos nuevos para auditoría
+                agente_nuevo = AgenteDetailSerializer(agente).data
+                
+                # Crear auditoría de actualización
+                crear_auditoria_agente(
+                    accion='ACTUALIZAR',
+                    agente_id=agente.id_agente,
+                    valor_previo=agente_previo,
+                    valor_nuevo=agente_nuevo,
+                    usuario_logueado_id=None  # TODO: Obtener del usuario autenticado
+                )
                 
                 # Retornar el agente actualizado con detalles completos
                 detail_serializer = AgenteDetailSerializer(agente)
@@ -252,7 +277,9 @@ def update_agente(request, agente_id):
 @permission_classes([AllowAny])
 def delete_agente(request, agente_id):
     """
-    Eliminar un agente (soft delete marcando como inactivo).
+    Eliminar un agente y todos los datos relacionados según reglas de negocio:
+    - Campos que permiten NULL: se ponen en NULL
+    - Campos que NO permiten NULL: se eliminan los registros completos
     """
     try:
         with transaction.atomic():
@@ -265,16 +292,28 @@ def delete_agente(request, agente_id):
                     'message': 'No puedes eliminarte a ti mismo'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Hard delete: eliminar físicamente
-            # Primero eliminar las asignaciones de roles (por integridad referencial)
-            AgenteRol.objects.filter(id_agente=agente).delete()
+            # Capturar datos para auditoría antes de eliminar
+            agente_eliminado = AgenteDetailSerializer(agente).data
             
-            # Luego eliminar el agente
-            agente.delete()
+            # Ejecutar eliminación en cascada personalizada
+            eliminados = eliminar_agente_con_cascada(agente_id)
+            
+            # Crear auditoría de eliminación completa
+            crear_auditoria_agente(
+                accion='ELIMINAR',
+                agente_id=agente.id_agente,
+                valor_previo=agente_eliminado,
+                valor_nuevo=None,
+                usuario_logueado_id=None  # TODO: Obtener del usuario autenticado
+            )
             
             return Response({
                 'success': True,
-                'message': 'Agente eliminado correctamente'
+                'message': f'Agente eliminado correctamente junto con todos sus datos relacionados',
+                'data': {
+                    'agente_id': agente_id,
+                    'eliminados': eliminados
+                }
             })
             
     except Exception as e:
@@ -873,8 +912,124 @@ def delete_agrupacion(request, agrupacion_id):
 
 
 # ============================================================================
-# FUNCIONES AUXILIARES PARA AUDITORÍA
+# FUNCIONES AUXILIARES PARA ELIMINACIÓN Y AUDITORÍA
 # ============================================================================
+
+def eliminar_agente_con_cascada(agente_id):
+    """
+    Eliminar un agente y todos sus datos relacionados según las reglas:
+    - Si el campo FK permite NULL: poner en NULL
+    - Si el campo FK NO permite NULL: eliminar el registro completo
+    
+    Retorna un resumen de las operaciones realizadas.
+    """
+    from django.db import connection
+    
+    eliminados = {}
+    
+    try:
+        with connection.cursor() as cursor:
+            # 1. AUDITORIA: id_agente permite NULL -> SET NULL
+            cursor.execute(
+                "UPDATE auditoria SET id_agente = NULL WHERE id_agente = %s",
+                [agente_id]
+            )
+            eliminados['auditoria_actualizados'] = cursor.rowcount
+            
+            # 2. AGENTE_ROL: id_agente NO permite NULL -> DELETE
+            cursor.execute(
+                "DELETE FROM agente_rol WHERE id_agente = %s",
+                [agente_id]
+            )
+            eliminados['agente_rol_eliminados'] = cursor.rowcount
+            
+            # 3. ASISTENCIA: tanto id_agente como creado_por NO permiten NULL -> DELETE
+            cursor.execute(
+                "DELETE FROM asistencia WHERE id_agente = %s OR creado_por = %s",
+                [agente_id, agente_id]
+            )
+            eliminados['asistencia_eliminados'] = cursor.rowcount
+            
+            # 4. CRONOGRAMA: id_director y id_jefe NO permiten NULL -> DELETE
+            cursor.execute(
+                "DELETE FROM cronograma WHERE id_director = %s OR id_jefe = %s",
+                [agente_id, agente_id]
+            )
+            eliminados['cronograma_eliminados'] = cursor.rowcount
+            
+            # 5. GUARDIA: id_agente NO permite NULL -> DELETE
+            cursor.execute(
+                "DELETE FROM guardia WHERE id_agente = %s",
+                [agente_id]
+            )
+            eliminados['guardia_eliminados'] = cursor.rowcount
+            
+            # 6. LICENCIA: id_agente NO permite NULL -> DELETE
+            cursor.execute(
+                "DELETE FROM licencia WHERE id_agente = %s",
+                [agente_id]
+            )
+            eliminados['licencia_eliminados'] = cursor.rowcount
+            
+            # 7. PARTE_DIARIO: id_agente, creado_por, actualizado_por NO permiten NULL -> DELETE
+            cursor.execute(
+                "DELETE FROM parte_diario WHERE id_agente = %s OR creado_por = %s OR actualizado_por = %s",
+                [agente_id, agente_id, agente_id]
+            )
+            eliminados['parte_diario_eliminados'] = cursor.rowcount
+            
+            # 8. RESUMEN_GUARDIA_MES: id_agente NO permite NULL -> DELETE
+            cursor.execute(
+                "DELETE FROM resumen_guardia_mes WHERE id_agente = %s",
+                [agente_id]
+            )
+            eliminados['resumen_guardia_mes_eliminados'] = cursor.rowcount
+            
+            # 9. Finalmente, eliminar el AGENTE
+            cursor.execute(
+                "DELETE FROM agente WHERE id_agente = %s",
+                [agente_id]
+            )
+            eliminados['agente_eliminado'] = cursor.rowcount
+            
+    except Exception as e:
+        raise Exception(f"Error en eliminación en cascada: {str(e)}")
+    
+    return eliminados
+
+
+def crear_auditoria_agente(accion, agente_id, valor_previo=None, valor_nuevo=None, usuario_logueado_id=None):
+    """
+    Crear registro de auditoría para cambios en agentes.
+    """
+    try:
+        from django.utils import timezone
+        from django.core.serializers.json import DjangoJSONEncoder
+        import json
+        
+        # Convertir datos a JSON serializable
+        valor_previo_json = None
+        valor_nuevo_json = None
+        
+        if valor_previo:
+            valor_previo_json = json.loads(json.dumps(valor_previo, cls=DjangoJSONEncoder))
+        
+        if valor_nuevo:
+            valor_nuevo_json = json.loads(json.dumps(valor_nuevo, cls=DjangoJSONEncoder))
+        
+        Auditoria.objects.create(
+            pk_afectada=agente_id,
+            nombre_tabla='agente',
+            creado_en=timezone.now(),
+            valor_previo=valor_previo_json,
+            valor_nuevo=valor_nuevo_json,
+            accion=accion,
+            id_agente_id=usuario_logueado_id  # FK al agente que hizo el cambio
+        )
+    except Exception as e:
+        # No fallar si la auditoría falla, solo registrar
+        print(f"Error al crear auditoría: {str(e)}")
+
 
 def crear_auditoria_organigrama(accion, organigrama_id, valor_previo=None, valor_nuevo=None, agente_id=None):
     """

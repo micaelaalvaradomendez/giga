@@ -21,29 +21,36 @@
 		// Determinar el área del agente
 		let areaId = agente.area_id || null;
 		
-
-		
+		// Preservar datos de dirección existentes
 		formData = {
 			nombre: agente.nombre || '',
 			apellido: agente.apellido || '',
-			dni: agente.dni || '',
-			cuil: agente.cuil || '',
+			dni: agente.dni || '', // Solo lectura, no editable
+			cuil: agente.cuil || '', // Solo lectura, no editable
 			email: agente.email || '',
 			telefono: agente.telefono || '',
 			fecha_nacimiento: agente.fecha_nacimiento || '',
 			categoria_revista: agente.categoria_revista || '',
 			agrupacion: agente.agrupacion || '',
+			// Preservar dirección completa existente
 			calle: agente.calle || '',
 			numero: agente.numero || '',
 			ciudad: agente.ciudad || '',
 			provincia: agente.provincia || '',
+			// Horarios opcionales
 			horario_entrada: agente.horario_entrada || '',
 			horario_salida: agente.horario_salida || '',
 			area_id: areaId,
 			activo: agente.activo !== false
 		};
 		
-		console.log('🎯 FormData inicializado - area_id:', areaId, 'agente.area_id:', agente.area_id);
+		console.log('🎯 FormData inicializado - Dirección preservada:', {
+			calle: formData.calle,
+			numero: formData.numero,
+			ciudad: formData.ciudad,
+			provincia: formData.provincia,
+			area_id: areaId
+		});
 		initialized = true;
 		validateForm();
 	}
@@ -53,7 +60,6 @@
 		isFormValid = !!(
 			formData.nombre && 
 			formData.apellido && 
-			formData.dni && 
 			formData.email && 
 			formData.categoria_revista && 
 			formData.agrupacion
@@ -66,7 +72,7 @@
 		
 		switch (tab) {
 			case 'personal':
-				return !!(formData.nombre && formData.apellido && formData.dni && formData.email);
+				return !!(formData.nombre && formData.apellido && formData.email);
 			case 'laboral':
 				return !!(formData.categoria_revista && formData.agrupacion);
 			case 'direccion':
@@ -203,36 +209,7 @@
 								</div>
 							</div>
 
-							<div class="form-row">
-								<div class="form-group">
-									<label for="dni">DNI *</label>
-									<input 
-										type="text" 
-										id="dni" 
-										bind:value={formData.dni} 
-										on:input={handleInputChange}
-										required
-										pattern="[0-9]{7,8}"
-										placeholder="12345678"
-										maxlength="8"
-										disabled={isSaving}
-									/>
-									<small class="help-text">Documento Nacional de Identidad (7-8 dígitos, sin puntos)</small>
-								</div>
-								<div class="form-group">
-									<label for="cuil">CUIL</label>
-									<input 
-										type="text" 
-										id="cuil" 
-										bind:value={formData.cuil} 
-										pattern="[0-9]{11}"
-										placeholder="20123456789"
-										maxlength="11"
-										disabled={isSaving}
-									/>
-									<small class="help-text">Código Único de Identificación Laboral (11 dígitos, sin guiones)</small>
-								</div>
-							</div>
+
 
 							<div class="form-row">
 								<div class="form-group">
@@ -328,24 +305,24 @@
 
 							<div class="form-row">
 								<div class="form-group">
-									<label for="horario_entrada">Horario Entrada</label>
+									<label for="horario_entrada">Horario Entrada (Opcional)</label>
 									<input 
 										type="time" 
 										id="horario_entrada" 
 										bind:value={formData.horario_entrada} 
 										disabled={isSaving}
 									/>
-									<small class="help-text">Hora de entrada al trabajo</small>
+									<small class="help-text">Hora de entrada al trabajo (opcional)</small>
 								</div>
 								<div class="form-group">
-									<label for="horario_salida">Horario Salida</label>
+									<label for="horario_salida">Horario Salida (Opcional)</label>
 									<input 
 										type="time" 
 										id="horario_salida" 
 										bind:value={formData.horario_salida} 
 										disabled={isSaving}
 									/>
-									<small class="help-text">Hora de salida del trabajo</small>
+									<small class="help-text">Hora de salida del trabajo (opcional)</small>
 								</div>
 							</div>
 
@@ -615,6 +592,14 @@
 	input:disabled, select:disabled {
 		background-color: #e9ecef;
 		cursor: not-allowed;
+	}
+
+	.readonly-field {
+		background-color: #f8f9fa !important;
+		border: 1px solid #dee2e6 !important;
+		color: #6c757d !important;
+		cursor: not-allowed !important;
+		font-style: italic;
 	}
 
 	.checkbox-label {

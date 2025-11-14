@@ -17,23 +17,14 @@ export const personasService = {
 	async createAgenteConRol(agenteData) {
 		try {
 			console.log('Datos enviados a createAgente:', agenteData);
-			// Primero crear el agente
+			// El backend AgenteCreateUpdateSerializer ya maneja la asignación de rol
+			// cuando se envía rol_id, por lo que no necesitamos crear asignación separada
 			const response = await this.createAgente(agenteData);
 			console.log('Respuesta del agente creado:', response);
 			
-			if (response && response.usuario && agenteData.rol_id) {
-				// Luego asignar el rol usando el usuario_id del agente creado
-				const asignacionData = {
-					usuario: response.usuario,  // Usar el ID del usuario, no del agente
-					rol: agenteData.rol_id,
-					area: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', // ID por defecto del área: Secretaría de Protección Civil
-				};
-				
-				console.log('Datos de asignación:', asignacionData);
-				await this.createAsignacion(asignacionData);
-			}
-			
-			return response;
+			// Devolver la respuesta directamente - el rol ya está asignado automáticamente
+			const agenteData_response = response.data?.data || response.data;
+			return agenteData_response || response;
 		} catch (error) {
 			console.error('Error creando agente con rol:', error);
 			throw error;

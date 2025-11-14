@@ -65,15 +65,24 @@
                 new_password: formData.newPassword,
                 confirm_password: formData.confirmPassword
             };
+                // Obtener token CSRF desde cookie y enviarlo en header
+                function getCookie(name) {
+                    const value = `; ${document.cookie}`;
+                    const parts = value.split(`; ${name}=`);
+                    if (parts.length === 2) return parts.pop().split(';').shift();
+                    return null;
+                }
 
-            const response = await fetch('/api/personas/auth/change-password/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify(updateData)
-            });
+                const headers = { 'Content-Type': 'application/json' };
+                const csrf = getCookie('csrftoken');
+                if (csrf) headers['X-CSRFToken'] = csrf;
+
+                const response = await fetch('/api/personas/auth/change-password/', {
+                    method: 'POST',
+                    headers,
+                    credentials: 'include',
+                    body: JSON.stringify(updateData)
+                });
 
             const result = await response.json();
 
