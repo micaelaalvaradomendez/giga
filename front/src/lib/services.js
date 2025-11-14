@@ -101,12 +101,18 @@ export const guardiasService = {
   getCronograma: (id, token = null) => createApiClient(token).get(`/guardias/cronogramas/${id}/`),
   createCronograma: (data, token = null) => createApiClient(token).post('/guardias/cronogramas/', data),
   updateCronograma: (id, data, token = null) => createApiClient(token).put(`/guardias/cronogramas/${id}/`, data),
+  planificar: (data, token = null) => createApiClient(token).post('/guardias/cronogramas/planificar/', data),
+  aprobarCronograma: (id, token = null) => createApiClient(token).patch(`/guardias/cronogramas/${id}/aprobar/`),
+  publicarCronograma: (id, token = null) => createApiClient(token).patch(`/guardias/cronogramas/${id}/publicar/`),
+  crearGuardia: (data, token = null) => createApiClient(token).post('/guardias/cronogramas/crear_con_guardias/', data),
 
   // Guardias
   getGuardias: (token = null) => createApiClient(token).get('/guardias/guardias/'),
   getGuardia: (id, token = null) => createApiClient(token).get(`/guardias/guardias/${id}/`),
   createGuardia: (data, token = null) => createApiClient(token).post('/guardias/guardias/', data),
   updateGuardia: (id, data, token = null) => createApiClient(token).put(`/guardias/guardias/${id}/`, data),
+  getResumenGuardias: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?${params}`),
+  getGuardiasAgente: (agenteId, token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?agente=${agenteId}`),
 
   // Feriados
   getFeriados: (token = null) => createApiClient(token).get('/guardias/feriados/'),
@@ -114,6 +120,27 @@ export const guardiasService = {
   createFeriado: (data, token = null) => createApiClient(token).post('/guardias/feriados/', data),
   updateFeriado: (id, data, token = null) => createApiClient(token).put(`/guardias/feriados/${id}/`, data),
   deleteFeriado: (id, token = null) => createApiClient(token).delete(`/guardias/feriados/${id}/`),
+  verificarFeriado: (data, token = null) => createApiClient(token).post('/guardias/feriados/verificar_fecha/', data),
+  
+  // Reglas de Plus
+  getReglasPlus: (token = null) => createApiClient(token).get('/guardias/reglas-plus/'),
+  getReglaPlus: (id, token = null) => createApiClient(token).get(`/guardias/reglas-plus/${id}/`),
+  createReglaPlus: (data, token = null) => createApiClient(token).post('/guardias/reglas-plus/', data),
+  updateReglaPlus: (id, data, token = null) => createApiClient(token).put(`/guardias/reglas-plus/${id}/`, data),
+  deleteReglaPlus: (id, token = null) => createApiClient(token).delete(`/guardias/reglas-plus/${id}/`),
+  simularReglaPlus: (id, data, token = null) => createApiClient(token).post(`/guardias/reglas-plus/${id}/simular/`, data),
+  
+  // Parámetros de Área
+  getParametrosArea: (params = '', token = null) => createApiClient(token).get(`/guardias/parametros-area/?${params}`),
+  getParametroArea: (id, token = null) => createApiClient(token).get(`/guardias/parametros-area/${id}/`),
+  createParametroArea: (data, token = null) => createApiClient(token).post('/guardias/parametros-area/', data),
+  updateParametroArea: (id, data, token = null) => createApiClient(token).put(`/guardias/parametros-area/${id}/`, data),
+  
+  // Resúmenes Mensuales
+  getResumenesMensuales: (params = '', token = null) => createApiClient(token).get(`/guardias/resumen-mes/?${params}`),
+  getResumenMensual: (id, token = null) => createApiClient(token).get(`/guardias/resumen-mes/${id}/`),
+  calcularPlusMensual: (data, token = null) => createApiClient(token).post('/guardias/resumen-mes/calcular_mensual/', data),
+  aprobarLotePlus: (data, token = null) => createApiClient(token).patch('/guardias/resumen-mes/aprobar_lote/', data),
 };
 
 // SERVICIOS PARA CONVENIO IA - Conectado a N8N

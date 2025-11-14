@@ -222,6 +222,109 @@ class CronogramaViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-creado_en')
     
     @action(detail=False, methods=['post'])
+    def crear_con_guardias(self, request):
+        """Crea un cronograma con múltiples guardias y registra en auditoría"""
+        try:
+            data = request.data
+            
+            # Validar datos requeridos
+            required_fields = ['nombre', 'tipo', 'id_area', 'fecha', 'hora_inicio', 'hora_fin', 'agentes']
+            for field in required_fields:
+                if field not in data:
+                    return Response(
+                        {'error': f'Campo requerido: {field}'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Validar que haya agentes
+            if not data['agentes'] or len(data['agentes']) == 0:
+                return Response(
+                    {'error': 'Debe seleccionar al menos un agente'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Obtener el agente del usuario autenticado
+            agente_id = None
+            if hasattr(request.user, 'agente'):
+                agente_id = request.user.agente.id
+            
+            # Crear el cronograma
+            cronograma = Cronograma.objects.create(
+                id_area_id=data['id_area'],
+                id_jefe_id=agente_id,  # El jefe es quien crea
+                tipo=data['tipo'],
+                hora_inicio=data['hora_inicio'],
+                hora_fin=data['hora_fin'],
+                estado='generada'
+            )
+            
+            # Registrar auditoría del cronograma
+            Auditoria.objects.create(
+                pk_afectada=cronograma.id_cronograma,
+                nombre_tabla='cronograma',
+                creado_en=timezone.now(),
+                valor_previo=None,
+                valor_nuevo={
+                    'nombre': data['nombre'],
+                    'tipo': data['tipo'],
+                    'id_area': data['id_area'],
+                    'hora_inicio': data['hora_inicio'],
+                    'hora_fin': data['hora_fin'],
+                    'observaciones': data.get('observaciones', '')
+                },
+                accion='CREAR',
+                id_agente_id=agente_id
+            )
+            
+            # Crear las guardias para cada agente
+            guardias_creadas = []
+            for agente_data in data['agentes']:
+                guardia = Guardia.objects.create(
+                    id_cronograma=cronograma,
+                    id_agente_id=agente_data['id_agente'],
+                    fecha=data['fecha'],
+                    hora_inicio=data['hora_inicio'],
+                    hora_fin=data['hora_fin'],
+                    tipo=data['tipo'],
+                    estado='planificada',
+                    activa=True,
+                    observaciones=data.get('observaciones', '')
+                )
+                guardias_creadas.append(guardia)
+                
+                # Registrar auditoría de cada guardia
+                Auditoria.objects.create(
+                    pk_afectada=guardia.id_guardia,
+                    nombre_tabla='guardia',
+                    creado_en=timezone.now(),
+                    valor_previo=None,
+                    valor_nuevo={
+                        'id_cronograma': cronograma.id_cronograma,
+                        'id_agente': agente_data['id_agente'],
+                        'fecha': data['fecha'],
+                        'hora_inicio': data['hora_inicio'],
+                        'hora_fin': data['hora_fin'],
+                        'tipo': data['tipo'],
+                        'estado': 'planificada'
+                    },
+                    accion='CREAR',
+                    id_agente_id=agente_id
+                )
+            
+            return Response({
+                'mensaje': 'Guardia creada exitosamente',
+                'cronograma_id': cronograma.id_cronograma,
+                'guardias_creadas': len(guardias_creadas)
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error al crear guardia con cronograma: {str(e)}")
+            return Response(
+                {'error': f'Error al crear guardia: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['post'])
     def planificar(self, request):
         """Planificación automática de guardias"""
         serializer = PlanificacionCronogramaSerializer(data=request.data)

@@ -203,13 +203,19 @@
 
     .card-wrapper {
         background-image: linear-gradient(163deg, #8eb6e4 0%, #3d97ff 90%);
-        border-radius: 20px;
+        border-radius: 24px;
         transition: all 0.3s;
         padding: 0;
+        box-shadow: 
+            0 8px 32px rgba(64, 123, 255, 0.25),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3);
     }
 
     .card-wrapper:hover {
-        box-shadow: 0px 0px 30px 1px rgba(55, 101, 138, 0.3);
+        box-shadow: 
+            0 12px 48px rgba(64, 123, 255, 0.35),
+            0 0 24px rgba(64, 123, 255, 0.15),
+            inset 0 1px 2px rgba(255, 255, 255, 0.4);
     }
 
     .container {
@@ -221,7 +227,7 @@
             rgb(255, 255, 255) 0%,
             rgb(255, 255, 255) 80%
         );
-        border-radius: 22px;
+        border-radius: 20px;
         padding: 25px 35px;
         transition: all 0.2s;
         margin: 3px;
@@ -249,9 +255,11 @@
         background: white;
         border: 2px solid #a2b8e7;
         padding: 15px 20px;
-        border-radius: 20px;
+        border-radius: 16px;
         margin-top: 15px;
-        box-shadow: #cff0ff 0px 10px 10px -5px;
+        box-shadow: 
+            0 4px 16px rgba(64, 123, 255, 0.12),
+            inset 0 1px 2px rgba(255, 255, 255, 0.8);
     }
 
     .form .input::placeholder {
@@ -450,10 +458,13 @@
         background: #ff4444;
         color: white;
         padding: 0.7rem;
-        border-radius: 20px;
+        border-radius: 16px;
         text-align: center;
         font-size: 15px;
         margin-top: 0.5rem;
+        box-shadow: 
+            0 4px 16px rgba(255, 68, 68, 0.25),
+            inset 0 1px 2px rgba(255, 255, 255, 0.2);
     }
 
     @keyframes keyframes-fill {
