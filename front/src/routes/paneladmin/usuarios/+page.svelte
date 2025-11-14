@@ -610,13 +610,13 @@
 		font-size: 1rem;
 		font-weight: 500;
 		cursor: pointer;
-		transition: all 0.2s ease;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		transition: all 0.3s ease;
+		box-shadow: 0 2px 4px rgba(237, 160, 93, 0.756);
 	}
 
 	.btn-primary:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+		box-shadow: 0 4px 8px rgba(237, 160, 93, 0.756);
 	}
 
 	.table-container {
