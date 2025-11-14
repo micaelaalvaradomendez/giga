@@ -1,6 +1,6 @@
 <script>
-    import { createEventDispatcher, onMount } from 'svelte';
-    import AuthService from '../login/authService.js';
+    import { createEventDispatcher, onMount } from "svelte";
+    import AuthService from "../login/authService.js";
 
     const dispatch = createEventDispatcher();
 
@@ -10,41 +10,43 @@
 
     // Estado del formulario
     let formData = {
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
     };
 
     let errors = {};
     let loading = false;
-    let successMessage = '';
+    let successMessage = "";
 
     function validateForm() {
         errors = {};
 
         // Validar contraseña actual
         if (!formData.currentPassword) {
-            errors.currentPassword = 'La contraseña actual es requerida';
+            errors.currentPassword = "La contraseña actual es requerida";
         }
 
         // Validar nueva contraseña
         if (!formData.newPassword) {
-            errors.newPassword = 'La nueva contraseña es requerida';
+            errors.newPassword = "La nueva contraseña es requerida";
         } else if (formData.newPassword.length < 6) {
-            errors.newPassword = 'La contraseña debe tener al menos 6 caracteres';
+            errors.newPassword =
+                "La contraseña debe tener al menos 6 caracteres";
         }
 
         // Verificar que la nueva contraseña no sea igual al DNI
         if (user && user.cuil && formData.newPassword) {
             const dni = user.cuil.slice(2, 10); // Extraer DNI del CUIL
             if (formData.newPassword === dni) {
-                errors.newPassword = 'La nueva contraseña no puede ser igual a tu DNI';
+                errors.newPassword =
+                    "La nueva contraseña no puede ser igual a tu DNI";
             }
         }
 
         // Confirmar contraseña
         if (formData.newPassword !== formData.confirmPassword) {
-            errors.confirmPassword = 'Las contraseñas no coinciden';
+            errors.confirmPassword = "Las contraseñas no coinciden";
         }
 
         return Object.keys(errors).length === 0;
@@ -57,50 +59,55 @@
 
         loading = true;
         errors = {};
-        successMessage = '';
+        successMessage = "";
 
         try {
             const updateData = {
                 current_password: formData.currentPassword,
                 new_password: formData.newPassword,
-                confirm_password: formData.confirmPassword
+                confirm_password: formData.confirmPassword,
             };
 
-            const response = await fetch('/api/personas/auth/change-password/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+            const response = await fetch(
+                "/api/personas/auth/change-password/",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    credentials: "include",
+                    body: JSON.stringify(updateData),
                 },
-                credentials: 'include',
-                body: JSON.stringify(updateData)
-            });
+            );
 
             const result = await response.json();
 
             if (result.success) {
-                successMessage = 'Contraseña actualizada exitosamente. Cerrando sesión...';
-                
+                successMessage =
+                    "Contraseña actualizada exitosamente. Cerrando sesión...";
+
                 // Marcar que ya no requiere cambio de contraseña
-                if (typeof localStorage !== 'undefined') {
-                    localStorage.setItem('requires_password_change', 'false');
+                if (typeof localStorage !== "undefined") {
+                    localStorage.setItem("requires_password_change", "false");
                 }
-                
+
                 // Cerrar sesión después de 3 segundos
                 setTimeout(async () => {
                     try {
                         await AuthService.logout();
-                        window.location.href = '/';
+                        window.location.href = "/";
                     } catch (error) {
-                        console.error('Error al cerrar sesión:', error);
-                        window.location.href = '/';
+                        console.error("Error al cerrar sesión:", error);
+                        window.location.href = "/";
                     }
                 }, 3000);
             } else {
-                errors.general = result.message || 'Error al actualizar la contraseña';
+                errors.general =
+                    result.message || "Error al actualizar la contraseña";
             }
         } catch (error) {
-            console.error('Error al actualizar contraseña:', error);
-            errors.general = 'Error de conexión. Intente nuevamente.';
+            console.error("Error al actualizar contraseña:", error);
+            errors.general = "Error de conexión. Intente nuevamente.";
         } finally {
             loading = false;
         }
@@ -109,7 +116,7 @@
     // No permitir cerrar hasta cambiar la contraseña
     function handleKeydown(event) {
         // Bloquear escape
-        if (event.key === 'Escape') {
+        if (event.key === "Escape") {
             event.preventDefault();
         }
     }
@@ -125,7 +132,8 @@
             <div class="modal-header">
                 <h2>Cambio de Contraseña Obligatorio</h2>
                 <p class="warning-text">
-                    Por razones de seguridad, debes cambiar tu contraseña actual antes de continuar.
+                    Por razones de seguridad, debes cambiar tu contraseña actual
+                    antes de continuar.
                 </p>
             </div>
 
@@ -138,7 +146,9 @@
                     <form on:submit|preventDefault={handleSubmit}>
                         <!-- Contraseña actual -->
                         <div class="form-group">
-                            <label for="currentPassword">Contraseña actual:</label>
+                            <label for="currentPassword"
+                                >Contraseña actual:</label
+                            >
                             <input
                                 type="password"
                                 id="currentPassword"
@@ -149,7 +159,9 @@
                                 placeholder="Tu contraseña actual"
                             />
                             {#if errors.currentPassword}
-                                <span class="error-text">{errors.currentPassword}</span>
+                                <span class="error-text"
+                                    >{errors.currentPassword}</span
+                                >
                             {/if}
                         </div>
 
@@ -166,13 +178,17 @@
                                 placeholder="Mínimo 6 caracteres"
                             />
                             {#if errors.newPassword}
-                                <span class="error-text">{errors.newPassword}</span>
+                                <span class="error-text"
+                                    >{errors.newPassword}</span
+                                >
                             {/if}
                         </div>
 
                         <!-- Confirmar nueva contraseña -->
                         <div class="form-group">
-                            <label for="confirmPassword">Confirmar nueva contraseña:</label>
+                            <label for="confirmPassword"
+                                >Confirmar nueva contraseña:</label
+                            >
                             <input
                                 type="password"
                                 id="confirmPassword"
@@ -183,7 +199,9 @@
                                 placeholder="Repite la nueva contraseña"
                             />
                             {#if errors.confirmPassword}
-                                <span class="error-text">{errors.confirmPassword}</span>
+                                <span class="error-text"
+                                    >{errors.confirmPassword}</span
+                                >
                             {/if}
                         </div>
 
@@ -207,12 +225,14 @@
 
                         <!-- Botón de envío -->
                         <div class="modal-actions">
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 class="submit-button"
                                 disabled={loading}
                             >
-                                {loading ? 'Cambiando...' : 'Cambiar Contraseña'}
+                                {loading
+                                    ? "Cambiando..."
+                                    : "Cambiar Contraseña"}
                             </button>
                         </div>
                     </form>
@@ -235,6 +255,7 @@
         align-items: center;
         z-index: 9999;
         backdrop-filter: blur(5px);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
 
     .mandatory-modal {
@@ -256,20 +277,19 @@
         border-radius: 12px 12px 0 0;
     }
 
-    .warning-icon {
-        font-size: 3rem;
-        margin-bottom: 15px;
-        animation: pulse 2s infinite;
-    }
-
     @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
+        0%,
+        100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
     }
 
     .modal-header h2 {
         margin: 0 0 10px 0;
-        font-size: 1.8rem;
+        font-size: 28px;
         font-weight: 700;
     }
 

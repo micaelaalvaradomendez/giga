@@ -27,18 +27,15 @@
 </script>
 
 <svelte:head>
-	<title>Convenio con IA - Sistema GIGA</title>
+	<title>Consultas al Convenio Colectivo de Trabajo - Sistema GIGA</title>
 </svelte:head>
 
 <div class="page">
 	<section class="hero">
 		<div class="hero-inner">
 			<div>
-				<h1>Convenio con IA</h1>
-				<p>
-					Respuestas estrictamente desde el convenio cargado. Sin
-					consultas externas.
-				</p>
+				<h1>Consultas al Convenio Colectivo de Trabajo</h1>
+				<p>Respuestas estrictamente desde el convenio vigente.</p>
 			</div>
 		</div>
 	</section>
@@ -51,7 +48,7 @@
 					class="textarea"
 					rows="5"
 					bind:value={pregunta}
-					placeholder="Inserte su pregunta acerca del convenio de trabajo:"
+					placeholder="Realice una pregunta acerca del convenio de trabajo:"
 					on:keydown={(e) =>
 						(e.ctrlKey || e.metaKey) &&
 						e.key === "Enter" &&

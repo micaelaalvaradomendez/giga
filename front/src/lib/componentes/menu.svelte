@@ -305,7 +305,7 @@
                 >
                     <span class="menu-item-icon">🧠</span>
                     <div class="menu-item-text">
-                        <div class="menu-item-title">Consultar Convenio</div>
+                        <div class="menu-item-title">Consultar CCT</div>
                     </div>
                 </a>
             </div>
@@ -382,6 +382,7 @@
         align-items: center;
         gap: 10px;
         z-index: 10000;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
 
     .sidebar-tab.active {

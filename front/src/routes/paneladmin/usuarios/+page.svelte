@@ -135,36 +135,6 @@
 	</button>
 </div>
 
-<!-- Resumen de estadísticas -->
-{#if $agentesFiltrados && $agentesFiltrados.length > 0}
-	<div class="stats-container">
-		<div class="stat-card">
-			<h3>Total Mostrados</h3>
-			<p class="stat-number">{$estadisticas.total}</p>
-		</div>
-		<div class="stat-card">
-			<h3>EPU</h3>
-			<p class="stat-number">{$estadisticas.epu}</p>
-		</div>
-		<div class="stat-card">
-			<h3>POMyS</h3>
-			<p class="stat-number">{$estadisticas.pomys}</p>
-		</div>
-		<div class="stat-card">
-			<h3>PAyT</h3>
-			<p class="stat-number">{$estadisticas.payt}</p>
-		</div>
-		<div class="stat-card">
-			<h3>Con Roles</h3>
-			<p class="stat-number">{$estadisticas.conRoles}</p>
-		</div>
-		<div class="stat-card">
-			<h3>Administradores</h3>
-			<p class="stat-number">{$estadisticas.administradores}</p>
-		</div>
-	</div>
-{/if}
-
 <!-- Controles de filtrado -->
 <div class="filtros-container">
 	<div class="filtros-row">
@@ -240,20 +210,6 @@
 							{/if}
 						</td>
 						<td>{agente.dni}</td>
-						<td>
-							{#if agente.roles && agente.roles.length > 0}
-								<span class="badge badge-role"
-									>{agente.roles[0].nombre}</span
-								>
-								{#if agente.roles.length > 1}
-									<span class="badge badge-secondary"
-										>+{agente.roles.length - 1}</span
-									>
-								{/if}
-							{:else}
-								<span class="badge badge-sin-rol">Sin rol</span>
-							{/if}
-						</td>
 						<td>{agente.categoria_revista || "N/A"}</td>
 						<td>
 							{#if agente.area_nombre}
@@ -269,6 +225,20 @@
 								<span class="badge badge-sin-area"
 									>Sin área</span
 								>
+							{/if}
+						</td>
+						<td>
+							{#if agente.roles && agente.roles.length > 0}
+								<span class="badge badge-role"
+									>{agente.roles[0].nombre}</span
+								>
+								{#if agente.roles.length > 1}
+									<span class="badge badge-secondary"
+										>+{agente.roles.length - 1}</span
+									>
+								{/if}
+							{:else}
+								<span class="badge badge-sin-rol">Sin rol</span>
 							{/if}
 						</td>
 						<td class="actions">
@@ -566,39 +536,6 @@
 
 	.btn-link:hover {
 		color: #d68a3b;
-	}
-
-	/* Estilos para estadísticas */
-	.stats-container {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-		gap: 1rem;
-		margin-bottom: 2rem;
-	}
-
-	.stat-card {
-		background: white;
-		border: 1px solid #e9ecef;
-		border-radius: 8px;
-		padding: 1rem;
-		text-align: center;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	}
-
-	.stat-card h3 {
-		margin: 0 0 0.5rem 0;
-		font-size: 0.875rem;
-		color: #6c757d;
-		font-weight: 500;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-
-	.stat-number {
-		margin: 0;
-		font-size: 1.75rem;
-		font-weight: 700;
-		color: #e79043;
 	}
 
 	.btn-primary {
