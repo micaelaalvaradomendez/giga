@@ -112,6 +112,7 @@ export const guardiasService = {
   createGuardia: (data, token = null) => createApiClient(token).post('/guardias/guardias/', data),
   updateGuardia: (id, data, token = null) => createApiClient(token).put(`/guardias/guardias/${id}/`, data),
   getResumenGuardias: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?${params}`),
+  getGuardiasAgente: (agenteId, token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?agente=${agenteId}`),
 
   // Feriados
   getFeriados: (token = null) => createApiClient(token).get('/guardias/feriados/'),

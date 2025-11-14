@@ -5,12 +5,15 @@
     import EditarPerfil from "../../lib/componentes/EditarPerfil.svelte";
     import CambioContrasenaObligatorio from "../../lib/componentes/CambioContrasenaObligatorio.svelte";
     import CalendarioBase from "../../lib/componentes/calendarioBase.svelte";
+    import { guardiasService } from "../../lib/services.js";
 
     let user = null;
     let isLoading = true;
     let errorMessage = "";
     let showEditProfile = false;
     let showMandatoryPasswordChange = false;
+    let guardias = [];
+    let loadingGuardias = false;
 
     onMount(async () => {
         // Verificar si el usuario está autenticado
@@ -27,6 +30,9 @@
                 ) {
                     showMandatoryPasswordChange = true;
                 }
+
+                // Cargar las guardias del agente
+                await cargarGuardias();
             } else {
                 // Si no está autenticado, redirigir al login
                 goto("/");
@@ -75,6 +81,36 @@
     function handleUserUpdated(event) {
         // Actualizar la información del usuario en la interfaz
         user = { ...user, ...event.detail };
+    }
+
+    async function cargarGuardias() {
+        if (!user || !user.agente_id) return;
+        
+        try {
+            loadingGuardias = true;
+            const response = await guardiasService.getGuardiasAgente(user.agente_id);
+            guardias = response.data?.guardias || [];
+            console.log('Guardias del agente:', guardias);
+        } catch (error) {
+            console.error('Error cargando guardias:', error);
+        } finally {
+            loadingGuardias = false;
+        }
+    }
+
+    function formatearFecha(fecha) {
+        if (!fecha) return '';
+        const d = new Date(fecha);
+        return d.toLocaleDateString('es-AR', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric' 
+        });
+    }
+
+    function formatearHora(hora) {
+        if (!hora) return '';
+        return hora.slice(0, 5); // HH:MM
     }
 </script>
 
@@ -139,6 +175,46 @@
             </button>
         </div>
     </div>
+
+    <!-- Sección de Guardias -->
+    <div class="guardias-container">
+        <h2>Mis Guardias</h2>
+        {#if loadingGuardias}
+            <div class="loading-guardias">
+                <div class="loading-spinner"></div>
+                <p>Cargando guardias...</p>
+            </div>
+        {:else if guardias.length === 0}
+            <div class="no-guardias">
+                <p>📋 No tenés guardias asignadas actualmente</p>
+            </div>
+        {:else}
+            <div class="guardias-lista">
+                {#each guardias as guardia}
+                    <div class="guardia-card">
+                        <div class="guardia-header">
+                            <span class="guardia-tipo tipo-{guardia.tipo}">{guardia.tipo || 'Regular'}</span>
+                            <span class="guardia-estado estado-{guardia.estado}">{guardia.estado || 'Planificada'}</span>
+                        </div>
+                        <div class="guardia-body">
+                            <div class="guardia-info">
+                                <strong>📅 Fecha:</strong> {formatearFecha(guardia.fecha)}
+                            </div>
+                            <div class="guardia-info">
+                                <strong>🕒 Horario:</strong> {formatearHora(guardia.hora_inicio)} - {formatearHora(guardia.hora_fin)}
+                            </div>
+                            {#if guardia.observaciones}
+                                <div class="guardia-observaciones">
+                                    <strong>📝 Observaciones:</strong> {guardia.observaciones}
+                                </div>
+                            {/if}
+                        </div>
+                    </div>
+                {/each}
+            </div>
+        {/if}
+    </div>
+
     <div>
         <CalendarioBase />
     </div>
@@ -267,5 +343,167 @@
     .error-container {
         text-align: center;
         padding: 2rem;
+    }
+
+    /* Estilos para la sección de guardias */
+    .guardias-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .guardias-container h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        border-bottom: 3px solid #e79043;
+        padding-bottom: 0.75rem;
+    }
+
+    .loading-guardias {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+    }
+
+    .no-guardias {
+        text-align: center;
+        padding: 3rem 1rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+        color: #666;
+    }
+
+    .no-guardias p {
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    .guardias-lista {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .guardia-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .guardia-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .guardia-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .guardia-tipo,
+    .guardia-estado {
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .guardia-tipo {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+
+    .guardia-estado {
+        background: rgba(255, 255, 255, 0.9);
+        color: #333;
+    }
+
+    .estado-planificada {
+        background: #fff3cd !important;
+        color: #856404 !important;
+    }
+
+    .estado-confirmada {
+        background: #d1ecf1 !important;
+        color: #0c5460 !important;
+    }
+
+    .estado-completada {
+        background: #d4edda !important;
+        color: #155724 !important;
+    }
+
+    .tipo-regular {
+        background: rgba(59, 130, 246, 0.2) !important;
+    }
+
+    .tipo-especial {
+        background: rgba(249, 115, 22, 0.2) !important;
+    }
+
+    .tipo-feriado {
+        background: rgba(220, 38, 38, 0.2) !important;
+    }
+
+    .tipo-emergencia {
+        background: rgba(239, 68, 68, 0.2) !important;
+    }
+
+    .guardia-body {
+        padding: 1.25rem;
+    }
+
+    .guardia-info {
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+        color: #333;
+    }
+
+    .guardia-info strong {
+        color: #555;
+        margin-right: 0.5rem;
+    }
+
+    .guardia-observaciones {
+        margin-top: 1rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #dee2e6;
+        font-size: 0.9rem;
+        color: #666;
+        font-style: italic;
+    }
+
+    .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #e79043;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .guardias-lista {
+            grid-template-columns: 1fr;
+        }
     }
 </style>

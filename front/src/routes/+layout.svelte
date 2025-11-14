@@ -2,7 +2,6 @@
 	import Navbar from "$lib/componentes/navbar.svelte";
 	import Footer from "$lib/componentes/footer.svelte";
 	import Menu from "$lib/componentes/menu.svelte";
-	import "$lib/componentes/componentes.css";
 	import { onMount } from "svelte";
 	import { AuthService } from "$lib/login/authService.js";
 	let isMenuOpen = false;
