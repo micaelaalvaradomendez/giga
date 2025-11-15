@@ -59,10 +59,101 @@
 		CREAR: "Alta de registro",
 		MODIFICAR: "Modificación",
 		ELIMINAR: "Registro eliminado",
+		ACTUALIZAR: "Modificación",
 		create: "Alta de registro",
 		update: "Modificación",
 		delete: "Registro eliminado",
+		CAMBIO_ROL_ATOMICO: "Cambio de rol",
+		CAMBIO_PASSWORD_EXITOSO: "Cambio de contraseña",
+		LOGIN_EXITOSO: "Inicio de sesión",
+		LOGIN_FALLIDO: "Intento de inicio de sesión fallido",
+		LOGOUT: "Cierre de sesión",
 	};
+
+	// Función para formatear la fecha 
+	function formatearFecha(fecha) {
+		return new Date(fecha).toLocaleString("es-AR", {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		});
+	}
+
+	// Función para obtener solo las diferencias entre dos objetos
+	function obtenerDiferencias(previo, nuevo) {
+		if (typeof previo !== 'object' || typeof nuevo !== 'object' || previo === null || nuevo === null) {
+			return { previo, nuevo };
+		}
+
+		const diffPrevio = {};
+		const diffNuevo = {};
+		const allKeys = new Set([...Object.keys(previo), ...Object.keys(nuevo)]);
+
+		allKeys.forEach(key => {
+			const valorPrevio = JSON.stringify(previo[key]);
+			const valorNuevo = JSON.stringify(nuevo[key]);
+
+			if (valorPrevio !== valorNuevo) {
+				// Formatea la clave para que sea legible
+				const claveFormateada = key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+
+				// Asigna los valores diferentes
+				diffPrevio[claveFormateada] = previo[key] ?? 'N/A';
+				diffNuevo[claveFormateada] = nuevo[key] ?? 'N/A';
+			}
+		});
+
+		// Si no hay diferencias, devuelve los objetos originales para el formateo estándar
+		if (Object.keys(diffPrevio).length === 0) {
+			return { previo, nuevo };
+		}
+
+		return { previo: diffPrevio, nuevo: diffNuevo };
+	}
+
+	// Función para formatear valores JSON
+	function formatearValor(valor, accion) {
+		if (typeof valor !== "object" || valor === null) {
+			return valor || "";
+		}
+
+		// Formato especial para la acción de cambio de rol
+		if (accion === 'CAMBIO_ROL_ATOMICO') {
+			const agente = valor.agente || '';
+			
+			// Formato para el valor NUEVO
+			if (valor.nuevo_rol) {
+				return `Agente: ${agente}\nNuevo Rol: ${valor.nuevo_rol}`;
+			}
+
+			// Formato para el valor PREVIO
+			if (valor.roles_previos && valor.roles_previos.length > 0) {
+				const rolesNombres = valor.roles_previos.map(r => r.rol_nombre).join(', ');
+				return `Agente: ${agente}\nRoles Previos: ${rolesNombres}`;
+			}
+
+			return `Agente: ${agente}\nRoles Previos: Ninguno`;
+		}
+
+		// Formato genérico para otros objetos
+		const textoLimpio = Object.entries(valor)
+			.map(([clave, valorItem]) => {
+				if (valorItem === null || valorItem === undefined) return null; // Omitir nulos
+				
+				// La clave ya viene formateada desde obtenerDiferencias
+				if (typeof valorItem === 'object' && !Array.isArray(valorItem)) {
+					const subItems = Object.entries(valorItem).map(([subKey, subValue]) => `${subKey}: ${subValue}`).join(', ');
+					return `${clave}: { ${subItems} }`;
+				}
+				return `${clave}: ${valorItem}`;
+			}).filter(Boolean); // Eliminar los nulos
+
+		return textoLimpio.join("\n");
+	}
+	
 </script>
 
 <div class="admin-page-container">
@@ -163,26 +254,20 @@
 							<td
 								class="px-5 py-4 border-b border-gray-200 bg-white text-sm"
 							>
-								{auditoriaController.formatearFecha(
-									registro.creado_en,
-								)}
+								{formatearFecha(registro.creado_en)}
 							</td>
 							<td
 								class="px-5 py-4 border-b border-gray-200 bg-white text-sm"
 							>
 								{registro.creado_por_nombre || "Sistema"}
 							</td>
-							<td
-								class="px-5 py-4 border-b border-gray-200 bg-white text-sm"
-							>
+							<td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
 								<span
-									class="px-2 py-1 font-semibold leading-tight rounded-full text-xs {auditoriaController.getBadgeColor(
-										registro.accion,
-									)}"
+									class="px-2 py-1 font-semibold leading-tight rounded-full text-xs {badgeColors[
+										registro.accion
+									] || 'bg-gray-400 text-white'}"
 								>
-									{auditoriaController.traducirAccion(
-										registro.accion,
-									)}
+									{traduccionAccion[registro.accion] || registro.accion}
 								</span>
 							</td>
 							<td
@@ -193,16 +278,20 @@
 							<td
 								class="px-5 py-4 border-b border-gray-200 bg-white text-sm font-mono text-gray-600 whitespace-pre-wrap break-all"
 							>
-								{auditoriaController.formatearValor(
-									registro.valor_previo,
-								)}
+								{#if registro.accion === 'ACTUALIZAR'}
+									{formatearValor(obtenerDiferencias(registro.valor_previo, registro.valor_nuevo).previo, registro.accion)}
+								{:else}
+									{formatearValor(registro.valor_previo, registro.accion)}
+								{/if}
 							</td>
 							<td
 								class="px-5 py-4 border-b border-gray-200 bg-white text-sm font-mono text-gray-800 whitespace-pre-wrap break-all"
 							>
-								{auditoriaController.formatearValor(
-									registro.valor_nuevo,
-								)}
+								{#if registro.accion === 'ACTUALIZAR'}
+									{formatearValor(obtenerDiferencias(registro.valor_previo, registro.valor_nuevo).nuevo, registro.accion)}
+								{:else}
+									{formatearValor(registro.valor_nuevo, registro.accion)}
+								{/if}
 							</td>
 						</tr>
 					{/each}
