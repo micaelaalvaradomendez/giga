@@ -4,12 +4,15 @@
     import AuthService from "../../lib/login/authService.js";
     import CalendarioBase from "../../lib/componentes/calendarioBase.svelte";
     import CambioContrasenaObligatorio from "../../lib/componentes/CambioContrasenaObligatorio.svelte";
+    import { guardiasService } from "../../lib/services.js";
 
     let user = null;
     let isLoading = true;
     let errorMessage = "";
     let showEditProfile = false;
     let showMandatoryPasswordChange = false;
+    let feriados = [];
+    let loadingFeriados = false;
 
     onMount(async () => {
         // Verificar si el usuario está autenticado
@@ -26,6 +29,9 @@
                 ) {
                     showMandatoryPasswordChange = true;
                 }
+
+                // Cargar feriados para el calendario
+                await cargarFeriados();
             } else {
                 // Si no está autenticado, redirigir al login
                 goto("/");
@@ -49,6 +55,20 @@
             console.error("Error durante logout:", error);
             // Aun con error, intentar ir al login
             goto("/");
+        }
+    }
+
+    async function cargarFeriados() {
+        try {
+            loadingFeriados = true;
+            const response = await guardiasService.getFeriados();
+            feriados = response.data?.results || response.data || [];
+            console.log('Feriados cargados en inicio:', feriados);
+        } catch (error) {
+            console.error('Error cargando feriados:', error);
+            feriados = []; // En caso de error, asegurar que sea un array vacío
+        } finally {
+            loadingFeriados = false;
         }
     }
 
@@ -199,7 +219,11 @@
                 </div>
             </div>
             <div class="right-panel">
-                <CalendarioBase />
+                {#if loadingFeriados}
+                    <div class="loading">Cargando feriados...</div>
+                {:else}
+                    <CalendarioBase {feriados} />
+                {/if}
             </div>
         </div>
     </div>

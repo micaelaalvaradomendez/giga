@@ -514,6 +514,171 @@ def delete_asignacion(request, asignacion_id):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def cambiar_rol_agente(request):
+    """
+    Cambia el rol de un agente eliminando todos los roles previos y asignando uno nuevo.
+    Operación atómica para garantizar un solo rol por agente.
+    """
+    try:
+        with transaction.atomic():
+            agente_id = request.data.get('agente_id')
+            nuevo_rol_id = request.data.get('rol_id')  # Puede ser None para "sin rol"
+            
+            if not agente_id:
+                return Response({
+                    'success': False,
+                    'message': 'ID del agente es requerido'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Verificar que el agente existe
+            agente = get_object_or_404(Agente, id_agente=agente_id)
+            
+            # Obtener roles actuales para auditoría
+            roles_actuales = AgenteRol.objects.filter(id_agente=agente_id)
+            roles_previos = []
+            
+            for rol_actual in roles_actuales:
+                roles_previos.append({
+                    'rol_id': rol_actual.id_rol.id_rol,
+                    'rol_nombre': rol_actual.id_rol.nombre,
+                    'asignacion_id': rol_actual.id_agente_rol
+                })
+            
+            # PASO 1: Eliminar TODOS los roles actuales del agente
+            count_eliminados = roles_actuales.delete()[0]
+            
+            # PASO 2: Si se especifica un nuevo rol, asignarlo
+            nueva_asignacion = None
+            if nuevo_rol_id and str(nuevo_rol_id).strip():
+                nuevo_rol = get_object_or_404(Rol, id_rol=nuevo_rol_id)
+                nueva_asignacion = AgenteRol.objects.create(
+                    id_agente=agente,
+                    id_rol=nuevo_rol
+                )
+            
+            # PASO 3: Crear auditoría del cambio
+            valor_previo = {
+                'agente': f"{agente.nombre} {agente.apellido}",
+                'roles_previos': roles_previos,
+                'cantidad_eliminados': count_eliminados
+            } if roles_previos else None
+            
+            valor_nuevo = {
+                'agente': f"{agente.nombre} {agente.apellido}",
+                'nuevo_rol': nuevo_rol.nombre if nueva_asignacion else None,
+                'asignacion_id': nueva_asignacion.id_agente_rol if nueva_asignacion else None
+            }
+            
+            crear_auditoria_rol(
+                accion='CAMBIO_ROL_ATOMICO',
+                agente_id=agente.id_agente,
+                rol_id=nuevo_rol_id,
+                valor_previo=valor_previo,
+                valor_nuevo=valor_nuevo,
+                usuario_logueado_id=None  # TODO: Obtener del usuario autenticado
+            )
+            
+            return Response({
+                'success': True,
+                'message': f'Rol actualizado correctamente. Eliminados: {count_eliminados} roles previos.',
+                'data': {
+                    'agente_id': agente.id_agente,
+                    'roles_eliminados': count_eliminados,
+                    'nuevo_rol': nuevo_rol.nombre if nueva_asignacion else None,
+                    'asignacion_id': nueva_asignacion.id_agente_rol if nueva_asignacion else None
+                }
+            }, status=status.HTTP_200_OK)
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al cambiar rol: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def limpiar_roles_duplicados(request):
+    """
+    Limpia roles duplicados dejando solo el más reciente por agente.
+    """
+    try:
+        from django.db.models import Count
+        
+        # Encontrar agentes con múltiples roles
+        agentes_multiples = AgenteRol.objects.values('id_agente').annotate(
+            count=Count('id_agente')
+        ).filter(count__gt=1)
+        
+        resultados = {
+            'agentes_procesados': 0,
+            'roles_eliminados': 0,
+            'detalles': []
+        }
+        
+        for agente_data in agentes_multiples:
+            agente_id = agente_data['id_agente']
+            count = agente_data['count']
+            
+            try:
+                # Obtener información del agente
+                agente = Agente.objects.get(id_agente=agente_id)
+                
+                # Obtener todos los roles de este agente ordenados por ID
+                roles = AgenteRol.objects.filter(id_agente=agente_id).order_by('id_agente_rol')
+                
+                # Mantener solo el último rol (más reciente)
+                ultimo_rol = roles.last()
+                roles_a_eliminar = roles.exclude(id_agente_rol=ultimo_rol.id_agente_rol)
+                
+                detalle = {
+                    'agente_id': agente_id,
+                    'nombre': f"{agente.nombre} {agente.apellido}",
+                    'roles_totales': count,
+                    'rol_mantenido': ultimo_rol.id_rol.nombre,
+                    'roles_eliminados': []
+                }
+                
+                with transaction.atomic():
+                    for rol_eliminar in roles_a_eliminar:
+                        detalle['roles_eliminados'].append(rol_eliminar.id_rol.nombre)
+                        rol_eliminar.delete()
+                        resultados['roles_eliminados'] += 1
+                
+                resultados['detalles'].append(detalle)
+                resultados['agentes_procesados'] += 1
+                    
+            except Exception as e:
+                resultados['detalles'].append({
+                    'agente_id': agente_id,
+                    'error': str(e)
+                })
+        
+        # Verificar que no queden roles duplicados
+        agentes_multiples_post = AgenteRol.objects.values('id_agente').annotate(
+            count=Count('id_agente')
+        ).filter(count__gt=1)
+        
+        resultados['exito'] = len(agentes_multiples_post) == 0
+        resultados['agentes_restantes_con_multiples_roles'] = len(agentes_multiples_post)
+        
+        return Response({
+            'success': True,
+            'message': 'Limpieza completada',
+            'data': resultados
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error en la limpieza: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 # ============================================================================
 # ENDPOINTS PARA GESTIÓN DE PARÁMETROS DEL SISTEMA
 # ============================================================================
