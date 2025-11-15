@@ -177,6 +177,20 @@ class RolesController {
 	}
 
 	/**
+	 * Obtener nombre de un rol por su ID usando el store actual
+	 */
+	obtenerNombreRolPorId(rolId) {
+		let rolesDisponibles = [];
+		this.rolesDisponibles.subscribe(roles => {
+			rolesDisponibles = roles;
+		})();
+		
+		if (!rolId) return 'Sin rol asignado';
+		const rol = rolesDisponibles.find(r => r.id_rol === rolId || r.id === rolId);
+		return rol ? rol.nombre : 'Rol desconocido';
+	}
+
+	/**
 	 * Obtener nombre de un área por su ID
 	 */
 	obtenerNombreArea(areaId, areasDisponibles) {
@@ -218,13 +232,9 @@ class RolesController {
 	}
 
 	/**
-	 * Guardar cambio de rol para un agente
+	 * Guardar cambio de rol para un agente usando operación atómica en backend
 	 */
 	async guardarCambioRol(agente, nuevoRolId) {
-		if (!nuevoRolId) {
-			throw new Error('Por favor, selecciona un rol válido.');
-		}
-
 		// Verificar que no se esté cambiando el rol a sí mismo
 		const currentUserValue = AuthService.getCurrentUser();
 		if (!this.puedeEditarRol(agente, currentUserValue)) {
@@ -234,35 +244,37 @@ class RolesController {
 		this.savingRoleId.set(agente.id_agente);
 		
 		try {
-			// Primero obtener asignaciones actuales
-			const asignacionesResponse = await personasService.getAsignaciones();
-			const asignaciones = asignacionesResponse.data?.results || [];
+			// Obtener rol anterior para el mensaje
+			const rolAnterior = this.obtenerRolActual(agente);
+			const rolAnteriorNombre = rolAnterior ? rolAnterior.nombre : 'Sin rol';
 			
-			// Buscar asignación existente por ID de usuario (más confiable)
-			const asignacionActual = asignaciones.find(a => 
-				a.usuario === agente.id_agente
-			);
-			
-			// Si ya tiene una asignación, eliminarla primero
-			if (asignacionActual) {
-				await personasService.deleteAsignacion(asignacionActual.id);
-			}
-			
-			// Crear nueva asignación de rol
-			const asignacionData = {
-				usuario: agente.id_agente, // Usar el ID del agente como usuario
-				rol: parseInt(nuevoRolId)
-				// Nota: El área se toma automáticamente del agente en el backend
+			// Usar el nuevo endpoint atómico que garantiza un solo rol
+			const cambioData = {
+				agente_id: agente.id_agente,
+				rol_id: nuevoRolId && nuevoRolId.trim() !== '' ? parseInt(nuevoRolId) : null
 			};
 
-			console.log('Datos de asignación a enviar:', asignacionData);
-			await personasService.createAsignacion(asignacionData);
+			console.log('Cambiando rol con operación atómica:', cambioData);
+			const response = await personasService.cambiarRolAgente(cambioData);
 			
-			// Recargar datos para mostrar el cambio
-			await this.cargarDatos();
-			this.editingRoleId.set(null);
-			
-			return { success: true, message: 'Rol actualizado correctamente' };
+			if (response.success) {
+				// Recargar datos para mostrar el cambio
+				await this.cargarDatos();
+				this.editingRoleId.set(null);
+				
+				// Log del cambio para auditoría
+				const rolNuevo = nuevoRolId ? this.obtenerNombreRolPorId(parseInt(nuevoRolId)) : 'Sin rol';
+				
+				console.log(`🔄 Cambio de rol realizado: ${agente.nombre} ${agente.apellido} - ${rolAnteriorNombre} → ${rolNuevo}`);
+				console.log(`📊 Backend reporta: ${response.data.roles_eliminados} roles eliminados`);
+				
+				return { 
+					success: true, 
+					message: `Rol actualizado: ${rolAnteriorNombre} → ${rolNuevo}` 
+				};
+			} else {
+				throw new Error(response.message || 'Error en la respuesta del servidor');
+			}
 		} catch (err) {
 			console.error('Error al cambiar rol:', err);
 			console.error('Respuesta del error:', err.response?.data);
@@ -271,23 +283,19 @@ class RolesController {
 			
 			if (err.response?.status === 400) {
 				const errorData = err.response.data;
-				if (errorData) {
-					console.error('Detalles del error 400:', errorData);
-					// Mostrar errores específicos de campo
-					if (errorData.usuario) errorMessage += `Usuario: ${errorData.usuario[0]}. `;
-					if (errorData.rol) errorMessage += `Rol: ${errorData.rol[0]}. `;
-					if (errorData.area) errorMessage += `Área: ${errorData.area[0]}. `;
-					if (errorData.non_field_errors) errorMessage += `${errorData.non_field_errors[0]}. `;
-				}
-				if (errorMessage === 'Error al cambiar el rol: ') {
+				if (errorData?.message) {
+					errorMessage += errorData.message;
+				} else {
 					errorMessage += 'Datos inválidos. Verifique la información.';
 				}
 			} else if (err.response?.status === 403) {
 				errorMessage += 'No tienes permisos para realizar esta acción.';
 			} else if (err.response?.status === 404) {
 				errorMessage += 'Usuario o rol no encontrado.';
+			} else if (err.response?.data?.message) {
+				errorMessage += err.response.data.message;
 			} else {
-				errorMessage += (err.response?.data?.message || err.message || 'Error desconocido.');
+				errorMessage += err.message || 'Error desconocido.';
 			}
 			
 			throw new Error(errorMessage);
@@ -338,6 +346,42 @@ class RolesController {
 	 */
 	getCurrentUser() {
 		return AuthService.getCurrentUser();
+	}
+
+	/**
+	 * Limpiar roles duplicados en la base de datos
+	 */
+	async limpiarRolesDuplicados() {
+		this.loading.set(true);
+		this.error.set(null);
+
+		try {
+			const response = await personasService.limpiarRolesDuplicados();
+
+			if (response.success) {
+				// Recargar datos después de la limpieza
+				await this.cargarDatos();
+				
+				return {
+					success: true,
+					message: `Limpieza completada: ${response.data.agentes_procesados} agentes procesados, ${response.data.roles_eliminados} roles eliminados`,
+					data: response.data
+				};
+			} else {
+				throw new Error(response.message || 'Error al limpiar roles duplicados');
+			}
+		} catch (error) {
+			const errorMessage = error.message || 'Error inesperado al limpiar roles duplicados';
+			this.error.set(errorMessage);
+			console.error('Error al limpiar roles duplicados:', error);
+			
+			return {
+				success: false,
+				message: errorMessage
+			};
+		} finally {
+			this.loading.set(false);
+		}
 	}
 }
 

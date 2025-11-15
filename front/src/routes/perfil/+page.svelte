@@ -14,6 +14,8 @@
     let showMandatoryPasswordChange = false;
     let guardias = [];
     let loadingGuardias = false;
+    let feriados = [];
+    let loadingFeriados = false;
 
     onMount(async () => {
         // Verificar si el usuario está autenticado
@@ -31,8 +33,9 @@
                     showMandatoryPasswordChange = true;
                 }
 
-                // Cargar las guardias del agente
+                // Cargar las guardias del agente y los feriados
                 await cargarGuardias();
+                await cargarFeriados();
             } else {
                 // Si no está autenticado, redirigir al login
                 goto("/");
@@ -95,6 +98,20 @@
             console.error('Error cargando guardias:', error);
         } finally {
             loadingGuardias = false;
+        }
+    }
+
+    async function cargarFeriados() {
+        try {
+            loadingFeriados = true;
+            const response = await guardiasService.getFeriados();
+            feriados = response.data?.results || response.data || [];
+            console.log('Feriados cargados:', feriados);
+        } catch (error) {
+            console.error('Error cargando feriados:', error);
+            feriados = []; // En caso de error, asegurar que sea un array vacío
+        } finally {
+            loadingFeriados = false;
         }
     }
 
@@ -216,7 +233,11 @@
     </div>
 
     <div>
-        <CalendarioBase />
+        {#if loadingFeriados}
+            <div class="loading">Cargando feriados...</div>
+        {:else}
+            <CalendarioBase {feriados} />
+        {/if}
     </div>
 {/if}
 

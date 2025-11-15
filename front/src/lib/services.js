@@ -50,6 +50,12 @@ export const personasService = {
   getAsignaciones: (token = null) => createApiClient(token).get('/personas/asignaciones/'),
   createAsignacion: (data, token = null) => createApiClient(token).post('/personas/asignaciones/create/', data),
   deleteAsignacion: (id, token = null) => createApiClient(token).delete(`/personas/asignaciones/${id}/delete/`),
+  
+  // Cambio de roles atómico
+  cambiarRolAgente: (data, token = null) => createApiClient(token).post('/personas/asignaciones/cambiar-rol/', data),
+  
+  // Limpieza de datos
+  limpiarRolesDuplicados: (token = null) => createApiClient(token).post('/personas/asignaciones/limpiar-duplicados/'),
 
   // Agrupaciones organizacionales
   getAgrupaciones: (token = null) => createApiClient(token).get('/personas/parametros/agrupaciones/'),

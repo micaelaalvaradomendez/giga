@@ -85,7 +85,7 @@
 				</div>
 				<div class="filter-box">
 					<label for="filtroArea">Filtrar por Área:</label>
-					<select id="filtroArea" value={$filtroArea} on:change={actualizarFiltroArea} class="filter-select">
+					<select id="filtroArea" bind:value={$filtroArea} on:change={actualizarFiltroArea} class="filter-select">
 						<option value="">Todas las áreas ({$areasDisponibles.length})</option>
 						{#each $areasDisponibles as area}
 							<option value={area.id_area}>{area.nombre}</option>
@@ -178,7 +178,7 @@
 												on:keydown={(e) => rolesController.handleKeyPress(e, agente, e.target.value)}
 												disabled={$savingRoleId === agente.id_agente}
 											>
-												<option value="">Sin rol ({$rolesDisponibles.length} disponibles)</option>
+												<option value="">🚫 Sin rol asignado</option>
 												{#each $rolesDisponibles as rol}
 													<option value={rol.id_rol}>{rol.nombre}</option>
 												{/each}

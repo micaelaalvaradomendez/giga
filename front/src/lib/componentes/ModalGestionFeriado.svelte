@@ -9,11 +9,13 @@
 	export let feriadosController;
 
 	let nombreFeriado = '';
+	let repetirAnualmente = false;
 
 	const dispatch = createEventDispatcher();
 	
 	$: if (isOpen) {	
 		nombreFeriado = feriado ? feriado.descripcion : '';
+		repetirAnualmente = false; // Reset la opción al abrir modal
 	}
 
 	function closeModal() {
@@ -30,7 +32,8 @@
 			await feriadosController.saveFeriado({
 				id: feriado?.id || null,
 				fecha: selectedDate,
-				descripcion: nombreFeriado.trim()
+				descripcion: nombreFeriado.trim(),
+				repetir_anualmente: repetirAnualmente
 			});
 		} catch (error) {
 			// El error ya se maneja en el controlador
@@ -83,6 +86,26 @@
 						required
 					/>
 				</div>
+				
+				<!-- Solo mostrar opción de repetición para feriados nuevos -->
+				{#if !feriado}
+					<div class="form-group">
+						<label class="checkbox-label">
+							<input
+								type="checkbox"
+								bind:checked={repetirAnualmente}
+								disabled={isSaving || isDeleting}
+							/>
+							<span class="checkmark"></span>
+							Repetir este feriado todos los años (próximos 10 años)
+						</label>
+						{#if repetirAnualmente}
+							<div class="help-text">
+								Se creará este feriado para los próximos 10 años en la misma fecha.
+							</div>
+						{/if}
+					</div>
+				{/if}
 			</div>
 			<div class="modal-actions">
 				<!-- Botón de Eliminar -->
@@ -207,5 +230,30 @@
 	.btn-danger {
 		background-color: #c53030;
 		color: white;
+	}
+	
+	/* Estilos para checkbox personalizado */
+	.checkbox-label {
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+		font-size: 0.9rem;
+		line-height: 1.4;
+		gap: 0.75rem;
+	}
+	
+	.checkbox-label input[type="checkbox"] {
+		width: auto;
+		margin: 0;
+	}
+	
+	.help-text {
+		font-size: 0.8rem;
+		color: #666;
+		margin-top: 0.5rem;
+		padding: 0.5rem;
+		background-color: #f8f9fa;
+		border-radius: 4px;
+		border-left: 3px solid #007bff;
 	}
 </style>

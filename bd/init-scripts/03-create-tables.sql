@@ -342,13 +342,139 @@ INSERT INTO tipo_licencia (codigo, descripcion) VALUES
     ('CASAMIENTO', 'Licencia por casamiento')
 ON CONFLICT (codigo) DO NOTHING;
 
+-- =====================================================
+-- TABLAS DEL MÓDULO GUARDIAS
+-- =====================================================
+
+-- Tabla feriado (sin dependencias)
+CREATE TABLE IF NOT EXISTS feriado (
+    id_feriado BIGSERIAL PRIMARY KEY,
+    fecha DATE UNIQUE NOT NULL,
+    descripcion VARCHAR(200) NOT NULL,
+    es_nacional BOOLEAN DEFAULT false,
+    es_provincial BOOLEAN DEFAULT false,
+    es_local BOOLEAN DEFAULT false,
+    activo BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla cronograma (depende de agente y area)
+CREATE TABLE IF NOT EXISTS cronograma (
+    id_cronograma BIGSERIAL PRIMARY KEY,
+    id_jefe BIGINT NOT NULL REFERENCES agente(id_agente) ON DELETE CASCADE,
+    id_area BIGINT NOT NULL REFERENCES area(id_area) ON DELETE CASCADE,
+    fecha_aprobacion DATE,
+    tipo VARCHAR(50),
+    hora_inicio TIME,
+    hora_fin TIME,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla guardia (depende de cronograma y agente)
+CREATE TABLE IF NOT EXISTS guardia (
+    id_guardia BIGSERIAL PRIMARY KEY,
+    id_cronograma BIGINT NOT NULL REFERENCES cronograma(id_cronograma) ON DELETE CASCADE,
+    id_agente BIGINT NOT NULL REFERENCES agente(id_agente) ON DELETE CASCADE,
+    fecha DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    tipo VARCHAR(50),
+    estado VARCHAR(50),
+    horas_planificadas INTEGER,
+    horas_efectivas INTEGER,
+    observaciones TEXT,
+    activa BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla reglas_plus (sin dependencias)
+CREATE TABLE IF NOT EXISTS reglas_plus (
+    id_regla_plus BIGSERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    horas_minimas_diarias DECIMAL(5,2) DEFAULT 8.0,
+    horas_minimas_mensuales DECIMAL(6,2) DEFAULT 160.0,
+    porcentaje_plus DECIMAL(5,2) DEFAULT 20.0,
+    aplica_areas_operativas BOOLEAN DEFAULT true,
+    aplica_areas_administrativas BOOLEAN DEFAULT false,
+    vigente_desde DATE NOT NULL,
+    vigente_hasta DATE,
+    activa BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla parametros_area (depende de area)
+CREATE TABLE IF NOT EXISTS parametros_area (
+    id_parametros_area BIGSERIAL PRIMARY KEY,
+    id_area BIGINT NOT NULL REFERENCES area(id_area) ON DELETE CASCADE,
+    ventana_entrada_inicio TIME DEFAULT '07:30:00',
+    ventana_entrada_fin TIME DEFAULT '09:00:00',
+    ventana_salida_inicio TIME DEFAULT '16:00:00',
+    ventana_salida_fin TIME DEFAULT '18:30:00',
+    tolerancia_entrada_min INTEGER DEFAULT 15,
+    tolerancia_salida_min INTEGER DEFAULT 15,
+    horas_trabajo_dia DECIMAL(4,2) DEFAULT 8.0,
+    vigente_desde DATE NOT NULL,
+    vigente_hasta DATE,
+    activo BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla resumen_guardia_mes (depende de agente)
+CREATE TABLE IF NOT EXISTS resumen_guardia_mes (
+    id_resumen_guardia_mes BIGSERIAL PRIMARY KEY,
+    id_agente BIGINT NOT NULL REFERENCES agente(id_agente) ON DELETE CASCADE,
+    mes INTEGER NOT NULL CHECK (mes >= 1 AND mes <= 12),
+    anio INTEGER NOT NULL CHECK (anio >= 2020),
+    total_horas_guardia INTEGER,
+    horas_efectivas DECIMAL(6,2) DEFAULT 0.0,
+    porcentaje_plus DECIMAL(5,2) DEFAULT 0.0,
+    monto_calculado DECIMAL(10,2),
+    estado_plus VARCHAR(30) DEFAULT 'pendiente',
+    fecha_calculo TIMESTAMP,
+    aprobado_en TIMESTAMP,
+    plus20 BOOLEAN,
+    plus40 BOOLEAN,
+    UNIQUE(id_agente, mes, anio)
+);
+
+-- Índices para mejorar performance
+CREATE INDEX IF NOT EXISTS idx_feriado_fecha ON feriado(fecha);
+CREATE INDEX IF NOT EXISTS idx_feriado_activo ON feriado(activo);
+CREATE INDEX IF NOT EXISTS idx_cronograma_area ON cronograma(id_area);
+CREATE INDEX IF NOT EXISTS idx_cronograma_jefe ON cronograma(id_jefe);
+CREATE INDEX IF NOT EXISTS idx_guardia_fecha ON guardia(fecha);
+CREATE INDEX IF NOT EXISTS idx_guardia_agente ON guardia(id_agente);
+CREATE INDEX IF NOT EXISTS idx_guardia_cronograma ON guardia(id_cronograma);
+CREATE INDEX IF NOT EXISTS idx_resumen_mes_agente ON resumen_guardia_mes(id_agente);
+CREATE INDEX IF NOT EXISTS idx_resumen_mes_periodo ON resumen_guardia_mes(mes, anio);
+
 -- Insertar área por defecto
 INSERT INTO area (nombre) VALUES 
     ('General')
 ON CONFLICT (nombre) DO NOTHING;
 
+-- Insertar algunos feriados nacionales por defecto
+INSERT INTO feriado (fecha, descripcion, es_nacional) VALUES
+    ('2025-01-01', 'Año Nuevo', true),
+    ('2025-03-24', 'Día Nacional de la Memoria por la Verdad y la Justicia', true),
+    ('2025-04-02', 'Día del Veterano y de los Caídos en la Guerra de Malvinas', true),
+    ('2025-05-01', 'Día del Trabajador', true),
+    ('2025-05-25', 'Día de la Revolución de Mayo', true),
+    ('2025-06-20', 'Día de la Bandera', true),
+    ('2025-07-09', 'Día de la Independencia', true),
+    ('2025-08-17', 'Paso a la Inmortalidad del General José de San Martín', true),
+    ('2025-10-12', 'Día del Respeto a la Diversidad Cultural', true),
+    ('2025-11-20', 'Día de la Soberanía Nacional', true),
+    ('2025-12-08', 'Inmaculada Concepción de María', true),
+    ('2025-12-25', 'Navidad', true)
+ON CONFLICT (fecha) DO NOTHING;
+
 -- Mensaje de confirmación
 DO $$
 BEGIN
-    RAISE NOTICE 'Tablas del sistema GIGA creadas exitosamente';
+    RAISE NOTICE 'Tablas del sistema GIGA creadas exitosamente (incluye módulo guardias)';
 END $$;

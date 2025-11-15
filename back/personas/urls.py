@@ -44,6 +44,8 @@ asignaciones_patterns = [
     path('', views.get_asignaciones, name='get_asignaciones'),
     path('create/', views.create_asignacion, name='create_asignacion'),
     path('<int:asignacion_id>/delete/', views.delete_asignacion, name='delete_asignacion'),
+    path('cambiar-rol/', views.cambiar_rol_agente, name='cambiar_rol_agente'),
+    path('limpiar-duplicados/', views.limpiar_roles_duplicados, name='limpiar_roles_duplicados'),
 ]
 
 # URLs de parámetros del sistema

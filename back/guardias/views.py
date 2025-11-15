@@ -125,6 +125,61 @@ class FeriadoViewSet(viewsets.ModelViewSet):
         
         return queryset.filter(activo=True).order_by('fecha')
     
+    def create(self, request, *args, **kwargs):
+        """Override del método create para manejar repetición anual"""
+        repetir_anualmente = request.data.get('repetir_anualmente', False)
+        
+        if not repetir_anualmente:
+            # Comportamiento normal
+            return super().create(request, *args, **kwargs)
+        
+        # Crear feriado con repetición anual (10 años hacia adelante)
+        fecha_original = request.data.get('fecha')
+        descripcion = request.data.get('descripcion')
+        es_nacional = request.data.get('es_nacional', False)
+        es_provincial = request.data.get('es_provincial', False)
+        es_local = request.data.get('es_local', False)
+        
+        try:
+            from datetime import datetime, timedelta
+            from django.db import transaction
+            
+            fecha_base = datetime.strptime(fecha_original, '%Y-%m-%d').date()
+            feriados_creados = []
+            
+            with transaction.atomic():
+                # Crear feriado para los próximos 10 años
+                for i in range(10):
+                    fecha_año = fecha_base.replace(year=fecha_base.year + i)
+                    
+                    # Verificar si ya existe para evitar duplicados
+                    if not Feriado.objects.filter(fecha=fecha_año).exists():
+                        feriado = Feriado.objects.create(
+                            fecha=fecha_año,
+                            descripcion=descripcion,
+                            es_nacional=es_nacional,
+                            es_provincial=es_provincial,
+                            es_local=es_local,
+                            activo=True,
+                            creado_en=timezone.now()
+                        )
+                        feriados_creados.append(FeriadoSerializer(feriado).data)
+            
+            return Response({
+                'success': True,
+                'message': f'Se crearon {len(feriados_creados)} feriados para los próximos 10 años',
+                'data': {
+                    'feriados_creados': len(feriados_creados),
+                    'años': [f['fecha'][:4] for f in feriados_creados],
+                    'feriados': feriados_creados
+                }
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response({
+                'error': f'Error creando feriados anuales: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=False, methods=['post'])
     def verificar_fecha(self, request):
         """Verifica si una fecha específica es feriado"""

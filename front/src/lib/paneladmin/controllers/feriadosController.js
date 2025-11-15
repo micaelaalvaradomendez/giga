@@ -91,7 +91,7 @@ class FeriadosController {
 	}
 
 	/**
-	 * Crea un nuevo feriado
+	 * Crea un nuevo feriado (con opción de repetición anual)
 	 */
 	async createFeriado(feriadoData) {
 		try {
@@ -99,20 +99,33 @@ class FeriadosController {
 			this.error.set(null);
 			this.success.set(null);
 
-			const response = await guardiasService.createFeriado({
+			const requestData = {
 				fecha: feriadoData.fecha,
 				descripcion: feriadoData.descripcion
-			});
+			};
+
+			// Agregar repetición anual si está especificada
+			if (feriadoData.repetir_anualmente) {
+				requestData.repetir_anualmente = true;
+			}
+
+			const response = await guardiasService.createFeriado(requestData);
 
 			// Actualizar la lista de feriados
 			await this.loadFeriados();
 			
-			this.success.set('Feriado creado exitosamente');
+			// Mensaje personalizado para repetición anual
+			if (feriadoData.repetir_anualmente && response.data?.feriados_creados) {
+				this.success.set(`Feriado creado para ${response.data.feriados_creados} años: ${response.data.años.join(', ')}`);
+			} else {
+				this.success.set('Feriado creado exitosamente');
+			}
+			
 			return response.data;
 
 		} catch (error) {
 			console.error('Error creando feriado:', error);
-			const errorMsg = error.response?.data?.message || 'Error al crear el feriado';
+			const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Error al crear el feriado';
 			this.error.set(errorMsg);
 			throw error;
 		} finally {
