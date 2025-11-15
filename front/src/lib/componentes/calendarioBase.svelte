@@ -2,6 +2,7 @@
     import { createEventDispatcher, onMount } from "svelte";
 
     export let feriados = [];
+    export let guardias = [];
 
     const dispatch = createEventDispatcher();
 
@@ -42,6 +43,20 @@
         return feriados.find(feriado => feriado.fecha === fechaStr) || null;
     }
 
+    // Función para verificar si una fecha tiene guardia
+    function tieneGuardia(fecha) {
+        if (!guardias || guardias.length === 0) return false;
+        const fechaStr = fecha.toISOString().split('T')[0];
+        return guardias.some(guardia => guardia.fecha === fechaStr);
+    }
+
+    // Función para obtener las guardias de una fecha específica
+    function getGuardias(fecha) {
+        if (!guardias || guardias.length === 0) return [];
+        const fechaStr = fecha.toISOString().split('T')[0];
+        return guardias.filter(guardia => guardia.fecha === fechaStr);
+    }
+
     $: month, year, initContent();
 
     function initContent() {
@@ -73,6 +88,8 @@
                 isToday: false,
                 isFeriado: false,
                 feriado: null,
+                tieneGuardia: false,
+                guardias: [],
             });
         }
 
@@ -86,6 +103,8 @@
             
             let isFeriadoDay = esFeriado(d);
             let feriadoData = isFeriadoDay ? getFeriado(d) : null;
+            let tieneGuardiaDay = tieneGuardia(d);
+            let guardiasData = tieneGuardiaDay ? getGuardias(d) : [];
 
             if (i == 0) {
                 days.push({
@@ -95,6 +114,8 @@
                     isToday: isToday,
                     isFeriado: isFeriadoDay,
                     feriado: feriadoData,
+                    tieneGuardia: tieneGuardiaDay,
+                    guardias: guardiasData,
                 });
             } else {
                 days.push({
@@ -104,6 +125,8 @@
                     isToday: isToday,
                     isFeriado: isFeriadoDay,
                     feriado: feriadoData,
+                    tieneGuardia: tieneGuardiaDay,
+                    guardias: guardiasData,
                 });
             }
         }
@@ -123,6 +146,8 @@
                     isToday: false,
                     isFeriado: false,
                     feriado: null,
+                    tieneGuardia: false,
+                    guardias: [],
                 });
             } else {
                 days.push({
@@ -132,6 +157,8 @@
                     isToday: false,
                     isFeriado: false,
                     feriado: null,
+                    tieneGuardia: false,
+                    guardias: [],
                 });
             }
         }
@@ -143,7 +170,9 @@
         dispatch('dayclick', {
             date: day.date,
             isFeriado: day.isFeriado,
-            feriado: day.feriado
+            feriado: day.feriado,
+            tieneGuardia: day.tieneGuardia,
+            guardias: day.guardias
         });
     }
 
@@ -189,6 +218,7 @@
                     class:disabled={!day.enabled}
                     class:today={day.isToday}
                     class:feriado={day.isFeriado}
+                    class:guardia={day.tieneGuardia}
                     on:click={() => dayClick(day)}
                     on:keydown={(e) => e.key === 'Enter' && dayClick(day)}
                     role="button"
@@ -199,6 +229,22 @@
                         <div class="feriado-info">
                             <div class="feriado-descripcion">{day.feriado.descripcion}</div>
                             <div class="feriado-tipo">{day.feriado.tipo_feriado}</div>
+                        </div>
+                    {/if}
+                    {#if day.tieneGuardia && day.guardias.length > 0}
+                        <div class="guardias-info">
+                            {#each day.guardias as guardia}
+                                <div class="guardia-item">
+                                    <div class="guardia-tipo">🚨 {guardia.tipo || 'Guardia'}</div>
+                                    <div class="guardia-horario">{guardia.hora_inicio?.slice(0,5)} - {guardia.hora_fin?.slice(0,5)}</div>
+                                    {#if guardia.agente_nombre}
+                                        <div class="guardia-agente">{guardia.agente_nombre}</div>
+                                    {/if}
+                                    {#if guardia.cantidad && guardia.cantidad > 1}
+                                        <div class="guardia-cantidad">({guardia.cantidad} agentes)</div>
+                                    {/if}
+                                </div>
+                            {/each}
                         </div>
                     {/if}
                 </div>
@@ -338,5 +384,86 @@
 
     .calendar-day.today .feriado-tipo {
         color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Estilos para guardias */
+    .calendar-day.guardia {
+        background-color: #e6f3ff;
+        border-color: #4a90e2;
+    }
+
+    .calendar-day.guardia:hover {
+        background-color: #cce7ff;
+    }
+
+    .calendar-day.today.guardia {
+        background-color: #2563eb;
+        border-color: #1d4ed8;
+    }
+
+    .calendar-day.feriado.guardia {
+        background-color: #ffe0e6;
+        border-color: #dc3545;
+    }
+
+    .guardias-info {
+        font-size: 0.75rem;
+        line-height: 1.2;
+        flex-grow: 1;
+        margin-top: 2px;
+    }
+
+    .guardia-item {
+        margin-bottom: 2px;
+        padding: 2px 4px;
+        background-color: rgba(37, 99, 235, 0.1);
+        border-radius: 3px;
+        border-left: 3px solid #2563eb;
+    }
+
+    .guardia-tipo {
+        font-weight: 500;
+        color: #2563eb;
+        font-size: 0.7rem;
+    }
+
+    .guardia-horario {
+        font-size: 0.65rem;
+        color: #475569;
+        font-style: italic;
+    }
+
+    .guardia-agente {
+        font-size: 0.65rem;
+        color: #374151;
+        font-weight: 500;
+    }
+
+    .guardia-cantidad {
+        font-size: 0.6rem;
+        color: #6b7280;
+        font-weight: 600;
+        background-color: rgba(37, 99, 235, 0.2);
+        padding: 1px 4px;
+        border-radius: 8px;
+    }
+
+    .calendar-day.today .guardia-tipo {
+        color: white;
+    }
+
+    .calendar-day.today .guardia-horario,
+    .calendar-day.today .guardia-agente {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .calendar-day.today .guardia-cantidad {
+        background-color: rgba(255, 255, 255, 0.3);
+        color: white;
+    }
+
+    .calendar-day.today .guardia-item {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-left-color: white;
     }
 </style>

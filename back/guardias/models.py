@@ -114,7 +114,10 @@ class Cronograma(models.Model):
     creado_en = models.DateTimeField(blank=True, null=True)
     actualizado_en = models.DateTimeField(blank=True, null=True)
     id_jefe = models.ForeignKey('personas.Agente', models.DO_NOTHING, db_column='id_jefe')
+    id_director = models.ForeignKey('personas.Agente', models.DO_NOTHING, db_column='id_director', related_name='cronogramas_dirigidos')
     id_area = models.ForeignKey('personas.Area', models.DO_NOTHING, db_column='id_area')
+    estado = models.CharField(max_length=50, blank=True, null=True)
+    fecha_creacion = models.DateField(blank=True, null=True)
 
     class Meta:
         managed = False
