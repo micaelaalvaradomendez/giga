@@ -1,21 +1,29 @@
 <script>
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { auditoriaController } from '$lib/paneladmin/controllers';
+	import { onMount } from "svelte";
+	import { goto } from "$app/navigation";
+	import { auditoriaController } from "$lib/paneladmin/controllers";
 
 	// Stores del controlador
-	const { registros, registrosFiltrados, loading, error, terminoBusqueda } = auditoriaController;
+	const { registros, registrosFiltrados, loading, error, terminoBusqueda } =
+		auditoriaController;
 
 	// Inicializar el controlador
 	onMount(async () => {
-		console.log('🔄 Componente montado, iniciando controlador de auditoría...');
+		console.log(
+			"🔄 Componente montado, iniciando controlador de auditoría...",
+		);
 		try {
 			await auditoriaController.init();
-			console.log('✅ Controlador de auditoría inicializado exitosamente');
+			console.log(
+				"✅ Controlador de auditoría inicializado exitosamente",
+			);
 		} catch (err) {
-			console.error('❌ Error inicializando controlador de auditoría:', err);
-			if (err.message === 'Usuario no autenticado') {
-				goto('/');
+			console.error(
+				"❌ Error inicializando controlador de auditoría:",
+				err,
+			);
+			if (err.message === "Usuario no autenticado") {
+				goto("/");
 				return;
 			}
 		}
@@ -38,29 +46,31 @@
 
 	// Mapeo de colores para badges
 	const badgeColors = {
-		'CREAR': 'bg-green-500 text-white',
-		'MODIFICAR': 'bg-yellow-400 text-black',
-		'ELIMINAR': 'bg-red-500 text-white',
-		'create': 'bg-green-500 text-white',
-		'update': 'bg-yellow-400 text-black',
-		'delete': 'bg-red-500 text-white'
+		CREAR: "bg-green-500 text-white",
+		MODIFICAR: "bg-yellow-400 text-black",
+		ELIMINAR: "bg-red-500 text-white",
+		create: "bg-green-500 text-white",
+		update: "bg-yellow-400 text-black",
+		delete: "bg-red-500 text-white",
 	};
 
 	// Mapeo de traducciones de acciones
 	const traduccionAccion = {
-		'CREAR': 'Alta de registro',
-		'MODIFICAR': 'Modificación',
-		'ELIMINAR': 'Registro eliminado',
-		'create': 'Alta de registro',
-		'update': 'Modificación',
-		'delete': 'Registro eliminado'
+		CREAR: "Alta de registro",
+		MODIFICAR: "Modificación",
+		ELIMINAR: "Registro eliminado",
+		create: "Alta de registro",
+		update: "Modificación",
+		delete: "Registro eliminado",
 	};
 </script>
 
 <div class="admin-page-container">
 	<div class="page-header">
 		<div>
-			<h1 class="text-2xl font-bold text-gray-800">Auditoría de registros</h1>
+			<h1 class="text-2xl font-bold text-gray-800">
+				Auditoría de registros
+			</h1>
 		</div>
 	</div>
 
@@ -76,7 +86,11 @@
 			class="search-input"
 		/>
 		{#if $terminoBusqueda}
-			<button class="btn-clear" on:click={limpiarBusqueda} title="Limpiar búsqueda">
+			<button
+				class="btn-clear"
+				on:click={limpiarBusqueda}
+				title="Limpiar búsqueda"
+			>
 				✖️ Limpiar
 			</button>
 		{/if}
@@ -90,47 +104,54 @@
 	{:else if $error}
 		<div class="error-message">
 			<p><strong>Error:</strong> {$error}</p>
-			<button class="btn-retry" on:click={recargarDatos}>🔄 Reintentar</button>
+			<button class="btn-retry" on:click={recargarDatos}
+				>🔄 Reintentar</button
+			>
 		</div>
 	{:else if $registrosFiltrados.length === 0}
-		<div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4" role="alert">
+		<div
+			class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4"
+			role="alert"
+		>
 			<p class="font-bold">Sin datos</p>
 			<p>
-				{#if $terminoBusqueda}No se encontraron registros que coincidan con "{$terminoBusqueda}".{:else}No hay registros para mostrar.{/if}
+				{#if $terminoBusqueda}No se encontraron registros que coincidan
+					con "{$terminoBusqueda}".{:else}No hay registros para
+					mostrar.{/if}
 			</p>
 		</div>
 	{:else}
 		<div class="bg-white shadow-md rounded-lg overflow-x-auto">
-			<table class="min-w-full leading-normal">
+			<table class="min-w-full leading-normal responsive-table">
 				<thead class="bg-gray-100">
 					<tr>
 						<th
-							class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+							class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider"
 						>
 							Fecha y Hora
 						</th>
 						<th
-							class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+							class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider"
 						>
 							Usuario
 						</th>
 						<th
-							class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+							class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider"
 						>
 							Acción
 						</th>
 						<th
-							class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+							class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider"
 						>
 							Tabla
 						</th>
 						<th
-							class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+							class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider"
 						>
 							Valor Anterior
 						</th>
 						<th
-							class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+							class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider"
 						>
 							Valor Nuevo
 						</th>
@@ -139,27 +160,49 @@
 				<tbody>
 					{#each $registrosFiltrados as registro}
 						<tr>
-							<td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
-								{auditoriaController.formatearFecha(registro.creado_en)}
+							<td
+								class="px-5 py-4 border-b border-gray-200 bg-white text-sm"
+							>
+								{auditoriaController.formatearFecha(
+									registro.creado_en,
+								)}
 							</td>
-							<td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
-								{registro.creado_por_nombre || 'Sistema'}
+							<td
+								class="px-5 py-4 border-b border-gray-200 bg-white text-sm"
+							>
+								{registro.creado_por_nombre || "Sistema"}
 							</td>
-							<td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+							<td
+								class="px-5 py-4 border-b border-gray-200 bg-white text-sm"
+							>
 								<span
-									class="px-2 py-1 font-semibold leading-tight rounded-full text-xs {auditoriaController.getBadgeColor(registro.accion)}"
+									class="px-2 py-1 font-semibold leading-tight rounded-full text-xs {auditoriaController.getBadgeColor(
+										registro.accion,
+									)}"
 								>
-									{auditoriaController.traducirAccion(registro.accion)}
+									{auditoriaController.traducirAccion(
+										registro.accion,
+									)}
 								</span>
 							</td>
-							<td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+							<td
+								class="px-5 py-4 border-b border-gray-200 bg-white text-sm"
+							>
 								{registro.nombre_tabla}
 							</td>
-							<td class="px-5 py-4 border-b border-gray-200 bg-white text-sm font-mono text-gray-600">
-								{auditoriaController.formatearValor(registro.valor_previo)}
+							<td
+								class="px-5 py-4 border-b border-gray-200 bg-white text-sm font-mono text-gray-600 whitespace-pre-wrap break-all"
+							>
+								{auditoriaController.formatearValor(
+									registro.valor_previo,
+								)}
 							</td>
-							<td class="px-5 py-4 border-b border-gray-200 bg-white text-sm font-mono text-gray-800">
-								{auditoriaController.formatearValor(registro.valor_nuevo)}
+							<td
+								class="px-5 py-4 border-b border-gray-200 bg-white text-sm font-mono text-gray-800 whitespace-pre-wrap break-all"
+							>
+								{auditoriaController.formatearValor(
+									registro.valor_nuevo,
+								)}
 							</td>
 						</tr>
 					{/each}
@@ -172,35 +215,82 @@
 <style>
 	:global(body) {
 		margin: 0;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
-			'Open Sans', 'Helvetica Neue', sans-serif;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+			Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 		background-color: #f8f9fa;
 		color: #212529;
 	}
 	.admin-page-container {
 		width: 80%;
-		max-width: 1400px; 
+		max-width: 1400px;
 		margin: 0 auto;
-		padding: 1rem 0; 
+		padding: 1rem 0;
 	}
 
 	.page-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		flex-wrap: wrap;
-		margin-bottom: 1.5rem; 
-		padding: 1.5rem;
-		background: linear-gradient(135deg, #e79043, #d17a2e); 
-		border-radius: 12px;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+		position: relative;
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+		color: white;
+		padding: 40px 20px;
+		margin: 0 0 40px 0;
+		border-radius: 28px;
+		overflow: hidden;
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+			0 20px 60px rgba(30, 64, 175, 0.4);
+	}
+
+	.page-header::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: linear-gradient(
+				90deg,
+				rgba(255, 255, 255, 0.03) 1px,
+				transparent 1px
+			),
+			linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+		background-size: 50px 50px;
+		animation: moveLines 20s linear infinite;
 	}
 
 	.page-header h1 {
-		margin: 0;
-		color: #333; 
-		font-size: 2rem;
-		font-weight: 600;
+		margin: 0 0 0 20px;
+		font-weight: 800;
+		font-size: 30px;
+		letter-spacing: 0.2px;
+		position: relative;
+		padding-bottom: 12px;
+		overflow: hidden;
+		display: inline-block;
+	}
+
+	.page-header h1::after {
+		content: "";
+		position: absolute;
+		width: 40%;
+		height: 3px;
+		bottom: 0;
+		left: 0;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.9),
+			transparent
+		);
+		animation: moveLine 2s linear infinite;
+	}
+
+	@keyframes moveLine {
+		0% {
+			left: -40%;
+		}
+		100% {
+			left: 100%;
+		}
 	}
 
 	.search-section {
@@ -209,17 +299,18 @@
 		padding: 1.5rem;
 		border-radius: 12px;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+		display: flex;
+		align-items: center;
+		gap: 1rem;
 	}
 
 	.search-label {
-		display: block;
-		margin-bottom: 0.5rem;
 		font-weight: 600;
 		color: #495057;
 	}
 
 	.search-input {
-        width: 95%; 
+		flex: 1;
 		padding: 0.75rem 1rem;
 		border-radius: 8px;
 		border: 1px solid #ccc;
@@ -236,45 +327,111 @@
 	}
 
 	.bg-white.shadow-md.rounded-lg.overflow-x-auto {
-		border: 1px solid #e9ecef; 
+		border: 3px solid #e79043;
+		box-shadow:
+			0 4px 12px rgba(231, 144, 67, 0.15),
+			0 0 0 1px rgba(231, 144, 67, 0.1) inset;
+		overflow: hidden;
+		border-radius: 10px;
+	}
+
+	.bg-white.shadow-md.rounded-lg.overflow-x-auto::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 4px;
+		background: linear-gradient(
+			90deg,
+			#ff9d5c,
+			#e79043,
+			#d67d35,
+			#e79043,
+			#ff9d5c
+		);
+		background-size: 200% 100%;
+		animation: shimmer 3s linear infinite;
+	}
+
+	@keyframes shimmer {
+		0% {
+			background-position: -200% 0;
+		}
+		100% {
+			background-position: 200% 0;
+		}
 	}
 
 	.bg-gray-100 {
-		background-color: #f8f9fa; 
+		background: linear-gradient(135deg, #fff5ec 0%, #ffe8d6 100%);
+		position: relative;
+	}
+
+	.bg-gray-100::after {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 3px;
 	}
 
 	th {
-		padding: 1rem; 
-		font-weight: 600;
-		color: #495057; 
-		border-bottom: 2px solid #e9ecef;
+		padding: 1rem;
+		font-weight: 700;
+		color: #8b4513;
+		border-bottom: 2px solid #ffd4a8;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		font-size: 0.85rem;
+		position: relative;
 	}
 
 	td {
-		padding: 1rem; 
+		padding: 1rem;
 		font-size: 0.9rem;
-		border-bottom: 1px solid #e9ecef;
+		border-bottom: 1px solid #fff0e0;
+		transition: all 0.2s ease;
+	}
+
+	tbody tr {
+		transition: all 0.3s ease;
+		border-left: 3px solid transparent;
 	}
 
 	tbody tr:hover {
-		background-color: #f8f9fa; 
+		background: linear-gradient(90deg, #fff9f5 0%, #fff5ec 100%);
+		border: 3px solid #e79043;
+		transform: translateX(2px);
+		box-shadow: 0 2px 8px rgba(231, 144, 67, 0.1);
+	}
+
+	tbody tr:nth-child(even) {
+		background-color: #fffbf7;
+	}
+
+	tbody tr:nth-child(even):hover {
+		background: linear-gradient(90deg, #fff9f5 0%, #fff5ec 100%);
 	}
 
 	.btn-icon {
 		background: none;
 		border: none;
-		font-size: 1rem; 
+		font-size: 1rem;
 		cursor: pointer;
 		padding: 0.5rem 0.75rem;
 		border-radius: 6px;
-		transition: background-color 0.2s, color 0.2s;
-		color: #2c5282; 
+		transition:
+			background-color 0.2s,
+			color 0.2s;
+		color: #2c5282;
 		font-weight: 500;
 	}
 
 	.btn-icon:hover {
-		background-color: #e9ecef; 
-		color: #1a365d; 
+		background-color: #e9ecef;
+		color: #1a365d;
 	}
 
 	.btn-clear {
@@ -331,8 +488,12 @@
 	}
 
 	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
 	}
 
 	.error-message {
@@ -344,15 +505,72 @@
 		margin-bottom: 1rem;
 	}
 
+	@media (max-width: 1200px) {
+		.admin-page-container {
+			width: 90%;
+		}
+	}
+
 	@media (max-width: 768px) {
 		.admin-page-container {
 			width: 95%;
-			padding: 0.5rem;
+			padding: 1rem;
 		}
+
+		.page-header {
+			padding: 20px 15px;
+			margin-bottom: 20px;
+		}
+
+		.page-header h1 {
+			font-size: 26px;
+		}
+
+		.search-section {
+			padding: 1rem;
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.search-input {
+			flex: none;
+		}
+
+		.btn-clear {
+			margin-top: 0.5rem;
+			margin-left: 0;
+			width: 100%;
+		}
+
+		th,
+		td {
+			padding: 0.75rem;
+			font-size: 0.8rem;
+		}
+
 		.page-header {
 			flex-direction: column;
 			gap: 1rem;
 			align-items: stretch;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.page-header h1 {
+			font-size: 22px;
+		}
+
+		th,
+		td {
+			padding: 0.5rem;
+			font-size: 0.75rem;
+		}
+
+		.btn-clear,
+		.btn-retry {
+			padding: 0.75rem;
+			font-size: 0.85rem;
 		}
 	}
 </style>
