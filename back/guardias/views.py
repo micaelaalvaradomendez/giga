@@ -301,16 +301,18 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             # Obtener el agente del usuario autenticado
             agente_id = None
             if hasattr(request.user, 'agente'):
-                agente_id = request.user.agente.id
+                agente_id = request.user.agente.id_agente
             
             # Crear el cronograma
             cronograma = Cronograma.objects.create(
                 id_area_id=data['id_area'],
                 id_jefe_id=agente_id,  # El jefe es quien crea
+                id_director_id=agente_id,  # Por ahora, el mismo agente es jefe y director
                 tipo=data['tipo'],
                 hora_inicio=data['hora_inicio'],
                 hora_fin=data['hora_fin'],
-                estado='generada'
+                estado='generada',
+                fecha_creacion=timezone.now().date()
             )
             
             # Registrar auditoría del cronograma
@@ -334,9 +336,15 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             # Crear las guardias para cada agente
             guardias_creadas = []
             for agente_data in data['agentes']:
+                # Manejar tanto el formato de entero como de objeto
+                if isinstance(agente_data, dict):
+                    agente_id_guardia = agente_data['id_agente']
+                else:
+                    agente_id_guardia = agente_data
+                    
                 guardia = Guardia.objects.create(
                     id_cronograma=cronograma,
-                    id_agente_id=agente_data['id_agente'],
+                    id_agente_id=agente_id_guardia,
                     fecha=data['fecha'],
                     hora_inicio=data['hora_inicio'],
                     hora_fin=data['hora_fin'],
@@ -355,7 +363,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     valor_previo=None,
                     valor_nuevo={
                         'id_cronograma': cronograma.id_cronograma,
-                        'id_agente': agente_data['id_agente'],
+                        'id_agente': agente_id_guardia,
                         'fecha': data['fecha'],
                         'hora_inicio': data['hora_inicio'],
                         'hora_fin': data['hora_fin'],

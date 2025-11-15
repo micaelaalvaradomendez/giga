@@ -12,7 +12,9 @@
     let showEditProfile = false;
     let showMandatoryPasswordChange = false;
     let feriados = [];
+    let guardias = [];
     let loadingFeriados = false;
+    let loadingGuardias = false;
 
     onMount(async () => {
         // Verificar si el usuario está autenticado
@@ -30,8 +32,9 @@
                     showMandatoryPasswordChange = true;
                 }
 
-                // Cargar feriados para el calendario
+                // Cargar feriados y guardias para el calendario
                 await cargarFeriados();
+                await cargarGuardias();
             } else {
                 // Si no está autenticado, redirigir al login
                 goto("/");
@@ -69,6 +72,38 @@
             feriados = []; // En caso de error, asegurar que sea un array vacío
         } finally {
             loadingFeriados = false;
+        }
+    }
+
+    async function cargarGuardias() {
+        if (!user || !user.id) return;
+        
+        try {
+            loadingGuardias = true;
+            const response = await guardiasService.getGuardiasAgente(user.id);
+            guardias = response.data?.guardias || [];
+            console.log('Guardias cargadas en inicio:', guardias);
+        } catch (error) {
+            console.error('Error cargando guardias:', error);
+            guardias = [];
+        } finally {
+            loadingGuardias = false;
+        }
+    }
+
+    async function cargarGuardias() {
+        if (!user || !user.id) return;
+        
+        try {
+            loadingGuardias = true;
+            const response = await guardiasService.getGuardiasAgente(user.id);
+            guardias = response.data?.guardias || [];
+            console.log('Guardias cargadas en inicio:', guardias);
+        } catch (error) {
+            console.error('Error cargando guardias:', error);
+            guardias = [];
+        } finally {
+            loadingGuardias = false;
         }
     }
 
@@ -219,10 +254,10 @@
                 </div>
             </div>
             <div class="right-panel">
-                {#if loadingFeriados}
-                    <div class="loading">Cargando feriados...</div>
+                {#if loadingFeriados || loadingGuardias}
+                    <div class="loading">Cargando calendario...</div>
                 {:else}
-                    <CalendarioBase {feriados} />
+                    <CalendarioBase {feriados} {guardias} />
                 {/if}
             </div>
         </div>

@@ -87,11 +87,11 @@
     }
 
     async function cargarGuardias() {
-        if (!user || !user.agente_id) return;
+        if (!user || !user.id) return;
         
         try {
             loadingGuardias = true;
-            const response = await guardiasService.getGuardiasAgente(user.agente_id);
+            const response = await guardiasService.getGuardiasAgente(user.id);
             guardias = response.data?.guardias || [];
             console.log('Guardias del agente:', guardias);
         } catch (error) {
@@ -236,7 +236,7 @@
         {#if loadingFeriados}
             <div class="loading">Cargando feriados...</div>
         {:else}
-            <CalendarioBase {feriados} />
+            <CalendarioBase {feriados} {guardias} />
         {/if}
     </div>
 {/if}
