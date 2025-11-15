@@ -22,11 +22,125 @@ INSERT INTO tipo_licencia (codigo, descripcion) VALUES
     ('PER', 'Personal - Licencia por motivos personales')
 ON CONFLICT (codigo) DO NOTHING;
 
--- Limpiar área por defecto e insertar área real
+-- Limpiar área por defecto e insertar estructura jerárquica completa
 DELETE FROM area WHERE nombre = 'General';
-INSERT INTO area (nombre, activo) VALUES 
-    ('Secretaría de Protección Civil', true)
-ON CONFLICT (nombre) DO NOTHING;
+
+-- Insertar estructura jerárquica completa de Protección Civil
+-- Nivel 1: Secretaría
+INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
+    ('Secretaría de Protección Civil', 'Secretaría principal de Protección Civil de Tierra del Fuego', NULL, 1, true);
+
+-- Nivel 2: Subsecretaría
+INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
+    ('Subsecretaría de Seguridad Vial', 'Subsecretaría encargada de la seguridad vial provincial', 
+     (SELECT id_area FROM area WHERE nombre = 'Secretaría de Protección Civil'), 2, true);
+
+-- Nivel 3: Direcciones Provinciales
+INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
+    ('Dirección Provincial de Seguridad Vial', 'Dirección principal de seguridad vial provincial', 
+     (SELECT id_area FROM area WHERE nombre = 'Subsecretaría de Seguridad Vial'), 3, true);
+
+-- Nivel 4: Direcciones Generales y Operativas
+INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
+    -- Dirección General de Planificación
+    ('Dirección General de Planificación de Transporte y Seguridad Vial', 'Planificación estratégica del transporte y seguridad vial', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+    
+    -- Direcciones Operativas
+    ('Dirección Operativa y Seguridad Vial Zona Norte', 'Operaciones de seguridad vial en zona norte', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+    
+    ('Dirección Operativa y Seguridad Vial Zona Sur', 'Operaciones de seguridad vial en zona sur', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+    
+    -- Direcciones de Habilitaciones
+    ('Dirección Habilitaciones Zona Norte', 'Habilitaciones y permisos zona norte', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+    
+    ('Dirección Habilitaciones Zona Sur', 'Habilitaciones y permisos zona sur', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+    
+    -- Dirección Administrativa
+    ('Dirección Administrativa y Contable', 'Administración y contabilidad general', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+    
+    -- Dirección Observatorio
+    ('Dirección Observatorio Vial', 'Observatorio y estadísticas de seguridad vial', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true);
+
+-- Nivel 5: Subdirecciones y Departamentos principales
+INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
+    -- Subdirección bajo Dirección General de Planificación
+    ('Subdirección General de Planificación de Transporte y Seguridad Vial', 'Subdirección de planificación operativa', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección General de Planificación de Transporte y Seguridad Vial'), 5, true),
+    
+    -- Departamentos Operativos
+    ('Departamento Operativo Zona Norte', 'Departamento de operaciones zona norte', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Operativa y Seguridad Vial Zona Norte'), 5, true),
+    
+    ('Departamento Operativo Zona Sur', 'Departamento de operaciones zona sur', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Operativa y Seguridad Vial Zona Sur'), 5, true),
+    
+    -- Departamentos de Habilitaciones Zona Norte
+    ('Departamento Habilitaciones Zona Norte', 'Departamento de habilitaciones zona norte', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Norte'), 5, true),
+    
+    ('Departamento Inspección Zona Norte', 'Departamento de inspección zona norte', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Norte'), 5, true),
+    
+    -- Departamentos de Habilitaciones Zona Sur
+    ('Departamento Habilitaciones Zona Sur', 'Departamento de habilitaciones zona sur', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur'), 5, true),
+    
+    ('Departamento Habilitaciones Zona Centro', 'Departamento de habilitaciones zona centro', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur'), 5, true),
+    
+    ('Departamento Inspección Zona Sur', 'Departamento de inspección zona sur', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur'), 5, true),
+    
+    ('Departamento Inspección Zona Centro', 'Departamento de inspección zona centro', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur'), 5, true),
+    
+    -- Departamentos Administrativos
+    ('Departamento Administrativo y Contable', 'Departamento principal administrativo y contable', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Administrativa y Contable'), 5, true),
+    
+    ('Departamento Administración y Mesa de Entradas Zona Norte', 'Administración y mesa de entradas zona norte', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Administrativa y Contable'), 5, true),
+    
+    ('Departamento de Recursos Humanos', 'Gestión de recursos humanos', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Administrativa y Contable'), 5, true),
+    
+    -- Departamentos del Observatorio
+    ('Departamento RePAT Zona Norte', 'Registro Provincial de Antecedentes de Tránsito zona norte', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial'), 5, true),
+    
+    ('Departamento RePAT Zona Sur', 'Registro Provincial de Antecedentes de Tránsito zona sur', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial'), 5, true),
+    
+    ('Departamento Promoción y Difusión', 'Promoción y difusión de seguridad vial', 
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial'), 5, true);
+
+-- Nivel 6: Departamentos bajo Subdirección y Divisiones
+INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
+    -- Departamento bajo Subdirección General
+    ('Departamento de Planificación', 'Departamento de planificación estratégica', 
+     (SELECT id_area FROM area WHERE nombre = 'Subdirección General de Planificación de Transporte y Seguridad Vial'), 6, true),
+    
+    -- División bajo Departamento RePAT Zona Norte
+    ('División RePAT Zona Norte', 'División operativa del RePAT zona norte', 
+     (SELECT id_area FROM area WHERE nombre = 'Departamento RePAT Zona Norte'), 6, true);
+
+-- Nivel 7: Divisiones bajo Departamento de Planificación
+INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
+    ('División de Planificación', 'División operativa de planificación', 
+     (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación'), 7, true),
+    
+    ('División de Choferes Zona Norte', 'División de gestión de choferes zona norte', 
+     (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación'), 7, true),
+    
+    ('División de Choferes Zona Sur', 'División de gestión de choferes zona sur', 
+     (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación'), 7, true);
 
 -- Insertar datos usando DO block para manejar las referencias correctamente
 DO $$
@@ -87,7 +201,38 @@ BEGIN
         ('006', 'Pamela', 'Frers', 'pamela.frers@proteccioncivil.tdf.gov.ar', 
          '67890123', '27678901234', 'pbkdf2_sha256$1000000$PR3R1yPZeUhy1a1oY3Vj0W$WxsEWCjKX8nEMFmJ7wBsUXZkRFrvox0x4UBoc/b0BAk=', 
          '2964678901', '1995-12-30', 'Tierra del Fuego', 'Ushuaia', 'Onashaga', '987', 
-         'POMYS', true, area_id)
+         'POMYS', true, area_id),
+         
+        -- Agentes adicionales para diferentes áreas
+        ('007', 'Roberto', 'Martinez', 'roberto.martinez@proteccioncivil.tdf.gov.ar', 
+         '78901234', '27789012344', 'pbkdf2_sha256$1000000$8B2E7f9Q4R5T6U7V8W9X0Y$1ZaAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTu=', 
+         '2964789012', '1987-04-12', 'Tierra del Fuego', 'Ushuaia', 'Prefectura Naval', '234', 
+         'EPU', true, (SELECT id_area FROM area WHERE nombre = 'Subsecretaría de Seguridad Vial')),
+         
+        ('008', 'Sandra', 'Lopez', 'sandra.lopez@proteccioncivil.tdf.gov.ar', 
+         '89012345', '27890123454', 'pbkdf2_sha256$1000000$9C3F8g0R5S6T7U8V9W0X1Y$2AbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuVw=', 
+         '2964890123', '1991-08-25', 'Tierra del Fuego', 'Ushuaia', 'Karukinka', '456', 
+         'POMYS', true, (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial')),
+         
+        ('009', 'Carlos', 'Rodriguez', 'carlos.rodriguez@proteccioncivil.tdf.gov.ar', 
+         '90123456', '27901234564', 'pbkdf2_sha256$1000000$0D4G9h1S6T7U8V9W0X1Y2Z$3BcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuVwXy=', 
+         '2964901234', '1984-06-18', 'Tierra del Fuego', 'Ushuaia', '25 de Mayo', '789', 
+         'PAYT', true, (SELECT id_area FROM area WHERE nombre = 'Departamento Operativo Zona Norte')),
+         
+        ('010', 'María', 'Fernandez', 'maria.fernandez@proteccioncivil.tdf.gov.ar', 
+         '01234567', '27012345674', 'pbkdf2_sha256$1000000$1E5H0i2T7U8V9W0X1Y2Z3A$4CdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuVwXyZa=', 
+         '2964012345', '1989-12-03', 'Tierra del Fuego', 'Ushuaia', 'Almirante Brown', '123', 
+         'EPU', true, (SELECT id_area FROM area WHERE nombre = 'Departamento Habilitaciones Zona Norte')),
+         
+        ('011', 'Jorge', 'Gutierrez', 'jorge.gutierrez@proteccioncivil.tdf.gov.ar', 
+         '12345670', '27123456704', 'pbkdf2_sha256$1000000$2F6I1j3U8V9W0X1Y2Z3A4B$5DeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuVwXyZaBc=', 
+         '2964123450', '1986-02-14', 'Tierra del Fuego', 'Ushuaia', 'Gobernador Paz', '567', 
+         'POMYS', true, (SELECT id_area FROM area WHERE nombre = 'Departamento Administrativo y Contable')),
+         
+        ('012', 'Ana', 'Torres', 'ana.torres@proteccioncivil.tdf.gov.ar', 
+         '23456701', '27234567014', 'pbkdf2_sha256$1000000$3G7J2k4V9W0X1Y2Z3A4B5C$6EfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuVwXyZaBcDe=', 
+         '2964234501', '1993-10-08', 'Tierra del Fuego', 'Ushuaia', 'Juana Fadul', '890', 
+         'PAYT', true, (SELECT id_area FROM area WHERE nombre = 'División de Planificación'))
     ON CONFLICT (legajo) DO NOTHING;
     
     -- Asignar roles usando la tabla agente_rol (estructura actual)
@@ -97,8 +242,45 @@ BEGIN
         ((SELECT id_agente FROM agente WHERE legajo = '003'), rol_director_id), -- Cristian: Director
         ((SELECT id_agente FROM agente WHERE legajo = '004'), rol_jefe_id),     -- Leandro: Jefatura
         ((SELECT id_agente FROM agente WHERE legajo = '005'), rol_avanzado_id), -- Teresa: Agente Avanzado
-        ((SELECT id_agente FROM agente WHERE legajo = '006'), rol_agente_id)    -- Pamela: Agente
+        ((SELECT id_agente FROM agente WHERE legajo = '006'), rol_agente_id),   -- Pamela: Agente
+        ((SELECT id_agente FROM agente WHERE legajo = '007'), rol_director_id), -- Roberto: Director (Subsecretaría)
+        ((SELECT id_agente FROM agente WHERE legajo = '008'), rol_jefe_id),     -- Sandra: Jefatura (Dir. Provincial)
+        ((SELECT id_agente FROM agente WHERE legajo = '009'), rol_jefe_id),     -- Carlos: Jefatura (Depto. Norte)
+        ((SELECT id_agente FROM agente WHERE legajo = '010'), rol_avanzado_id), -- María: Agente Avanzado
+        ((SELECT id_agente FROM agente WHERE legajo = '011'), rol_avanzado_id), -- Jorge: Agente Avanzado
+        ((SELECT id_agente FROM agente WHERE legajo = '012'), rol_agente_id)    -- Ana: Agente
     ON CONFLICT (id_agente, id_rol) DO NOTHING;
+    
+    -- Asignar jefes a las áreas principales
+    UPDATE area SET jefe_area = (SELECT id_agente FROM agente WHERE legajo = '001') 
+    WHERE nombre = 'Secretaría de Protección Civil';
+    
+    UPDATE area SET jefe_area = (SELECT id_agente FROM agente WHERE legajo = '007') 
+    WHERE nombre = 'Subsecretaría de Seguridad Vial';
+    
+    UPDATE area SET jefe_area = (SELECT id_agente FROM agente WHERE legajo = '008') 
+    WHERE nombre = 'Dirección Provincial de Seguridad Vial';
+    
+    UPDATE area SET jefe_area = (SELECT id_agente FROM agente WHERE legajo = '003') 
+    WHERE nombre = 'Dirección General de Planificación de Transporte y Seguridad Vial';
+    
+    UPDATE area SET jefe_area = (SELECT id_agente FROM agente WHERE legajo = '009') 
+    WHERE nombre = 'Departamento Operativo Zona Norte';
+    
+    UPDATE area SET jefe_area = (SELECT id_agente FROM agente WHERE legajo = '004') 
+    WHERE nombre = 'Departamento Operativo Zona Sur';
+    
+    UPDATE area SET jefe_area = (SELECT id_agente FROM agente WHERE legajo = '010') 
+    WHERE nombre = 'Departamento Habilitaciones Zona Norte';
+    
+    UPDATE area SET jefe_area = (SELECT id_agente FROM agente WHERE legajo = '011') 
+    WHERE nombre = 'Departamento Administrativo y Contable';
+    
+    UPDATE area SET jefe_area = (SELECT id_agente FROM agente WHERE legajo = '005') 
+    WHERE nombre = 'División de Planificación';
+    
+    UPDATE area SET jefe_area = (SELECT id_agente FROM agente WHERE legajo = '012') 
+    WHERE nombre = 'División RePAT Zona Norte';
     
     -- Insertar licencias adaptadas a estructura actual (campos: id_licencia, estado, id_tipo_licencia, fecha_desde, fecha_hasta, id_agente)
     INSERT INTO licencia (id_agente, id_tipo_licencia, fecha_desde, fecha_hasta, estado) VALUES 

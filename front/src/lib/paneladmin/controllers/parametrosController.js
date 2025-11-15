@@ -31,7 +31,15 @@ class ParametrosController {
 		});
 
 		// Stores para formularios
-		this.areaForm = writable({ id_area: null, nombre: '', activo: true });
+		this.areaForm = writable({ 
+			id_area: null, 
+			nombre: '', 
+			descripcion: '',
+			id_area_padre: null,
+			jefe_area: null,
+			agentes_asignados: [],
+			activo: true 
+		});
 		this.agrupacionForm = writable({ 
 			id_agrupacion: null, 
 			nombre: '', 
@@ -167,6 +175,72 @@ class ParametrosController {
 		}
 	}
 
+	/**
+	 * Cargar agentes disponibles para asignación
+	 */
+	async cargarAgentes() {
+		try {
+			const response = await personasService.getAgentes();
+			
+			let agentesData = [];
+			if (response && response.data && response.data.data) {
+				agentesData = response.data.data.results || [];
+			} else if (response && response.data) {
+				agentesData = response.data.results || [];
+			}
+			
+			console.log('✅ Agentes cargados:', agentesData.length);
+			return agentesData;
+		} catch (error) {
+			console.error('❌ Error cargando agentes:', error);
+			return [];
+		}
+	}
+
+	/**
+	 * Obtener áreas raíz (sin padre) para el selector jerárquico
+	 */
+	getAreasRaiz() {
+		return derived([this.areas], ([$areas]) => {
+			if (!$areas || !Array.isArray($areas)) return [];
+			return $areas.filter(area => !area.id_area_padre && area.activo);
+		});
+	}
+
+	/**
+	 * Construir árbol jerárquico de áreas
+	 */
+	construirArbolAreas(areas = null) {
+		if (!areas) {
+			return derived([this.areas], ([$areas]) => {
+				return this._construirArbol($areas || []);
+			});
+		}
+		return this._construirArbol(areas);
+	}
+
+	/**
+	 * Función auxiliar para construir árbol jerárquico
+	 */
+	_construirArbol(areas, parentId = null, level = 0) {
+		const result = [];
+		const children = areas.filter(area => 
+			(parentId === null && !area.id_area_padre) || 
+			(area.id_area_padre === parentId)
+		);
+		
+		for (const area of children) {
+			const areaWithChildren = {
+				...area,
+				level,
+				children: this._construirArbol(areas, area.id_area, level + 1)
+			};
+			result.push(areaWithChildren);
+		}
+		
+		return result;
+	}
+
 	// =====================================
 	// GESTIÓN DE ÁREAS
 	// =====================================
@@ -175,7 +249,15 @@ class ParametrosController {
 	 * Abrir modal para agregar nueva área
 	 */
 	agregarArea() {
-		this.areaForm.set({ id_area: null, nombre: '', activo: true });
+		this.areaForm.set({ 
+			id_area: null, 
+			nombre: '', 
+			descripcion: '',
+			id_area_padre: null,
+			jefe_area: null,
+			agentes_asignados: [],
+			activo: true 
+		});
 		this.modalArea.set({ isOpen: true, agente: null, isSaving: false });
 	}
 
@@ -208,27 +290,36 @@ class ParametrosController {
 			throw new Error('El nombre del área es requerido');
 		}
 
+		// Validar jerarquía: no puede ser su propio padre
+		if (formData.id_area && formData.id_area_padre === formData.id_area) {
+			throw new Error('Un área no puede ser su propio padre');
+		}
+
 		this.modalArea.update(modal => ({ ...modal, isSaving: true }));
 		
 		try {
 			let response;
 			
+			// Preparar datos con todos los campos jerárquicos
+			const areaData = {
+				nombre: formData.nombre.trim(),
+				descripcion: formData.descripcion?.trim() || null,
+				id_area_padre: formData.id_area_padre || null,
+				jefe_area: formData.jefe_area || null,
+				agentes_asignados: formData.agentes_asignados || [],
+				activo: formData.activo
+			};
+			
 			if (formData.id_area) {
 				// Actualizar área existente
-				response = await personasService.updateArea(formData.id_area, {
-					nombre: formData.nombre.trim(),
-					activo: formData.activo
-				});
+				response = await personasService.updateArea(formData.id_area, areaData);
 			} else {
 				// Crear nueva área
-				response = await personasService.createArea({
-					nombre: formData.nombre.trim(),
-					activo: formData.activo
-				});
+				response = await personasService.createArea(areaData);
 			}
 			
 			if (response && response.data && response.data.success) {
-				console.log('✅ Área guardada correctamente');
+				console.log('✅ Área guardada correctamente:', response.data.data);
 			}
 			
 			this.modalArea.set({ isOpen: false, agente: null, isSaving: false });
@@ -236,7 +327,8 @@ class ParametrosController {
 			
 			return { 
 				success: true, 
-				message: formData.id_area ? 'Área actualizada correctamente' : 'Área creada correctamente'
+				message: formData.id_area ? 'Área actualizada correctamente' : 'Área creada correctamente',
+				data: response.data.data
 			};
 		} catch (error) {
 			console.error('❌ Error guardando área:', error);

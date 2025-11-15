@@ -121,28 +121,6 @@
 	</div>
 {:else}
 
-<!-- Resumen de estadísticas -->
-{#if ($areasFiltradas && $areasFiltradas.length > 0) || ($agrupacionesFiltradas && $agrupacionesFiltradas.length > 0)}
-<div class="stats-container">
-	<div class="stat-card">
-		<h3>Total Áreas</h3>
-		<p class="stat-number">{$areas ? $areas.length : 0}</p>
-	</div>
-	<div class="stat-card">
-		<h3>Áreas Activas</h3>
-		<p class="stat-number">{$areas ? $areas.filter(a => a.activo).length : 0}</p>
-	</div>
-	<div class="stat-card">
-		<h3>Total Agrupaciones</h3>
-		<p class="stat-number">{$agrupaciones ? $agrupaciones.length : 0}</p>
-	</div>
-	<div class="stat-card">
-		<h3>Agentes en Agrupaciones</h3>
-		<p class="stat-number">{$agrupaciones ? $agrupaciones.reduce((sum, a) => sum + (a.total_agentes || 0), 0) : 0}</p>
-	</div>
-</div>
-{/if}
-
 <div class="content-grid">
 	<!-- Panel de Áreas -->
 	<div class="panel-areas">
@@ -498,43 +476,6 @@
 		.content-grid {
 			grid-template-columns: 1fr;
 		}
-	}
-
-	/* Estadísticas */
-	.stats-container {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 20px;
-		margin: 30px 0;
-	}
-
-	.stat-card {
-		background: white;
-		padding: 25px;
-		border-radius: 12px;
-		box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-		text-align: center;
-		border-top: 4px solid #3498db;
-		transition: transform 0.3s ease;
-	}
-
-	.stat-card:hover {
-		transform: translateY(-5px);
-	}
-
-	.stat-card h3 {
-		margin: 0 0 10px;
-		color: #555;
-		font-size: 0.9rem;
-		font-weight: 600;
-		text-transform: uppercase;
-	}
-
-	.stat-number {
-		font-size: 2.5rem;
-		font-weight: 700;
-		color: #3498db;
-		margin: 0;
 	}
 
 	/* Paneles */
