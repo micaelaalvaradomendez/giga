@@ -1,6 +1,7 @@
 <script>
   const items = [
-    { title: 'Planificador', desc: 'Calendario semanal/mensual', href: '/paneladmin/guardias/planificador', emoji: '📅' },
+    { title: 'Planificador', desc: 'Crear nueva guardia', href: '/paneladmin/guardias/planificador', emoji: '➕' },
+    { title: 'Calendario', desc: 'Ver guardias en calendario', href: '/paneladmin/guardias/calendario', emoji: '📅' },
     { title: 'Aprobaciones  (falta)', desc: 'Revisar y publicar', href: '/paneladmin/guardias/aprobaciones', emoji: '📝' }
   ];
 </script>
@@ -23,6 +24,9 @@
       </a>
     {/each}
   </div>
+
+  <h3> en planificador ocnsiderar que no puedo asignarle una guardia a un agente si ya tiene una guardia asignada para esa fecha</h3>
+  <h3> en el calendario hay que mostrar los agentes en funcion de la guardia creada, separarlos y si hay dos guardias de diferentes areas para le mismo dia y la misma hora, entonces deberia separarse</h3>
 </section>
 
 <style>
@@ -46,9 +50,9 @@
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1rem;
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto;
   }
 

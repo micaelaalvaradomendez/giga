@@ -327,17 +327,66 @@ def delete_agente(request, agente_id):
 @permission_classes([AllowAny])
 def get_areas(request):
     """
-    Obtener lista de todas las áreas activas.
+    Obtener todas las áreas del sistema con información jerárquica
     """
     try:
-        areas = Area.objects.filter(activo=True).order_by('nombre')
-        serializer = AreaSerializer(areas, many=True)
+        incluir_jerarquia = request.GET.get('jerarquia', 'false').lower() == 'true'
+        
+        if incluir_jerarquia:
+            # Obtener estructura jerárquica
+            areas_raiz = Area.objects.filter(id_area_padre__isnull=True, activo=True).order_by('nombre')
+            
+            def construir_arbol(areas):
+                resultado = []
+                for area in areas:
+                    area_data = {
+                        'id_area': area.id_area,
+                        'nombre': area.nombre,
+                        'descripcion': area.descripcion,
+                        'id_area_padre': area.id_area_padre.id_area if area.id_area_padre else None,
+                        'jefe_area': {
+                            'id_agente': area.jefe_area.id_agente,
+                            'nombre_completo': f"{area.jefe_area.nombre} {area.jefe_area.apellido}"
+                        } if area.jefe_area else None,
+                        'nivel': area.nivel,
+
+                        'activo': area.activo,
+                        'nombre_completo': area.nombre_completo,
+                        'es_raiz': area.es_raiz,
+                        'total_agentes': area.total_agentes,
+                        'total_agentes_jerarquico': area.total_agentes_jerarquico,
+                        'children': construir_arbol(area.hijos)
+                    }
+                    resultado.append(area_data)
+                return resultado
+            
+            areas_data = construir_arbol(areas_raiz)
+        else:
+            # Lista plana como antes
+            areas = Area.objects.filter(activo=True).order_by('nombre')
+            areas_data = []
+            for area in areas:
+                areas_data.append({
+                    'id_area': area.id_area,
+                    'nombre': area.nombre,
+                    'descripcion': area.descripcion if hasattr(area, 'descripcion') else None,
+                    'id_area_padre': area.id_area_padre.id_area if hasattr(area, 'id_area_padre') and area.id_area_padre else None,
+                    'jefe_area': {
+                        'id_agente': area.jefe_area.id_agente,
+                        'nombre_completo': f"{area.jefe_area.nombre} {area.jefe_area.apellido}"
+                    } if hasattr(area, 'jefe_area') and area.jefe_area else None,
+                    'nivel': getattr(area, 'nivel', 0),
+                    'activo': area.activo,
+                    'nombre_completo': getattr(area, 'nombre_completo', area.nombre),
+                    'total_agentes': getattr(area, 'total_agentes', 0)
+                })
         
         return Response({
             'success': True,
             'data': {
-                'results': serializer.data,
-                'count': len(serializer.data)
+                'results': areas_data,
+                'count': len(areas_data),
+                'jerarquia': incluir_jerarquia
             }
         })
         
@@ -688,30 +737,127 @@ def limpiar_roles_duplicados(request):
 @permission_classes([AllowAny])
 def create_area(request):
     """
-    Crear nueva área.
+    Crear nueva área con soporte para jerarquía, descripción y jefe.
     """
     try:
         with transaction.atomic():
-            serializer = AreaSerializer(data=request.data)
+            # Extraer datos del request
+            nombre = request.data.get('nombre', '').strip()
+            descripcion = request.data.get('descripcion', '').strip()
+            id_area_padre = request.data.get('id_area_padre')
+            jefe_area_id = request.data.get('jefe_area')
+            agentes_asignados = request.data.get('agentes_asignados', [])
+            activo = request.data.get('activo', True)
             
-            if serializer.is_valid():
-                area = serializer.save()
-                
+            # Validaciones
+            if not nombre:
                 return Response({
-                    'success': True,
-                    'message': 'Área creada correctamente',
-                    'data': {
-                        'id_area': area.id_area,
-                        'nombre': area.nombre,
-                        'activo': area.activo
-                    }
-                }, status=status.HTTP_201_CREATED)
+                    'success': False,
+                    'message': 'El nombre del área es requerido'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validar área padre si se especifica
+            area_padre = None
+            nivel = 0
+            if id_area_padre:
+                try:
+                    area_padre = Area.objects.get(id_area=id_area_padre, activo=True)
+                    nivel = area_padre.nivel + 1
+                except Area.DoesNotExist:
+                    return Response({
+                        'success': False,
+                        'message': 'El área padre especificada no existe'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validar jefe del área si se especifica
+            jefe_area = None
+            if jefe_area_id:
+                try:
+                    jefe_area = Agente.objects.get(id_agente=jefe_area_id, activo=True)
+                except Agente.DoesNotExist:
+                    return Response({
+                        'success': False,
+                        'message': 'El jefe especificado no existe'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validar unicidad del nombre en el mismo nivel
+            if Area.objects.filter(
+                nombre__iexact=nombre,
+                id_area_padre=area_padre,
+                activo=True
+            ).exists():
+                return Response({
+                    'success': False,
+                    'message': 'Ya existe un área con ese nombre en el mismo nivel jerárquico'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Crear área
+            area = Area.objects.create(
+                nombre=nombre,
+                descripcion=descripcion or None,
+                id_area_padre=area_padre,
+                jefe_area=jefe_area,
+                nivel=nivel,
+                activo=activo
+            )
+            
+            # Asignar agentes al área si se especificaron
+            agentes_asignados_exitosos = []
+            if agentes_asignados:
+                for agente_id in agentes_asignados:
+                    try:
+                        agente = Agente.objects.get(id_agente=agente_id, activo=True)
+                        agente.id_area = area
+                        agente.save()
+                        agentes_asignados_exitosos.append({
+                            'id_agente': agente.id_agente,
+                            'nombre_completo': f"{agente.nombre} {agente.apellido}"
+                        })
+                    except Agente.DoesNotExist:
+                        continue
+            
+            # Registrar en auditoría
+            crear_auditoria_area(
+                accion='CREAR',
+                area_id=area.id_area,
+                valor_nuevo={
+                    'nombre': area.nombre,
+                    'descripcion': area.descripcion,
+                    'id_area_padre': area.id_area_padre.id_area if area.id_area_padre else None,
+                    'nombre_area_padre': area.id_area_padre.nombre if area.id_area_padre else None,
+                    'jefe_area': area.jefe_area.id_agente if area.jefe_area else None,
+                    'nombre_jefe': f"{area.jefe_area.nombre} {area.jefe_area.apellido}" if area.jefe_area else None,
+                    'nivel': area.nivel,
+                    'agentes_asignados': agentes_asignados_exitosos,
+                    'total_agentes': len(agentes_asignados_exitosos)
+                },
+                usuario_logueado_id=1  # TODO: obtener del usuario autenticado
+            )
+            
+            # Sincronizar organigrama automáticamente
+            resultado_sincronizacion = sincronizar_organigrama_areas(usuario_logueado_id=1)
+            print(f"Sincronización organigrama: {resultado_sincronizacion}")
             
             return Response({
-                'success': False,
-                'message': 'Datos inválidos',
-                'errors': serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
+                'success': True,
+                'message': 'Área creada correctamente',
+                'data': {
+                    'id_area': area.id_area,
+                    'nombre': area.nombre,
+                    'descripcion': area.descripcion,
+                    'id_area_padre': area.id_area_padre.id_area if area.id_area_padre else None,
+                    'nombre_padre': area.id_area_padre.nombre if area.id_area_padre else None,
+                    'jefe_area': {
+                        'id_agente': area.jefe_area.id_agente,
+                        'nombre_completo': f"{area.jefe_area.nombre} {area.jefe_area.apellido}"
+                    } if area.jefe_area else None,
+                    'nivel': area.nivel,
+                    'activo': area.activo,
+                    'nombre_completo': area.nombre_completo,
+                    'agentes_asignados': agentes_asignados_exitosos,
+                    'total_agentes': len(agentes_asignados_exitosos)
+                }
+            }, status=status.HTTP_201_CREATED)
             
     except Exception as e:
         return Response({
@@ -725,33 +871,181 @@ def create_area(request):
 @permission_classes([AllowAny])
 def update_area(request, area_id):
     """
-    Actualizar área existente.
+    Actualizar área existente con soporte para jerarquía, descripción y jefe.
     """
     try:
         with transaction.atomic():
             area = get_object_or_404(Area, id_area=area_id)
             
-            partial = request.method == 'PATCH'
-            serializer = AreaSerializer(area, data=request.data, partial=partial)
+            # Capturar valores previos para auditoría
+            valor_previo = {
+                'nombre': area.nombre,
+                'descripcion': area.descripcion,
+                'id_area_padre': area.id_area_padre.id_area if area.id_area_padre else None,
+                'nombre_area_padre': area.id_area_padre.nombre if area.id_area_padre else None,
+                'jefe_area': area.jefe_area.id_agente if area.jefe_area else None,
+                'nombre_jefe': f"{area.jefe_area.nombre} {area.jefe_area.apellido}" if area.jefe_area else None,
+                'nivel': area.nivel,
+                'activo': area.activo
+            }
             
-            if serializer.is_valid():
-                area = serializer.save()
-                
+            # Extraer datos del request
+            nombre = request.data.get('nombre', area.nombre).strip()
+            descripcion = request.data.get('descripcion', area.descripcion)
+            id_area_padre = request.data.get('id_area_padre')
+            jefe_area_id = request.data.get('jefe_area')
+            agentes_asignados = request.data.get('agentes_asignados', [])
+            activo = request.data.get('activo', area.activo)
+            
+            # Validaciones
+            if not nombre:
                 return Response({
-                    'success': True,
-                    'message': 'Área actualizada correctamente',
-                    'data': {
-                        'id_area': area.id_area,
-                        'nombre': area.nombre,
-                        'activo': area.activo
-                    }
-                })
+                    'success': False,
+                    'message': 'El nombre del área es requerido'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Evitar que el área sea su propio padre
+            if id_area_padre and int(id_area_padre) == area.id_area:
+                return Response({
+                    'success': False,
+                    'message': 'Un área no puede ser su propio padre'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validar área padre si se especifica
+            area_padre = None
+            nivel = 1  # Nivel por defecto para áreas raíz
+            if id_area_padre:
+                try:
+                    area_padre = Area.objects.get(id_area=id_area_padre, activo=True)
+                    nivel = area_padre.nivel + 1
+                    
+                    # Verificar que no se cree un ciclo jerárquico
+                    def verificar_ciclo(area_objetivo, area_candidata_padre):
+                        if not area_candidata_padre:
+                            return False
+                        if area_candidata_padre.id_area == area_objetivo.id_area:
+                            return True
+                        return verificar_ciclo(area_objetivo, area_candidata_padre.id_area_padre)
+                    
+                    if verificar_ciclo(area, area_padre):
+                        return Response({
+                            'success': False,
+                            'message': 'No se puede crear un ciclo jerárquico'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                        
+                except Area.DoesNotExist:
+                    return Response({
+                        'success': False,
+                        'message': 'El área padre especificada no existe'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validar jefe del área si se especifica
+            jefe_area = None
+            if jefe_area_id:
+                try:
+                    jefe_area = Agente.objects.get(id_agente=jefe_area_id, activo=True)
+                except Agente.DoesNotExist:
+                    return Response({
+                        'success': False,
+                        'message': 'El jefe especificado no existe'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validar unicidad del nombre en el mismo nivel (excluyendo el área actual)
+            if Area.objects.filter(
+                nombre__iexact=nombre,
+                id_area_padre=area_padre,
+                activo=True
+            ).exclude(id_area=area.id_area).exists():
+                return Response({
+                    'success': False,
+                    'message': 'Ya existe un área con ese nombre en el mismo nivel jerárquico'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Actualizar área
+            area.nombre = nombre
+            area.descripcion = descripcion.strip() if descripcion else None
+            area.id_area_padre = area_padre
+            area.jefe_area = jefe_area
+            area.nivel = nivel
+            area.activo = activo
+            area.save()
+            
+            # Actualizar nivel de áreas descendientes si cambió la jerarquía
+            def actualizar_niveles_descendientes(area_base):
+                hijos = Area.objects.filter(id_area_padre=area_base.id_area, activo=True)
+                for hijo in hijos:
+                    hijo.nivel = area_base.nivel + 1
+                    hijo.save()
+                    actualizar_niveles_descendientes(hijo)
+            
+            actualizar_niveles_descendientes(area)
+            
+            # Gestionar asignaciones de agentes
+            agentes_asignados_exitosos = []
+            if agentes_asignados:
+                # Primero, desasignar todos los agentes actuales del área
+                Agente.objects.filter(id_area=area, activo=True).update(id_area=None)
+                
+                # Luego, asignar los nuevos agentes
+                for agente_id in agentes_asignados:
+                    try:
+                        agente = Agente.objects.get(id_agente=agente_id, activo=True)
+                        agente.id_area = area
+                        agente.save()
+                        agentes_asignados_exitosos.append({
+                            'id_agente': agente.id_agente,
+                            'nombre_completo': f"{agente.nombre} {agente.apellido}"
+                        })
+                    except Agente.DoesNotExist:
+                        continue
+            
+            # Preparar valor nuevo para auditoría
+            valor_nuevo = {
+                'nombre': area.nombre,
+                'descripcion': area.descripcion,
+                'id_area_padre': area.id_area_padre.id_area if area.id_area_padre else None,
+                'nombre_area_padre': area.id_area_padre.nombre if area.id_area_padre else None,
+                'jefe_area': area.jefe_area.id_agente if area.jefe_area else None,
+                'nombre_jefe': f"{area.jefe_area.nombre} {area.jefe_area.apellido}" if area.jefe_area else None,
+                'nivel': area.nivel,
+                'activo': area.activo,
+                'agentes_asignados': agentes_asignados_exitosos,
+                'total_agentes': len(agentes_asignados_exitosos)
+            }
+            
+            # Registrar en auditoría
+            crear_auditoria_area(
+                accion='MODIFICAR',
+                area_id=area.id_area,
+                valor_previo=valor_previo,
+                valor_nuevo=valor_nuevo,
+                usuario_logueado_id=1  # TODO: obtener del usuario autenticado
+            )
+            
+            # Sincronizar organigrama automáticamente
+            resultado_sincronizacion = sincronizar_organigrama_areas(usuario_logueado_id=1)
+            print(f"Sincronización organigrama: {resultado_sincronizacion}")
             
             return Response({
-                'success': False,
-                'message': 'Datos inválidos',
-                'errors': serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
+                'success': True,
+                'message': 'Área actualizada correctamente',
+                'data': {
+                    'id_area': area.id_area,
+                    'nombre': area.nombre,
+                    'descripcion': area.descripcion,
+                    'id_area_padre': area.id_area_padre.id_area if area.id_area_padre else None,
+                    'nombre_padre': area.id_area_padre.nombre if area.id_area_padre else None,
+                    'jefe_area': {
+                        'id_agente': area.jefe_area.id_agente,
+                        'nombre_completo': f"{area.jefe_area.nombre} {area.jefe_area.apellido}"
+                    } if area.jefe_area else None,
+                    'nivel': area.nivel,
+                    'activo': area.activo,
+                    'nombre_completo': area.nombre_completo,
+                    'agentes_asignados': agentes_asignados_exitosos,
+                    'total_agentes': len(agentes_asignados_exitosos)
+                }
+            })
             
     except Exception as e:
         return Response({
@@ -771,31 +1065,86 @@ def delete_area(request, area_id):
         with transaction.atomic():
             area = get_object_or_404(Area, id_area=area_id)
             
-            # Verificar si hay agentes asignados
-            agentes_asignados = Agente.objects.filter(id_area=area, activo=True).count()
+            # Capturar información para auditoría antes de eliminar
+            valor_previo = {
+                'nombre': area.nombre,
+                'descripcion': area.descripcion,
+                'id_area_padre': area.id_area_padre.id_area if area.id_area_padre else None,
+                'nombre_area_padre': area.id_area_padre.nombre if area.id_area_padre else None,
+                'jefe_area': area.jefe_area.id_agente if area.jefe_area else None,
+                'nombre_jefe': f"{area.jefe_area.nombre} {area.jefe_area.apellido}" if area.jefe_area else None,
+                'nivel': area.nivel,
+                'activo': area.activo
+            }
             
-            if agentes_asignados > 0:
-                # Buscar área por defecto (primera activa)
-                area_default = Area.objects.filter(activo=True).first()
+            # Verificar si hay áreas hijas
+            areas_hijas = Area.objects.filter(id_area_padre=area, activo=True).count()
+            if areas_hijas > 0:
+                return Response({
+                    'success': False,
+                    'message': f'No se puede eliminar el área porque tiene {areas_hijas} sub-área(s) asignada(s). Elimine primero las sub-áreas.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Verificar si hay agentes asignados
+            agentes_asignados = Agente.objects.filter(id_area=area, activo=True)
+            agentes_info = []
+            
+            if agentes_asignados.exists():
+                # Obtener información de agentes para auditoría
+                for agente in agentes_asignados:
+                    agentes_info.append({
+                        'id_agente': agente.id_agente,
+                        'nombre_completo': f"{agente.nombre} {agente.apellido}"
+                    })
                 
-                if area_default and area_default.id_area != area.id_area:
+                # Buscar área por defecto (primera activa, excluyendo la que se va a eliminar)
+                area_default = Area.objects.filter(activo=True).exclude(id_area=area.id_area).first()
+                
+                if area_default:
                     # Reasignar agentes al área por defecto
-                    Agente.objects.filter(id_area=area, activo=True).update(id_area=area_default)
-                    message = f'Área eliminada. {agentes_asignados} agente(s) reasignado(s) al área "{area_default.nombre}"'
+                    agentes_asignados.update(id_area=area_default)
+                    message = f'Área eliminada. {len(agentes_info)} agente(s) reasignado(s) al área "{area_default.nombre}"'
+                    area_reasignacion = area_default.nombre
                 else:
                     # Si no hay área por defecto, desasignar agentes
-                    Agente.objects.filter(id_area=area, activo=True).update(id_area=None)
-                    message = f'Área eliminada. {agentes_asignados} agente(s) desasignado(s) de área'
+                    agentes_asignados.update(id_area=None)
+                    message = f'Área eliminada. {len(agentes_info)} agente(s) desasignado(s) de área'
+                    area_reasignacion = None
             else:
                 message = 'Área eliminada correctamente'
+                area_reasignacion = None
             
             # Marcar área como inactiva
             area.activo = False
             area.save()
             
+            # Registrar en auditoría
+            valor_nuevo = {
+                'activo': False,
+                'agentes_reasignados': agentes_info,
+                'area_reasignacion': area_reasignacion,
+                'total_agentes_afectados': len(agentes_info)
+            }
+            
+            crear_auditoria_area(
+                accion='ELIMINAR',
+                area_id=area.id_area,
+                valor_previo=valor_previo,
+                valor_nuevo=valor_nuevo,
+                usuario_logueado_id=1  # TODO: obtener del usuario autenticado
+            )
+            
+            # Sincronizar organigrama automáticamente
+            resultado_sincronizacion = sincronizar_organigrama_areas(usuario_logueado_id=1)
+            print(f"Sincronización organigrama: {resultado_sincronizacion}")
+            
             return Response({
                 'success': True,
-                'message': message
+                'message': message,
+                'data': {
+                    'agentes_reasignados': len(agentes_info),
+                    'area_reasignacion': area_reasignacion
+                }
             })
             
     except Exception as e:
@@ -1197,6 +1546,37 @@ def eliminar_agente_con_cascada(agente_id):
     return eliminados
 
 
+def crear_auditoria(agente_id, accion, tabla, pk_afectada, valor_previo=None, valor_nuevo=None, usuario_logueado_id=None):
+    """
+    Crear registro de auditoría genérico.
+    """
+    try:
+        from django.utils import timezone
+        from django.core.serializers.json import DjangoJSONEncoder
+        import json
+        
+        # Convertir datos a JSON serializable
+        valor_previo_json = None
+        valor_nuevo_json = None
+        
+        if valor_previo:
+            valor_previo_json = json.loads(json.dumps(valor_previo, cls=DjangoJSONEncoder))
+        
+        if valor_nuevo:
+            valor_nuevo_json = json.loads(json.dumps(valor_nuevo, cls=DjangoJSONEncoder))
+        
+        Auditoria.objects.create(
+            pk_afectada=pk_afectada,
+            nombre_tabla=tabla,
+            creado_en=timezone.now(),
+            valor_previo=valor_previo_json,
+            valor_nuevo=valor_nuevo_json,
+            accion=accion,
+            id_agente_id=usuario_logueado_id or agente_id
+        )
+    except Exception as e:
+        print(f"Error al crear auditoría: {str(e)}")
+
 def crear_auditoria_agente(accion, agente_id, valor_previo=None, valor_nuevo=None, usuario_logueado_id=None):
     """
     Crear registro de auditoría para cambios en agentes.
@@ -1263,6 +1643,39 @@ def crear_auditoria_rol(accion, agente_id, rol_id, valor_previo=None, valor_nuev
         print(f"Error al crear auditoría de rol: {str(e)}")
 
 
+def crear_auditoria_area(accion, area_id, valor_previo=None, valor_nuevo=None, usuario_logueado_id=None):
+    """
+    Crear registro de auditoría para cambios en áreas.
+    """
+    try:
+        from django.utils import timezone
+        from django.core.serializers.json import DjangoJSONEncoder
+        import json
+        
+        # Convertir datos a JSON serializable
+        valor_previo_json = None
+        valor_nuevo_json = None
+        
+        if valor_previo:
+            valor_previo_json = json.loads(json.dumps(valor_previo, cls=DjangoJSONEncoder))
+        
+        if valor_nuevo:
+            valor_nuevo_json = json.loads(json.dumps(valor_nuevo, cls=DjangoJSONEncoder))
+        
+        Auditoria.objects.create(
+            pk_afectada=area_id,
+            nombre_tabla='area',
+            creado_en=timezone.now(),
+            valor_previo=valor_previo_json,
+            valor_nuevo=valor_nuevo_json,
+            accion=accion,
+            id_agente_id=usuario_logueado_id  # FK al agente que hizo el cambio
+        )
+    except Exception as e:
+        # No fallar si la auditoría falla, solo registrar
+        print(f"Error al crear auditoría de área: {str(e)}")
+
+
 def crear_auditoria_organigrama(accion, organigrama_id, valor_previo=None, valor_nuevo=None, agente_id=None):
     """
     Crear registro de auditoría para cambios en organigrama.
@@ -1282,6 +1695,103 @@ def crear_auditoria_organigrama(accion, organigrama_id, valor_previo=None, valor
     except Exception as e:
         # No fallar si la auditoría falla, solo registrar
         print(f"Error al crear auditoría: {str(e)}")
+
+
+def sincronizar_organigrama_areas(usuario_logueado_id=None):
+    """
+    Sincronizar automáticamente el organigrama con la estructura jerárquica de áreas.
+    """
+    try:
+        # Obtener la estructura jerárquica actual de áreas
+        areas_raiz = Area.objects.filter(id_area_padre__isnull=True, activo=True).order_by('nombre')
+        
+        def construir_nodo_organigrama(area):
+            """Construir un nodo del organigrama basado en un área."""
+            nodo = {
+                'id': f'area_{area.id_area}',
+                'nombre': area.nombre,
+                'tipo': 'area',
+                'id_area': area.id_area,
+                'descripcion': area.descripcion or '',
+                'nivel': area.nivel,
+                'jefe': {
+                    'id_agente': area.jefe_area.id_agente,
+                    'nombre': f"{area.jefe_area.nombre} {area.jefe_area.apellido}",
+                    'email': area.jefe_area.email
+                } if area.jefe_area else None,
+                'total_agentes': area.total_agentes,
+                'children': []
+            }
+            
+            # Agregar áreas hijas recursivamente
+            areas_hijas = Area.objects.filter(id_area_padre=area, activo=True).order_by('nombre')
+            for area_hija in areas_hijas:
+                nodo['children'].append(construir_nodo_organigrama(area_hija))
+            
+            return nodo
+        
+        # Construir la estructura completa
+        estructura_organigrama = []
+        for area_raiz in areas_raiz:
+            estructura_organigrama.append(construir_nodo_organigrama(area_raiz))
+        
+        # Obtener organigrama anterior para auditoría
+        organigrama_anterior = Organigrama.objects.filter(activo=True).first()
+        valor_previo = None
+        
+        if organigrama_anterior:
+            valor_previo = {
+                'id': organigrama_anterior.id_organigrama,
+                'nombre': organigrama_anterior.nombre,
+                'version': organigrama_anterior.version,
+                'estructura': organigrama_anterior.estructura
+            }
+        
+        # Desactivar organigramas anteriores
+        Organigrama.objects.filter(activo=True).update(activo=False)
+        
+        # Crear nuevo organigrama sincronizado
+        from django.utils import timezone
+        nueva_version = f"v{timezone.now().strftime('%m%d-%H%M')}"
+        
+        organigrama_nuevo = Organigrama.objects.create(
+            nombre='Organigrama Sincronizado con Áreas',
+            estructura=estructura_organigrama,
+            version=nueva_version,
+            creado_por='Sistema - Sincronización Automática',
+            activo=True
+        )
+        
+        # Registrar auditoría de sincronización
+        valor_nuevo = {
+            'id': organigrama_nuevo.id_organigrama,
+            'nombre': organigrama_nuevo.nombre,
+            'version': organigrama_nuevo.version,
+            'estructura': organigrama_nuevo.estructura,
+            'motivo': 'Sincronización automática con cambios en áreas'
+        }
+        
+        crear_auditoria_organigrama(
+            accion='SINCRONIZACION_AUTOMATICA',
+            organigrama_id=organigrama_nuevo.id_organigrama,
+            valor_previo=valor_previo,
+            valor_nuevo=valor_nuevo,
+            agente_id=usuario_logueado_id
+        )
+        
+        return {
+            'success': True,
+            'organigrama_id': organigrama_nuevo.id_organigrama,
+            'version': nueva_version,
+            'nodos_totales': len(estructura_organigrama)
+        }
+        
+    except Exception as e:
+        print(f"Error al sincronizar organigrama: {str(e)}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
 
 
 # ============================================================================
@@ -1545,4 +2055,34 @@ def restore_organigrama(request, organigrama_id):
         return Response({
             'success': False,
             'message': f'Error al restaurar organigrama: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def sincronizar_organigrama_manual(request):
+    """
+    Sincronizar manualmente el organigrama con la estructura de áreas.
+    """
+    try:
+        resultado = sincronizar_organigrama_areas(usuario_logueado_id=1)  # TODO: obtener del usuario autenticado
+        
+        if resultado['success']:
+            return Response({
+                'success': True,
+                'message': 'Organigrama sincronizado correctamente',
+                'data': resultado
+            })
+        else:
+            return Response({
+                'success': False,
+                'message': f'Error en la sincronización: {resultado.get("error", "Error desconocido")}',
+                'data': resultado
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al sincronizar organigrama: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -11,19 +11,63 @@ from django.db import models
 
 
 class Area(models.Model):
-    """Áreas de trabajo en Protección Civil."""
+    """Áreas de trabajo en Protección Civil con soporte jerárquico."""
     id_area = models.BigAutoField(primary_key=True)
-    nombre = models.CharField(unique=True, max_length=100)
-    activo = models.BooleanField(blank=True, null=True)
+    nombre = models.CharField(max_length=100)
+    descripcion = models.TextField(blank=True, null=True)
+    id_area_padre = models.ForeignKey('self', models.CASCADE, db_column='id_area_padre', blank=True, null=True, related_name='areas_hijas')
+    jefe_area = models.ForeignKey('Agente', models.SET_NULL, db_column='jefe_area', blank=True, null=True, related_name='areas_como_jefe')
+    nivel = models.IntegerField(default=0)
+    activo = models.BooleanField(default=True)
     creado_en = models.DateTimeField(blank=True, null=True)
     actualizado_en = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'area'
+        unique_together = [['nombre', 'id_area_padre']]
+        
+    @property
+    def nombre_completo(self):
+        """Nombre completo con jerarquía"""
+        nombres = []
+        area_actual = self
+        while area_actual:
+            nombres.append(area_actual.nombre)
+            area_actual = area_actual.id_area_padre
+        return ' > '.join(reversed(nombres))
+    
+    @property
+    def es_raiz(self):
+        """Verdadero si es área raíz (sin padre)"""
+        return self.id_area_padre is None
+    
+    @property
+    def hijos(self):
+        """Áreas hijas activas"""
+        return self.areas_hijas.filter(activo=True).order_by('nombre')
+    
+    @property
+    def total_agentes(self):
+        """Total de agentes asignados a esta área"""
+        return self.agente_set.filter(activo=True).count()
+    
+    @property
+    def total_agentes_jerarquico(self):
+        """Total de agentes incluyendo áreas hijas"""
+        from django.db.models import Q
+        areas_ids = self._obtener_ids_area_y_descendientes()
+        return Agente.objects.filter(id_area__in=areas_ids, activo=True).count()
+    
+    def _obtener_ids_area_y_descendientes(self):
+        """Obtiene IDs de esta área y todas sus descendientes"""
+        ids = [self.id_area]
+        for hijo in self.areas_hijas.filter(activo=True):
+            ids.extend(hijo._obtener_ids_area_y_descendientes())
+        return ids
         
     def __str__(self):
-        return self.nombre
+        return self.nombre_completo if hasattr(self, 'id_area_padre') else self.nombre
 
 
 class Rol(models.Model):

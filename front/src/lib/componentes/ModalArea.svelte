@@ -1,11 +1,78 @@
 <script>
-	import { createEventDispatcher } from "svelte";
+	import { createEventDispatcher, onMount } from "svelte";
 
 	export let isOpen = false;
 	export let isSaving = false;
-	export let formData = { id_area: null, nombre: "", activo: true };
+	export let formData = {
+		id_area: null,
+		nombre: "",
+		descripcion: "",
+		id_area_padre: null,
+		jefe_area: null,
+		agentes_asignados: [],
+		activo: true,
+	};
 
 	const dispatch = createEventDispatcher();
+
+	let areas = [];
+	let agentes = [];
+	let loadingAreas = false;
+	let loadingAgentes = false;
+
+	// Cargar datos cuando se abre el modal
+	$: if (isOpen) {
+		cargarAreas();
+		cargarAgentes();
+	}
+
+	async function cargarAreas() {
+		if (loadingAreas) return;
+
+		try {
+			loadingAreas = true;
+			const response = await fetch("/api/personas/catalogs/areas/", {
+				credentials: "include",
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				areas = result.success ? result.data?.results || [] : [];
+				// Filtrar el área actual para no permitir auto-referencia
+				if (formData.id_area) {
+					areas = areas.filter(
+						(area) => area.id_area !== formData.id_area,
+					);
+				}
+			}
+		} catch (error) {
+			console.error("Error cargando áreas:", error);
+			areas = [];
+		} finally {
+			loadingAreas = false;
+		}
+	}
+
+	async function cargarAgentes() {
+		if (loadingAgentes) return;
+
+		try {
+			loadingAgentes = true;
+			const response = await fetch("/api/personas/agentes/", {
+				credentials: "include",
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				agentes = result.success ? result.data?.results || [] : [];
+			}
+		} catch (error) {
+			console.error("Error cargando agentes:", error);
+			agentes = [];
+		} finally {
+			loadingAgentes = false;
+		}
+	}
 
 	function cerrarModal() {
 		if (!isSaving) {
@@ -17,6 +84,34 @@
 		if (formData.nombre.trim() && !isSaving) {
 			dispatch("guardar", formData);
 		}
+	}
+
+	function toggleAgenteAsignado(agenteId) {
+		if (!formData.agentes_asignados) {
+			formData.agentes_asignados = [];
+		}
+
+		const index = formData.agentes_asignados.indexOf(agenteId);
+		if (index > -1) {
+			formData.agentes_asignados.splice(index, 1);
+		} else {
+			formData.agentes_asignados.push(agenteId);
+		}
+		formData.agentes_asignados = formData.agentes_asignados; // Trigger reactivity
+	}
+
+	function toggleAgenteAsignado(agenteId) {
+		if (!formData.agentes_asignados) {
+			formData.agentes_asignados = [];
+		}
+
+		const index = formData.agentes_asignados.indexOf(agenteId);
+		if (index > -1) {
+			formData.agentes_asignados.splice(index, 1);
+		} else {
+			formData.agentes_asignados.push(agenteId);
+		}
+		formData.agentes_asignados = formData.agentes_asignados; // Trigger reactivity
 	}
 </script>
 
@@ -46,6 +141,112 @@
 						required
 						disabled={isSaving}
 					/>
+				</div>
+
+				<div class="form-group">
+					<label for="areaDescripcion">Descripción</label>
+					<textarea
+						id="areaDescripcion"
+						bind:value={formData.descripcion}
+						placeholder="Descripción de las funciones y responsabilidades del área"
+						rows="3"
+						disabled={isSaving}
+					></textarea>
+				</div>
+
+				<div class="form-group">
+					<label for="areaPadre">Área Padre (opcional)</label>
+					{#if loadingAreas}
+						<div class="loading-select">Cargando áreas...</div>
+					{:else}
+						<select
+							id="areaPadre"
+							bind:value={formData.id_area_padre}
+							disabled={isSaving}
+						>
+							<option value={null}
+								>-- Sin área padre (raíz) --</option
+							>
+							{#each areas as area}
+								<option value={area.id_area}>
+									{area.nombre_completo || area.nombre}
+								</option>
+							{/each}
+						</select>
+					{/if}
+					<small class="form-help">
+						Seleccione el área padre para establecer la jerarquía
+						organizacional
+					</small>
+				</div>
+
+				<div class="form-group">
+					<label for="jefeArea">Jefe del Área (opcional)</label>
+					{#if loadingAgentes}
+						<div class="loading-select">Cargando agentes...</div>
+					{:else}
+						<select
+							id="jefeArea"
+							bind:value={formData.jefe_area}
+							disabled={isSaving}
+						>
+							<option value={null}>-- Sin jefe asignado --</option
+							>
+							{#each agentes as agente}
+								<option value={agente.id_agente}>
+									{agente.nombre}
+									{agente.apellido} ({agente.legajo})
+								</option>
+							{/each}
+						</select>
+					{/if}
+					<small class="form-help">
+						Seleccione el agente que será jefe de esta área
+					</small>
+				</div>
+
+				<div class="form-group">
+					<label>Agentes a Asignar (opcional)</label>
+					{#if loadingAgentes}
+						<div class="loading-select">Cargando agentes...</div>
+					{:else if agentes.length > 0}
+						<div class="agentes-list">
+							{#each agentes as agente}
+								<label class="agente-checkbox">
+									<input
+										type="checkbox"
+										checked={formData.agentes_asignados &&
+											formData.agentes_asignados.includes(
+												agente.id_agente,
+											)}
+										on:change={() =>
+											toggleAgenteAsignado(
+												agente.id_agente,
+											)}
+										disabled={isSaving}
+									/>
+									<span class="checkbox-custom"></span>
+									<div class="agente-info">
+										<strong
+											>{agente.nombre}
+											{agente.apellido}</strong
+										>
+										<small>Legajo: {agente.legajo}</small>
+										{#if agente.area_actual}
+											<small class="area-actual"
+												>Área actual: {agente.area_actual}</small
+											>
+										{/if}
+									</div>
+								</label>
+							{/each}
+						</div>
+					{:else}
+						<div class="no-agentes">No hay agentes disponibles</div>
+					{/if}
+					<small class="form-help">
+						Seleccione los agentes que pertenecerán a esta área
+					</small>
 				</div>
 
 				<div class="checkbox-group">
@@ -279,5 +480,131 @@
 		opacity: 0.6;
 		cursor: not-allowed;
 		transform: none;
+	}
+
+	/* Estilos para los nuevos campos */
+	.form-group textarea {
+		width: 100%;
+		padding: 12px 15px;
+		border: 2px solid #e1e5e9;
+		border-radius: 8px;
+		font-size: 14px;
+		transition: all 0.3s ease;
+		font-family: inherit;
+		resize: vertical;
+		min-height: 80px;
+	}
+
+	.form-group textarea:focus {
+		outline: none;
+		border-color: #3498db;
+		box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+	}
+
+	.form-group textarea:disabled {
+		background-color: #e9ecef;
+		cursor: not-allowed;
+	}
+
+	.form-group select {
+		width: 100%;
+		padding: 12px 15px;
+		border: 2px solid #e1e5e9;
+		border-radius: 8px;
+		font-size: 14px;
+		transition: all 0.3s ease;
+		font-family: inherit;
+		background-color: white;
+	}
+
+	.form-group select:focus {
+		outline: none;
+		border-color: #3498db;
+		box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+	}
+
+	.form-group select:disabled {
+		background-color: #e9ecef;
+		cursor: not-allowed;
+	}
+
+	.form-help {
+		display: block;
+		margin-top: 0.25rem;
+		color: #6c757d;
+		font-size: 0.875rem;
+		line-height: 1.3;
+		font-weight: 400;
+	}
+
+	.loading-select {
+		padding: 12px 15px;
+		color: #6c757d;
+		font-style: italic;
+		border: 2px solid #e1e5e9;
+		border-radius: 8px;
+		background-color: #f8f9fa;
+		text-align: center;
+	}
+
+	.agentes-list {
+		max-height: 300px;
+		overflow-y: auto;
+		border: 2px solid #e1e5e9;
+		border-radius: 8px;
+		padding: 0.5rem;
+		background-color: #f8f9fa;
+	}
+
+	.agente-checkbox {
+		display: flex;
+		align-items: flex-start;
+		padding: 0.75rem;
+		margin-bottom: 0.5rem;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: background-color 0.2s ease;
+		background-color: white;
+		border: 1px solid #e9ecef;
+	}
+
+	.agente-checkbox:hover {
+		background-color: #e9ecef;
+		border-color: #3498db;
+	}
+
+	.agente-checkbox:last-child {
+		margin-bottom: 0;
+	}
+
+	.agente-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	.agente-info strong {
+		font-size: 0.9rem;
+		color: #333;
+	}
+
+	.agente-info small {
+		font-size: 0.8rem;
+		color: #6c757d;
+	}
+
+	.agente-info .area-actual {
+		color: #007bff;
+		font-weight: 500;
+	}
+
+	.no-agentes {
+		text-align: center;
+		padding: 2rem;
+		color: #6c757d;
+		font-style: italic;
+		border: 2px solid #e1e5e9;
+		border-radius: 8px;
+		background-color: #f8f9fa;
 	}
 </style>

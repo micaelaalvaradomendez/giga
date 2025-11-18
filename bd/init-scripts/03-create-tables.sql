@@ -19,13 +19,21 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
 -- Crear tablas en orden de dependencias
 
--- 1. Tabla base: area (sin dependencias)
+-- 1. Tabla base: area (soporte jerárquico)
 CREATE TABLE IF NOT EXISTS area (
     id_area BIGSERIAL PRIMARY KEY,
-    nombre VARCHAR(100) UNIQUE NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    id_area_padre BIGINT,
+    jefe_area BIGINT, -- Referencia al agente que es jefe del área
+    nivel INTEGER DEFAULT 0,
+    orden_visualizacion INTEGER DEFAULT 0,
     activo BOOLEAN DEFAULT true,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_area_padre) REFERENCES area(id_area) ON DELETE CASCADE,
+    -- La referencia al jefe se agregará después de crear la tabla agente
+    UNIQUE(nombre, id_area_padre) -- Permite nombres duplicados si están en diferentes padres
 );
 
 -- 2. Tabla base: tipo_licencia (sin dependencias)
@@ -73,6 +81,10 @@ CREATE TABLE IF NOT EXISTS agente (
     horas_trabajo_dia DECIMAL(4,2) DEFAULT 8.0,
     FOREIGN KEY (id_area) REFERENCES area(id_area) ON DELETE RESTRICT
 );
+
+-- Agregar constraint de jefe de área después de crear la tabla agente
+ALTER TABLE area ADD CONSTRAINT fk_area_jefe 
+    FOREIGN KEY (jefe_area) REFERENCES agente(id_agente) ON DELETE SET NULL;
 
 -- 5. Tabla cronograma (depende de area y agente)
 CREATE TABLE IF NOT EXISTS cronograma (

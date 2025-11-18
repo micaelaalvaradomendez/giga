@@ -71,6 +71,7 @@ organigrama_patterns = [
     path('save/', views.save_organigrama, name='save_organigrama'),
     path('historial/', views.get_organigrama_historial, name='get_organigrama_historial'),
     path('<int:organigrama_id>/restore/', views.restore_organigrama, name='restore_organigrama'),
+    path('sincronizar/', views.sincronizar_organigrama_manual, name='sincronizar_organigrama_manual'),
 ]
 
 # Import temporal para testing
