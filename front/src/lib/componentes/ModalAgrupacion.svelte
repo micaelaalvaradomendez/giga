@@ -1,48 +1,66 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from "svelte";
 
 	export let isOpen = false;
 	export let isSaving = false;
-	export let formData = { id_agrupacion: null, nombre: '', descripcion: '', color: '#3498db', activo: true };
+	export let formData = {
+		id_agrupacion: null,
+		nombre: "",
+		descripcion: "",
+		color: "#3498db",
+		activo: true,
+	};
 
 	const dispatch = createEventDispatcher();
 
 	function cerrarModal() {
 		if (!isSaving) {
-			dispatch('cerrar');
+			dispatch("cerrar");
 		}
 	}
 
 	function guardar() {
 		if (formData.nombre.trim() && !isSaving) {
-			dispatch('guardar', formData);
+			dispatch("guardar", formData);
 		}
 	}
 </script>
 
 {#if isOpen}
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<div class="modal-overlay" on:click={cerrarModal}>
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<!-- svelte-ignore a11y-no-static-element-interactions -->
 		<div class="modal-content" on:click|stopPropagation>
 			<div class="modal-header">
-				<h2>{formData.id_agrupacion ? '✏️ Editar' : '➕ Nueva'} Agrupación</h2>
-				<button class="modal-close" on:click={cerrarModal}>×</button>
+				<h2>
+					{formData.id_agrupacion ? "✏️ Editar" : "➕ Nueva"} Agrupación
+				</h2>
+				<button
+					class="modal-close"
+					on:click={cerrarModal}
+					aria-label="Cerrar Modal">×</button
+				>
 			</div>
 			<div class="modal-body">
 				<div class="form-group">
-					<label for="agrupacionNombre">Nombre de la Agrupación *</label>
-					<input 
-						type="text" 
+					<label for="agrupacionNombre"
+						>Nombre de la Agrupación *</label
+					>
+					<input
+						type="text"
 						id="agrupacionNombre"
 						bind:value={formData.nombre}
 						placeholder="Ej: Bomberos Grupo A"
 						required
 						disabled={isSaving}
-					>
+					/>
 				</div>
-				
+
 				<div class="form-group">
 					<label for="agrupacionDescripcion">Descripción</label>
-					<textarea 
+					<textarea
 						id="agrupacionDescripcion"
 						bind:value={formData.descripcion}
 						placeholder="Descripción opcional de la agrupación"
@@ -50,42 +68,49 @@
 						disabled={isSaving}
 					></textarea>
 				</div>
-				
+
 				<div class="form-group">
 					<label for="agrupacionColor">Color Identificativo</label>
 					<div class="color-input-group">
-						<input 
-							type="color" 
+						<input
+							type="color"
 							id="agrupacionColor"
 							bind:value={formData.color}
 							disabled={isSaving}
-						>
-						<span class="color-preview" style="background-color: {formData.color}"></span>
+						/>
+						<span
+							class="color-preview"
+							style="background-color: {formData.color}"
+						></span>
 					</div>
 				</div>
-				
+
 				<div class="checkbox-group">
 					<label class="checkbox-label">
-						<input 
-							type="checkbox" 
+						<input
+							type="checkbox"
 							bind:checked={formData.activo}
 							disabled={isSaving}
-						>
+						/>
 						<span class="checkbox-custom"></span>
 						Agrupación activa
 					</label>
 				</div>
 			</div>
 			<div class="modal-footer">
-				<button class="btn-cancel" on:click={cerrarModal} disabled={isSaving}>
+				<button
+					class="btn-cancel"
+					on:click={cerrarModal}
+					disabled={isSaving}
+				>
 					Cancelar
 				</button>
-				<button 
-					class="btn-save" 
+				<button
+					class="btn-save"
 					on:click={guardar}
 					disabled={isSaving || !formData.nombre.trim()}
 				>
-					{isSaving ? 'Guardando...' : 'Guardar Agrupación'}
+					{isSaving ? "Guardando..." : "Guardar Agrupación"}
 				</button>
 			</div>
 		</div>
@@ -191,7 +216,7 @@
 
 	.form-group input,
 	.form-group textarea {
-		width: 100%;
+		width: 95%;
 		padding: 12px 15px;
 		border: 2px solid #e1e5e9;
 		border-radius: 8px;
@@ -281,7 +306,7 @@
 	}
 
 	.checkbox-label input:checked + .checkbox-custom::after {
-		content: '✓';
+		content: "✓";
 		position: absolute;
 		top: 50%;
 		left: 50%;
@@ -291,14 +316,16 @@
 		font-size: 12px;
 	}
 
-	.btn-cancel, .btn-save {
+	.btn-cancel,
+	.btn-save {
 		padding: 12px 24px;
 		border: none;
 		border-radius: 8px;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.3s ease;
-		font-size: 14px;
+		font-size: 16px;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.btn-cancel {

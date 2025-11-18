@@ -1,53 +1,70 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from "svelte";
 
 	export let isOpen = false;
 	export let isDeleting = false;
 	export let itemToDelete = null;
-	export let type = 'item'; // 'area' o 'agrupacion'
+	export let type = "item"; // 'area' o 'agrupacion'
 
 	const dispatch = createEventDispatcher();
 
 	function cerrarModal() {
 		if (!isDeleting) {
-			dispatch('cerrar');
+			dispatch("cerrar");
 		}
 	}
 
 	function confirmarEliminacion() {
 		if (!isDeleting && itemToDelete) {
-			dispatch('confirmar', itemToDelete);
+			dispatch("confirmar", itemToDelete);
 		}
 	}
 
-	$: typeLabel = type === 'area' ? 'área' : 'agrupación';
+	$: typeLabel = type === "area" ? "área" : "agrupación";
 </script>
 
 {#if isOpen && itemToDelete}
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<div class="modal-overlay" on:click={cerrarModal}>
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<!-- svelte-ignore a11y-no-static-element-interactions -->
 		<div class="modal-content eliminar-modal" on:click|stopPropagation>
 			<div class="modal-header danger">
 				<h2>🗑️ Eliminar {typeLabel}</h2>
-				<button class="modal-close" on:click={cerrarModal}>×</button>
+				<button
+					class="modal-close"
+					on:click={cerrarModal}
+					aria-label="Cerrar Modal">×</button
+				>
 			</div>
 			<div class="modal-body">
-				<div class="warning-icon">
-					⚠️
-				</div>
+				<div class="warning-icon">⚠️</div>
 				<p class="warning-text">
-					¿Estás seguro de que deseas eliminar {typeLabel === 'área' ? 'el área' : 'la agrupación'} 
+					¿Estás seguro de que deseas eliminar {typeLabel === "área"
+						? "el área"
+						: "la agrupación"}
 					<strong>"{itemToDelete.nombre}"</strong>?
 				</p>
 				<p class="warning-subtext">
-					Esta acción no se puede deshacer. Todos los datos asociados también se eliminarán permanentemente.
+					Esta acción no se puede deshacer. Todos los datos asociados
+					también se eliminarán permanentemente.
 				</p>
 			</div>
 			<div class="modal-footer">
-				<button class="btn-cancel" on:click={cerrarModal} disabled={isDeleting}>
+				<button
+					class="btn-cancel"
+					on:click={cerrarModal}
+					disabled={isDeleting}
+				>
 					Cancelar
 				</button>
-				<button class="btn-delete" on:click={confirmarEliminacion} disabled={isDeleting}>
-					{isDeleting ? 'Eliminando...' : `Eliminar ${typeLabel}`}
+				<button
+					class="btn-delete"
+					on:click={confirmarEliminacion}
+					disabled={isDeleting}
+				>
+					{isDeleting ? "Eliminando..." : `Eliminar ${typeLabel}`}
 				</button>
 			</div>
 		</div>
@@ -183,14 +200,16 @@
 		background: #f8f9fa;
 	}
 
-	.btn-cancel, .btn-delete {
+	.btn-cancel,
+	.btn-delete {
 		padding: 12px 24px;
 		border: none;
 		border-radius: 8px;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.3s ease;
-		font-size: 14px;
+		font-size: 16px;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.btn-cancel {

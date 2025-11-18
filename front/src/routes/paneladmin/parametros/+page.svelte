@@ -1,31 +1,46 @@
 <script>
-	import { onMount } from 'svelte';
-	import { parametrosController } from '$lib/paneladmin/controllers';
-	import { goto } from '$app/navigation';
-	
+	import { onMount } from "svelte";
+	import { parametrosController } from "$lib/paneladmin/controllers";
+	import { goto } from "$app/navigation";
+
 	// Importar componentes modales
-	import ModalArea from '$lib/componentes/ModalArea.svelte';
-	import ModalAgrupacion from '$lib/componentes/ModalAgrupacion.svelte';
-	import ModalHorarios from '$lib/componentes/ModalHorarios.svelte';
-	import ModalEliminar from '$lib/componentes/ModalEliminar.svelte';
+	import ModalArea from "$lib/componentes/ModalArea.svelte";
+	import ModalAgrupacion from "$lib/componentes/ModalAgrupacion.svelte";
+	import ModalHorarios from "$lib/componentes/ModalHorarios.svelte";
+	import ModalEliminar from "$lib/componentes/ModalEliminar.svelte";
 
 	// Obtener referencias a los stores individuales
-	const { 
-		areas, agrupaciones, loading, error, busquedaAreas, busquedaAgrupaciones,
-		areasFiltradas, agrupacionesFiltradas, modalArea, modalAgrupacion, modalSchedule,
-		modalDelete, areaForm, agrupacionForm, scheduleForm
+	const {
+		areas,
+		agrupaciones,
+		loading,
+		error,
+		busquedaAreas,
+		busquedaAgrupaciones,
+		areasFiltradas,
+		agrupacionesFiltradas,
+		modalArea,
+		modalAgrupacion,
+		modalSchedule,
+		modalDelete,
+		areaForm,
+		agrupacionForm,
+		scheduleForm,
 	} = parametrosController;
 
 	// Validación de autenticación e inicialización
 	onMount(async () => {
 		try {
-			console.log('🚀 Iniciando controlador de parámetros...');
+			console.log("🚀 Iniciando controlador de parámetros...");
 			await parametrosController.init();
-			console.log('✅ Controlador de parámetros inicializado');
+			console.log("✅ Controlador de parámetros inicializado");
 		} catch (err) {
-			console.error('❌ Error inicializando controlador:', err);
-			if (err.message === 'Usuario no autenticado' || err.message === 'Sesión expirada') {
-				goto('/');
+			console.error("❌ Error inicializando controlador:", err);
+			if (
+				err.message === "Usuario no autenticado" ||
+				err.message === "Sesión expirada"
+			) {
+				goto("/");
 				return;
 			}
 			// El controlador maneja el error automáticamente
@@ -46,10 +61,14 @@
 		try {
 			const formData = $scheduleForm;
 			const modalData = $modalSchedule;
-			
-			await parametrosController.actualizarHorarios(formData, modalData.tipo, modalData.target);
+
+			await parametrosController.actualizarHorarios(
+				formData,
+				modalData.tipo,
+				modalData.target,
+			);
 		} catch (error) {
-			console.error('Error actualizando horarios:', error);
+			console.error("Error actualizando horarios:", error);
 			// Manejar error - podríamos mostrar una notificación
 		}
 	}
@@ -57,17 +76,19 @@
 	async function confirmarEliminar() {
 		try {
 			const modalData = $modalDelete;
-			
-			if (modalData.tipo === 'area') {
-				await parametrosController.confirmarEliminarArea(modalData.item.id_area);
-			} else if (modalData.tipo === 'agrupacion') {
+
+			if (modalData.tipo === "area") {
+				await parametrosController.confirmarEliminarArea(
+					modalData.item.id_area,
+				);
+			} else if (modalData.tipo === "agrupacion") {
 				await parametrosController.confirmarEliminarAgrupacion(
-					modalData.item.id_agrupacion, 
-					modalData.nuevaAsignacion
+					modalData.item.id_agrupacion,
+					modalData.nuevaAsignacion,
 				);
 			}
 		} catch (error) {
-			console.error('Error eliminando elemento:', error);
+			console.error("Error eliminando elemento:", error);
 			// Manejar error - podríamos mostrar una notificación
 		}
 	}
@@ -76,7 +97,7 @@
 		try {
 			await parametrosController.guardarArea($areaForm);
 		} catch (error) {
-			console.error('Error guardando área:', error);
+			console.error("Error guardando área:", error);
 			parametrosController.error.set(error.message);
 		}
 	}
@@ -85,21 +106,31 @@
 		try {
 			await parametrosController.guardarAgrupacion($agrupacionForm);
 		} catch (error) {
-			console.error('Error guardando agrupación:', error);
+			console.error("Error guardando agrupación:", error);
 			parametrosController.error.set(error.message);
 		}
 	}
-</script><svelte:head>
+</script>
+
+<svelte:head>
 	<title>Parámetros del Sistema - GIGA</title>
 </svelte:head>
 
 <div class="page-header">
-	<h1>Gestión de Parámetros del Sistema</h1>
+	<div class="page-header-title">
+		<h1>Parámetros del Sistema</h1>
+	</div>
 	<div class="header-actions">
-		<button class="btn-primary" on:click={() => parametrosController.agregarArea()}>
+		<button
+			class="btn-primary"
+			on:click={() => parametrosController.agregarArea()}
+		>
 			+ Añadir Área
 		</button>
-		<button class="btn-secondary" on:click={() => parametrosController.agregarAgrupacion()}>
+		<button
+			class="btn-secondary"
+			on:click={() => parametrosController.agregarAgrupacion()}
+		>
 			+ Añadir Agrupación
 		</button>
 	</div>
@@ -109,7 +140,10 @@
 {#if $error}
 	<div class="alert alert-error">
 		❌ {$error}
-		<button class="btn-close" on:click={() => parametrosController.error.set(null)}>×</button>
+		<button
+			class="btn-close"
+			on:click={() => parametrosController.error.set(null)}>×</button
+		>
 	</div>
 {/if}
 
@@ -120,207 +154,327 @@
 		<p>Cargando parámetros del sistema...</p>
 	</div>
 {:else}
-
-<!-- Resumen de estadísticas -->
-{#if ($areasFiltradas && $areasFiltradas.length > 0) || ($agrupacionesFiltradas && $agrupacionesFiltradas.length > 0)}
-<div class="stats-container">
-	<div class="stat-card">
-		<h3>Total Áreas</h3>
-		<p class="stat-number">{$areas ? $areas.length : 0}</p>
-	</div>
-	<div class="stat-card">
-		<h3>Áreas Activas</h3>
-		<p class="stat-number">{$areas ? $areas.filter(a => a.activo).length : 0}</p>
-	</div>
-	<div class="stat-card">
-		<h3>Total Agrupaciones</h3>
-		<p class="stat-number">{$agrupaciones ? $agrupaciones.length : 0}</p>
-	</div>
-	<div class="stat-card">
-		<h3>Agentes en Agrupaciones</h3>
-		<p class="stat-number">{$agrupaciones ? $agrupaciones.reduce((sum, a) => sum + (a.total_agentes || 0), 0) : 0}</p>
-	</div>
-</div>
-{/if}
-
-<div class="content-grid">
-	<!-- Panel de Áreas -->
-	<div class="panel-areas">
-		<div class="panel-header">
-			<h2>📍 Gestión de Áreas</h2>
-		</div>
-		
-		<!-- Filtros de áreas -->
-		<div class="filtros-container">
-			<div class="filtro-group">
-				<label for="busquedaAreas">🔍 Buscar áreas</label>
-				<input 
-					type="text" 
-					id="busquedaAreas"
-					bind:value={$busquedaAreas}
-					placeholder="Buscar por nombre..."
-					class="input-busqueda"
-				>
+	<div class="content-grid">
+		<!-- Panel de Áreas -->
+		<div class="panel-areas">
+			<div class="panel-header">
+				<h2>📍 Gestión de Áreas</h2>
 			</div>
-			<div class="filtro-actions">
-				<button class="btn-limpiar" on:click={() => parametrosController.limpiarFiltrosAreas()} title="Limpiar filtros">
-					🗑️ Limpiar
-				</button>
-			</div>
-		</div>
 
-		<div class="table-container">
-			<table>
-				<thead>
-					<tr>
-						<th>Área</th>
-						<th>Estado</th>
-						<th>Acciones</th>
-					</tr>
-				</thead>
-				<tbody>
-				{#if $areasFiltradas && $areasFiltradas.length > 0}
-					{#each $areasFiltradas as area}
+			<!-- Estadísticas de Áreas -->
+			{#if $areasFiltradas && $areasFiltradas.length > 0}
+				<div class="panel-stats">
+					<div class="stat-card">
+						<h3>Total Áreas</h3>
+						<p class="stat-number">{$areas ? $areas.length : 0}</p>
+					</div>
+					<div class="stat-card">
+						<h3>Áreas Activas</h3>
+						<p class="stat-number">
+							{$areas ? $areas.filter((a) => a.activo).length : 0}
+						</p>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Filtros de áreas -->
+			<div class="filtros-container">
+				<div class="filtro-group">
+					<label for="busquedaAreas">🔍 Buscar áreas</label>
+					<input
+						type="text"
+						id="busquedaAreas"
+						bind:value={$busquedaAreas}
+						placeholder="Buscar por nombre..."
+						class="input-busqueda"
+					/>
+				</div>
+				<div class="filtro-actions">
+					<button
+						class="btn-limpiar"
+						on:click={() =>
+							parametrosController.limpiarFiltrosAreas()}
+						title="Limpiar filtros"
+					>
+						🗑️ Limpiar
+					</button>
+				</div>
+			</div>
+
+			<div class="table-container">
+				<table>
+					<thead>
 						<tr>
-							<td>
-								<strong>{area.nombre}</strong>
-							</td>
-							<td>
-								<span class="badge badge-{area.activo ? 'success' : 'inactive'}">
-									{area.activo ? 'Activa' : 'Inactiva'}
-								</span>
-							</td>
-							<td class="actions">
-								<button class="btn-icon" title="Editar" on:click={() => parametrosController.editarArea(area)}>✏️</button>
-								<button class="btn-icon" title="Horarios" on:click={() => parametrosController.gestionarHorarios('area', area)}>🕒</button>
-								<button class="btn-icon-danger" title="Eliminar" on:click={() => parametrosController.eliminarArea(area)}>🗑️</button>
-							</td>
+							<th>Área</th>
+							<th>Estado</th>
+							<th>Acciones</th>
 						</tr>
-					{/each}
-				{:else}
-					<tr>
-						<td colspan="3" style="text-align: center; padding: 2rem;">
-							{#if busquedaAreas}
-								No se encontraron áreas que coincidan con la búsqueda.
-								<br><button class="btn-link" on:click={() => parametrosController.limpiarFiltrosAreas()}>Limpiar filtros</button>
-							{:else}
-								No hay áreas registradas.
-								<br><button class="btn-link" on:click={() => parametrosController.agregarArea()}>Crear primera área</button>
-							{/if}
-						</td>
-					</tr>
-				{/if}
-				</tbody>
-			</table>
-		</div>
-	</div>
-
-	<!-- Panel de Agrupaciones -->
-	<div class="panel-agrupaciones">
-		<div class="panel-header">
-			<h2>👥 Gestión de Agrupaciones</h2>
-		</div>
-		
-		<!-- Filtros de agrupaciones -->
-		<div class="filtros-container">
-			<div class="filtro-group">
-				<label for="busquedaAgrupaciones">🔍 Buscar agrupaciones</label>
-				<input 
-					type="text" 
-					id="busquedaAgrupaciones"
-					bind:value={$busquedaAgrupaciones}
-					placeholder="Buscar por nombre..."
-					class="input-busqueda"
-				>
+					</thead>
+					<tbody>
+						{#if $areasFiltradas && $areasFiltradas.length > 0}
+							{#each $areasFiltradas as area}
+								<tr>
+									<td>
+										<strong>{area.nombre}</strong>
+									</td>
+									<td>
+										<span
+											class="badge badge-{area.activo
+												? 'success'
+												: 'inactive'}"
+										>
+											{area.activo
+												? "Activa"
+												: "Inactiva"}
+										</span>
+									</td>
+									<td class="actions">
+										<button
+											class="btn-icon"
+											title="Editar"
+											on:click={() =>
+												parametrosController.editarArea(
+													area,
+												)}>✏️</button
+										>
+										<button
+											class="btn-icon"
+											title="Horarios"
+											on:click={() =>
+												parametrosController.gestionarHorarios(
+													"area",
+													area,
+												)}>🕒</button
+										>
+										<button
+											class="btn-icon-danger"
+											title="Eliminar"
+											on:click={() =>
+												parametrosController.eliminarArea(
+													area,
+												)}>🗑️</button
+										>
+									</td>
+								</tr>
+							{/each}
+						{:else}
+							<tr>
+								<td
+									colspan="3"
+									style="text-align: center; padding: 2rem;"
+								>
+									{#if busquedaAreas}
+										No se encontraron áreas que coincidan
+										con la búsqueda.
+										<br /><button
+											class="btn-link"
+											on:click={() =>
+												parametrosController.limpiarFiltrosAreas()}
+											>Limpiar filtros</button
+										>
+									{:else}
+										No hay áreas registradas.
+										<br /><button
+											class="btn-link"
+											on:click={() =>
+												parametrosController.agregarArea()}
+											>Crear primera área</button
+										>
+									{/if}
+								</td>
+							</tr>
+						{/if}
+					</tbody>
+				</table>
 			</div>
-			<div class="filtro-actions">
-				<button class="btn-limpiar" on:click={() => parametrosController.limpiarFiltrosAgrupaciones()} title="Limpiar filtros">
-					🗑️ Limpiar
-				</button>
-			</div>
 		</div>
 
-		<div class="table-container">
-			<table>
-				<thead>
-					<tr>
-						<th>Agrupación</th>
-						<th>Descripción</th>
-						<th>Agentes</th>
-						<th>Estado</th>
-						<th>Acciones</th>
-					</tr>
-				</thead>
-				<tbody>
-				{#if $agrupacionesFiltradas && $agrupacionesFiltradas.length > 0}
-					{#each $agrupacionesFiltradas as agrupacion}
+		<!-- Panel de Agrupaciones -->
+		<div class="panel-agrupaciones">
+			<div class="panel-header">
+				<h2>👥 Gestión de Agrupaciones</h2>
+			</div>
+
+			<!-- Estadísticas de Agrupaciones -->
+			{#if $agrupacionesFiltradas && $agrupacionesFiltradas.length > 0}
+				<div class="panel-stats">
+					<div class="stat-card">
+						<h3>Total Agrupaciones</h3>
+						<p class="stat-number">
+							{$agrupaciones ? $agrupaciones.length : 0}
+						</p>
+					</div>
+					<div class="stat-card">
+						<h3>Agentes en Agrupaciones</h3>
+						<p class="stat-number">
+							{$agrupaciones
+								? $agrupaciones.reduce(
+										(sum, a) =>
+											sum + (a.total_agentes || 0),
+										0,
+									)
+								: 0}
+						</p>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Filtros de agrupaciones -->
+			<div class="filtros-container">
+				<div class="filtro-group">
+					<label for="busquedaAgrupaciones"
+						>🔍 Buscar agrupaciones</label
+					>
+					<input
+						type="text"
+						id="busquedaAgrupaciones"
+						bind:value={$busquedaAgrupaciones}
+						placeholder="Buscar por nombre..."
+						class="input-busqueda"
+					/>
+				</div>
+				<div class="filtro-actions">
+					<button
+						class="btn-limpiar"
+						on:click={() =>
+							parametrosController.limpiarFiltrosAgrupaciones()}
+						title="Limpiar filtros"
+					>
+						🗑️ Limpiar
+					</button>
+				</div>
+			</div>
+
+			<div class="table-container">
+				<table>
+					<thead>
 						<tr>
-							<td>
-								<div class="agrupacion-info">
-									<div 
-										class="color-indicator" 
-										style="background-color: {agrupacion.color}"
-									></div>
-									<strong>{agrupacion.nombre}</strong>
-								</div>
-							</td>
-							<td>{agrupacion.descripcion || 'Sin descripción'}</td>
-							<td>
-								<span class="badge badge-info">
-									{agrupacion.total_agentes} agentes
-								</span>
-							</td>
-							<td>
-								<span class="badge badge-{agrupacion.activo ? 'success' : 'inactive'}">
-									{agrupacion.activo ? 'Activa' : 'Inactiva'}
-								</span>
-							</td>
-							<td class="actions">
-								<button class="btn-icon" title="Editar" on:click={() => parametrosController.editarAgrupacion(agrupacion)}>✏️</button>
-								<button class="btn-icon" title="Horarios" on:click={() => parametrosController.gestionarHorarios('agrupacion', agrupacion)}>🕒</button>
-								<button class="btn-icon-danger" title="Eliminar" on:click={() => parametrosController.eliminarAgrupacion(agrupacion)}>🗑️</button>
-							</td>
+							<th>Agrupación</th>
+							<th>Descripción</th>
+							<th>Agentes</th>
+							<th>Estado</th>
+							<th>Acciones</th>
 						</tr>
-					{/each}
-				{:else}
-					<tr>
-						<td colspan="5" style="text-align: center; padding: 2rem;">
-							{#if busquedaAgrupaciones}
-								No se encontraron agrupaciones que coincidan con la búsqueda.
-								<br><button class="btn-link" on:click={() => parametrosController.limpiarFiltrosAgrupaciones()}>Limpiar filtros</button>
-							{:else}
-								No hay agrupaciones registradas.
-																<br><button class="btn-link" on:click={() => parametrosController.agregarAgrupacion()}>Crear primera agrupación</button>
-							{/if}
-						</td>
-					</tr>
-				{/if}
-				</tbody>
-			</table>
+					</thead>
+					<tbody>
+						{#if $agrupacionesFiltradas && $agrupacionesFiltradas.length > 0}
+							{#each $agrupacionesFiltradas as agrupacion}
+								<tr>
+									<td>
+										<div class="agrupacion-info">
+											<div
+												class="color-indicator"
+												style="background-color: {agrupacion.color}"
+											></div>
+											<strong>{agrupacion.nombre}</strong>
+										</div>
+									</td>
+									<td
+										>{agrupacion.descripcion ||
+											"Sin descripción"}</td
+									>
+									<td>
+										<span class="badge badge-info">
+											{agrupacion.total_agentes} agentes
+										</span>
+									</td>
+									<td>
+										<span
+											class="badge badge-{agrupacion.activo
+												? 'success'
+												: 'inactive'}"
+										>
+											{agrupacion.activo
+												? "Activa"
+												: "Inactiva"}
+										</span>
+									</td>
+									<td class="actions">
+										<button
+											class="btn-icon"
+											title="Editar"
+											on:click={() =>
+												parametrosController.editarAgrupacion(
+													agrupacion,
+												)}>✏️</button
+										>
+										<button
+											class="btn-icon"
+											title="Horarios"
+											on:click={() =>
+												parametrosController.gestionarHorarios(
+													"agrupacion",
+													agrupacion,
+												)}>🕒</button
+										>
+										<button
+											class="btn-icon-danger"
+											title="Eliminar"
+											on:click={() =>
+												parametrosController.eliminarAgrupacion(
+													agrupacion,
+												)}>🗑️</button
+										>
+									</td>
+								</tr>
+							{/each}
+						{:else}
+							<tr>
+								<td
+									colspan="5"
+									style="text-align: center; padding: 2rem;"
+								>
+									{#if busquedaAgrupaciones}
+										No se encontraron agrupaciones que
+										coincidan con la búsqueda.
+										<br /><button
+											class="btn-link"
+											on:click={() =>
+												parametrosController.limpiarFiltrosAgrupaciones()}
+											>Limpiar filtros</button
+										>
+									{:else}
+										No hay agrupaciones registradas.
+										<br /><button
+											class="btn-link"
+											on:click={() =>
+												parametrosController.agregarAgrupacion()}
+											>Crear primera agrupación</button
+										>
+									{/if}
+								</td>
+							</tr>
+						{/if}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	</div>
-</div>
-
 {/if}
 
 <!-- Componentes Modales -->
-<ModalArea 
+<ModalArea
 	isOpen={$modalArea.isOpen}
 	isSaving={$modalArea.isSaving}
 	formData={$areaForm}
 	on:guardar={guardarArea}
-	on:cerrar={() => parametrosController.modalArea.update(m => ({...m, isOpen: false}))}
+	on:cerrar={() =>
+		parametrosController.modalArea.update((m) => ({ ...m, isOpen: false }))}
 />
 
-<ModalAgrupacion 
+<ModalAgrupacion
 	isOpen={$modalAgrupacion.isOpen}
 	isSaving={$modalAgrupacion.isSaving}
 	formData={$agrupacionForm}
 	on:guardar={guardarAgrupacion}
-	on:cerrar={() => parametrosController.modalAgrupacion.update(m => ({...m, isOpen: false}))}
+	on:cerrar={() =>
+		parametrosController.modalAgrupacion.update((m) => ({
+			...m,
+			isOpen: false,
+		}))}
 />
 
-<ModalHorarios 
+<ModalHorarios
 	isOpen={$modalSchedule.isOpen}
 	isSaving={$modalSchedule.isSaving}
 	tipoHorarios={$modalSchedule.tipo}
@@ -328,66 +482,118 @@
 	formData={$scheduleForm}
 	on:guardar={(event) => {
 		const { horario_entrada, horario_salida, tipo, target } = event.detail;
-		parametrosController.actualizarHorarios({ horario_entrada, horario_salida }, tipo, target);
+		parametrosController.actualizarHorarios(
+			{ horario_entrada, horario_salida },
+			tipo,
+			target,
+		);
 	}}
-	on:cerrar={() => parametrosController.modalSchedule.update(m => ({...m, isOpen: false}))}
+	on:cerrar={() =>
+		parametrosController.modalSchedule.update((m) => ({
+			...m,
+			isOpen: false,
+		}))}
 />
 
-<ModalEliminar 
+<ModalEliminar
 	isOpen={$modalDelete.isOpen}
 	isDeleting={$modalDelete.isDeleting}
 	itemToDelete={$modalDelete.item}
 	type={$modalDelete.tipo}
 	on:confirmar={confirmarEliminar}
-	on:cerrar={() => parametrosController.modalDelete.update(m => ({...m, isOpen: false}))}
+	on:cerrar={() =>
+		parametrosController.modalDelete.update((m) => ({
+			...m,
+			isOpen: false,
+		}))}
 />
 
-
-
 <style>
-	/* Container principal */
-	.container {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 0 20px;
-	}
-
-	/* Logo y navegación */
-	.logo {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		padding: 15px 20px;
-		margin-bottom: 0;
-		box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-	}
-
-	.logo a {
-		color: white;
-		text-decoration: none;
-		font-weight: 600;
-		font-size: 18px;
-		transition: opacity 0.3s ease;
-	}
-
-	.logo a:hover {
-		opacity: 0.8;
-	}
-
-	/* Header de página */
 	.page-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin: 30px 0;
+		margin: 0;
 		padding-bottom: 20px;
 		border-bottom: 3px solid #f8f9fa;
 	}
 
-	.page-header h1 {
-		color: #2c3e50;
-		font-size: 2.2rem;
-		font-weight: 700;
+	.page-header-title {
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		position: relative;
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+		color: white;
+		padding: 30px 20px;
 		margin: 0;
+		max-width: 1000px;
+		border-radius: 28px;
+		overflow: hidden;
+		text-align: center;
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+			0 20px 60px rgba(30, 64, 175, 0.4);
+	}
+
+	.page-header-title::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: linear-gradient(
+				90deg,
+				rgba(255, 255, 255, 0.03) 1px,
+				transparent 1px
+			),
+			linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+		background-size: 50px 50px;
+		animation: moveLines 20s linear infinite;
+	}
+
+	.page-header-title h1 {
+		margin: 10px;
+		font-weight: 800;
+		font-size: 30px;
+		letter-spacing: 0.2px;
+		font-family:
+			"Segoe UI",
+			system-ui,
+			-apple-system,
+			"Inter",
+			"Roboto",
+			"Helvetica Neue",
+			Arial,
+			sans-serif;
+		position: relative;
+		padding-bottom: 12px;
+		overflow: hidden;
+		display: inline-block;
+	}
+
+	.page-header-title h1::after {
+		content: "";
+		position: absolute;
+		width: 40%;
+		height: 3px;
+		bottom: 0;
+		left: 0;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.9),
+			transparent
+		);
+		animation: moveLine 2s linear infinite;
+	}
+
+	@keyframes moveLine {
+		0% {
+			left: -40%;
+		}
+		100% {
+			left: 100%;
+		}
 	}
 
 	.header-actions {
@@ -395,22 +601,24 @@
 		gap: 10px;
 	}
 
-	/* Botones principales */
-	.btn-primary, .btn-secondary {
-		padding: 12px 24px;
+	.btn-primary,
+	.btn-secondary {
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		padding: 16px 32px;
 		border: none;
-		border-radius: 8px;
+		border-radius: 10px;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.3s ease;
 		text-decoration: none;
 		display: inline-flex;
 		align-items: center;
-		gap: 8px;
+		gap: 10px;
+		font-size: 16px;
 	}
 
 	.btn-primary {
-		background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
 		color: white;
 	}
 
@@ -420,7 +628,7 @@
 	}
 
 	.btn-secondary {
-		background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+		background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
 		color: white;
 	}
 
@@ -443,13 +651,6 @@
 		background: #ffebee;
 		color: #c62828;
 		border-left: 4px solid #f44336;
-	}
-
-	.alert-info {
-		background: #e3f2fd;
-		color: #1565c0;
-		border-left: 4px solid #2196f3;
-		margin: 15px 0;
 	}
 
 	.btn-close {
@@ -482,8 +683,12 @@
 	}
 
 	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
 	}
 
 	/* Grid de contenido */
@@ -501,18 +706,20 @@
 	}
 
 	/* Estadísticas */
-	.stats-container {
+	.panel-stats {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 		gap: 20px;
-		margin: 30px 0;
+		padding: 20px 25px;
+		background: #f8f9fa;
+		border-bottom: 1px solid #dee2e6;
 	}
 
 	.stat-card {
 		background: white;
-		padding: 25px;
-		border-radius: 12px;
-		box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+		padding: 20px;
+		border-radius: 16px;
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 		text-align: center;
 		border-top: 4px solid #3498db;
 		transition: transform 0.3s ease;
@@ -531,17 +738,18 @@
 	}
 
 	.stat-number {
-		font-size: 2.5rem;
+		font-size: 2.2rem;
 		font-weight: 700;
 		color: #3498db;
 		margin: 0;
 	}
 
 	/* Paneles */
-	.panel-areas, .panel-agrupaciones {
+	.panel-areas,
+	.panel-agrupaciones {
 		background: white;
-		border-radius: 12px;
-		box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+		border-radius: 24px;
+		box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
 		overflow: hidden;
 	}
 
@@ -564,15 +772,15 @@
 		background: #f8f9fa;
 		border-bottom: 1px solid #dee2e6;
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
+		align-items: flex-end;
 		flex-wrap: wrap;
 		gap: 15px;
 	}
 
 	.filtro-group {
-		flex: 1;
-		min-width: 250px;
+		flex: 1 1 250px;
+		min-width: 200px;
+		max-width: 100%;
 	}
 
 	.filtro-group label {
@@ -590,6 +798,7 @@
 		border-radius: 8px;
 		font-size: 14px;
 		transition: all 0.3s ease;
+		box-sizing: border-box;
 	}
 
 	.input-busqueda:focus {
@@ -601,10 +810,12 @@
 	.filtro-actions {
 		display: flex;
 		gap: 10px;
+		flex-shrink: 0;
+		align-self: flex-end;
 	}
 
 	.btn-limpiar {
-		padding: 10px 20px;
+		padding: 10px 25px;
 		background: #6c757d;
 		color: white;
 		border: none;
@@ -612,6 +823,8 @@
 		cursor: pointer;
 		font-size: 0.9rem;
 		transition: all 0.3s ease;
+		white-space: nowrap;
+		height: 42px;
 	}
 
 	.btn-limpiar:hover {
@@ -668,6 +881,7 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
+		white-space: nowrap;
 	}
 
 	.badge-success {
@@ -692,7 +906,8 @@
 		align-items: center;
 	}
 
-	.btn-icon, .btn-icon-danger {
+	.btn-icon,
+	.btn-icon-danger {
 		padding: 8px 12px;
 		border: none;
 		border-radius: 6px;
@@ -747,38 +962,6 @@
 		color: #2980b9;
 	}
 
-	/* Los estilos de modales se han movido a componentes individuales */
-
-	/* Responsividad para nueva estructura */
-	._modal-placeholder {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: rgba(0, 0, 0, 0.6);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 1000;
-		backdrop-filter: blur(5px);
-	}
-
-	.modal-content {
-		background: white;
-		border-radius: 12px;
-		width: 90%;
-		max-width: 500px;
-		max-height: 90vh;
-		overflow-y: auto;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-		animation: modalSlide 0.3s ease-out;
-	}
-
-	.delete-modal {
-		max-width: 450px;
-	}
-
 	@keyframes modalSlide {
 		from {
 			opacity: 0;
@@ -790,235 +973,6 @@
 		}
 	}
 
-	.modal-header {
-		padding: 20px 25px;
-		border-bottom: 1px solid #e9ecef;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-	}
-
-	.delete-header {
-		background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-	}
-
-	.modal-header h2 {
-		margin: 0;
-		font-size: 1.3rem;
-		font-weight: 600;
-	}
-
-	.modal-close {
-		background: none;
-		border: none;
-		color: white;
-		font-size: 24px;
-		cursor: pointer;
-		padding: 0;
-		width: 30px;
-		height: 30px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		transition: all 0.3s ease;
-	}
-
-	.modal-close:hover {
-		background: rgba(255, 255, 255, 0.2);
-	}
-
-	.modal-body {
-		padding: 25px;
-	}
-
-	.modal-footer {
-		padding: 20px 25px;
-		border-top: 1px solid #e9ecef;
-		display: flex;
-		justify-content: flex-end;
-		gap: 10px;
-		background: #f8f9fa;
-	}
-
-	/* Formularios en modales */
-	.form-group {
-		margin-bottom: 20px;
-	}
-
-	.form-group label {
-		display: block;
-		margin-bottom: 8px;
-		font-weight: 600;
-		color: #495057;
-	}
-
-	.form-group input,
-	.form-group textarea {
-		width: 100%;
-		padding: 12px 15px;
-		border: 2px solid #e1e5e9;
-		border-radius: 8px;
-		font-size: 14px;
-		transition: all 0.3s ease;
-		font-family: inherit;
-	}
-
-	.form-group input:focus,
-	.form-group textarea:focus {
-		outline: none;
-		border-color: #3498db;
-		box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-	}
-
-	.form-row {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 20px;
-		align-items: end;
-	}
-
-	.color-picker {
-		height: 45px;
-		cursor: pointer;
-		border-radius: 8px !important;
-	}
-
-	.checkbox-group {
-		display: flex;
-		align-items: center;
-		margin: 15px 0;
-	}
-
-	.checkbox-label {
-		display: flex;
-		align-items: center;
-		cursor: pointer;
-		font-weight: 600;
-		color: #495057;
-	}
-
-	.checkbox-label input[type="checkbox"] {
-		display: none;
-	}
-
-	.checkbox-custom {
-		width: 20px;
-		height: 20px;
-		border: 2px solid #ddd;
-		border-radius: 4px;
-		margin-right: 10px;
-		position: relative;
-		transition: all 0.3s ease;
-	}
-
-	.checkbox-label input:checked + .checkbox-custom {
-		background: #3498db;
-		border-color: #3498db;
-	}
-
-	.checkbox-label input:checked + .checkbox-custom::after {
-		content: '✓';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		color: white;
-		font-weight: bold;
-		font-size: 12px;
-	}
-
-	/* Botones de modal */
-	.btn-cancel, .btn-save, .btn-delete {
-		padding: 12px 24px;
-		border: none;
-		border-radius: 8px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		font-size: 14px;
-	}
-
-	.btn-cancel {
-		background: #6c757d;
-		color: white;
-	}
-
-	.btn-cancel:hover {
-		background: #5a6268;
-		transform: translateY(-2px);
-	}
-
-	.btn-save {
-		background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-		color: white;
-	}
-
-	.btn-save:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
-	}
-
-	.btn-delete {
-		background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-		color: white;
-	}
-
-	.btn-delete:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
-	}
-
-	.btn-save:disabled,
-	.btn-delete:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-		transform: none;
-	}
-
-	/* Alerta de eliminación */
-	.delete-warning {
-		display: flex;
-		align-items: flex-start;
-		gap: 15px;
-	}
-
-	.warning-icon {
-		font-size: 2rem;
-		color: #f39c12;
-	}
-
-	.warning-text {
-		flex: 1;
-	}
-
-	.item-info {
-		background: #f8f9fa;
-		padding: 10px 15px;
-		border-radius: 6px;
-		margin: 10px 0;
-		border-left: 4px solid #3498db;
-	}
-
-	.agents-warning {
-		background: #fff3cd;
-		color: #856404;
-		padding: 8px 12px;
-		border-radius: 4px;
-		margin-top: 5px;
-		font-size: 0.9rem;
-	}
-
-	.action-warning {
-		color: #e74c3c;
-		font-weight: 600;
-		margin: 10px 0 0 0;
-		font-size: 0.9rem;
-	}
-
-	/* Responsividad */
 	@media (max-width: 768px) {
 		.page-header {
 			flex-direction: column;
@@ -1030,10 +984,6 @@
 			justify-content: center;
 		}
 
-		.stats-container {
-			grid-template-columns: repeat(2, 1fr);
-		}
-
 		.filtros-container {
 			flex-direction: column;
 			align-items: stretch;
@@ -1041,15 +991,16 @@
 
 		.filtro-group {
 			min-width: auto;
+			flex: 1 1 auto;
 		}
 
-		.modal-content {
-			width: 95%;
-			margin: 20px;
+		.filtro-actions {
+			width: 100%;
+			justify-content: stretch;
 		}
 
-		.form-row {
-			grid-template-columns: 1fr;
+		.btn-limpiar {
+			flex: 1;
 		}
 
 		.actions {
@@ -1058,16 +1009,16 @@
 	}
 
 	@media (max-width: 480px) {
-		.stats-container {
-			grid-template-columns: 1fr;
-		}
-
 		.page-header h1 {
 			font-size: 1.8rem;
 		}
 
 		.header-actions {
 			flex-direction: column;
+		}
+
+		.filtros-container {
+			padding: 15px;
 		}
 	}
 </style>

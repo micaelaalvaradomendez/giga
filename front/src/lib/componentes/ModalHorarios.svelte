@@ -1,76 +1,96 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from "svelte";
 
 	export let isOpen = false;
 	export let isSaving = false;
-	export let tipoHorarios = 'areas'; // 'areas' o 'agrupaciones'
+	export let tipoHorarios = "areas"; // 'areas' o 'agrupaciones'
 	export let selectedItem = null;
-	export let formData = { hora_inicio: '08:00', hora_fin: '17:00' };
+	export let formData = { hora_inicio: "08:00", hora_fin: "17:00" };
 
 	const dispatch = createEventDispatcher();
 
 	function cerrarModal() {
 		if (!isSaving) {
-			dispatch('cerrar');
+			dispatch("cerrar");
 		}
 	}
 
 	function guardarHorarios() {
 		if (!isSaving && formData.hora_inicio && formData.hora_fin) {
-			dispatch('guardar', { 
+			dispatch("guardar", {
 				horario_entrada: formData.hora_inicio,
 				horario_salida: formData.hora_fin,
 				tipo: tipoHorarios,
-				target: selectedItem 
+				target: selectedItem,
 			});
 		}
 	}
 </script>
 
 {#if isOpen}
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<div class="modal-overlay" on:click={cerrarModal}>
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<!-- svelte-ignore a11y-no-static-element-interactions -->
 		<div class="modal-content horarios-modal" on:click|stopPropagation>
 			<div class="modal-header">
-				<h2>⏰ Horarios - {selectedItem?.nombre || 'Sin seleccionar'}</h2>
-				<button class="modal-close" on:click={cerrarModal}>×</button>
+				<h2>
+					⏰ Horarios - {selectedItem?.nombre || "Sin seleccionar"}
+				</h2>
+				<button
+					class="modal-close"
+					on:click={cerrarModal}
+					aria-label="Cerrar Modal">×</button
+				>
 			</div>
 			<div class="modal-body">
 				<div class="alert-info">
-					<strong>⚠️ Importante:</strong> Los horarios se aplicarán a <strong>todos los agentes</strong> de esta 
-					{tipoHorarios === 'areas' ? 'área' : 'agrupación'}.
+					<strong>⚠️ Importante:</strong> Los horarios se aplicarán a
+					<strong>todos los agentes</strong>
+					de esta
+					{tipoHorarios === "areas" ? "área" : "agrupación"}.
 				</div>
-				
+
 				<div class="form-row">
 					<div class="form-group">
 						<label for="horarioEntrada">Horario de Entrada *</label>
-						<input 
-							type="time" 
+						<input
+							type="time"
 							id="horarioEntrada"
 							bind:value={formData.hora_inicio}
 							required
 							disabled={isSaving}
 							class="hora-input"
-						>
+						/>
 					</div>
 					<div class="form-group">
 						<label for="horarioSalida">Horario de Salida *</label>
-						<input 
-							type="time" 
+						<input
+							type="time"
 							id="horarioSalida"
 							bind:value={formData.hora_fin}
 							required
 							disabled={isSaving}
 							class="hora-input"
-						>
+						/>
 					</div>
 				</div>
 			</div>
 			<div class="modal-footer">
-				<button class="btn-cancel" on:click={cerrarModal} disabled={isSaving}>
+				<button
+					class="btn-cancel"
+					on:click={cerrarModal}
+					disabled={isSaving}
+				>
 					Cancelar
 				</button>
-				<button class="btn-save" on:click={guardarHorarios} disabled={isSaving}>
-					{isSaving ? 'Guardando...' : 'Guardar Horarios'}
+				<button
+					class="btn-save"
+					on:click={guardarHorarios}
+					disabled={isSaving}
+				>
+					{isSaving ? "Guardando..." : "Guardar Horarios"}
 				</button>
 			</div>
 		</div>
@@ -195,7 +215,7 @@
 	}
 
 	.hora-input {
-		width: 100%;
+		width: 90%;
 		padding: 12px 15px;
 		border: 2px solid #e1e5e9;
 		border-radius: 8px;
@@ -215,14 +235,16 @@
 		cursor: not-allowed;
 	}
 
-	.btn-cancel, .btn-save {
+	.btn-cancel,
+	.btn-save {
 		padding: 12px 24px;
 		border: none;
 		border-radius: 8px;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.3s ease;
-		font-size: 14px;
+		font-size: 16px;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.btn-cancel {

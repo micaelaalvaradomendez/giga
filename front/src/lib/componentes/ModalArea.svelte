@@ -1,67 +1,79 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from "svelte";
 
 	export let isOpen = false;
 	export let isSaving = false;
-	export let formData = { id_area: null, nombre: '', activo: true };
+	export let formData = { id_area: null, nombre: "", activo: true };
 
 	const dispatch = createEventDispatcher();
 
 	function cerrarModal() {
 		if (!isSaving) {
-			dispatch('cerrar');
+			dispatch("cerrar");
 		}
 	}
 
 	function guardar() {
 		if (formData.nombre.trim() && !isSaving) {
-			dispatch('guardar', formData);
+			dispatch("guardar", formData);
 		}
 	}
 </script>
 
 {#if isOpen}
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<div class="modal-overlay" on:click={cerrarModal}>
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<!-- svelte-ignore a11y-no-static-element-interactions -->
 		<div class="modal-content" on:click|stopPropagation>
 			<div class="modal-header">
-				<h2>{formData.id_area ? '✏️ Editar' : '➕ Nueva'} Área</h2>
-				<button class="modal-close" on:click={cerrarModal}>×</button>
+				<h2>{formData.id_area ? "✏️ Editar" : "➕ Nueva"} Área</h2>
+				<button
+					class="modal-close"
+					on:click={cerrarModal}
+					aria-label="Cerrar Modal">×</button
+				>
 			</div>
 			<div class="modal-body">
 				<div class="form-group">
 					<label for="areaNombre">Nombre del Área *</label>
-					<input 
-						type="text" 
+					<input
+						type="text"
 						id="areaNombre"
 						bind:value={formData.nombre}
 						placeholder="Ej: Secretaría de Protección Civil"
 						required
 						disabled={isSaving}
-					>
+					/>
 				</div>
-				
+
 				<div class="checkbox-group">
 					<label class="checkbox-label">
-						<input 
-							type="checkbox" 
+						<input
+							type="checkbox"
 							bind:checked={formData.activo}
 							disabled={isSaving}
-						>
+						/>
 						<span class="checkbox-custom"></span>
 						Área activa
 					</label>
 				</div>
 			</div>
 			<div class="modal-footer">
-				<button class="btn-cancel" on:click={cerrarModal} disabled={isSaving}>
+				<button
+					class="btn-cancel"
+					on:click={cerrarModal}
+					disabled={isSaving}
+				>
 					Cancelar
 				</button>
-				<button 
-					class="btn-save" 
+				<button
+					class="btn-save"
 					on:click={guardar}
 					disabled={isSaving || !formData.nombre.trim()}
 				>
-					{isSaving ? 'Guardando...' : 'Guardar Área'}
+					{isSaving ? "Guardando..." : "Guardar Área"}
 				</button>
 			</div>
 		</div>
@@ -166,7 +178,7 @@
 	}
 
 	.form-group input {
-		width: 100%;
+		width: 90%;
 		padding: 12px 15px;
 		border: 2px solid #e1e5e9;
 		border-radius: 8px;
@@ -220,7 +232,7 @@
 	}
 
 	.checkbox-label input:checked + .checkbox-custom::after {
-		content: '✓';
+		content: "✓";
 		position: absolute;
 		top: 50%;
 		left: 50%;
@@ -230,14 +242,16 @@
 		font-size: 12px;
 	}
 
-	.btn-cancel, .btn-save {
+	.btn-cancel,
+	.btn-save {
 		padding: 12px 24px;
 		border: none;
 		border-radius: 8px;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.3s ease;
-		font-size: 14px;
+		font-size: 16px;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.btn-cancel {
