@@ -66,9 +66,9 @@
             loadingFeriados = true;
             const response = await guardiasService.getFeriados();
             feriados = response.data?.results || response.data || [];
-            console.log('Feriados cargados en inicio:', feriados);
+            console.log("Feriados cargados en inicio:", feriados);
         } catch (error) {
-            console.error('Error cargando feriados:', error);
+            console.error("Error cargando feriados:", error);
             feriados = []; // En caso de error, asegurar que sea un array vacío
         } finally {
             loadingFeriados = false;
@@ -77,30 +77,14 @@
 
     async function cargarGuardias() {
         if (!user || !user.id) return;
-        
-        try {
-            loadingGuardias = true;
-            const response = await guardiasService.getGuardiasAgente(user.id);
-            guardias = response.data?.guardias || [];
-            console.log('Guardias cargadas en inicio:', guardias);
-        } catch (error) {
-            console.error('Error cargando guardias:', error);
-            guardias = [];
-        } finally {
-            loadingGuardias = false;
-        }
-    }
 
-    async function cargarGuardias() {
-        if (!user || !user.id) return;
-        
         try {
             loadingGuardias = true;
             const response = await guardiasService.getGuardiasAgente(user.id);
             guardias = response.data?.guardias || [];
-            console.log('Guardias cargadas en inicio:', guardias);
+            console.log("Guardias cargadas en inicio:", guardias);
         } catch (error) {
-            console.error('Error cargando guardias:', error);
+            console.error("Error cargando guardias:", error);
             guardias = [];
         } finally {
             loadingGuardias = false;
@@ -109,11 +93,11 @@
 
     function getRoleBadgeClass(rol) {
         const roleClasses = {
-            "Administrador": "role-admin",
-            "Director": "role-director", 
-            "Jefatura": "role-jefatura",
+            Administrador: "role-admin",
+            Director: "role-director",
+            Jefatura: "role-jefatura",
             "Agente Avanzado": "role-agente-avanzado",
-            "Agente": "role-agente",
+            Agente: "role-agente",
         };
         return roleClasses[rol] || "role-default";
     }
@@ -271,10 +255,7 @@
 {/if}
 
 <!-- Componente para cambio obligatorio de contraseña -->
-<CambioContrasenaObligatorio 
-    showAlert={showMandatoryPasswordChange}
-    {user}
-/>
+<CambioContrasenaObligatorio showAlert={showMandatoryPasswordChange} {user} />
 
 <style>
     .container {

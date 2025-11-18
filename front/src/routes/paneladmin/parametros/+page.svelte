@@ -160,7 +160,21 @@
 			<div class="panel-header">
 				<h2>📍 Gestión de Áreas</h2>
 			</div>
-
+			<!-- Estadísticas de Áreas -->
+			{#if $areasFiltradas && $areasFiltradas.length > 0}
+				<div class="panel-stats">
+					<div class="stat-card">
+						<h3>Total Áreas</h3>
+						<p class="stat-number">{$areas ? $areas.length : 0}</p>
+					</div>
+					<div class="stat-card">
+						<h3>Áreas Activas</h3>
+						<p class="stat-number">
+							{$areas ? $areas.filter((a) => a.activo).length : 0}
+						</p>
+					</div>
+				</div>
+			{/if}
 			<!-- Filtros de áreas -->
 			<div class="filtros-container">
 				<div class="filtro-group">
@@ -689,6 +703,44 @@
 		}
 	}
 
+	.panel-stats {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 20px;
+		padding: 20px 25px;
+		background: #f8f9fa;
+		border-bottom: 1px solid #dee2e6;
+	}
+
+	.stat-card {
+		background: white;
+		padding: 20px;
+		border-radius: 16px;
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+		text-align: center;
+		border-top: 4px solid #3498db;
+		transition: transform 0.3s ease;
+	}
+
+	.stat-card:hover {
+		transform: translateY(-5px);
+	}
+
+	.stat-card h3 {
+		margin: 0 0 10px;
+		color: #555;
+		font-size: 0.9rem;
+		font-weight: 600;
+		text-transform: uppercase;
+	}
+
+	.stat-number {
+		font-size: 2.2rem;
+		font-weight: 700;
+		color: #3498db;
+		margin: 0;
+	}
+
 	/* Paneles */
 	.panel-areas,
 	.panel-agrupaciones {
@@ -696,6 +748,7 @@
 		border-radius: 24px;
 		box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
 		overflow: hidden;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.panel-header {
@@ -720,6 +773,7 @@
 		align-items: flex-end;
 		flex-wrap: wrap;
 		gap: 15px;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.filtro-group {
@@ -780,6 +834,30 @@
 	/* Tablas */
 	.table-container {
 		overflow-x: auto;
+		max-height: 500px;
+		overflow-y: auto;
+		position: relative;
+		border-radius: 0 0 24px 24px;
+	}
+
+	.table-container::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	.table-container::-webkit-scrollbar-track {
+		background: #f1f3f4;
+		border-radius: 10px;
+	}
+
+	.table-container::-webkit-scrollbar-thumb {
+		background: #c1c7cd;
+		border-radius: 10px;
+		transition: background 0.3s ease;
+	}
+
+	.table-container::-webkit-scrollbar-thumb:hover {
+		background: #a8aeb4;
 	}
 
 	table {
@@ -790,6 +868,10 @@
 
 	thead {
 		background: #f8f9fa;
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
 	th {
@@ -801,6 +883,7 @@
 		font-size: 0.9rem;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
+		background: #f8f9fa;
 	}
 
 	td {
@@ -816,6 +899,14 @@
 	tbody tr:hover {
 		background-color: #f8f9fa;
 		transform: scale(1.01);
+	}
+
+	.panel-areas .table-container {
+		max-height: 450px;
+	}
+
+	.panel-agrupaciones .table-container {
+		max-height: 450px;
 	}
 
 	/* Badges */
@@ -950,6 +1041,10 @@
 
 		.actions {
 			flex-direction: column;
+		}
+
+		.table-container {
+			max-height: 400px;
 		}
 	}
 
