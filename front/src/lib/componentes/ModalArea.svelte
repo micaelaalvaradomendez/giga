@@ -99,20 +99,6 @@
 		}
 		formData.agentes_asignados = formData.agentes_asignados; // Trigger reactivity
 	}
-
-	function toggleAgenteAsignado(agenteId) {
-		if (!formData.agentes_asignados) {
-			formData.agentes_asignados = [];
-		}
-
-		const index = formData.agentes_asignados.indexOf(agenteId);
-		if (index > -1) {
-			formData.agentes_asignados.splice(index, 1);
-		} else {
-			formData.agentes_asignados.push(agenteId);
-		}
-		formData.agentes_asignados = formData.agentes_asignados; // Trigger reactivity
-	}
 </script>
 
 {#if isOpen}
