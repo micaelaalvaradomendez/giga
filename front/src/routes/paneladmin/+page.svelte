@@ -17,7 +17,7 @@
 			description: "Configurar roles de acceso",
 		},
 		{
-			name: "Asistencias (falta)",
+			name: "Asistencias",
 			path: "/paneladmin/asistencias",
 			description: "Revisar registros de asistencia",
 		},

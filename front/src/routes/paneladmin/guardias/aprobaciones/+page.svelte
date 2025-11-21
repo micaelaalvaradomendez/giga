@@ -1,284 +1,91 @@
 <script>
   import { onMount } from 'svelte';
-  import { goto, invalidateAll } from '$app/navigation';
   import { browser } from '$app/environment';
-  import { guardiasService, personasService } from '$lib/services.js';
-  import AuthService from '$lib/login/authService.js';
+  import { aprobacionesGuardiasController } from '$lib/paneladmin/controllers';
 
-  let loading = false;
-  let error = '';
-  let cronogramasPendientes = [];
-  let cronogramasAprobadas = [];
-  let tabActiva = 'pendientes'; // 'pendientes' | 'aprobadas'
-  let agenteActual = null;
-  let rolAgente = '';
-  let token = null;
-  
-  // Modal para ver detalles
-  let mostrarModal = false;
-  let cronogramaSeleccionado = null;
-  let guardiasDelCronograma = [];
-  
-  // Modal de rechazo
-  let mostrarModalRechazo = false;
-  let motivoRechazo = '';
-  let cronogramaARechazar = null;
+  // Obtener stores del controller
+  const {
+    loading,
+    error,
+    cronogramasPendientes,
+    cronogramasAprobadas,
+    tabActiva,
+    agenteActual,
+    rolAgente,
+    mostrarModal,
+    cronogramaSeleccionado,
+    guardiasDelCronograma,
+    mostrarModalRechazo,
+    motivoRechazo,
+    cronogramaARechazar
+  } = aprobacionesGuardiasController;
 
   onMount(async () => {
-    try {
-      const sessionCheck = await AuthService.checkSession();
+    console.log('🔄 Componente de aprobaciones montado, iniciando controller...');
+    await aprobacionesGuardiasController.init();
+    console.log('✅ Controller de aprobaciones inicializado');
+    
+    // Recargar cuando la página vuelve a ser visible
+    if (browser) {
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          aprobacionesGuardiasController.cargarDatos();
+        }
+      };
       
-      if (!sessionCheck.authenticated) {
-        goto('/');
-        return;
-      }
+      const handleFocus = () => {
+        aprobacionesGuardiasController.cargarDatos();
+      };
       
-      token = localStorage.getItem('token');
-      await cargarDatos();
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('focus', handleFocus);
       
-      // Recargar cuando la página vuelve a ser visible
-      if (browser) {
-        const handleVisibilityChange = () => {
-          if (document.visibilityState === 'visible') {
-            cargarDatos();
-          }
-        };
-        
-        const handleFocus = () => {
-          cargarDatos();
-        };
-        
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('focus', handleFocus);
-        
-        return () => {
-          document.removeEventListener('visibilitychange', handleVisibilityChange);
-          window.removeEventListener('focus', handleFocus);
-        };
-      }
-    } catch (err) {
-      console.error('Error verificando sesión:', err);
-      goto('/');
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleFocus);
+      };
     }
   });
 
-  async function cargarDatos() {
-    try {
-      const responseAgentes = await personasService.getAllAgentes(token);
-      const agentes = responseAgentes.data?.results || responseAgentes.data || [];
-      
-      // Obtener agente de la sesión actual
-      const user = JSON.parse(localStorage.getItem('agente') || '{}');
-      agenteActual = agentes.find(a => a.id_agente === user.id_agente) || agentes[0];
-      
-      if (agenteActual) {
-        await Promise.all([
-          cargarPendientes(),
-          cargarAprobadas()
-        ]);
-      }
-    } catch (e) {
-      error = 'Error cargando datos iniciales';
-      console.error(e);
-    }
+  // Handlers delegados al controller
+  async function handleVerDetalles(cronograma) {
+    await aprobacionesGuardiasController.verDetalles(cronograma);
   }
 
-  async function cargarPendientes() {
-    try {
-      loading = true;
-      error = '';
-      
-      const response = await guardiasService.getPendientesAprobacion(agenteActual.id_agente, token);
-      cronogramasPendientes = response.data?.cronogramas || [];
-      rolAgente = response.data?.rol_agente || '';
-      
-      console.log('Cronogramas pendientes:', cronogramasPendientes);
-    } catch (e) {
-      error = 'Error cargando cronogramas pendientes';
-      console.error(e);
-    } finally {
-      loading = false;
-    }
+  async function handleAprobar(cronograma) {
+    await aprobacionesGuardiasController.aprobar(cronograma);
   }
 
-  async function cargarAprobadas() {
-    try {
-      // Obtener cronogramas aprobadas/publicadas del mes actual y anteriores
-      const response = await guardiasService.getCronogramas(token);
-      const todas = response.data?.results || response.data || [];
-      
-      cronogramasAprobadas = todas.filter(c => 
-        c.estado === 'aprobada' || c.estado === 'publicada'
-      );
-      
-      console.log('Cronogramas aprobadas:', cronogramasAprobadas);
-    } catch (e) {
-      console.error('Error cargando cronogramas aprobadas:', e);
-    }
+  function handleIniciarRechazo(cronograma) {
+    aprobacionesGuardiasController.iniciarRechazo(cronograma);
   }
 
-  async function verDetalles(cronograma) {
-    cronogramaSeleccionado = cronograma;
-    
-    // Cargar guardias del cronograma
-    try {
-      const response = await guardiasService.getResumenGuardias(`id_cronograma=${cronograma.id_cronograma}`);
-      guardiasDelCronograma = response.data?.guardias || [];
-      mostrarModal = true;
-    } catch (e) {
-      console.error('Error cargando guardias:', e);
-      guardiasDelCronograma = [];
-      mostrarModal = true;
-    }
+  async function handleConfirmarRechazo() {
+    await aprobacionesGuardiasController.confirmarRechazo();
   }
 
-  async function aprobar(cronograma) {
-    if (!confirm(`¿Confirmar aprobación del cronograma de ${cronograma.area_nombre}?`)) {
-      return;
-    }
-
-    try {
-      loading = true;
-      await guardiasService.aprobarCronograma(cronograma.id_cronograma, {
-        agente_id: agenteActual.id_agente
-      }, token);
-      
-      alert('Cronograma aprobado exitosamente');
-      await cargarDatos();
-    } catch (e) {
-      const errorMsg = e.response?.data?.error || e.response?.data?.detalle || 'Error al aprobar cronograma';
-      alert(errorMsg);
-      console.error(e);
-    } finally {
-      loading = false;
-    }
+  async function handlePublicar(cronograma) {
+    await aprobacionesGuardiasController.publicar(cronograma);
   }
 
-  function iniciarRechazo(cronograma) {
-    cronogramaARechazar = cronograma;
-    motivoRechazo = '';
-    mostrarModalRechazo = true;
+  function handleCerrarModal() {
+    aprobacionesGuardiasController.cerrarModal();
   }
 
-  async function confirmarRechazo() {
-    if (!motivoRechazo.trim()) {
-      alert('Debe ingresar un motivo de rechazo');
-      return;
-    }
-
-    try {
-      loading = true;
-      await guardiasService.rechazarCronograma(cronogramaARechazar.id_cronograma, {
-        agente_id: agenteActual.id_agente,
-        motivo: motivoRechazo
-      }, token);
-      
-      alert('Cronograma rechazado');
-      mostrarModalRechazo = false;
-      cronogramaARechazar = null;
-      motivoRechazo = '';
-      await cargarDatos();
-    } catch (e) {
-      const errorMsg = e.response?.data?.error || 'Error al rechazar cronograma';
-      alert(errorMsg);
-      console.error(e);
-    } finally {
-      loading = false;
-    }
+  async function handleEditarCronograma(cronograma) {
+    await aprobacionesGuardiasController.editarCronograma(cronograma);
   }
 
-  async function publicar(cronograma) {
-    if (!confirm(`¿Publicar cronograma de ${cronograma.area_nombre}?`)) {
-      return;
-    }
-
-    try {
-      loading = true;
-      await guardiasService.publicarCronograma(cronograma.id_cronograma, token);
-      
-      alert('Cronograma publicado exitosamente');
-      await cargarDatos();
-    } catch (e) {
-      const errorMsg = e.response?.data?.error || 'Error al publicar cronograma';
-      alert(errorMsg);
-      console.error(e);
-    } finally {
-      loading = false;
-    }
+  async function handleEliminarGuardia(guardia) {
+    await aprobacionesGuardiasController.eliminarGuardia(guardia);
   }
 
-  function cerrarModal() {
-    mostrarModal = false;
-    cronogramaSeleccionado = null;
-    guardiasDelCronograma = [];
-  }
-  
-  async function editarCronograma(cronograma) {
-    // Redirigir al planificador con el ID del cronograma para editar
-    await invalidateAll();
-    goto(`/paneladmin/guardias/planificador?editar=${cronograma.id_cronograma}`, { invalidateAll: true });
-  }
-  
-  async function eliminarGuardia(guardia) {
-    if (!confirm(`¿Eliminar guardia de ${guardia.agente_nombre} el ${formatearFecha(guardia.fecha)}?`)) {
-      return;
-    }
-    
-    try {
-      loading = true;
-      await guardiasService.deleteGuardia(guardia.id_guardia, token);
-      
-      alert('Guardia eliminada exitosamente');
-      
-      // Recargar detalles del cronograma
-      if (cronogramaSeleccionado) {
-        await verDetalles(cronogramaSeleccionado);
-      }
-      
-      await cargarDatos();
-    } catch (e) {
-      const errorMsg = e.response?.data?.error || 'Error al eliminar guardia';
-      alert(errorMsg);
-      console.error(e);
-    } finally {
-      loading = false;
-    }
-  }
-  
-  async function eliminarCronograma(cronograma) {
-    if (!confirm(`¿Está seguro de eliminar el cronograma de ${cronograma.area_nombre}?\n\nEsto eliminará todas las guardias asociadas.`)) {
-      return;
-    }
-    
-    try {
-      loading = true;
-      await guardiasService.deleteCronograma(cronograma.id_cronograma, token);
-      
-      alert('Cronograma eliminado exitosamente');
-      cerrarModal();
-      await cargarDatos();
-    } catch (e) {
-      const errorMsg = e.response?.data?.error || 'Error al eliminar cronograma';
-      alert(errorMsg);
-      console.error(e);
-    } finally {
-      loading = false;
-    }
+  async function handleEliminarCronograma(cronograma) {
+    await aprobacionesGuardiasController.eliminarCronograma(cronograma);
   }
 
-  function formatearFecha(fechaStr) {
-    if (!fechaStr) return '';
-    const fecha = new Date(fechaStr + 'T00:00:00');
-    return fecha.toLocaleDateString('es-AR', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  }
-
-  function formatearHora(horaStr) {
-    if (!horaStr) return '';
-    return horaStr.substring(0, 5); // HH:MM
+  function handleCambiarTab(tab) {
+    aprobacionesGuardiasController.cambiarTab(tab);
   }
 </script>
 
@@ -286,9 +93,9 @@
   <header class="head">
     <h1>Aprobaciones de Guardias</h1>
     <p>Revisá y aprobá cronogramas pendientes</p>
-    {#if rolAgente}
+    {#if $rolAgente}
       <div class="rol-badge">
-        Tu rol: <strong>{rolAgente}</strong>
+        Tu rol: <strong>{$rolAgente}</strong>
       </div>
     {/if}
   </header>
@@ -297,38 +104,38 @@
   <div class="tabs">
     <button 
       class="tab" 
-      class:active={tabActiva === 'pendientes'}
-      on:click={() => tabActiva = 'pendientes'}
+      class:active={$tabActiva === 'pendientes'}
+      on:click={() => handleCambiarTab('pendientes')}
     >
-      Pendientes ({cronogramasPendientes.length})
+      Pendientes ({$cronogramasPendientes.length})
     </button>
     <button 
       class="tab" 
-      class:active={tabActiva === 'aprobadas'}
-      on:click={() => tabActiva = 'aprobadas'}
+      class:active={$tabActiva === 'aprobadas'}
+      on:click={() => handleCambiarTab('aprobadas')}
     >
-      Aprobadas ({cronogramasAprobadas.length})
+      Aprobadas ({$cronogramasAprobadas.length})
     </button>
   </div>
 
-  {#if error}
-    <div class="alert alert-error">{error}</div>
+  {#if $error}
+    <div class="alert alert-error">{$error}</div>
   {/if}
 
-  {#if loading}
+  {#if $loading}
     <div class="loading-container">
       <div class="loading-spinner"></div>
       <p>Cargando...</p>
     </div>
-  {:else if tabActiva === 'pendientes'}
+  {:else if $tabActiva === 'pendientes'}
     <!-- Lista de pendientes -->
     <div class="cronogramas-lista">
-      {#if cronogramasPendientes.length === 0}
+      {#if $cronogramasPendientes.length === 0}
         <div class="empty-state">
           <p>✓ No hay cronogramas pendientes de aprobación</p>
         </div>
       {:else}
-        {#each cronogramasPendientes as cronograma}
+        {#each $cronogramasPendientes as cronograma}
           <div class="cronograma-card pendiente">
             <div class="cronograma-header">
               <div class="cronograma-info">
@@ -353,13 +160,13 @@
               
               <div class="info-row">
                 <span class="label">Fecha creación:</span>
-                <span class="value">{formatearFecha(cronograma.fecha_creacion)}</span>
+                <span class="value">{aprobacionesGuardiasController.formatearFecha(cronograma.fecha_creacion)}</span>
               </div>
               
               <div class="info-row">
                 <span class="label">Horario:</span>
                 <span class="value">
-                  {formatearHora(cronograma.hora_inicio)} - {formatearHora(cronograma.hora_fin)}
+                  {aprobacionesGuardiasController.formatearHora(cronograma.hora_inicio)} - {aprobacionesGuardiasController.formatearHora(cronograma.hora_fin)}
                 </span>
               </div>
               
@@ -379,16 +186,16 @@
             </div>
             
             <div class="cronograma-actions">
-              <button class="btn btn-secondary" on:click={() => verDetalles(cronograma)}>
+              <button class="btn btn-secondary" on:click={() => handleVerDetalles(cronograma)}>
                 📋 Ver Detalles
               </button>
-              <button class="btn btn-info" on:click={() => editarCronograma(cronograma)} disabled={loading}>
+              <button class="btn btn-info" on:click={() => handleEditarCronograma(cronograma)} disabled={$loading}>
                 ✏️ Editar
               </button>
-              <button class="btn btn-success" on:click={() => aprobar(cronograma)} disabled={loading}>
+              <button class="btn btn-success" on:click={() => handleAprobar(cronograma)} disabled={$loading}>
                 ✓ Aprobar
               </button>
-              <button class="btn btn-danger" on:click={() => iniciarRechazo(cronograma)} disabled={loading}>
+              <button class="btn btn-danger" on:click={() => handleIniciarRechazo(cronograma)} disabled={$loading}>
                 ✗ Rechazar
               </button>
             </div>
@@ -400,12 +207,12 @@
   {:else}
     <!-- Lista de aprobadas -->
     <div class="cronogramas-lista">
-      {#if cronogramasAprobadas.length === 0}
+      {#if $cronogramasAprobadas.length === 0}
         <div class="empty-state">
           <p>No hay cronogramas aprobadas</p>
         </div>
       {:else}
-        {#each cronogramasAprobadas as cronograma}
+        {#each $cronogramasAprobadas as cronograma}
           <div class="cronograma-card aprobada">
             <div class="cronograma-header">
               <div class="cronograma-info">
@@ -420,7 +227,7 @@
             <div class="cronograma-body">
               <div class="info-row">
                 <span class="label">Aprobado:</span>
-                <span class="value">{formatearFecha(cronograma.fecha_aprobacion)}</span>
+                <span class="value">{aprobacionesGuardiasController.formatearFecha(cronograma.fecha_aprobacion)}</span>
               </div>
               
               <div class="info-row">
@@ -430,11 +237,11 @@
             </div>
             
             <div class="cronograma-actions">
-              <button class="btn btn-secondary" on:click={() => verDetalles(cronograma)}>
+              <button class="btn btn-secondary" on:click={() => handleVerDetalles(cronograma)}>
                 Ver Detalles
               </button>
               {#if cronograma.estado === 'aprobada'}
-                <button class="btn btn-primary" on:click={() => publicar(cronograma)} disabled={loading}>
+                <button class="btn btn-primary" on:click={() => handlePublicar(cronograma)} disabled={$loading}>
                   Publicar
                 </button>
               {/if}
@@ -447,12 +254,12 @@
 </section>
 
 <!-- Modal de detalles -->
-{#if mostrarModal && cronogramaSeleccionado}
-  <div class="modal-overlay" on:click={cerrarModal}>
+{#if $mostrarModal && $cronogramaSeleccionado}
+  <div class="modal-overlay" on:click={handleCerrarModal}>
     <div class="modal-content" on:click|stopPropagation>
       <div class="modal-header">
         <h3>Detalles del Cronograma</h3>
-        <button class="close-button" on:click={cerrarModal}>&times;</button>
+        <button class="close-button" on:click={handleCerrarModal}>&times;</button>
       </div>
       
       <div class="modal-body">
@@ -460,25 +267,25 @@
           <h4>Información General</h4>
           <div class="info-row">
             <span class="label">Área:</span>
-            <span class="value">{cronogramaSeleccionado.area_nombre}</span>
+            <span class="value">{$cronogramaSeleccionado.area_nombre}</span>
           </div>
           <div class="info-row">
             <span class="label">Tipo:</span>
-            <span class="value">{cronogramaSeleccionado.tipo}</span>
+            <span class="value">{$cronogramaSeleccionado.tipo}</span>
           </div>
           <div class="info-row">
             <span class="label">Estado:</span>
             <span class="value">
-              <span class="badge badge-{cronogramaSeleccionado.estado}">
-                {cronogramaSeleccionado.estado}
+              <span class="badge badge-{$cronogramaSeleccionado.estado}">
+                {$cronogramaSeleccionado.estado}
               </span>
             </span>
           </div>
         </div>
         
         <div class="detalle-seccion">
-          <h4>Guardias Asignadas ({guardiasDelCronograma.length})</h4>
-          {#if guardiasDelCronograma.length > 0}
+          <h4>Guardias Asignadas ({$guardiasDelCronograma.length})</h4>
+          {#if $guardiasDelCronograma.length > 0}
             <div class="guardias-tabla">
               <table>
                 <thead>
@@ -491,19 +298,19 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {#each guardiasDelCronograma as guardia}
+                  {#each $guardiasDelCronograma as guardia}
                     <tr>
                       <td>{guardia.agente_nombre}</td>
-                      <td>{formatearFecha(guardia.fecha)}</td>
-                      <td>{formatearHora(guardia.hora_inicio)} - {formatearHora(guardia.hora_fin)}</td>
+                      <td>{aprobacionesGuardiasController.formatearFecha(guardia.fecha)}</td>
+                      <td>{aprobacionesGuardiasController.formatearHora(guardia.hora_inicio)} - {aprobacionesGuardiasController.formatearHora(guardia.hora_fin)}</td>
                       <td>
                         <span class="badge-mini badge-{guardia.estado}">{guardia.estado}</span>
                       </td>
                       <td>
                         <button 
                           class="btn-icon btn-danger-icon" 
-                          on:click={() => eliminarGuardia(guardia)}
-                          disabled={loading}
+                          on:click={() => handleEliminarGuardia(guardia)}
+                          disabled={$loading}
                           title="Eliminar guardia"
                         >
                           🗑️
@@ -520,12 +327,12 @@
         </div>
         
         <div class="modal-footer">
-          <button class="btn btn-secondary" on:click={cerrarModal}>Cerrar</button>
-          {#if cronogramaSeleccionado && (cronogramaSeleccionado.estado === 'pendiente' || cronogramaSeleccionado.estado === 'aprobada')}
+          <button class="btn btn-secondary" on:click={handleCerrarModal}>Cerrar</button>
+          {#if $cronogramaSeleccionado && ($cronogramaSeleccionado.estado === 'pendiente' || $cronogramaSeleccionado.estado === 'aprobada')}
             <button 
               class="btn btn-danger" 
-              on:click={() => eliminarCronograma(cronogramaSeleccionado)}
-              disabled={loading}
+              on:click={() => handleEliminarCronograma($cronogramaSeleccionado)}
+              disabled={$loading}
             >
               🗑️ Eliminar Cronograma
             </button>
@@ -537,22 +344,22 @@
 {/if}
 
 <!-- Modal de rechazo -->
-{#if mostrarModalRechazo && cronogramaARechazar}
-  <div class="modal-overlay" on:click={() => mostrarModalRechazo = false}>
+{#if $mostrarModalRechazo && $cronogramaARechazar}
+  <div class="modal-overlay" on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}>
     <div class="modal-content modal-rechazo" on:click|stopPropagation>
       <div class="modal-header">
         <h3>Rechazar Cronograma</h3>
-        <button class="close-button" on:click={() => mostrarModalRechazo = false}>&times;</button>
+        <button class="close-button" on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}>&times;</button>
       </div>
       
       <div class="modal-body">
-        <p><strong>Cronograma:</strong> {cronogramaARechazar.area_nombre} - {cronogramaARechazar.tipo}</p>
+        <p><strong>Cronograma:</strong> {$cronogramaARechazar.area_nombre} - {$cronogramaARechazar.tipo}</p>
         
         <div class="form-group">
           <label for="motivo">Motivo del rechazo *</label>
           <textarea 
             id="motivo" 
-            bind:value={motivoRechazo} 
+            bind:value={$motivoRechazo} 
             placeholder="Ingrese el motivo del rechazo..."
             rows="4"
           ></textarea>
@@ -560,10 +367,10 @@
       </div>
       
       <div class="modal-footer">
-        <button class="btn btn-secondary" on:click={() => mostrarModalRechazo = false}>
+        <button class="btn btn-secondary" on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}>
           Cancelar
         </button>
-        <button class="btn btn-danger" on:click={confirmarRechazo} disabled={loading || !motivoRechazo.trim()}>
+        <button class="btn btn-danger" on:click={handleConfirmarRechazo} disabled={$loading || !$motivoRechazo.trim()}>
           Confirmar Rechazo
         </button>
       </div>

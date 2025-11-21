@@ -15,7 +15,7 @@ const getApiBaseUrl = () => {
 	return 'http://giga-django:8000/api';
 };
 
-const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Crea una instancia de API real conectada al backend Django.

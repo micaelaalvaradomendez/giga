@@ -159,7 +159,9 @@ def login_view(request):
             'last_name': agente.apellido,
             'fecha_nacimiento': agente.fecha_nacimiento.isoformat() if agente.fecha_nacimiento else None,
             'direccion': agente.direccion,
-            'activo': agente.activo
+            'activo': agente.activo,
+            'horario_entrada': agente.horario_entrada.strftime('%H:%M') if agente.horario_entrada else None,
+            'horario_salida': agente.horario_salida.strftime('%H:%M') if agente.horario_salida else None
         }
 
         # Guardar en sesión (simulación de sesión para compatibilidad)
@@ -290,7 +292,9 @@ def check_session(request):
             'last_name': agente.apellido,
             'fecha_nacimiento': agente.fecha_nacimiento.isoformat() if agente.fecha_nacimiento else None,
             'direccion': agente.direccion,
-            'activo': agente.activo
+            'activo': agente.activo,
+            'horario_entrada': agente.horario_entrada.strftime('%H:%M') if agente.horario_entrada else None,
+            'horario_salida': agente.horario_salida.strftime('%H:%M') if agente.horario_salida else None
         }
 
         return Response({
@@ -668,7 +672,9 @@ def update_profile(request):
             'last_name': agente.apellido,
             'fecha_nacimiento': agente.fecha_nacimiento.isoformat() if agente.fecha_nacimiento else None,
             'direccion': agente.direccion,
-            'activo': agente.activo
+            'activo': agente.activo,
+            'horario_entrada': agente.horario_entrada.strftime('%H:%M') if agente.horario_entrada else None,
+            'horario_salida': agente.horario_salida.strftime('%H:%M') if agente.horario_salida else None
         }
 
         return Response({

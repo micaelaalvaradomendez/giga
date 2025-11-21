@@ -25,9 +25,13 @@ import { organigramaController } from './organigramaController.js';
 import { feriadosController } from './feriadosController.js';
 import { auditoriaController } from './auditoriaController.js';
 import { guardiasController } from './guardiasController.js';
+import { asistenciasController } from './asistenciasController.js';
+import { guardiasMainController } from './guardiasMainController.js';
+import { planificadorGuardiasController } from './planificadorGuardiasController.js';
+import { aprobacionesGuardiasController } from './aprobacionesGuardiasController.js';
 
 // Exportar controladores
-export { usuariosController, rolesController, parametrosController, organigramaController, feriadosController, auditoriaController, guardiasController };
+export { usuariosController, rolesController, parametrosController, organigramaController, feriadosController, auditoriaController, guardiasController, asistenciasController, guardiasMainController, planificadorGuardiasController, aprobacionesGuardiasController };
 
 // Re-exportar para compatibilidad
 export {
@@ -37,7 +41,11 @@ export {
 	organigramaController as OrganigramaController,
 	feriadosController as FeriadosController,
 	auditoriaController as AuditoriaController,
-	guardiasController as GuardiasController
+	guardiasController as GuardiasController,
+	asistenciasController as AsistenciasController,
+	guardiasMainController as GuardiasMainController,
+	planificadorGuardiasController as PlanificadorGuardiasController,
+	aprobacionesGuardiasController as AprobacionesGuardiasController
 };
 
 /**
@@ -57,7 +65,11 @@ export async function initializeAllControllers() {
 			organigrama: organigramaController,
 			feriados: feriadosController,
 			auditoria: auditoriaController,
-			guardias: guardiasController
+			guardias: guardiasController,
+			asistencias: asistenciasController,
+			guardiasMain: guardiasMainController,
+			planificadorGuardias: planificadorGuardiasController,
+			aprobacionesGuardias: aprobacionesGuardiasController
 		};
 	} catch (error) {
 		console.error('❌ Error inicializando controladores:', error);

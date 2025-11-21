@@ -1,4 +1,7 @@
-import { createApiClient } from './api.js';
+import { createApiClient, API_BASE_URL } from './api.js';
+
+// Exportar API_BASE_URL para uso directo
+export { API_BASE_URL };
 
 // Cliente API por defecto para compatibilidad con servicios legacy
 const api = createApiClient();
