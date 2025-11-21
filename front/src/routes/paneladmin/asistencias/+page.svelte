@@ -1,378 +1,376 @@
 <script>
-import { onMount } from 'svelte';
-import { goto } from '$app/navigation';
-import { asistenciasController } from '$lib/paneladmin/controllers';
+    import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
+    import { asistenciasController } from '$lib/paneladmin/controllers';
 
-// Obtener stores del controlador
-const {
-loading,
-areas,
-resumen,
-licencias,
-asistenciasFiltradas,
-fechaSeleccionada,
-areaSeleccionada,
-tabActiva,
-modalCorreccion,
-asistenciaEditando,
-observacionEdit
-} = asistenciasController;
+    // Obtener stores del controlador
+    const {
+        loading,
+        areas,
+        resumen,
+        licencias,
+        asistenciasFiltradas,
+        fechaSeleccionada,
+        areaSeleccionada,
+        tabActiva,
+        modalCorreccion,
+        asistenciaEditando,
+        observacionEdit
+    } = asistenciasController;
 
-onMount(async () => {
-console.log('🔄 Componente de asistencias montado, iniciando controlador...');
-try {
-await asistenciasController.init();
-console.log('✅ Controlador de asistencias inicializado exitosamente');
+    onMount(async () => {
+        console.log('🔄 Componente de asistencias montado, iniciando controlador...');
+        try {
+            await asistenciasController.init();
+            console.log('✅ Controlador de asistencias inicializado exitosamente');
+            // Recargar cuando la página vuelve a ser visible
+            if (typeof window !== 'undefined') {
+                const handleVisibilityChange = () => {
+                    if (document.visibilityState === 'visible') {
+                        asistenciasController.recargar();
+                    }
+                };
+                const handleFocus = () => {
+                    asistenciasController.recargar();
+                };
 
-// Recargar cuando la página vuelve a ser visible
-if (typeof window !== 'undefined') {
-const handleVisibilityChange = () => {
-if (document.visibilityState === 'visible') {
-asistenciasController.recargar();
-}
-};
+                document.addEventListener('visibilitychange', handleVisibilityChange);
+                window.addEventListener('focus', handleFocus);
 
-const handleFocus = () => {
-asistenciasController.recargar();
-};
+                return () => {
+                document.removeEventListener('visibilitychange', handleVisibilityChange);
+                window.removeEventListener('focus', handleFocus);
+                };
+            }
+        } catch (err) {
+            console.error('❌ Error inicializando controlador:', err);
+            if (err.message.includes('no autenticado')) {
+                goto('/');
+                return;
+            }
+        }
+    });
 
-document.addEventListener('visibilitychange', handleVisibilityChange);
-window.addEventListener('focus', handleFocus);
+    // Funciones delegadas al controlador
+    async function handleMarcarEntrada() {
+        const result = await asistenciasController.marcarEntrada();
+        if (result.message) {
+            alert(result.message);
+        }
+    }
 
-return () => {
-document.removeEventListener('visibilitychange', handleVisibilityChange);
-window.removeEventListener('focus', handleFocus);
-};
-}
-} catch (err) {
-console.error('❌ Error inicializando controlador:', err);
-if (err.message.includes('no autenticado')) {
-goto('/');
-return;
-}
-}
-});
-
-// Funciones delegadas al controlador
-async function handleMarcarEntrada() {
-const result = await asistenciasController.marcarEntrada();
-if (result.message) {
-alert(result.message);
-}
-}
-
-async function handleMarcarSalida() {
-const result = await asistenciasController.marcarSalida();
-if (result.message) {
-alert(result.message);
-}
-}
+    async function handleMarcarSalida() {
+        const result = await asistenciasController.marcarSalida();
+        if (result.message) {
+            alert(result.message);
+        }
+    }
 </script>
 
 <svelte:head>
-<title>Gestión de Asistencias - Admin</title>
+    <title>Gestión de Asistencias - Admin</title>
 </svelte:head>
 
 <div class="admin-container">
-<div class="header">
-<h1>Gestión de Asistencias</h1>
-<p class="subtitle">Panel de administración</p>
+    <div class="header">
+        <h1>Gestión de Asistencias</h1>
+        <p class="subtitle">Panel de administración</p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-card">
+        <div class="filtros-grid">
+            <div class="form-group">
+                <label for="fecha">Fecha</label>
+                <input 
+                    type="date" 
+                    id="fecha" 
+                    bind:value={$fechaSeleccionada}
+                    on:change={() => asistenciasController.setFecha($fechaSeleccionada)}
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="area">Área</label>
+                <select 
+                    id="area" 
+                    bind:value={$areaSeleccionada}
+                    on:change={() => asistenciasController.setArea($areaSeleccionada)}
+                >
+                    <option value="">Todas las áreas</option>
+                    {#each $areas as area}
+                        <option value={area.id_area}>{area.nombre}</option>
+                    {/each}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen -->
+    {#if $resumen}
+        <div class="resumen-grid">
+            <div class="resumen-card total">
+                <div class="numero">{$resumen.total_agentes}</div>
+                <div class="label">Total Agentes</div>
+            </div>
+            <div class="resumen-card presentes">
+                <div class="numero">{$resumen.presentes}</div>
+                <div class="label">Presentes</div>
+            </div>
+            <div class="resumen-card ausentes">
+                <div class="numero">{$resumen.ausentes}</div>
+                <div class="label">Ausentes</div>
+            </div>
+            <div class="resumen-card sin-salida">
+                <div class="numero">{$resumen.sin_salida}</div>
+                <div class="label">Sin Salida</div>
+            </div>
+            <div class="resumen-card automaticas">
+                <div class="numero">{$resumen.salidas_automaticas}</div>
+                <div class="label">Salidas Auto</div>
+            </div>
+        </div>
+    {/if}
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button
+            class:active={$tabActiva === 'todas'}
+            on:click={() => asistenciasController.setTabActiva('todas')}
+        >
+        Todas
+        </button>
+        <button
+            class:active={$tabActiva === 'completas'}
+            on:click={() => asistenciasController.setTabActiva('completas')}
+        >
+        Completas
+        </button>
+        <button
+            class:active={$tabActiva === 'sin_salida'}
+            on:click={() => asistenciasController.setTabActiva('sin_salida')}
+        >
+        Sin Salida
+        </button>
+        <button
+            class:active={$tabActiva === 'sin_entrada'}
+            on:click={() => asistenciasController.setTabActiva('sin_entrada')}
+        >
+        Sin Entrada
+        </button>
+        <button
+            class:active={$tabActiva === 'salidas_auto'}
+            on:click={() => asistenciasController.setTabActiva('salidas_auto')}
+        >
+        Salidas Auto
+        </button>
+        <button
+            class:active={$tabActiva === 'licencias'}
+            on:click={() => asistenciasController.setTabActiva('licencias')}
+        >
+        Licencias
+        </button>
+    </div>
+
+    <!-- Contenido -->
+    {#if $loading}
+        <div class="loading">Cargando...</div>
+    {:else if $tabActiva === 'licencias'}
+        <!-- Lista de Licencias -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Agente</th>
+                        <th>DNI</th>
+                        <th>Área</th>
+                        <th>Tipo de Licencia</th>
+                        <th>Desde</th>
+                        <th>Hasta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {#if $licencias.length === 0}
+                        <tr>
+                            <td colspan="6" class="empty">No hay licencias en esta fecha</td>
+                        </tr>
+                    {:else}
+                        {#each $licencias as licencia}
+                            <tr>
+                                <td>{licencia.agente_nombre}</td>
+                                <td>{licencia.agente_dni || 'N/A'}</td>
+                                <td>{licencia.area_nombre || 'N/A'}</td>
+                                <td>{licencia.tipo_licencia_descripcion}</td>
+                                <td>{asistenciasController.formatDate(licencia.fecha_desde)}</td>
+                                <td>{asistenciasController.formatDate(licencia.fecha_hasta)}</td>
+                            </tr>
+                        {/each}
+                    {/if}
+                </tbody>
+            </table>
+        </div>
+    {:else}
+        <!-- Lista de Asistencias -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Agente</th>
+                        <th>DNI</th>
+                        <th>Área</th>
+                        <th>Entrada</th>
+                        <th>Salida</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {#if $asistenciasFiltradas.length === 0}
+                        <tr>
+                            <td colspan="7" class="empty">No hay registros</td>
+                        </tr>
+                    {:else}
+                        {#each $asistenciasFiltradas as asistencia}
+                            <tr>
+                                <td>
+                                    {asistencia.agente_nombre}
+                                    {#if asistencia.es_correccion}
+                                        <span class="badge-correccion" title="Corregido por {asistencia.corregido_por_nombre}">
+                                            ✏️
+                                        </span>
+                                    {/if}
+                                </td>
+                                <td>{asistencia.agente_dni}</td>
+                                <td>{asistencia.area_nombre || 'N/A'}</td>
+                                <td>
+                                    <span class="hora">{asistenciasController.formatTime(asistencia.hora_entrada)}</span>
+                                    {#if asistencia.marcacion_entrada_automatica}
+                                        <span class="badge-auto">AUTO</span>
+                                    {/if}
+                                </td>
+                                <td>
+                                    <span class="hora">{asistenciasController.formatTime(asistencia.hora_salida)}</span>
+                                    {#if asistencia.marcacion_salida_automatica}
+                                        <span class="badge-auto">AUTO</span>
+                                    {/if}
+                                </td>
+                                <td>
+                                    {#if asistencia.estado}
+                                        {@const badge = asistenciasController.getEstadoBadge(asistencia)}
+                                        <span class="badge {badge.class}">{badge.text}</span>
+                                    {/if}
+                                </td>
+                                <td>
+                                    <button 
+                                        class="btn-editar" 
+                                        on:click={() => asistenciasController.abrirModalCorreccion(asistencia)}
+                                    >
+                                        ✏️ Corregir
+                                    </button>
+                                </td>
+                            </tr>
+                        {/each}
+                    {/if}
+                </tbody>
+            </table>
+        </div>
+    {/if}
 </div>
 
-<!-- Filtros -->
-<div class="filtros-card">
-<div class="filtros-grid">
-<div class="form-group">
-<label for="fecha">Fecha</label>
-<input 
-type="date" 
-id="fecha" 
-bind:value={$fechaSeleccionada}
-on:change={() => asistenciasController.setFecha($fechaSeleccionada)}
-/>
-</div>
+    <!-- Modal de Corrección -->
+    {#if $modalCorreccion && $asistenciaEditando}
+        <div class="modal-overlay" on:click={() => asistenciasController.cerrarModal()}>
+            <div class="modal-content" on:click|stopPropagation>
+                <div class="modal-header">
+                    <h2>Marcar Asistencia</h2>
+                    <button class="btn-close" on:click={() => asistenciasController.cerrarModal()}>×</button>
+                </div>
 
-<div class="form-group">
-<label for="area">Área</label>
-<select 
-id="area" 
-bind:value={$areaSeleccionada}
-on:change={() => asistenciasController.setArea($areaSeleccionada)}
->
-<option value="">Todas las áreas</option>
-{#each $areas as area}
-<option value={area.id_area}>{area.nombre}</option>
-{/each}
-</select>
-</div>
-</div>
-</div>
+                <div class="modal-body">
+                    <p class="agente-info">
+                        <strong>{$asistenciaEditando.agente_nombre}</strong><br>
+                        <span class="dni-info">DNI: {$asistenciaEditando.agente_dni}</span><br>
+                        <span class="fecha-info">{asistenciasController.formatDate($asistenciaEditando.fecha)}</span>
+                    </p>
 
-<!-- Resumen -->
-{#if $resumen}
-<div class="resumen-grid">
-<div class="resumen-card total">
-<div class="numero">{$resumen.total_agentes}</div>
-<div class="label">Total Agentes</div>
-</div>
-<div class="resumen-card presentes">
-<div class="numero">{$resumen.presentes}</div>
-<div class="label">Presentes</div>
-</div>
-<div class="resumen-card ausentes">
-<div class="numero">{$resumen.ausentes}</div>
-<div class="label">Ausentes</div>
-</div>
-<div class="resumen-card sin-salida">
-<div class="numero">{$resumen.sin_salida}</div>
-<div class="label">Sin Salida</div>
-</div>
-<div class="resumen-card automaticas">
-<div class="numero">{$resumen.salidas_automaticas}</div>
-<div class="label">Salidas Auto</div>
-</div>
-</div>
-{/if}
+                    {#if $asistenciaEditando.horario_esperado_entrada || $asistenciaEditando.horario_esperado_salida}
+                        <div class="horario-esperado">
+                            <h3>📅 Horario Esperado</h3>
+                            <div class="horario-grid">
+                                <div class="horario-item">
+                                    <span class="horario-label">Entrada:</span>
+                                    <span class="horario-valor esperado">
+                                        {$asistenciaEditando.horario_esperado_entrada ? asistenciasController.formatTime($asistenciaEditando.horario_esperado_entrada) : '--:--'}
+                                    </span>
+                                </div>
+                                <div class="horario-item">
+                                    <span class="horario-label">Salida:</span>
+                                    <span class="horario-valor esperado">
+                                        {$asistenciaEditando.horario_esperado_salida ? asistenciasController.formatTime($asistenciaEditando.horario_esperado_salida) : '--:--'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    {/if}
 
-<!-- Tabs -->
-<div class="tabs">
-<button
-class:active={$tabActiva === 'todas'}
-on:click={() => asistenciasController.setTabActiva('todas')}
->
-Todas
-</button>
-<button
-class:active={$tabActiva === 'completas'}
-on:click={() => asistenciasController.setTabActiva('completas')}
->
-Completas
-</button>
-<button
-class:active={$tabActiva === 'sin_salida'}
-on:click={() => asistenciasController.setTabActiva('sin_salida')}
->
-Sin Salida
-</button>
-<button
-class:active={$tabActiva === 'sin_entrada'}
-on:click={() => asistenciasController.setTabActiva('sin_entrada')}
->
-Sin Entrada
-</button>
-<button
-class:active={$tabActiva === 'salidas_auto'}
-on:click={() => asistenciasController.setTabActiva('salidas_auto')}
->
-Salidas Auto
-</button>
-<button
-class:active={$tabActiva === 'licencias'}
-on:click={() => asistenciasController.setTabActiva('licencias')}
->
-Licencias
-</button>
-</div>
+                    <div class="estado-actual">
+                        <h3>✅ Estado Actual</h3>
+                        <div class="estado-grid">
+                            <div class="estado-item">
+                                <span class="estado-label">Entrada:</span>
+                                <span class="estado-valor {$asistenciaEditando.hora_entrada ? 'marcado' : 'sin-marcar'}">
+                                    {$asistenciaEditando.hora_entrada ? asistenciasController.formatTime($asistenciaEditando.hora_entrada) : 'Sin marcar'}
+                                </span>
+                            </div>
+                            <div class="estado-item">
+                                <span class="estado-label">Salida:</span>
+                                <span class="estado-valor {$asistenciaEditando.hora_salida ? 'marcado' : 'sin-marcar'}">
+                                    {$asistenciaEditando.hora_salida ? asistenciasController.formatTime($asistenciaEditando.hora_salida) : 'Sin marcar'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
 
-<!-- Contenido -->
-{#if $loading}
-<div class="loading">Cargando...</div>
-{:else if $tabActiva === 'licencias'}
-<!-- Lista de Licencias -->
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Agente</th>
-<th>DNI</th>
-<th>Área</th>
-<th>Tipo de Licencia</th>
-<th>Desde</th>
-<th>Hasta</th>
-</tr>
-</thead>
-<tbody>
-{#if $licencias.length === 0}
-<tr>
-<td colspan="6" class="empty">No hay licencias en esta fecha</td>
-</tr>
-{:else}
-{#each $licencias as licencia}
-<tr>
-<td>{licencia.agente_nombre}</td>
-<td>{licencia.agente_dni || 'N/A'}</td>
-<td>{licencia.area_nombre || 'N/A'}</td>
-<td>{licencia.tipo_licencia_descripcion}</td>
-<td>{asistenciasController.formatDate(licencia.fecha_desde)}</td>
-<td>{asistenciasController.formatDate(licencia.fecha_hasta)}</td>
-</tr>
-{/each}
-{/if}
-</tbody>
-</table>
-</div>
-{:else}
-<!-- Lista de Asistencias -->
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Agente</th>
-<th>DNI</th>
-<th>Área</th>
-<th>Entrada</th>
-<th>Salida</th>
-<th>Estado</th>
-<th>Acciones</th>
-</tr>
-</thead>
-<tbody>
-{#if $asistenciasFiltradas.length === 0}
-<tr>
-<td colspan="7" class="empty">No hay registros</td>
-</tr>
-{:else}
-{#each $asistenciasFiltradas as asistencia}
-<tr>
-<td>
-{asistencia.agente_nombre}
-{#if asistencia.es_correccion}
-<span class="badge-correccion" title="Corregido por {asistencia.corregido_por_nombre}">
-✏️
-</span>
-{/if}
-</td>
-<td>{asistencia.agente_dni}</td>
-<td>{asistencia.area_nombre || 'N/A'}</td>
-<td>
-<span class="hora">{asistenciasController.formatTime(asistencia.hora_entrada)}</span>
-{#if asistencia.marcacion_entrada_automatica}
-<span class="badge-auto">AUTO</span>
-{/if}
-</td>
-<td>
-<span class="hora">{asistenciasController.formatTime(asistencia.hora_salida)}</span>
-{#if asistencia.marcacion_salida_automatica}
-<span class="badge-auto">AUTO</span>
-{/if}
-</td>
-<td>
-{#if asistencia.estado}
-{@const badge = asistenciasController.getEstadoBadge(asistencia)}
-<span class="badge {badge.class}">{badge.text}</span>
-{/if}
-</td>
-<td>
-<button 
-class="btn-editar" 
-on:click={() => asistenciasController.abrirModalCorreccion(asistencia)}
->
-✏️ Corregir
-</button>
-</td>
-</tr>
-{/each}
-{/if}
-</tbody>
-</table>
-</div>
-{/if}
-</div>
+                    <div class="form-group">
+                        <label for="observacion_edit">Observación (opcional)</label>
+                        <textarea
+                            id="observacion_edit"
+                            bind:value={$observacionEdit}
+                            placeholder="Motivo de la corrección (ej: 'Agente olvidó marcar')"
+                            rows="2"
+                        ></textarea>
+                    </div>
 
-<!-- Modal de Corrección -->
-{#if $modalCorreccion && $asistenciaEditando}
-<div class="modal-overlay" on:click={() => asistenciasController.cerrarModal()}>
-<div class="modal-content" on:click|stopPropagation>
-<div class="modal-header">
-<h2>Marcar Asistencia</h2>
-<button class="btn-close" on:click={() => asistenciasController.cerrarModal()}>×</button>
-</div>
+                    {#if $asistenciaEditando.observaciones}
+                        <div class="observaciones-previas">
+                            <strong>Observaciones anteriores:</strong>
+                            <p>{$asistenciaEditando.observaciones}</p>
+                        </div>
+                    {/if}
+                </div>
 
-<div class="modal-body">
-<p class="agente-info">
-<strong>{$asistenciaEditando.agente_nombre}</strong><br>
-<span class="dni-info">DNI: {$asistenciaEditando.agente_dni}</span><br>
-<span class="fecha-info">{asistenciasController.formatDate($asistenciaEditando.fecha)}</span>
-</p>
-
-{#if $asistenciaEditando.horario_esperado_entrada || $asistenciaEditando.horario_esperado_salida}
-<div class="horario-esperado">
-<h3>📅 Horario Esperado</h3>
-<div class="horario-grid">
-<div class="horario-item">
-<span class="horario-label">Entrada:</span>
-<span class="horario-valor esperado">
-{$asistenciaEditando.horario_esperado_entrada ? asistenciasController.formatTime($asistenciaEditando.horario_esperado_entrada) : '--:--'}
-</span>
-</div>
-<div class="horario-item">
-<span class="horario-label">Salida:</span>
-<span class="horario-valor esperado">
-{$asistenciaEditando.horario_esperado_salida ? asistenciasController.formatTime($asistenciaEditando.horario_esperado_salida) : '--:--'}
-</span>
-</div>
-</div>
-</div>
-{/if}
-
-<div class="estado-actual">
-<h3>✅ Estado Actual</h3>
-<div class="estado-grid">
-<div class="estado-item">
-<span class="estado-label">Entrada:</span>
-<span class="estado-valor {$asistenciaEditando.hora_entrada ? 'marcado' : 'sin-marcar'}">
-{$asistenciaEditando.hora_entrada ? asistenciasController.formatTime($asistenciaEditando.hora_entrada) : 'Sin marcar'}
-</span>
-</div>
-<div class="estado-item">
-<span class="estado-label">Salida:</span>
-<span class="estado-valor {$asistenciaEditando.hora_salida ? 'marcado' : 'sin-marcar'}">
-{$asistenciaEditando.hora_salida ? asistenciasController.formatTime($asistenciaEditando.hora_salida) : 'Sin marcar'}
-</span>
-</div>
-</div>
-</div>
-
-<div class="form-group">
-<label for="observacion_edit">Observación (opcional)</label>
-<textarea
-id="observacion_edit"
-bind:value={$observacionEdit}
-placeholder="Motivo de la corrección (ej: 'Agente olvidó marcar')"
-rows="2"
-></textarea>
-</div>
-
-{#if $asistenciaEditando.observaciones}
-<div class="observaciones-previas">
-<strong>Observaciones anteriores:</strong>
-<p>{$asistenciaEditando.observaciones}</p>
-</div>
-{/if}
-</div>
-
-<div class="modal-footer">
-<button class="btn-cancelar" on:click={() => asistenciasController.cerrarModal()}>
-Cancelar
-</button>
-<button 
-class="btn-marcar-entrada" 
-on:click={handleMarcarEntrada}
-disabled={$asistenciaEditando.hora_entrada}
->
-🕐 Marcar Entrada
-</button>
-<button 
-class="btn-marcar-salida" 
-on:click={handleMarcarSalida}
-disabled={!$asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
->
-🕐 Marcar Salida
-</button>
-</div>
-</div>
-</div>
-{/if}
+                <div class="modal-footer">
+                    <button class="btn-cancelar" on:click={() => asistenciasController.cerrarModal()}>
+                        Cancelar
+                    </button>
+                    <button 
+                        class="btn-marcar-entrada" 
+                        on:click={handleMarcarEntrada}
+                        disabled={$asistenciaEditando.hora_entrada}
+                    >
+                        🕐 Marcar Entrada
+                    </button>
+                    <button 
+                        class="btn-marcar-salida" 
+                        on:click={handleMarcarSalida}
+                        disabled={!$asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
+                    >
+                        🕐 Marcar Salida
+                    </button>
+                </div>
+            </div>
+        </div>
+    {/if}
 
 <style>
 .admin-container {

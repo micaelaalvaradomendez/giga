@@ -103,7 +103,7 @@
 							<span class="icon">🏢</span>
 							<div class="info-content">
 								<span class="info-label">Área</span>
-								<span class="info-value">{user.area}</span>
+								<span class="info-value">{typeof user.area === 'object' ? user.area.nombre : user.area}</span>
 							</div>
 						</div>
 					{/if}
