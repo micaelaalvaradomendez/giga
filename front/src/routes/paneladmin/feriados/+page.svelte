@@ -1,111 +1,142 @@
 <script>
-	import { onMount } from 'svelte';
-	import { browser } from '$app/environment';
-	import { goto } from '$app/navigation';
-    import CalendarioBase from '$lib/componentes/calendarioBase.svelte';
-    import ModalGestionFeriado from '$lib/componentes/ModalGestionFeriado.svelte';
-	import { feriadosController } from '$lib/paneladmin/controllers';
+    import { onMount } from "svelte";
+    import { browser } from "$app/environment";
+    import { goto } from "$app/navigation";
+    import CalendarioBase from "$lib/componentes/calendarioBase.svelte";
+    import ModalGestionFeriado from "$lib/componentes/ModalGestionFeriado.svelte";
+    import { feriadosController } from "$lib/paneladmin/controllers";
 
-	// Stores del controlador  
-	const { feriados, loading, error, success, modalGestionFeriado } = feriadosController;
+    // Stores del controlador
+    const { feriados, loading, error, success, modalGestionFeriado } =
+        feriadosController;
 
-	// Inicializar el controlador
-	onMount(async () => {
-		console.log('🔄 Componente montado, iniciando controlador de feriados...');
-		try {
-			await feriadosController.init();
-			console.log('✅ Controlador de feriados inicializado exitosamente');
-			
-			// Recargar cuando la página vuelve a ser visible
-			if (browser) {
-				const handleVisibilityChange = () => {
-					if (document.visibilityState === 'visible') {
-						feriadosController.init();
-					}
-				};
-				
-				const handleFocus = () => {
-					feriadosController.init();
-				};
-				
-				document.addEventListener('visibilitychange', handleVisibilityChange);
-				window.addEventListener('focus', handleFocus);
-				
-				return () => {
-					document.removeEventListener('visibilitychange', handleVisibilityChange);
-					window.removeEventListener('focus', handleFocus);
-				};
-			}
-		} catch (err) {
-			console.error('❌ Error inicializando controlador de feriados:', err);
-			if (err.message === 'Usuario no autenticado') {
-				goto('/');
-				return;
-			}
-		}
-	});
+    // Inicializar el controlador
+    onMount(async () => {
+        console.log(
+            "🔄 Componente montado, iniciando controlador de feriados...",
+        );
+        try {
+            await feriadosController.init();
+            console.log("✅ Controlador de feriados inicializado exitosamente");
 
-	function handleDayClick(event) {
-		const { date, isFeriado } = event.detail;
-		const selectedDate = date.toISOString().split('T')[0];
-		const feriado = feriadosController.getFeriadoByDate(selectedDate);
-		
-		feriadosController.openModal(selectedDate, feriado);
-	}
+            // Recargar cuando la página vuelve a ser visible
+            if (browser) {
+                const handleVisibilityChange = () => {
+                    if (document.visibilityState === "visible") {
+                        feriadosController.init();
+                    }
+                };
 
-	function closeModal() {
-		feriadosController.closeModal();
-	}
-	
+                const handleFocus = () => {
+                    feriadosController.init();
+                };
+
+                document.addEventListener(
+                    "visibilitychange",
+                    handleVisibilityChange,
+                );
+                window.addEventListener("focus", handleFocus);
+
+                return () => {
+                    document.removeEventListener(
+                        "visibilitychange",
+                        handleVisibilityChange,
+                    );
+                    window.removeEventListener("focus", handleFocus);
+                };
+            }
+        } catch (err) {
+            console.error(
+                "❌ Error inicializando controlador de feriados:",
+                err,
+            );
+            if (err.message === "Usuario no autenticado") {
+                goto("/");
+                return;
+            }
+        }
+    });
+
+    function handleDayClick(event) {
+        const { date, isFeriado } = event.detail;
+        const selectedDate = date.toISOString().split("T")[0];
+        const feriado = feriadosController.getFeriadoByDate(selectedDate);
+
+        feriadosController.openModal(selectedDate, feriado);
+    }
+
+    function closeModal() {
+        feriadosController.closeModal();
+    }
 </script>
 
 <div class="admin-page-container">
     <div class="page-header">
         <h1>Gestión de Feriados</h1>
-		{#if $error}
-			<div class="error-message">{$error}</div>
-		{/if}
-		{#if $success}
-			<div class="success-message">{$success}</div>
-		{/if}
+        {#if $error}
+            <div class="error-message">{$error}</div>
+        {/if}
+        {#if $success}
+            <div class="success-message">{$success}</div>
+        {/if}
     </div>
 
-	<div class="calendar-wrapper">
-		{#if $loading}
-			<div class="loading">Cargando feriados...</div>
-		{:else}
-			<CalendarioBase feriados={$feriados} on:dayclick={handleDayClick} />
-		{/if}
-	</div>
+    <div class="calendar-wrapper">
+        {#if $loading}
+            <div class="loading">Cargando feriados...</div>
+        {:else}
+            <CalendarioBase feriados={$feriados} on:dayclick={handleDayClick} />
+        {/if}
+    </div>
 </div>
 
-<ModalGestionFeriado 
-	bind:isOpen={$modalGestionFeriado.isOpen}
-	feriado={$modalGestionFeriado.feriado}
-	selectedDate={$modalGestionFeriado.selectedDate}
-	isSaving={$modalGestionFeriado.isSaving}
-	isDeleting={$modalGestionFeriado.isDeleting}
-	{feriadosController}
-	on:close={closeModal}
+<ModalGestionFeriado
+    bind:isOpen={$modalGestionFeriado.isOpen}
+    feriado={$modalGestionFeriado.feriado}
+    selectedDate={$modalGestionFeriado.selectedDate}
+    isSaving={$modalGestionFeriado.isSaving}
+    isDeleting={$modalGestionFeriado.isDeleting}
+    {feriadosController}
+    on:close={closeModal}
 />
 
 <style>
     .admin-page-container {
-        width: 80%;
-        max-width: 1000px;
+        max-width: 1200px;
         margin: 0 auto;
+        padding: 2rem;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
 
     .page-header {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: flex-start;
-        flex-wrap: wrap; 
-        margin-bottom: 1rem;
-        padding: 1.5rem;
-        background: linear-gradient(135deg, #e79043, #d17a2e);
-        border-radius: 12px;
+        position: relative;
+        background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+        color: white;
+        padding: 30px 40px;
+        max-width: 1200px;
+        border-radius: 28px;
+        overflow: hidden;
+        text-align: center;
+        box-shadow:
+            0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+            0 10px 30px rgba(30, 64, 175, 0.4);
+    }
+
+    .page-header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.03) 1px,
+                transparent 1px
+            ),
+            linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
+        animation: moveLines 20s linear infinite;
     }
 
     .error-message {
@@ -136,10 +167,48 @@
     }
 
     .page-header h1 {
-        margin: 0;
-        color: #333; 
-        font-size: 2rem;
-        font-weight: 600;
+        margin: 10px;
+        font-weight: 800;
+        font-size: 30px;
+        letter-spacing: 0.2px;
+        font-family:
+            "Segoe UI",
+            system-ui,
+            -apple-system,
+            "Inter",
+            "Roboto",
+            "Helvetica Neue",
+            Arial,
+            sans-serif;
+        position: relative;
+        padding-bottom: 12px;
+        overflow: hidden;
+        display: inline-block;
+    }
+
+    .page-header h1::after {
+        content: "";
+        position: absolute;
+        width: 40%;
+        height: 3px;
+        bottom: 0;
+        left: 0;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.9),
+            transparent
+        );
+        animation: moveLine 2s linear infinite;
+    }
+
+    @keyframes moveLine {
+        0% {
+            left: -40%;
+        }
+        100% {
+            left: 100%;
+        }
     }
 
     .calendar-wrapper {

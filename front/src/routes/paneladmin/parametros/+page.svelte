@@ -35,25 +35,31 @@
 			console.log("🚀 Iniciando controlador de parámetros...");
 			await parametrosController.init();
 			console.log("✅ Controlador de parámetros inicializado");
-			
+
 			// Recargar cuando la página vuelve a ser visible
-			if (typeof window !== 'undefined') {
+			if (typeof window !== "undefined") {
 				const handleVisibilityChange = () => {
-					if (document.visibilityState === 'visible') {
+					if (document.visibilityState === "visible") {
 						parametrosController.init();
 					}
 				};
-				
+
 				const handleFocus = () => {
 					parametrosController.init();
 				};
-				
-				document.addEventListener('visibilitychange', handleVisibilityChange);
-				window.addEventListener('focus', handleFocus);
-				
+
+				document.addEventListener(
+					"visibilitychange",
+					handleVisibilityChange,
+				);
+				window.addEventListener("focus", handleFocus);
+
 				return () => {
-					document.removeEventListener('visibilitychange', handleVisibilityChange);
-					window.removeEventListener('focus', handleFocus);
+					document.removeEventListener(
+						"visibilitychange",
+						handleVisibilityChange,
+					);
+					window.removeEventListener("focus", handleFocus);
 				};
 			}
 		} catch (err) {
@@ -628,9 +634,8 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin: 0;
+		margin-bottom: 1rem;
 		padding-bottom: 20px;
-		border-bottom: 3px solid #f8f9fa;
 	}
 
 	.page-header-title {
