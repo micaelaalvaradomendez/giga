@@ -1,6 +1,9 @@
 <script>
   import { onMount } from 'svelte';
+  import { goto, invalidateAll } from '$app/navigation';
+  import { browser } from '$app/environment';
   import { guardiasService, personasService } from '$lib/services.js';
+  import AuthService from '$lib/login/authService.js';
 
   let loading = false;
   let error = '';
@@ -9,6 +12,7 @@
   let tabActiva = 'pendientes'; // 'pendientes' | 'aprobadas'
   let agenteActual = null;
   let rolAgente = '';
+  let token = null;
   
   // Modal para ver detalles
   let mostrarModal = false;
@@ -21,18 +25,51 @@
   let cronogramaARechazar = null;
 
   onMount(async () => {
-    await cargarDatos();
+    try {
+      const sessionCheck = await AuthService.checkSession();
+      
+      if (!sessionCheck.authenticated) {
+        goto('/');
+        return;
+      }
+      
+      token = localStorage.getItem('token');
+      await cargarDatos();
+      
+      // Recargar cuando la página vuelve a ser visible
+      if (browser) {
+        const handleVisibilityChange = () => {
+          if (document.visibilityState === 'visible') {
+            cargarDatos();
+          }
+        };
+        
+        const handleFocus = () => {
+          cargarDatos();
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+        
+        return () => {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          window.removeEventListener('focus', handleFocus);
+        };
+      }
+    } catch (err) {
+      console.error('Error verificando sesión:', err);
+      goto('/');
+    }
   });
 
   async function cargarDatos() {
-    // TODO: Obtener agente actual del contexto de sesión
-    // Por ahora, simulamos con el primer agente administrador
     try {
-      const responseAgentes = await personasService.getAllAgentes();
+      const responseAgentes = await personasService.getAllAgentes(token);
       const agentes = responseAgentes.data?.results || responseAgentes.data || [];
       
-      // Buscar un agente con rol de administrador o director (simulación)
-      agenteActual = agentes.find(a => a.id_agente === 1) || agentes[0];
+      // Obtener agente de la sesión actual
+      const user = JSON.parse(localStorage.getItem('agente') || '{}');
+      agenteActual = agentes.find(a => a.id_agente === user.id_agente) || agentes[0];
       
       if (agenteActual) {
         await Promise.all([
@@ -51,7 +88,7 @@
       loading = true;
       error = '';
       
-      const response = await guardiasService.getPendientesAprobacion(agenteActual.id_agente);
+      const response = await guardiasService.getPendientesAprobacion(agenteActual.id_agente, token);
       cronogramasPendientes = response.data?.cronogramas || [];
       rolAgente = response.data?.rol_agente || '';
       
@@ -67,7 +104,7 @@
   async function cargarAprobadas() {
     try {
       // Obtener cronogramas aprobadas/publicadas del mes actual y anteriores
-      const response = await guardiasService.getCronogramas();
+      const response = await guardiasService.getCronogramas(token);
       const todas = response.data?.results || response.data || [];
       
       cronogramasAprobadas = todas.filter(c => 
@@ -104,7 +141,7 @@
       loading = true;
       await guardiasService.aprobarCronograma(cronograma.id_cronograma, {
         agente_id: agenteActual.id_agente
-      });
+      }, token);
       
       alert('Cronograma aprobado exitosamente');
       await cargarDatos();
@@ -134,7 +171,7 @@
       await guardiasService.rechazarCronograma(cronogramaARechazar.id_cronograma, {
         agente_id: agenteActual.id_agente,
         motivo: motivoRechazo
-      });
+      }, token);
       
       alert('Cronograma rechazado');
       mostrarModalRechazo = false;
@@ -157,7 +194,7 @@
 
     try {
       loading = true;
-      await guardiasService.publicarCronograma(cronograma.id_cronograma);
+      await guardiasService.publicarCronograma(cronograma.id_cronograma, token);
       
       alert('Cronograma publicado exitosamente');
       await cargarDatos();
@@ -174,6 +211,59 @@
     mostrarModal = false;
     cronogramaSeleccionado = null;
     guardiasDelCronograma = [];
+  }
+  
+  async function editarCronograma(cronograma) {
+    // Redirigir al planificador con el ID del cronograma para editar
+    await invalidateAll();
+    goto(`/paneladmin/guardias/planificador?editar=${cronograma.id_cronograma}`, { invalidateAll: true });
+  }
+  
+  async function eliminarGuardia(guardia) {
+    if (!confirm(`¿Eliminar guardia de ${guardia.agente_nombre} el ${formatearFecha(guardia.fecha)}?`)) {
+      return;
+    }
+    
+    try {
+      loading = true;
+      await guardiasService.deleteGuardia(guardia.id_guardia, token);
+      
+      alert('Guardia eliminada exitosamente');
+      
+      // Recargar detalles del cronograma
+      if (cronogramaSeleccionado) {
+        await verDetalles(cronogramaSeleccionado);
+      }
+      
+      await cargarDatos();
+    } catch (e) {
+      const errorMsg = e.response?.data?.error || 'Error al eliminar guardia';
+      alert(errorMsg);
+      console.error(e);
+    } finally {
+      loading = false;
+    }
+  }
+  
+  async function eliminarCronograma(cronograma) {
+    if (!confirm(`¿Está seguro de eliminar el cronograma de ${cronograma.area_nombre}?\n\nEsto eliminará todas las guardias asociadas.`)) {
+      return;
+    }
+    
+    try {
+      loading = true;
+      await guardiasService.deleteCronograma(cronograma.id_cronograma, token);
+      
+      alert('Cronograma eliminado exitosamente');
+      cerrarModal();
+      await cargarDatos();
+    } catch (e) {
+      const errorMsg = e.response?.data?.error || 'Error al eliminar cronograma';
+      alert(errorMsg);
+      console.error(e);
+    } finally {
+      loading = false;
+    }
   }
 
   function formatearFecha(fechaStr) {
@@ -290,7 +380,10 @@
             
             <div class="cronograma-actions">
               <button class="btn btn-secondary" on:click={() => verDetalles(cronograma)}>
-                Ver Detalles
+                📋 Ver Detalles
+              </button>
+              <button class="btn btn-info" on:click={() => editarCronograma(cronograma)} disabled={loading}>
+                ✏️ Editar
               </button>
               <button class="btn btn-success" on:click={() => aprobar(cronograma)} disabled={loading}>
                 ✓ Aprobar
@@ -394,6 +487,7 @@
                     <th>Fecha</th>
                     <th>Horario</th>
                     <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -405,6 +499,16 @@
                       <td>
                         <span class="badge-mini badge-{guardia.estado}">{guardia.estado}</span>
                       </td>
+                      <td>
+                        <button 
+                          class="btn-icon btn-danger-icon" 
+                          on:click={() => eliminarGuardia(guardia)}
+                          disabled={loading}
+                          title="Eliminar guardia"
+                        >
+                          🗑️
+                        </button>
+                      </td>
                     </tr>
                   {/each}
                 </tbody>
@@ -412,6 +516,19 @@
             </div>
           {:else}
             <p class="text-muted">No hay guardias asignadas</p>
+          {/if}
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-secondary" on:click={cerrarModal}>Cerrar</button>
+          {#if cronogramaSeleccionado && (cronogramaSeleccionado.estado === 'pendiente' || cronogramaSeleccionado.estado === 'aprobada')}
+            <button 
+              class="btn btn-danger" 
+              on:click={() => eliminarCronograma(cronogramaSeleccionado)}
+              disabled={loading}
+            >
+              🗑️ Eliminar Cronograma
+            </button>
           {/if}
         </div>
       </div>
@@ -667,6 +784,15 @@
     background: #d1d5db;
   }
 
+  .btn-info {
+    background: #3b82f6;
+    color: white;
+  }
+
+  .btn-info:hover:not(:disabled) {
+    background: #2563eb;
+  }
+
   .btn-success {
     background: #10b981;
     color: white;
@@ -683,6 +809,33 @@
 
   .btn-danger:hover:not(:disabled) {
     background: #dc2626;
+  }
+  
+  .btn-icon {
+    padding: 0.4rem 0.6rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+  }
+  
+  .btn-icon:hover:not(:disabled) {
+    transform: scale(1.1);
+  }
+  
+  .btn-danger-icon {
+    color: #ef4444;
+  }
+  
+  .btn-danger-icon:hover:not(:disabled) {
+    background: #fee2e2;
+  }
+  
+  .btn-icon:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   .empty-state {

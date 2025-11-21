@@ -1,7 +1,8 @@
 <script>
   import { onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
+  import { page } from '$app/stores';
   import { personasService, guardiasService } from '$lib/services.js';
 
   let loading = false;
@@ -26,22 +27,87 @@
   let toastVisible = false;
   let toastMensaje = '';
   let toastTipo = 'success';
+  
+  // Modo edición
+  let modoEdicion = false;
+  let cronogramaId = null;
+  let token = null;
 
   onMount(async () => {
+    token = localStorage.getItem('token');
+    
+    // Verificar si viene parámetro de edición
+    const urlParams = new URLSearchParams(window.location.search);
+    const editarId = urlParams.get('editar');
+    
     await cargarAreas();
+    
+    if (editarId) {
+      modoEdicion = true;
+      cronogramaId = editarId;
+      await cargarCronogramaParaEditar(editarId);
+    }
   });
 
   async function cargarAreas() {
     try {
       loading = true;
       error = '';
-      const response = await personasService.getAreas();
+      const response = await personasService.getAreas(token);
       // La API devuelve { data: { results: [...] } }
       areas = response.data?.results || response.data?.data?.results || [];
       console.log('Áreas cargadas:', areas);
     } catch (e) {
       error = 'Error al cargar las áreas';
       console.error('Error cargando áreas:', e);
+    } finally {
+      loading = false;
+    }
+  }
+  
+  async function cargarCronogramaParaEditar(id) {
+    try {
+      loading = true;
+      error = '';
+      
+      // Cargar cronograma y sus guardias
+      const responseCronograma = await guardiasService.getCronograma(id, token);
+      const cronograma = responseCronograma.data;
+      
+      console.log('Cronograma cargado para editar:', cronograma);
+      
+      // Pre-llenar formulario
+      nombre = cronograma.nombre || '';
+      tipo = cronograma.tipo || 'regular';
+      areaSeleccionada = cronograma.id_area;
+      observaciones = cronograma.observaciones || '';
+      
+      // Cargar agentes del área primero
+      await cargarAgentesDeArea();
+      
+      // Cargar guardias del cronograma
+      const responseGuardias = await guardiasService.getResumenGuardias(`id_cronograma=${id}`, token);
+      const guardias = responseGuardias.data?.guardias || [];
+      
+      console.log('Guardias del cronograma:', guardias);
+      
+      if (guardias.length > 0) {
+        // Tomar datos de la primera guardia (asumiendo que todas tienen las mismas fechas/horas)
+        const primeraGuardia = guardias[0];
+        fechaInicio = primeraGuardia.fecha;
+        horaInicio = primeraGuardia.hora_inicio;
+        horaFin = primeraGuardia.hora_fin;
+        
+        // Pre-seleccionar agentes
+        agentesSeleccionados = new Set(guardias.map(g => String(g.id_agente)));
+      }
+      
+      mostrarToast('📝 Editando cronograma', 'info');
+      
+    } catch (e) {
+      error = 'Error al cargar cronograma para editar';
+      console.error('Error cargando cronograma:', e);
+      mostrarToast('❌ Error al cargar cronograma', 'error');
     } finally {
       loading = false;
     }
@@ -280,6 +346,9 @@
         observacionesCompletas = observacionesCompletas ? observacionesCompletas + infoMultiDia : infoMultiDia.trim();
       }
 
+      // Obtener agente actual para el payload
+      const agenteActual = JSON.parse(localStorage.getItem('agente') || '{}');
+      
       const payload = {
         nombre: nombre,
         tipo: tipo,
@@ -288,6 +357,7 @@
         hora_inicio: horaInicio,
         hora_fin: horaFin,
         observaciones: observacionesCompletas,
+        agente_id: agenteActual.id_agente,
         agentes: Array.from(agentesSeleccionados).map(id => {
           const agente = agentesDisponibles.find(a => String(a.id_agente) === id);
           return {
@@ -296,18 +366,29 @@
         })
       };
 
-      const response = await guardiasService.crearGuardia(payload);
-
-      const mensaje = response.data?.mensaje || 'Guardia creada exitosamente';
-      const guardiasCreadas = response.data?.guardias_creadas || agentesSeleccionados.size;
-      const cronogramaId = response.data?.cronograma_id;
+      let response;
+      let accion;
       
-      // Obtener información del cronograma creado para saber el estado
+      // Usar endpoint correcto según modo
+      if (modoEdicion && cronogramaId) {
+        response = await guardiasService.actualizarConGuardias(cronogramaId, payload, token);
+        accion = 'actualizado';
+      } else {
+        response = await guardiasService.crearGuardia(payload, token);
+        accion = 'creado';
+      }
+
+      const mensaje = response.data?.mensaje || `Cronograma ${accion} exitosamente`;
+      const guardiasCreadas = response.data?.guardias_creadas || agentesSeleccionados.size;
+      const guardiasEliminadas = response.data?.guardias_eliminadas || 0;
+      const cronogramaIdResponse = response.data?.cronograma_id || cronogramaId;
+      
+      // Obtener información del cronograma para saber el estado
       let estadoMensaje = '';
       let estadoIcono = '';
       try {
-        if (cronogramaId) {
-          const cronogramaResponse = await guardiasService.getCronograma(cronogramaId);
+        if (cronogramaIdResponse) {
+          const cronogramaResponse = await guardiasService.getCronograma(cronogramaIdResponse, token);
           const cronograma = cronogramaResponse.data;
           
           if (cronograma.estado === 'aprobada') {
@@ -327,12 +408,20 @@
         estadoIcono = '✅';
       }
       
-      success = `${estadoIcono} ${mensaje}\n\nAgentes asignados: ${guardiasCreadas}${estadoMensaje}\n\nLos cambios han sido registrados en auditoría.`;
-      mostrarToast('✅ Guardia creada y registrada exitosamente', 'success');
+      let detallesCambios = `\n\nAgentes asignados: ${guardiasCreadas}`;
+      if (modoEdicion && guardiasEliminadas > 0) {
+        detallesCambios += `\nGuardias previas eliminadas: ${guardiasEliminadas}`;
+      }
+      
+      success = `${estadoIcono} ${mensaje}${detallesCambios}${estadoMensaje}\n\nTodos los cambios han sido registrados en auditoría.`;
+      mostrarToast(`✅ Cronograma ${accion} y registrado exitosamente`, 'success');
 
+      // Invalidar cache y redirigir
+      await invalidateAll();
+      
       setTimeout(() => {
-        goto('/paneladmin/guardias');
-      }, 5000);
+        goto('/paneladmin/guardias', { replaceState: true, invalidateAll: true });
+      }, 2000);
 
     } catch (e) {
       const mensaje = e?.response?.data?.detail || e?.response?.data?.error || 'Error al crear la guardia';
@@ -353,8 +442,9 @@
     }, 3000);
   }
 
-  function cancelar() {
-    goto('/paneladmin/guardias');
+  async function cancelar() {
+    await invalidateAll();
+    goto('/paneladmin/guardias', { replaceState: true, invalidateAll: true });
   }
 
   const nombreArea = (areaId) => {
@@ -412,8 +502,13 @@
 
 <section class="guardias-wrap">
   <header class="head">
-    <h1>Crear Nueva Guardia</h1>
-    <p class="subtitle">Paso {paso} de 2 • Los cambios se aplicarán al hacer clic en "Guardar Guardia"</p>
+    <h1>{modoEdicion ? '✏️ Editar Guardia' : '➕ Crear Nueva Guardia'}</h1>
+    <p class="subtitle">
+      {#if modoEdicion}
+        Editando cronograma #{cronogramaId} • 
+      {/if}
+      Paso {paso} de 2 • Los cambios se aplicarán al hacer clic en "{modoEdicion ? 'Actualizar' : 'Guardar'} Guardia"
+    </p>
   </header>
 
   {#if error}
@@ -631,7 +726,11 @@
           on:click={guardarGuardia} 
           disabled={loading || agentesSeleccionados.size === 0}
         >
-          {loading ? 'Guardando...' : 'Guardar Guardia'}
+          {#if loading}
+            {modoEdicion ? 'Actualizando...' : 'Guardando...'}
+          {:else}
+            {modoEdicion ? '✏️ Actualizar Guardia' : '💾 Guardar Guardia'}
+          {/if}
         </button>
       </div>
     </div>

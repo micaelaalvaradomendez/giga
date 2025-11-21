@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
     import CalendarioBase from '$lib/componentes/calendarioBase.svelte';
     import ModalGestionFeriado from '$lib/componentes/ModalGestionFeriado.svelte';
@@ -14,6 +15,27 @@
 		try {
 			await feriadosController.init();
 			console.log('✅ Controlador de feriados inicializado exitosamente');
+			
+			// Recargar cuando la página vuelve a ser visible
+			if (browser) {
+				const handleVisibilityChange = () => {
+					if (document.visibilityState === 'visible') {
+						feriadosController.init();
+					}
+				};
+				
+				const handleFocus = () => {
+					feriadosController.init();
+				};
+				
+				document.addEventListener('visibilitychange', handleVisibilityChange);
+				window.addEventListener('focus', handleFocus);
+				
+				return () => {
+					document.removeEventListener('visibilitychange', handleVisibilityChange);
+					window.removeEventListener('focus', handleFocus);
+				};
+			}
 		} catch (err) {
 			console.error('❌ Error inicializando controlador de feriados:', err);
 			if (err.message === 'Usuario no autenticado') {

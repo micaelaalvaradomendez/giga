@@ -34,6 +34,27 @@
 			console.log("🚀 Iniciando controlador de parámetros...");
 			await parametrosController.init();
 			console.log("✅ Controlador de parámetros inicializado");
+			
+			// Recargar cuando la página vuelve a ser visible
+			if (typeof window !== 'undefined') {
+				const handleVisibilityChange = () => {
+					if (document.visibilityState === 'visible') {
+						parametrosController.init();
+					}
+				};
+				
+				const handleFocus = () => {
+					parametrosController.init();
+				};
+				
+				document.addEventListener('visibilitychange', handleVisibilityChange);
+				window.addEventListener('focus', handleFocus);
+				
+				return () => {
+					document.removeEventListener('visibilitychange', handleVisibilityChange);
+					window.removeEventListener('focus', handleFocus);
+				};
+			}
 		} catch (err) {
 			console.error("❌ Error inicializando controlador:", err);
 			if (

@@ -43,6 +43,25 @@
 	onMount(async () => {
 		if (browser) {
 			await loadOrganigrama();
+			
+			// Recargar cuando la página vuelve a ser visible
+			const handleVisibilityChange = () => {
+				if (document.visibilityState === 'visible') {
+					loadOrganigrama();
+				}
+			};
+			
+			const handleFocus = () => {
+				loadOrganigrama();
+			};
+			
+			document.addEventListener('visibilitychange', handleVisibilityChange);
+			window.addEventListener('focus', handleFocus);
+			
+			return () => {
+				document.removeEventListener('visibilitychange', handleVisibilityChange);
+				window.removeEventListener('focus', handleFocus);
+			};
 		}
 	});
 
@@ -114,6 +133,48 @@
 			};
 			updateNodesList();
 			console.log("✅ Usando datos de fallback básicos");
+		} finally {
+			loading = false;
+		}
+	}
+
+	async function sincronizarConAreas() {
+		if (!browser) return;
+		
+		if (!confirm('¿Sincronizar el organigrama con la estructura actual de áreas? Esto reemplazará el organigrama actual.')) {
+			return;
+		}
+
+		try {
+			loading = true;
+
+			const response = await fetch("/api/personas/organigrama/sincronizar/", {
+				method: "POST",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				}
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				if (result.success) {
+					console.log("✅ Organigrama sincronizado correctamente");
+					alert('Organigrama sincronizado exitosamente con las áreas del sistema');
+					
+					// Recargar el organigrama
+					await loadOrganigrama();
+					return true;
+				} else {
+					throw new Error(result.message || "Error al sincronizar organigrama");
+				}
+			} else {
+				throw new Error("Error de conexión con el servidor");
+			}
+		} catch (error) {
+			console.error("❌ Error sincronizando organigrama:", error);
+			alert(`Error al sincronizar: ${error.message}`);
+			return false;
 		} finally {
 			loading = false;
 		}
@@ -485,6 +546,15 @@
 				disabled={loading}
 			>
 				💾 Guardar
+			</button>
+			<button
+				class="btn"
+				style="background: #3b82f6; color: white;"
+				on:click={sincronizarConAreas}
+				disabled={loading}
+				title="Sincronizar organigrama con la estructura de áreas del sistema"
+			>
+				🔄 Sincronizar con Áreas
 			</button>
 			<button
 				class="btn"

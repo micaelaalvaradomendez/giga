@@ -102,6 +102,7 @@ export const guardiasService = {
   aprobarCronograma: (id, data, token = null) => createApiClient(token).patch(`/guardias/cronogramas/${id}/aprobar/`, data),
   publicarCronograma: (id, token = null) => createApiClient(token).patch(`/guardias/cronogramas/${id}/publicar/`),
   crearGuardia: (data, token = null) => createApiClient(token).post('/guardias/cronogramas/crear_con_guardias/', data),
+  actualizarConGuardias: (id, data, token = null) => createApiClient(token).put(`/guardias/cronogramas/${id}/actualizar_con_guardias/`, data),
   
   // Aprobaciones jerárquicas
   getPendientesAprobacion: (agenteId, token = null) => createApiClient(token).get(`/guardias/cronogramas/pendientes/?agente_id=${agenteId}`),
@@ -112,8 +113,15 @@ export const guardiasService = {
   getGuardia: (id, token = null) => createApiClient(token).get(`/guardias/guardias/${id}/`),
   createGuardia: (data, token = null) => createApiClient(token).post('/guardias/guardias/', data),
   updateGuardia: (id, data, token = null) => createApiClient(token).put(`/guardias/guardias/${id}/`, data),
+  deleteGuardia: (id, token = null) => createApiClient(token).delete(`/guardias/guardias/${id}/`),
   getResumenGuardias: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?${params}`),
   getGuardiasAgente: (agenteId, token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?agente=${agenteId}`),
+  
+  // Notas de guardias
+  getNotasGuardia: (guardiaId, token = null) => createApiClient(token).get(`/guardias/guardias/${guardiaId}/notas/`),
+  createNotaGuardia: (guardiaId, data, token = null) => createApiClient(token).post(`/guardias/guardias/${guardiaId}/notas/`, data),
+  updateNotaGuardia: (notaId, data, token = null) => createApiClient(token).put(`/guardias/guardias/notas/${notaId}/`, data),
+  deleteNotaGuardia: (notaId, agenteId, token = null) => createApiClient(token).delete(`/guardias/guardias/notas/${notaId}/?agente_id=${agenteId}`),
 
   // Feriados
   getFeriados: (token = null) => createApiClient(token).get('/guardias/feriados/'),

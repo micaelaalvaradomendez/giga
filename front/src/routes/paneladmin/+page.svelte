@@ -27,7 +27,7 @@
 			description: "Administrar licencias y novedades",
 		},
 		{
-			name: "Guardias (incompleto)",
+			name: "Guardias",
 			path: "/paneladmin/guardias",
 			description: "Planificar guardias y turnos",
 		},

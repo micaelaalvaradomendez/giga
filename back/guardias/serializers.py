@@ -3,7 +3,7 @@ Serializers para la app guardias - Incluyendo nuevos modelos de cronogramas.
 """
 
 from rest_framework import serializers
-from .models import Cronograma, Guardia, ResumenGuardiaMes, ReglaPlus, ParametrosArea, Feriado
+from .models import Cronograma, Guardia, ResumenGuardiaMes, ReglaPlus, ParametrosArea, Feriado, NotaGuardia
 
 
 class ReglaPlusSerializer(serializers.ModelSerializer):
@@ -106,13 +106,34 @@ class CronogramaExtendidoSerializer(serializers.ModelSerializer):
             return ['administrador']  # Por defecto, solo admin
 
 
+class NotaGuardiaSerializer(serializers.ModelSerializer):
+    """Serializer para notas personales de guardias"""
+    
+    agente_nombre = serializers.CharField(source='id_agente.nombre', read_only=True)
+    agente_apellido = serializers.CharField(source='id_agente.apellido', read_only=True)
+    guardia_fecha = serializers.DateField(source='id_guardia.fecha', read_only=True)
+    
+    class Meta:
+        model = NotaGuardia
+        fields = [
+            'id_nota', 'id_guardia', 'id_agente', 
+            'agente_nombre', 'agente_apellido', 'guardia_fecha',
+            'nota', 'fecha_nota', 'creado_en', 'actualizado_en'
+        ]
+        read_only_fields = ['id_nota', 'fecha_nota', 'creado_en', 'actualizado_en']
+
+
 class GuardiaResumenSerializer(serializers.ModelSerializer):
     """Serializer para guardias con información resumida"""
     
     agente_nombre = serializers.CharField(source='id_agente.nombre', read_only=True)
     agente_apellido = serializers.CharField(source='id_agente.apellido', read_only=True)
     agente_legajo = serializers.CharField(source='id_agente.legajo', read_only=True)
+    area_nombre = serializers.CharField(source='id_agente.id_area.nombre', read_only=True, allow_null=True)
     cronograma_tipo = serializers.CharField(source='id_cronograma.tipo', read_only=True)
+    cronograma_estado = serializers.CharField(source='id_cronograma.estado', read_only=True)
+    notas = NotaGuardiaSerializer(many=True, read_only=True)
+    tiene_nota = serializers.SerializerMethodField()
     
     class Meta:
         model = Guardia
@@ -120,8 +141,16 @@ class GuardiaResumenSerializer(serializers.ModelSerializer):
             'id_guardia', 'fecha', 'hora_inicio', 'hora_fin',
             'tipo', 'estado', 'activa', 'horas_planificadas', 'horas_efectivas',
             'observaciones', 'agente_nombre', 'agente_apellido', 
-            'agente_legajo', 'cronograma_tipo'
+            'agente_legajo', 'area_nombre', 'cronograma_tipo', 'cronograma_estado',
+            'notas', 'tiene_nota', 'id_cronograma', 'id_agente'
         ]
+    
+    def get_tiene_nota(self, obj):
+        """Verifica si el agente actual tiene una nota en esta guardia"""
+        request = self.context.get('request')
+        if request and hasattr(request.user, 'agente'):
+            return obj.notas.filter(id_agente=request.user.agente).exists()
+        return False
 
 
 class ResumenGuardiaMesExtendidoSerializer(serializers.ModelSerializer):

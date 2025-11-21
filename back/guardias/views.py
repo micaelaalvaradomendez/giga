@@ -370,6 +370,14 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 id_agente_id=agente_id
             )
             
+            # Determinar estado de las guardias según estado del cronograma
+            if estado_inicial == 'pendiente':
+                estado_guardias = 'pendiente_aprobacion'
+                guardias_activas = False  # No activar hasta aprobar
+            else:
+                estado_guardias = 'planificada'
+                guardias_activas = True
+            
             # Crear las guardias para cada agente
             guardias_creadas = []
             for agente_data in data['agentes']:
@@ -386,8 +394,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     hora_inicio=data['hora_inicio'],
                     hora_fin=data['hora_fin'],
                     tipo=data['tipo'],
-                    estado='planificada',
-                    activa=True,
+                    estado=estado_guardias,
+                    activa=guardias_activas,
                     observaciones=data.get('observaciones', '')
                 )
                 guardias_creadas.append(guardia)
@@ -421,6 +429,194 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             logger.error(f"Error al crear guardia con cronograma: {str(e)}")
             return Response(
                 {'error': f'Error al crear guardia: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['put', 'patch'])
+    def actualizar_con_guardias(self, request, pk=None):
+        """Actualiza un cronograma y sus guardias con registro completo en auditoría"""
+        try:
+            cronograma = self.get_object()
+            data = request.data
+            
+            # Validar que el cronograma pueda ser editado
+            if cronograma.estado not in ['pendiente', 'aprobada', 'generada']:
+                return Response(
+                    {'error': f'No se puede editar un cronograma en estado "{cronograma.estado}"'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validar datos requeridos
+            required_fields = ['nombre', 'tipo', 'id_area', 'fecha', 'hora_inicio', 'hora_fin', 'agentes']
+            for field in required_fields:
+                if field not in data:
+                    return Response(
+                        {'error': f'Campo requerido: {field}'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Validar que haya agentes
+            if not data['agentes'] or len(data['agentes']) == 0:
+                return Response(
+                    {'error': 'Debe seleccionar al menos un agente'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Obtener agente que realiza la actualización
+            agente_id = data.get('agente_id')
+            if not agente_id and hasattr(request.user, 'agente'):
+                agente_id = request.user.agente.id_agente
+            
+            if not agente_id:
+                return Response(
+                    {'error': 'No se pudo determinar el agente que actualiza'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            try:
+                from personas.models import Agente
+                agente_actualizador = Agente.objects.get(id_agente=agente_id)
+            except Agente.DoesNotExist:
+                return Response(
+                    {'error': 'Agente no encontrado'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Guardar valores previos para auditoría
+            valor_previo_cronograma = {
+                'tipo': cronograma.tipo,
+                'hora_inicio': str(cronograma.hora_inicio),
+                'hora_fin': str(cronograma.hora_fin),
+                'estado': cronograma.estado,
+                'id_area': cronograma.id_area_id
+            }
+            
+            # Obtener guardias existentes para auditoría
+            guardias_previas = list(cronograma.guardia_set.all().values(
+                'id_guardia', 'id_agente_id', 'fecha', 'hora_inicio', 
+                'hora_fin', 'tipo', 'estado', 'activa'
+            ))
+            
+            # Actualizar campos del cronograma
+            cronograma.tipo = data['tipo']
+            cronograma.hora_inicio = data['hora_inicio']
+            cronograma.hora_fin = data['hora_fin']
+            cronograma.id_area_id = data['id_area']
+            
+            # Si estaba aprobado y se modifica, volver a pendiente
+            if cronograma.estado == 'aprobada':
+                from .utils import get_agente_rol
+                rol_actualizador = get_agente_rol(agente_actualizador)
+                
+                # Solo admin puede editar sin cambiar estado
+                if rol_actualizador and rol_actualizador.lower() != 'administrador':
+                    cronograma.estado = 'pendiente'
+                    cronograma.fecha_aprobacion = None
+                    cronograma.aprobado_por_id = None
+            
+            cronograma.save()
+            
+            # Registrar auditoría del cronograma
+            Auditoria.objects.create(
+                pk_afectada=cronograma.id_cronograma,
+                nombre_tabla='cronograma',
+                creado_en=timezone.now(),
+                valor_previo=valor_previo_cronograma,
+                valor_nuevo={
+                    'tipo': cronograma.tipo,
+                    'hora_inicio': str(cronograma.hora_inicio),
+                    'hora_fin': str(cronograma.hora_fin),
+                    'estado': cronograma.estado,
+                    'id_area': cronograma.id_area_id
+                },
+                accion='ACTUALIZAR',
+                id_agente_id=agente_id
+            )
+            
+            # Eliminar guardias existentes y registrar en auditoría
+            for guardia_previa in guardias_previas:
+                Auditoria.objects.create(
+                    pk_afectada=guardia_previa['id_guardia'],
+                    nombre_tabla='guardia',
+                    creado_en=timezone.now(),
+                    valor_previo=guardia_previa,
+                    valor_nuevo=None,
+                    accion='ELIMINAR',
+                    id_agente_id=agente_id
+                )
+            
+            cronograma.guardia_set.all().delete()
+            
+            # Determinar estado de las nuevas guardias
+            if cronograma.estado == 'pendiente':
+                estado_guardias = 'pendiente_aprobacion'
+                guardias_activas = False
+            else:
+                estado_guardias = 'planificada'
+                guardias_activas = True
+            
+            # Crear las nuevas guardias
+            guardias_creadas = []
+            for agente_data in data['agentes']:
+                if isinstance(agente_data, dict):
+                    agente_id_guardia = agente_data['id_agente']
+                else:
+                    agente_id_guardia = agente_data
+                
+                guardia = Guardia.objects.create(
+                    id_cronograma=cronograma,
+                    id_agente_id=agente_id_guardia,
+                    fecha=data['fecha'],
+                    hora_inicio=data['hora_inicio'],
+                    hora_fin=data['hora_fin'],
+                    tipo=data['tipo'],
+                    estado=estado_guardias,
+                    activa=guardias_activas,
+                    observaciones=data.get('observaciones', '')
+                )
+                guardias_creadas.append(guardia)
+                
+                # Registrar auditoría de cada nueva guardia
+                Auditoria.objects.create(
+                    pk_afectada=guardia.id_guardia,
+                    nombre_tabla='guardia',
+                    creado_en=timezone.now(),
+                    valor_previo=None,
+                    valor_nuevo={
+                        'id_cronograma': cronograma.id_cronograma,
+                        'id_agente': agente_id_guardia,
+                        'fecha': str(data['fecha']),
+                        'hora_inicio': str(data['hora_inicio']),
+                        'hora_fin': str(data['hora_fin']),
+                        'tipo': data['tipo'],
+                        'estado': estado_guardias,
+                        'activa': guardias_activas
+                    },
+                    accion='CREAR',
+                    id_agente_id=agente_id
+                )
+            
+            # Registrar resumen en auditoría
+            from auditoria.models import RegistroAuditoria
+            RegistroAuditoria.objects.create(
+                tipo_accion='actualizacion_cronograma_completo',
+                detalle=f'Cronograma {cronograma.id_cronograma} actualizado por {agente_actualizador.nombre} {agente_actualizador.apellido}. Guardias eliminadas: {len(guardias_previas)}, Guardias creadas: {len(guardias_creadas)}',
+                modelo_afectado='cronograma',
+                id_registro=cronograma.id_cronograma
+            )
+            
+            return Response({
+                'mensaje': 'Cronograma actualizado exitosamente',
+                'cronograma_id': cronograma.id_cronograma,
+                'guardias_eliminadas': len(guardias_previas),
+                'guardias_creadas': len(guardias_creadas),
+                'estado_cronograma': cronograma.estado
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error al actualizar cronograma con guardias: {str(e)}")
+            return Response(
+                {'error': f'Error al actualizar: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -511,11 +707,19 @@ class CronogramaViewSet(viewsets.ModelViewSet):
         cronograma.aprobado_por_id = agente_aprobador
         cronograma.save()
         
+        # Activar guardias asociadas que estaban pendientes
+        guardias_activadas = cronograma.guardia_set.filter(
+            estado='pendiente_aprobacion'
+        ).update(
+            estado='planificada',
+            activa=True
+        )
+        
         # Registrar en auditoría
         from auditoria.models import RegistroAuditoria
         RegistroAuditoria.objects.create(
             tipo_accion='aprobacion_cronograma',
-            detalle=f'Cronograma {cronograma.id_cronograma} aprobado por {agente_aprobador.nombre} {agente_aprobador.apellido} (rol: {rol_aprobador})',
+            detalle=f'Cronograma {cronograma.id_cronograma} aprobado por {agente_aprobador.nombre} {agente_aprobador.apellido} (rol: {rol_aprobador}). {guardias_activadas} guardias activadas.',
             modelo_afectado='cronograma',
             id_registro=cronograma.id_cronograma
         )
@@ -524,7 +728,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             'mensaje': 'Cronograma aprobado exitosamente',
             'cronograma_id': cronograma.id_cronograma,
             'aprobado_por': f'{agente_aprobador.nombre} {agente_aprobador.apellido}',
-            'fecha_aprobacion': cronograma.fecha_aprobacion
+            'fecha_aprobacion': cronograma.fecha_aprobacion,
+            'guardias_activadas': guardias_activadas
         })
     
     @action(detail=True, methods=['patch'])
@@ -685,15 +890,117 @@ class GuardiaViewSet(viewsets.ModelViewSet):
     serializer_class = GuardiaResumenSerializer
     permission_classes = [IsAuthenticated]
     
+    @action(detail=True, methods=['get', 'post'], url_path='notas')
+    def notas_guardia(self, request, pk=None):
+        """
+        GET: Lista notas de una guardia
+        POST: Crea o actualiza nota personal del agente para esta guardia
+        """
+        guardia = self.get_object()
+        
+        if request.method == 'GET':
+            # Listar todas las notas de esta guardia
+            notas = guardia.notas.all().order_by('-fecha_nota')
+            from .serializers import NotaGuardiaSerializer
+            serializer = NotaGuardiaSerializer(notas, many=True)
+            return Response(serializer.data)
+        
+        elif request.method == 'POST':
+            # Crear o actualizar nota del agente actual
+            agente_id = request.data.get('agente_id')
+            if not agente_id:
+                return Response(
+                    {'error': 'Se requiere agente_id'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            from .models import NotaGuardia
+            from .serializers import NotaGuardiaSerializer
+            
+            # Buscar si ya existe una nota de este agente para esta guardia
+            nota_existente = NotaGuardia.objects.filter(
+                id_guardia=guardia,
+                id_agente_id=agente_id
+            ).first()
+            
+            if nota_existente:
+                # Actualizar nota existente
+                serializer = NotaGuardiaSerializer(
+                    nota_existente,
+                    data=request.data,
+                    partial=True
+                )
+            else:
+                # Crear nueva nota
+                data = request.data.copy()
+                data['id_guardia'] = guardia.id_guardia
+                serializer = NotaGuardiaSerializer(data=data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED if not nota_existente else status.HTTP_200_OK
+                )
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['put', 'delete'], url_path='notas/(?P<nota_id>[^/.]+)')
+    def nota_detalle(self, request, nota_id=None, pk=None):
+        """
+        PUT: Actualiza una nota existente
+        DELETE: Elimina una nota
+        """
+        from .models import NotaGuardia
+        from .serializers import NotaGuardiaSerializer
+        
+        try:
+            nota = NotaGuardia.objects.get(id_nota=nota_id)
+        except NotaGuardia.DoesNotExist:
+            return Response(
+                {'error': 'Nota no encontrada'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Validar que el agente que modifica sea el dueño de la nota
+        agente_id = request.data.get('agente_id') if request.method == 'PUT' else request.query_params.get('agente_id')
+        if agente_id and str(nota.id_agente_id) != str(agente_id):
+            return Response(
+                {'error': 'No tiene permisos para modificar esta nota'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if request.method == 'PUT':
+            serializer = NotaGuardiaSerializer(nota, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == 'DELETE':
+            nota.delete()
+            return Response(
+                {'mensaje': 'Nota eliminada exitosamente'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+    
     @action(detail=False, methods=['get'])
     def resumen(self, request):
-        """Resumen de guardias por período"""
+        """Resumen de guardias por período - solo guardias activas y aprobadas"""
         fecha_desde = request.query_params.get('fecha_desde')
         fecha_hasta = request.query_params.get('fecha_hasta')
         agente_id = request.query_params.get('agente')
         area_id = request.query_params.get('area')
         
         queryset = self.get_queryset()
+        
+        # FILTRO CRÍTICO: Solo mostrar guardias activas de cronogramas aprobados/publicados
+        # Esto previene que usuarios vean guardias pendientes de aprobación
+        queryset = queryset.filter(
+            activa=True,
+            estado='planificada',
+            id_cronograma__estado__in=['aprobada', 'publicada']
+        )
         
         if fecha_desde:
             queryset = queryset.filter(fecha__gte=fecha_desde)

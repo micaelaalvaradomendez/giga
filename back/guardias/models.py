@@ -178,6 +178,25 @@ class Guardia(models.Model):
         return f"Guardia {self.fecha} - {self.id_agente}"
 
 
+class NotaGuardia(models.Model):
+    """Notas personales de agentes sobre sus guardias"""
+    id_nota = models.BigAutoField(primary_key=True)
+    id_guardia = models.ForeignKey(Guardia, models.CASCADE, db_column='id_guardia', related_name='notas')
+    id_agente = models.ForeignKey('personas.Agente', models.CASCADE, db_column='id_agente')
+    nota = models.TextField(blank=True, null=True)
+    fecha_nota = models.DateTimeField(auto_now_add=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        managed = False
+        db_table = 'nota_guardia'
+        unique_together = (('id_guardia', 'id_agente'),)
+        
+    def __str__(self):
+        return f"Nota {self.id_agente} - Guardia {self.id_guardia}"
+
+
 class ResumenGuardiaMes(models.Model):
     """Resumen mensual de guardias por agente - EXTENDIDO con cálculo automático de plus"""
     id_resumen_guardia_mes = models.BigAutoField(primary_key=True)

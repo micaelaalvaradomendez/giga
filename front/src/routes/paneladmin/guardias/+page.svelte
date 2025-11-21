@@ -1,11 +1,12 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { browser } from '$app/environment';
   import CalendarioBase from '$lib/componentes/calendarioBase.svelte';
   import { guardiasService } from '$lib/services.js';
 
   const items = [
     { title: 'Planificador', desc: 'Crear nueva guardia', href: '/paneladmin/guardias/planificador', emoji: '➕' },
-    { title: 'Aprobaciones  (falta)', desc: 'Revisar y publicar', href: '/paneladmin/guardias/aprobaciones', emoji: '📝' }
+    { title: 'Aprobaciones', desc: 'Revisar y publicar', href: '/paneladmin/guardias/aprobaciones', emoji: '📝' }
   ];
 
   let loading = false;
@@ -19,6 +20,27 @@
 
   onMount(async () => {
     await cargarDatos();
+    
+    // Recargar cuando la página vuelve a ser visible (después de navegar de vuelta)
+    if (browser) {
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          cargarDatos();
+        }
+      };
+      
+      const handleFocus = () => {
+        cargarDatos();
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('focus', handleFocus);
+      
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleFocus);
+      };
+    }
   });
 
   async function cargarDatos() {

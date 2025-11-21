@@ -17,6 +17,27 @@
 			console.log(
 				"✅ Controlador de auditoría inicializado exitosamente",
 			);
+			
+			// Recargar cuando la página vuelve a ser visible
+			if (typeof window !== 'undefined') {
+				const handleVisibilityChange = () => {
+					if (document.visibilityState === 'visible') {
+						auditoriaController.init();
+					}
+				};
+				
+				const handleFocus = () => {
+					auditoriaController.init();
+				};
+				
+				document.addEventListener('visibilitychange', handleVisibilityChange);
+				window.addEventListener('focus', handleFocus);
+				
+				return () => {
+					document.removeEventListener('visibilitychange', handleVisibilityChange);
+					window.removeEventListener('focus', handleFocus);
+				};
+			}
 		} catch (err) {
 			console.error(
 				"❌ Error inicializando controlador de auditoría:",

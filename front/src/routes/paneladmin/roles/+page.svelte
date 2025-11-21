@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from "svelte";
+	import { browser } from "$app/environment";
 	import { rolesController } from "$lib/paneladmin/controllers";
 	import { goto } from "$app/navigation";
 
@@ -25,6 +26,27 @@
 			console.log("🚀 Iniciando controlador de roles...");
 			await rolesController.init();
 			console.log("✅ Controlador de roles inicializado");
+			
+			// Recargar cuando la página vuelve a ser visible
+			if (browser) {
+				const handleVisibilityChange = () => {
+					if (document.visibilityState === 'visible') {
+						rolesController.init();
+					}
+				};
+				
+				const handleFocus = () => {
+					rolesController.init();
+				};
+				
+				document.addEventListener('visibilitychange', handleVisibilityChange);
+				window.addEventListener('focus', handleFocus);
+				
+				return () => {
+					document.removeEventListener('visibilitychange', handleVisibilityChange);
+					window.removeEventListener('focus', handleFocus);
+				};
+			}
 		} catch (err) {
 			console.error("❌ Error inicializando controlador:", err);
 			if (
