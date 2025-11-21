@@ -258,42 +258,49 @@
         width: 100%;
         margin: auto;
         overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        border-radius: 15px;
-        background: #fff;
+        box-shadow: none;
+        border-radius: 16px;
+        background: transparent;
+        border: none;
         max-width: 1200px;
     }
     .calendar-header {
         text-align: center;
         padding: 20px 0;
-        background: #e79043;
+        background: linear-gradient(135deg, rgba(231, 144, 67, 0.85) 0%, rgba(255, 139, 50, 0.85) 100%);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
         color: white;
-        border-bottom: 1px solid rgba(166, 168, 179, 0.12);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        box-shadow: 
+            inset 0 1px 2px rgba(255, 255, 255, 0.3),
+            0 2px 10px rgba(231, 144, 67, 0.2);
     }
     .calendar-header h1 {
         margin: 0;
         font-size: 22px;
     }
     .calendar-header button {
-        background: transparent;
-        border: 1px solid white;
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.4);
         padding: 8px 12px;
         color: white;
         cursor: pointer;
         outline: 0;
-        border-radius: 5px;
+        border-radius: 8px;
         margin: 0 5px;
-        transition: background-color 0.3s;
+        transition: all 0.2s ease;
     }
     .calendar-header button:hover {
-        background-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.3);
     }
     .calendar-grid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        gap: 1px;
-        background-color: #ddd;
-        padding: 1px;
+        gap: 0;
+        background: transparent;
+        padding: 0;
     }
     .calendar-header-row {
         display: contents;
@@ -302,7 +309,14 @@
         text-align: center;
         font-weight: bold;
         padding: 15px;
-        background-color: #f2f2f2;
+        margin: 4px;
+        background: linear-gradient(135deg, rgba(142, 182, 228, 0.5) 0%, rgba(61, 151, 255, 0.45) 100%);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        color: rgba(0, 0, 0, 0.63);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.062);
+        border-radius: 12px;
+        box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3);
     }
     .calendar-body {
         display: contents;
@@ -310,52 +324,67 @@
     .calendar-day {
         text-align: left;
         padding: 8px;
-        background-color: white;
+        background: white;
         min-height: 120px;
-        transition: background-color 0.3s;
-        border: 1px solid transparent;
+        transition: all 0.2s ease;
+        border: 1px solid #f0f0f0;
+        border-radius: 12px;
+        margin: 4px;
         display: flex;
         flex-direction: column;
         position: relative;
     }
     
     .calendar-day:not(.disabled):hover {
-        background-color: #ebd4ab;
+        background: #fef6ee;
         cursor: pointer;
+        border-color: #e79043;
+        transform: scale(1.02);
     }
     
     .calendar-day.disabled {
-        background-color: #f9f9f9;
-        color: #ccc;
+        background: rgba(250, 250, 250, 0.5);
+        color: rgba(204, 204, 204, 0.6);
+        border-radius: 12px;
+        border-color: rgba(240, 240, 240, 0.5);
+        opacity: 0.6;
     }
     
     .calendar-day.today {
-        background-color: #e79043;
+        background: #e7904396;
         color: white;
         font-weight: bold;
+        border: none;
+        border-radius: 12px;
     }
 
     .calendar-day.today:hover {
-        background-color: #dfb28a;
+        background: #f07f29c7;
+        transform: scale(1.02);
     }
 
     .calendar-day.feriado {
-        background-color: #ffe6e6;
+        background: #ffe6e6;
         border-color: #ff9999;
+        border-radius: 12px;
     }
 
     .calendar-day.feriado:hover {
-        background-color: #ffcccc;
+        background: #ffcccc;
+        transform: scale(1.02);
     }
 
     .calendar-day.today.feriado {
-        background-color: #e65c5c;
-        border-color: #cc0000;
+        background: linear-gradient(135deg, #e65c5c 0%, #cc0000 100%);
+        border: none;
+        border-radius: 12px;
     }
 
     .day-number {
         font-weight: 600;
         margin-bottom: 4px;
+        color: rgba(0, 0, 0, 0.63);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.062);
     }
 
     .feriado-info {
@@ -388,22 +417,26 @@
 
     /* Estilos para guardias */
     .calendar-day.guardia {
-        background-color: #e6f3ff;
+        background: #e6f3ff;
         border-color: #4a90e2;
+        border-radius: 12px;
     }
 
     .calendar-day.guardia:hover {
-        background-color: #cce7ff;
+        background: #cce7ff;
+        transform: scale(1.02);
     }
 
     .calendar-day.today.guardia {
-        background-color: #2563eb;
-        border-color: #1d4ed8;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        border: none;
+        border-radius: 12px;
     }
 
     .calendar-day.feriado.guardia {
-        background-color: #ffe0e6;
+        background: #ffe0e6;
         border-color: #dc3545;
+        border-radius: 12px;
     }
 
     .guardias-info {
@@ -416,8 +449,8 @@
     .guardia-item {
         margin-bottom: 2px;
         padding: 2px 4px;
-        background-color: rgba(37, 99, 235, 0.1);
-        border-radius: 3px;
+        background: rgba(37, 99, 235, 0.1);
+        border-radius: 4px;
         border-left: 3px solid #2563eb;
     }
 
@@ -441,9 +474,9 @@
 
     .guardia-cantidad {
         font-size: 0.6rem;
-        color: #6b7280;
+        color: #2563eb;
         font-weight: 600;
-        background-color: rgba(37, 99, 235, 0.2);
+        background: rgba(37, 99, 235, 0.2);
         padding: 1px 4px;
         border-radius: 8px;
     }

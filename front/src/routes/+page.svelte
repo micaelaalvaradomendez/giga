@@ -1,11 +1,44 @@
 <script>
     import AuthService from "../lib/login/authService.js";
+    import { onMount, onDestroy } from 'svelte';
 
     let cuil = "";
     let password = "";
     let showPassword = false;
     let errorMessage = "";
     let isLoading = false;
+    
+    let currentTime = "";
+    let currentDate = "";
+    let timeInterval;
+
+    const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+    function updateDateTime() {
+        const now = new Date();
+        const horas = now.getHours();
+        const minutos = now.getMinutes().toString().padStart(2, '0');
+        currentTime = `${horas}:${minutos}`;
+        
+        const dia = diasSemana[now.getDay()];
+        const numeroDia = now.getDate();
+        const mes = meses[now.getMonth()];
+        const anio = now.getFullYear();
+        
+        currentDate = `${dia} ${numeroDia} de ${mes} del ${anio}`;
+    }
+
+    onMount(() => {
+        updateDateTime();
+        timeInterval = setInterval(updateDateTime, 1000);
+    });
+
+    onDestroy(() => {
+        if (timeInterval) {
+            clearInterval(timeInterval);
+        }
+    });
 
     function togglePassword() {
         showPassword = !showPassword;
@@ -89,6 +122,14 @@
 </svelte:head>
 
 <div class="page-wrap">
+    <!-- Card de fecha y hora -->
+    <div class="datetime-card">
+        <div class="datetime-content">
+            <div class="time-display">{currentTime}</div>
+            <div class="date-display">{currentDate}</div>
+        </div>
+    </div>
+
     <div class="card-wrapper">
         <div class="container">
             <div class="textB">Bienvenido</div>
@@ -196,22 +237,69 @@
 <style>
     .page-wrap {
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
-        margin-top: 100px;
+        margin-top: 80px;
+        gap: 30px;
+    }
+
+    .datetime-card {
+        background-image: linear-gradient(163deg, #8eb6e4 0%, #3d97ff 90%);
+        border-radius: 24px;
+        padding: 3px;
+        box-shadow: 
+            0 8px 32px rgba(64, 124, 255, 0.671),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-align: center;
+        min-width: 450px;
+    }
+
+    .datetime-content {
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(255, 255, 255, 0.88) 100%
+        );
+        border-radius: 21px;
+        padding: 30px 50px;
+        box-shadow:
+            0 4px 16px rgba(64, 123, 255, 0.1),
+            inset 0 1px 2px rgba(255, 255, 255, 0.8),
+            inset 0 -1px 2px rgba(64, 123, 255, 0.05);
+    }
+
+    .time-display {
+        font-size: 72px;
+        font-weight: 700;
+        color: rgb(64, 123, 255);
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+    }
+
+    .date-display {
+        font-size: 20px;
+        font-weight: 500;
+        color: rgb(64, 123, 255);
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        text-transform: capitalize;
+        letter-spacing: 0.5px;
     }
 
     .card-wrapper {
         background-image: linear-gradient(163deg, #8eb6e4 0%, #3d97ff 90%);
         border-radius: 24px;
-        transition: all 0.3s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         padding: 0;
         box-shadow: 
-            0 8px 32px rgba(64, 123, 255, 0.25),
+            0 8px 32px rgba(64, 124, 255, 0.671),
             inset 0 1px 2px rgba(255, 255, 255, 0.3);
     }
 
     .card-wrapper:hover {
+        transform: scale(1.02);
         box-shadow: 
             0 12px 48px rgba(64, 123, 255, 0.35),
             0 0 24px rgba(64, 123, 255, 0.15),
@@ -223,19 +311,33 @@
             sans-serif;
         max-width: 450px;
         background: linear-gradient(
-            0deg,
-            rgb(255, 255, 255) 0%,
-            rgb(255, 255, 255) 80%
+            135deg,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(255, 255, 255, 0.88) 100%
         );
         border-radius: 20px;
         padding: 25px 35px;
-        transition: all 0.2s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         margin: 3px;
+        border: 1px solid rgba(64, 123, 255, 0.15);
+        box-shadow:
+            0 4px 16px rgba(64, 123, 255, 0.1),
+            inset 0 1px 2px rgba(255, 255, 255, 0.8),
+            inset 0 -1px 2px rgba(64, 123, 255, 0.05);
     }
 
     .container:hover {
-        transform: scale(0.98);
-        border-radius: 15px;
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.98) 0%,
+            rgba(255, 255, 255, 0.92) 100%
+        );
+        box-shadow:
+            0 6px 20px rgba(64, 123, 255, 0.15),
+            0 0 12px rgba(64, 123, 255, 0.08),
+            inset 0 1px 2px rgba(255, 255, 255, 0.9),
+            inset 0 -1px 2px rgba(64, 123, 255, 0.1);
+        border-color: rgba(64, 123, 255, 0.25);
     }
 
     .textB {
@@ -260,6 +362,7 @@
         box-shadow: 
             0 4px 16px rgba(64, 123, 255, 0.12),
             inset 0 1px 2px rgba(255, 255, 255, 0.8);
+        transition: all 0.3s ease;
     }
 
     .form .input::placeholder {
@@ -267,7 +370,10 @@
     }
     .form .input:focus {
         outline: none;
-        border-inline: 2px solid #12b1d1;
+        border: 2px solid #12b1d1;
+        box-shadow: 
+            0 6px 20px rgba(18, 177, 209, 0.25),
+            inset 0 1px 2px rgba(255, 255, 255, 0.9);
     }
 
     .animated-button {

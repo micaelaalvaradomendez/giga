@@ -21,6 +21,7 @@
   let areas = [];
   let agentesDisponibles = [];
   let agentesSeleccionados = new Set();
+  let agentesConConflicto = new Set();
 
   let toastVisible = false;
   let toastMensaje = '';
@@ -67,12 +68,28 @@
       if (agentesDisponibles.length === 0) {
         error = 'No hay agentes en esta área';
       }
+      
+      // Verificar conflictos cuando se avanza al paso 2 y hay fechas seleccionadas
+      if (fechaInicio && fechaFin && paso === 2) {
+        await verificarConflictosAgentes();
+      }
     } catch (e) {
       error = 'Error al cargar los agentes';
       console.error('Error cargando agentes:', e);
     } finally {
       loading = false;
     }
+  }
+  
+  async function verificarConflictosAgentes() {
+    agentesConConflicto.clear();
+    for (const agente of agentesDisponibles) {
+      const tieneConflicto = await verificarDisponibilidadAgente(agente.id_agente);
+      if (tieneConflicto) {
+        agentesConConflicto.add(String(agente.id_agente));
+      }
+    }
+    agentesConConflicto = new Set(agentesConConflicto);
   }
 
   function handleAreaChange() {
@@ -85,14 +102,64 @@
     }
   }
 
-  function toggleAgente(agenteId) {
+  async function toggleAgente(agenteId) {
     const id = String(agenteId);
+    
+    // Si ya está seleccionado, simplemente lo deseleccionamos
     if (agentesSeleccionados.has(id)) {
       agentesSeleccionados.delete(id);
-    } else {
-      agentesSeleccionados.add(id);
+      agentesSeleccionados = new Set(agentesSeleccionados);
+      return;
     }
+    
+    // Si no está seleccionado, verificamos que no tenga guardias en las fechas seleccionadas
+    if (fechaInicio && fechaFin) {
+      const tieneConflicto = await verificarDisponibilidadAgente(agenteId);
+      if (tieneConflicto) {
+        const agente = agentesDisponibles.find(a => String(a.id_agente) === id);
+        const nombreAgente = agente ? `${agente.nombre} ${agente.apellido}` : 'Este agente';
+        error = `${nombreAgente} ya tiene una guardia asignada que se superpone con las fechas seleccionadas (${fechaInicio} - ${fechaFin})`;
+        mostrarToast(`⚠️ ${error}`, 'error');
+        return;
+      }
+    }
+    
+    // Si no hay conflicto, lo agregamos
+    agentesSeleccionados.add(id);
     agentesSeleccionados = new Set(agentesSeleccionados);
+  }
+
+  async function verificarDisponibilidadAgente(agenteId) {
+    try {
+      // Obtener todas las guardias del agente
+      const response = await guardiasService.getGuardiasAgente(agenteId);
+      const guardiasAgente = response.data?.guardias || [];
+      
+      // Verificar si alguna guardia se superpone con las fechas seleccionadas
+      const fechaInicioSeleccionada = new Date(fechaInicio);
+      const fechaFinSeleccionada = new Date(fechaFin);
+      
+      for (const guardia of guardiasAgente) {
+        // Solo verificamos guardias activas y no canceladas
+        if (guardia.activa === false || guardia.estado === 'cancelada') {
+          continue;
+        }
+        
+        const fechaGuardia = new Date(guardia.fecha);
+        
+        // Verificar si la fecha de la guardia existente está dentro del rango seleccionado
+        if (fechaGuardia >= fechaInicioSeleccionada && fechaGuardia <= fechaFinSeleccionada) {
+          console.log('Conflicto encontrado:', guardia);
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (e) {
+      console.error('Error verificando disponibilidad:', e);
+      // En caso de error, permitimos la selección pero mostramos advertencia
+      return false;
+    }
   }
 
   function validarPaso1() {
@@ -150,10 +217,12 @@
     return true;
   }
 
-  function avanzarPaso2() {
+  async function avanzarPaso2() {
     if (!validarPaso1()) return;
     error = '';
     paso = 2;
+    // Verificar conflictos de los agentes con las fechas seleccionadas
+    await verificarConflictosAgentes();
   }
 
   function volverPaso1() {
@@ -164,6 +233,24 @@
   async function guardarGuardia() {
     if (agentesSeleccionados.size === 0) {
       error = 'Debe seleccionar al menos un agente';
+      return;
+    }
+
+    // Verificar disponibilidad de todos los agentes seleccionados antes de guardar
+    const agentesConConflicto = [];
+    for (const agenteId of agentesSeleccionados) {
+      const tieneConflicto = await verificarDisponibilidadAgente(agenteId);
+      if (tieneConflicto) {
+        const agente = agentesDisponibles.find(a => String(a.id_agente) === agenteId);
+        if (agente) {
+          agentesConConflicto.push(`${agente.nombre} ${agente.apellido}`);
+        }
+      }
+    }
+    
+    if (agentesConConflicto.length > 0) {
+      error = `Los siguientes agentes ya tienen guardias asignadas en estas fechas: ${agentesConConflicto.join(', ')}`;
+      mostrarToast('⚠️ Algunos agentes tienen conflictos de horarios', 'error');
       return;
     }
 
@@ -475,9 +562,13 @@
         <div class="agentes-lista">
           <p class="info-text">
             <strong>{agentesDisponibles.length}</strong> agente(s) activo(s) en esta área • <strong>{agentesSeleccionados.size}</strong> seleccionado(s)
+            {#if agentesConConflicto.size > 0}
+              <span class="advertencia-conflictos">⚠️ {agentesConConflicto.size} con guardias existentes</span>
+            {/if}
           </p>
           {#each agentesDisponibles as agente}
-            <label class="agente-item">
+            {@const tieneConflicto = agentesConConflicto.has(String(agente.id_agente))}
+            <label class="agente-item" class:tiene-conflicto={tieneConflicto}>
               <input 
                 type="checkbox" 
                 checked={agentesSeleccionados.has(String(agente.id_agente))}
@@ -485,7 +576,14 @@
                 disabled={loading}
               />
               <div class="agente-info">
-                <div class="agente-nombre">{agente.apellido}, {agente.nombre}</div>
+                <div class="agente-nombre">
+                  {agente.apellido}, {agente.nombre}
+                  {#if tieneConflicto}
+                    <span class="badge-conflicto" title="Este agente ya tiene una guardia asignada en estas fechas">
+                      ⚠️ Con guardia
+                    </span>
+                  {/if}
+                </div>
                 <div class="agente-datos">
                   <span>Legajo: {agente.legajo}</span>
                   {#if agente.area_nombre}
@@ -744,6 +842,16 @@ select.input {
   margin: -1px;
 }
 
+.agente-item.tiene-conflicto {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  opacity: 0.8;
+}
+
+.agente-item.tiene-conflicto:hover {
+  background: #fee2e2;
+}
+
 .agente-item input[type="checkbox"] {
   width: 18px;
   height: 18px;
@@ -761,6 +869,28 @@ select.input {
   font-weight: 600;
   color: #1e293b;
   font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.badge-conflicto {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.advertencia-conflictos {
+  color: #d97706;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-left: 1rem;
 }
 
 .agente-datos {
