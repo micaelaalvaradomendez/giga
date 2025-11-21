@@ -35,5 +35,5 @@ RUN groupadd -r django && useradd -r -g django django
 RUN chown -R django:django /app
 USER django
 
-# Script de entrada
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Script de entrada con migraciones automáticas
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput --clear && python manage.py runserver 0.0.0.0:8000"]

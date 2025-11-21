@@ -453,6 +453,18 @@ CREATE TABLE IF NOT EXISTS resumen_guardia_mes (
     UNIQUE(id_agente, mes, anio)
 );
 
+-- Tabla: organigrama (administrada por Django)
+CREATE TABLE IF NOT EXISTS organigrama (
+    id_organigrama BIGSERIAL PRIMARY KEY,
+    nombre VARCHAR(200) NOT NULL,
+    estructura JSONB NOT NULL,
+    version VARCHAR(20) DEFAULT '1.0.0',
+    activo BOOLEAN DEFAULT true,
+    creado_por VARCHAR(100) DEFAULT 'Sistema',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Índices para mejorar performance
 CREATE INDEX IF NOT EXISTS idx_feriado_fecha ON feriado(fecha);
 CREATE INDEX IF NOT EXISTS idx_feriado_activo ON feriado(activo);
@@ -463,6 +475,8 @@ CREATE INDEX IF NOT EXISTS idx_guardia_agente ON guardia(id_agente);
 CREATE INDEX IF NOT EXISTS idx_guardia_cronograma ON guardia(id_cronograma);
 CREATE INDEX IF NOT EXISTS idx_resumen_mes_agente ON resumen_guardia_mes(id_agente);
 CREATE INDEX IF NOT EXISTS idx_resumen_mes_periodo ON resumen_guardia_mes(mes, anio);
+CREATE INDEX IF NOT EXISTS idx_organigrama_activo ON organigrama(activo);
+CREATE INDEX IF NOT EXISTS idx_organigrama_actualizado ON organigrama(actualizado_en);
 
 -- Insertar área por defecto
 INSERT INTO area (nombre) VALUES 

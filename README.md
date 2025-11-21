@@ -14,11 +14,26 @@ Sistema completo de gestión para Protección Civil con frontend moderno, backen
 ### 2️⃣ Clonar el Proyecto
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/micaelaalvaradomendez/giga.git
 cd giga
 ```
 
 ### 3️⃣ Levantar el Sistema Completo
+
+**🎯 IMPORTANTE:** El sistema se auto-configura completamente. Solo necesitas ejecutar:
+
+```bash
+docker-compose up -d --build
+```
+
+**✅ Esto automáticamente:**
+- Crea la base de datos PostgreSQL
+- Ejecuta TODOS los scripts de inicialización (tablas, datos, triggers)
+- Ejecuta migraciones de Django
+- Recopila archivos estáticos
+- Inicia todos los servicios
+
+⏱️ **Tiempo estimado:** 2-5 minutos la primera vez
 
 #### Opción A: Script Automatizado (Recomendado)
 
@@ -227,7 +242,44 @@ class Meta:
     db_table = 'tabla_existente'
 ```
 
-## 🚨 Solución de Problemas
+## � Actualización del Sistema
+
+### Para Desarrolladores que Hacen Pull
+
+```bash
+# 1. Obtener cambios
+git pull origin version-limpia
+
+# 2. Reconstruir con cambios (mantiene datos)
+docker-compose up -d --build
+```
+
+**✅ Esto automáticamente:**
+- Actualiza el código
+- Reconstruye imágenes
+- **Ejecuta migraciones automáticamente**
+- Mantiene tus datos (volúmenes persisten)
+
+### Reset Completo (Solo si hay problemas graves)
+
+```bash
+# ⚠️ ATENCIÓN: Esto ELIMINA TODOS LOS DATOS
+docker-compose down -v
+docker-compose up -d --build
+```
+
+📖 **Documentación Completa:** Ver [DEPLOYMENT.md](DEPLOYMENT.md) para guía detallada
+
+## �🚨 Solución de Problemas
+
+### Problema: "Tabla no existe"
+```bash
+# Ejecutar migraciones manualmente
+docker exec giga-django python manage.py migrate
+
+# O reset completo
+docker-compose down -v && docker-compose up -d --build
+```
 
 ### Problema: Puertos en uso
 ```bash
@@ -245,9 +297,6 @@ docker-compose logs [servicio]
 
 # Reconstruir sin caché
 docker-compose build --no-cache
-
-# Limpiar volúmenes
-docker-compose down -v
 ```
 
 ### Problema: Base de datos no conecta

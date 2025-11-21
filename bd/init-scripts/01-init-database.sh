@@ -69,6 +69,7 @@ SCRIPTS=(
     "06-add-approval-tracking.sql"
     "07-add-nota-guardia.sql"
     "08-refactor-asistencia.sql"
+    "09-django-tables.sql"
 )
 
 # Ejecutar cada script en orden
