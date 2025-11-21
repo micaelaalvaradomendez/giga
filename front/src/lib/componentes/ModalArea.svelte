@@ -192,7 +192,7 @@
 				</div>
 
 				<div class="form-group">
-					<label>Agentes a Asignar (opcional)</label>
+					<label for="asignados">Agentes a Asignar (opcional)</label>
 					{#if loadingAgentes}
 						<div class="loading-select">Cargando agentes...</div>
 					{:else if agentes.length > 0}
@@ -366,7 +366,7 @@
 	}
 
 	.form-group input {
-		width: 90%;
+		width: 93%;
 		padding: 12px 15px;
 		border: 2px solid #e1e5e9;
 		border-radius: 8px;
@@ -471,7 +471,7 @@
 
 	/* Estilos para los nuevos campos */
 	.form-group textarea {
-		width: 100%;
+		width: 93%;
 		padding: 12px 15px;
 		border: 2px solid #e1e5e9;
 		border-radius: 8px;
@@ -501,7 +501,7 @@
 		font-size: 14px;
 		transition: all 0.3s ease;
 		font-family: inherit;
-		background-color: white;
+		background-color: rgba(170, 178, 180, 0.253);
 	}
 
 	.form-group select:focus {
@@ -511,7 +511,7 @@
 	}
 
 	.form-group select:disabled {
-		background-color: #e9ecef;
+		background-color: #e9ecefb0;
 		cursor: not-allowed;
 	}
 
@@ -530,7 +530,6 @@
 		font-style: italic;
 		border: 2px solid #e1e5e9;
 		border-radius: 8px;
-		background-color: #f8f9fa;
 		text-align: center;
 	}
 
