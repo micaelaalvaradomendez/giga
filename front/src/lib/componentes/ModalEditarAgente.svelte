@@ -1,5 +1,5 @@
 <script>
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { createEventDispatcher, onMount } from "svelte";
 
 	export let agente = null;
 	export let isOpen = false;
@@ -17,39 +17,39 @@
 	// Inicializar datos solo cuando se necesita
 	function initializeFormData() {
 		if (!agente || initialized) return;
-		
+
 		// Determinar el área del agente
 		let areaId = agente.area_id || null;
-		
+
 		// Preservar datos de dirección existentes
 		formData = {
-			nombre: agente.nombre || '',
-			apellido: agente.apellido || '',
-			dni: agente.dni || '', // Solo lectura, no editable
-			cuil: agente.cuil || '', // Solo lectura, no editable
-			email: agente.email || '',
-			telefono: agente.telefono || '',
-			fecha_nacimiento: agente.fecha_nacimiento || '',
-			categoria_revista: agente.categoria_revista || '',
-			agrupacion: agente.agrupacion || '',
+			nombre: agente.nombre || "",
+			apellido: agente.apellido || "",
+			dni: agente.dni || "", // Solo lectura, no editable
+			cuil: agente.cuil || "", // Solo lectura, no editable
+			email: agente.email || "",
+			telefono: agente.telefono || "",
+			fecha_nacimiento: agente.fecha_nacimiento || "",
+			categoria_revista: agente.categoria_revista || "",
+			agrupacion: agente.agrupacion || "",
 			// Preservar dirección completa existente
-			calle: agente.calle || '',
-			numero: agente.numero || '',
-			ciudad: agente.ciudad || '',
-			provincia: agente.provincia || '',
+			calle: agente.calle || "",
+			numero: agente.numero || "",
+			ciudad: agente.ciudad || "",
+			provincia: agente.provincia || "",
 			// Horarios opcionales
-			horario_entrada: agente.horario_entrada || '',
-			horario_salida: agente.horario_salida || '',
+			horario_entrada: agente.horario_entrada || "",
+			horario_salida: agente.horario_salida || "",
 			area_id: areaId,
-			activo: agente.activo !== false
+			activo: agente.activo !== false,
 		};
-		
-		console.log('🎯 FormData inicializado - Dirección preservada:', {
+
+		console.log("🎯 FormData inicializado - Dirección preservada:", {
 			calle: formData.calle,
 			numero: formData.numero,
 			ciudad: formData.ciudad,
 			provincia: formData.provincia,
-			area_id: areaId
+			area_id: areaId,
 		});
 		initialized = true;
 		validateForm();
@@ -58,10 +58,10 @@
 	// Validar formulario de manera eficiente
 	function validateForm() {
 		isFormValid = !!(
-			formData.nombre && 
-			formData.apellido && 
-			formData.email && 
-			formData.categoria_revista && 
+			formData.nombre &&
+			formData.apellido &&
+			formData.email &&
+			formData.categoria_revista &&
 			formData.agrupacion
 		);
 	}
@@ -69,13 +69,17 @@
 	// Validaciones por pestaña
 	function getTabValidation(tab) {
 		if (!initialized) return true;
-		
+
 		switch (tab) {
-			case 'personal':
-				return !!(formData.nombre && formData.apellido && formData.email);
-			case 'laboral':
+			case "personal":
+				return !!(
+					formData.nombre &&
+					formData.apellido &&
+					formData.email
+				);
+			case "laboral":
 				return !!(formData.categoria_revista && formData.agrupacion);
-			case 'direccion':
+			case "direccion":
 				return true; // Dirección es opcional
 			default:
 				return true;
@@ -92,19 +96,19 @@
 	$: if (!isOpen) {
 		initialized = false;
 		formData = {};
-		activeTab = 'personal'; // Reset a la primera pestaña
+		activeTab = "personal"; // Reset a la primera pestaña
 	}
 
 	function cerrarModal() {
 		if (!isSaving) {
 			isOpen = false;
-			dispatch('cerrar');
+			dispatch("cerrar");
 		}
 	}
 
 	function guardarCambios() {
 		if (isFormValid && !isSaving) {
-			dispatch('guardar', { agente, formData });
+			dispatch("guardar", { agente, formData });
 		}
 	}
 
@@ -119,7 +123,7 @@
 	}
 
 	let validateTimeout;
-	let activeTab = 'personal'; // Tab activa para reducir DOM
+	let activeTab = "personal"; // Tab activa para reducir DOM
 
 	function setActiveTab(tab) {
 		activeTab = tab;
@@ -141,36 +145,46 @@
 					<button class="btn-close" on:click={cerrarModal}>×</button>
 				{/if}
 			</div>
-			
+
 			<div class="modal-body">
 				<!-- Pestañas de navegación -->
 				<div class="tabs">
-					<button 
+					<button
 						type="button"
-						class="tab-button {activeTab === 'personal' ? 'active' : ''} {getTabValidation('personal') ? 'valid' : 'invalid'}"
-						on:click={() => setActiveTab('personal')}
+						class="tab-button {activeTab === 'personal'
+							? 'active'
+							: ''} {getTabValidation('personal')
+							? 'valid'
+							: 'invalid'}"
+						on:click={() => setActiveTab("personal")}
 						disabled={isSaving}
 					>
 						👤 Personal
-						{#if initialized && !getTabValidation('personal')}
+						{#if initialized && !getTabValidation("personal")}
 							<span class="tab-indicator">!</span>
 						{/if}
 					</button>
-					<button 
+					<button
 						type="button"
-						class="tab-button {activeTab === 'laboral' ? 'active' : ''} {getTabValidation('laboral') ? 'valid' : 'invalid'}"
-						on:click={() => setActiveTab('laboral')}
+						class="tab-button {activeTab === 'laboral'
+							? 'active'
+							: ''} {getTabValidation('laboral')
+							? 'valid'
+							: 'invalid'}"
+						on:click={() => setActiveTab("laboral")}
 						disabled={isSaving}
 					>
 						💼 Laboral
-						{#if initialized && !getTabValidation('laboral')}
+						{#if initialized && !getTabValidation("laboral")}
 							<span class="tab-indicator">!</span>
 						{/if}
 					</button>
-					<button 
+					<button
 						type="button"
-						class="tab-button {activeTab === 'direccion' ? 'active' : ''}"
-						on:click={() => setActiveTab('direccion')}
+						class="tab-button {activeTab === 'direccion'
+							? 'active'
+							: ''}"
+						on:click={() => setActiveTab("direccion")}
 						disabled={isSaving}
 					>
 						🏠 Dirección
@@ -180,232 +194,280 @@
 				<form on:submit|preventDefault={guardarCambios}>
 					<div class="form-content">
 						<!-- Información Personal -->
-						{#if activeTab === 'personal'}
-						<div class="form-section">
-							<h3>👤 Información Personal</h3>
-							
-							<div class="form-row">
+						{#if activeTab === "personal"}
+							<div class="form-section">
+								<h3>👤 Información Personal</h3>
+
+								<div class="form-row">
+									<div class="form-group">
+										<label for="nombre">Nombre *</label>
+										<input
+											type="text"
+											id="nombre"
+											bind:value={formData.nombre}
+											on:input={handleInputChange}
+											required
+											disabled={isSaving}
+										/>
+									</div>
+									<div class="form-group">
+										<label for="apellido">Apellido *</label>
+										<input
+											type="text"
+											id="apellido"
+											bind:value={formData.apellido}
+											on:input={handleInputChange}
+											required
+											disabled={isSaving}
+										/>
+									</div>
+								</div>
+
+								<div class="form-row">
+									<div class="form-group">
+										<label for="fecha_nacimiento"
+											>Fecha de Nacimiento</label
+										>
+										<input
+											type="date"
+											id="fecha_nacimiento"
+											bind:value={
+												formData.fecha_nacimiento
+											}
+											disabled={isSaving}
+										/>
+										<small class="help-text"
+											>Fecha de nacimiento (opcional)</small
+										>
+									</div>
+								</div>
+
 								<div class="form-group">
-									<label for="nombre">Nombre *</label>
-									<input 
-										type="text" 
-										id="nombre" 
-										bind:value={formData.nombre} 
+									<label for="email">Email *</label>
+									<input
+										type="email"
+										id="email"
+										bind:value={formData.email}
 										on:input={handleInputChange}
 										required
+										placeholder="usuario@ejemplo.com"
 										disabled={isSaving}
 									/>
+									<small class="help-text"
+										>Dirección de correo electrónico
+										institucional</small
+									>
 								</div>
+
 								<div class="form-group">
-									<label for="apellido">Apellido *</label>
-									<input 
-										type="text" 
-										id="apellido" 
-										bind:value={formData.apellido} 
-										on:input={handleInputChange}
-										required
+									<label for="telefono">Teléfono</label>
+									<input
+										type="tel"
+										id="telefono"
+										bind:value={formData.telefono}
 										disabled={isSaving}
 									/>
 								</div>
 							</div>
-
-
-
-							<div class="form-row">
-								<div class="form-group">
-									<label for="fecha_nacimiento">Fecha de Nacimiento</label>
-									<input 
-										type="date" 
-										id="fecha_nacimiento" 
-										bind:value={formData.fecha_nacimiento} 
-										disabled={isSaving}
-									/>
-									<small class="help-text">Fecha de nacimiento (opcional)</small>
-								</div>
-							</div>
-
-							<div class="form-group">
-								<label for="email">Email *</label>
-								<input 
-									type="email" 
-									id="email" 
-									bind:value={formData.email} 
-									on:input={handleInputChange}
-									required
-									placeholder="usuario@ejemplo.com"
-									disabled={isSaving}
-								/>
-								<small class="help-text">Dirección de correo electrónico institucional</small>
-							</div>
-
-							<div class="form-group">
-								<label for="telefono">Teléfono</label>
-								<input 
-									type="tel" 
-									id="telefono" 
-									bind:value={formData.telefono} 
-									disabled={isSaving}
-								/>
-							</div>
-						</div>
 						{/if}
 
 						<!-- Información Laboral -->
-						{#if activeTab === 'laboral'}
-						<div class="form-section">
-							<h3>💼 Información Laboral</h3>
-							
-							<div class="form-row">
-								<div class="form-group">
-									<label for="categoria_revista">Categoría Revista *</label>
-									<input 
-										type="text" 
-										id="categoria_revista" 
-										bind:value={formData.categoria_revista} 
-										on:input={handleInputChange}
-										required
-										placeholder="A1, B2, C3..."
-										disabled={isSaving}
-									/>
-									<small class="help-text">Categoría según convenio colectivo</small>
-								</div>
-							</div>
+						{#if activeTab === "laboral"}
+							<div class="form-section">
+								<h3>💼 Información Laboral</h3>
 
-							<div class="form-row">
-								<div class="form-group">
-									<label for="agrupacion">Agrupación</label>
-									<select 
-										id="agrupacion" 
-										bind:value={formData.agrupacion} 
-										on:change={handleInputChange}
-										disabled={isSaving}
-									>
-										<option value="">Seleccionar agrupación...</option>
-										<option value="EPU">EPU - Escalafón Profesional Universitario</option>
-										<option value="POMYS">POMyS - Personal de Oficios, Mantenimiento y Servicios</option>
-										<option value="PAYT">PAyT - Personal Administrativo y Técnico</option>
-									</select>
-									<small class="help-text">Agrupación laboral según escalafón</small>
-								</div>
-								<div class="form-group">
-									<label for="area_id">Área</label>
-									<select 
-										id="area_id" 
-										bind:value={formData.area_id} 
-										disabled={isSaving}
-									>
-										<option value="">Sin área asignada...</option>
-										{#each areasDisponibles as area}
-											<option value={area.id_area}>{area.nombre}</option>
-										{/each}
-									</select>
-									<small class="help-text">Área de trabajo del agente (Total áreas: {areasDisponibles.length})</small>
-								</div>
-							</div>
-
-							<div class="form-row">
-								<div class="form-group">
-									<label for="horario_entrada">Horario Entrada (Opcional)</label>
-									<input 
-										type="time" 
-										id="horario_entrada" 
-										bind:value={formData.horario_entrada} 
-										disabled={isSaving}
-									/>
-									<small class="help-text">Hora de entrada al trabajo (opcional)</small>
-								</div>
-								<div class="form-group">
-									<label for="horario_salida">Horario Salida (Opcional)</label>
-									<input 
-										type="time" 
-										id="horario_salida" 
-										bind:value={formData.horario_salida} 
-										disabled={isSaving}
-									/>
-									<small class="help-text">Hora de salida del trabajo (opcional)</small>
-								</div>
-							</div>
-
-							<div class="form-row">
-								<div class="form-group">
-									<label class="checkbox-label">
-										<input 
-											type="checkbox" 
-											bind:checked={formData.activo} 
+								<div class="form-row">
+									<div class="form-group">
+										<label for="categoria_revista"
+											>Categoría Revista *</label
+										>
+										<input
+											type="text"
+											id="categoria_revista"
+											bind:value={
+												formData.categoria_revista
+											}
+											on:input={handleInputChange}
+											required
+											placeholder="A1, B2, C3..."
 											disabled={isSaving}
 										/>
-										Agente Activo
-									</label>
-									<small class="help-text">Indica si el agente está activo en el sistema</small>
+										<small class="help-text"
+											>Categoría según convenio colectivo</small
+										>
+									</div>
+								</div>
+
+								<div class="form-row">
+									<div class="form-group">
+										<label for="agrupacion"
+											>Agrupación</label
+										>
+										<select
+											id="agrupacion"
+											bind:value={formData.agrupacion}
+											on:change={handleInputChange}
+											disabled={isSaving}
+										>
+											<option value=""
+												>Seleccionar agrupación...</option
+											>
+											<option value="EPU"
+												>EPU - Escalafón Profesional
+												Universitario</option
+											>
+											<option value="POMYS"
+												>POMyS - Personal de Oficios,
+												Mantenimiento y Servicios</option
+											>
+											<option value="PAYT"
+												>PAyT - Personal Administrativo
+												y Técnico</option
+											>
+										</select>
+										<small class="help-text"
+											>Agrupación laboral según escalafón</small
+										>
+									</div>
+									<div class="form-group">
+										<label for="area_id">Área</label>
+										<select
+											id="area_id"
+											bind:value={formData.area_id}
+											disabled={isSaving}
+										>
+											<option value=""
+												>Sin área asignada...</option
+											>
+											{#each areasDisponibles as area}
+												<option value={area.id_area}
+													>{area.nombre}</option
+												>
+											{/each}
+										</select>
+										<small class="help-text"
+											>Área de trabajo del agente (Total
+											áreas: {areasDisponibles.length})</small
+										>
+									</div>
+								</div>
+
+								<div class="form-row">
+									<div class="form-group">
+										<label for="horario_entrada"
+											>Horario Entrada (Opcional)</label
+										>
+										<input
+											type="time"
+											id="horario_entrada"
+											bind:value={
+												formData.horario_entrada
+											}
+											disabled={isSaving}
+										/>
+										<small class="help-text"
+											>Hora de entrada al trabajo
+											(opcional)</small
+										>
+									</div>
+									<div class="form-group">
+										<label for="horario_salida"
+											>Horario Salida (Opcional)</label
+										>
+										<input
+											type="time"
+											id="horario_salida"
+											bind:value={formData.horario_salida}
+											disabled={isSaving}
+										/>
+										<small class="help-text"
+											>Hora de salida del trabajo
+											(opcional)</small
+										>
+									</div>
+								</div>
+
+								<div class="form-row">
+									<div class="form-group">
+										<label class="checkbox-label">
+											<input
+												type="checkbox"
+												bind:checked={formData.activo}
+												disabled={isSaving}
+											/>
+											Agente Activo
+										</label>
+										<small class="help-text"
+											>Indica si el agente está activo en
+											el sistema</small
+										>
+									</div>
 								</div>
 							</div>
-
-
-						</div>
 						{/if}
 
 						<!-- Dirección -->
-						{#if activeTab === 'direccion'}
-						<div class="form-section">
-							<h3>🏠 Dirección</h3>
-							
-							<div class="form-row">
-								<div class="form-group">
-									<label for="calle">Calle</label>
-									<input 
-										type="text" 
-										id="calle" 
-										bind:value={formData.calle} 
-										disabled={isSaving}
-									/>
-								</div>
-								<div class="form-group">
-									<label for="numero">Número</label>
-									<input 
-										type="text" 
-										id="numero" 
-										bind:value={formData.numero} 
-										disabled={isSaving}
-									/>
-								</div>
-							</div>
+						{#if activeTab === "direccion"}
+							<div class="form-section">
+								<h3>🏠 Dirección</h3>
 
-							<div class="form-row">
-								<div class="form-group">
-									<label for="ciudad">Ciudad</label>
-									<input 
-										type="text" 
-										id="ciudad" 
-										bind:value={formData.ciudad} 
-										disabled={isSaving}
-									/>
+								<div class="form-row">
+									<div class="form-group">
+										<label for="calle">Calle</label>
+										<input
+											type="text"
+											id="calle"
+											bind:value={formData.calle}
+											disabled={isSaving}
+										/>
+									</div>
+									<div class="form-group">
+										<label for="numero">Número</label>
+										<input
+											type="text"
+											id="numero"
+											bind:value={formData.numero}
+											disabled={isSaving}
+										/>
+									</div>
 								</div>
-								<div class="form-group">
-									<label for="provincia">Provincia</label>
-									<input 
-										type="text" 
-										id="provincia" 
-										bind:value={formData.provincia} 
-										disabled={isSaving}
-									/>
+
+								<div class="form-row">
+									<div class="form-group">
+										<label for="ciudad">Ciudad</label>
+										<input
+											type="text"
+											id="ciudad"
+											bind:value={formData.ciudad}
+											disabled={isSaving}
+										/>
+									</div>
+									<div class="form-group">
+										<label for="provincia">Provincia</label>
+										<input
+											type="text"
+											id="provincia"
+											bind:value={formData.provincia}
+											disabled={isSaving}
+										/>
+									</div>
 								</div>
 							</div>
-						</div>
 						{/if}
 					</div>
 				</form>
 			</div>
 
 			<div class="modal-footer">
-				<button 
-					class="btn btn-secondary" 
+				<button
+					class="btn btn-secondary"
 					on:click={cerrarModal}
 					disabled={isSaving}
 				>
 					Cancelar
 				</button>
-				<button 
-					class="btn btn-primary" 
+				<button
+					class="btn btn-primary"
 					on:click={guardarCambios}
 					disabled={isSaving || !isFormValid}
 				>
@@ -434,6 +496,7 @@
 		align-items: center;
 		z-index: 1000;
 		padding: 2rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.modal-content {
@@ -534,6 +597,7 @@
 	.form-content {
 		padding: 1.5rem;
 		min-height: 400px; /* Altura mínima para evitar saltos */
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.form-section {
@@ -556,12 +620,16 @@
 		grid-template-columns: 1fr 1fr;
 		gap: 1rem;
 		margin-bottom: 1rem;
+		position: relative;
+		z-index: 1;
 	}
 
 	.form-group {
 		display: flex;
 		flex-direction: column;
 		margin-bottom: 1rem;
+		position: relative;
+		z-index: auto;
 	}
 
 	.form-group:last-child {
@@ -570,38 +638,42 @@
 
 	label {
 		font-weight: 500;
-		color: #495057;
+		color: #495057d2;
 		margin-bottom: 0.25rem;
 		font-size: 0.9rem;
 	}
 
-	input, select {
+	input,
+	select {
 		padding: 0.5rem;
 		border: 1px solid #ced4da;
 		border-radius: 4px;
 		font-size: 0.9rem;
-		transition: border-color 0.2s, box-shadow 0.2s;
+		transition:
+			border-color 0.2s,
+			box-shadow 0.2s;
+		position: relative;
+		z-index: 1;
+		background-color: #e9ecef;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
 	}
 
-	input:focus, select:focus {
+	input:focus,
+	select:focus {
 		outline: none;
 		border-color: #e79043;
 		box-shadow: 0 0 0 2px rgba(231, 144, 67, 0.25);
+		z-index: 10;
 	}
 
-	input:disabled, select:disabled {
-		background-color: #e9ecef;
+	input:disabled,
+	select:disabled {
+		background-color: #e9ecef81;
 		cursor: not-allowed;
+		z-index: 1;
 	}
-
-	.readonly-field {
-		background-color: #f8f9fa !important;
-		border: 1px solid #dee2e6 !important;
-		color: #6c757d !important;
-		cursor: not-allowed !important;
-		font-style: italic;
-	}
-
 	.checkbox-label {
 		display: flex;
 		align-items: center;
@@ -664,7 +736,7 @@
 
 	.btn-primary:hover:not(:disabled) {
 		transform: translateY(-1px);
-		box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 	}
 
 	.spinner {
@@ -687,7 +759,7 @@
 		.form-row {
 			grid-template-columns: 1fr;
 		}
-		
+
 		.modal-overlay {
 			padding: 1rem;
 		}

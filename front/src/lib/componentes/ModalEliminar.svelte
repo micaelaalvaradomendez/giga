@@ -20,7 +20,16 @@
 		}
 	}
 
-	$: typeLabel = type === "area" ? "área" : "agrupación";
+	$: typeLabel =
+		type === "area"
+			? "área"
+			: type === "agrupacion"
+				? "agrupación"
+				: type === "nodo"
+					? "nodo"
+					: "elemento";
+
+	$: hasChildren = itemToDelete?.children?.length > 0;
 </script>
 
 {#if isOpen && itemToDelete}
@@ -41,15 +50,37 @@
 			<div class="modal-body">
 				<div class="warning-icon">⚠️</div>
 				<p class="warning-text">
-					¿Estás seguro de que deseas eliminar {typeLabel === "área"
-						? "el área"
-						: "la agrupación"}
+					¿Estás seguro de que deseas eliminar
+					{#if type === "area"}
+						el área
+					{:else if type === "agrupacion"}
+						la agrupación
+					{:else if type === "nodo"}
+						el nodo
+					{:else}
+						este elemento
+					{/if}
 					<strong>"{itemToDelete.nombre}"</strong>?
 				</p>
 				<p class="warning-subtext">
 					Esta acción no se puede deshacer. Todos los datos asociados
 					también se eliminarán permanentemente.
 				</p>
+				{#if hasChildren}
+					<div class="children-warning">
+						<p class="warning-children">
+							⚠️ Este nodo tiene <strong
+								>{itemToDelete.children.length}</strong
+							>
+							{itemToDelete.children.length === 1
+								? "hijo"
+								: "hijos"}
+							que también {itemToDelete.children.length === 1
+								? "será eliminado"
+								: "serán eliminados"}.
+						</p>
+					</div>
+				{/if}
 			</div>
 			<div class="modal-footer">
 				<button

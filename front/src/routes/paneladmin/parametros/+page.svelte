@@ -521,7 +521,7 @@
 		position: relative;
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
-		padding: 30px 20px;
+		padding: 30px 40px;
 		margin: 0;
 		max-width: 1000px;
 		border-radius: 28px;
@@ -950,23 +950,21 @@
 		cursor: pointer;
 		font-size: 14px;
 		transition: all 0.3s ease;
-		background: #f8f9fa;
-		color: #495057;
+		background: #68686836;
 	}
 
 	.btn-icon:hover {
-		background: #e9ecef;
-		transform: translateY(-2px);
+		background: #68686836;
+		transform: translateY(-3px);
 	}
 
 	.btn-icon-danger {
-		background: #f8d7da;
-		color: #721c24;
+		background: #da414eb7;
 	}
 
 	.btn-icon-danger:hover {
-		background: #f5c6cb;
-		transform: translateY(-2px);
+		background: #ff001994;
+		transform: translateY(-3px);
 	}
 
 	/* Información de agrupación */

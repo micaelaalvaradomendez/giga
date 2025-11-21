@@ -122,7 +122,9 @@
 </div>
 
 <div class="page-header">
-	<h1>Gestión de Agentes</h1>
+	<div class="page-header-title">
+		<h1>Gestión de Agentes</h1>
+	</div>
 	<button class="btn-primary" on:click={agregarAgente}>
 		+ Añadir Agente
 	</button>
@@ -178,9 +180,9 @@
 				<th>Legajo</th>
 				<th>Nombre Completo</th>
 				<th>DNI</th>
-				<th>Rol</th>
 				<th>Categoría</th>
 				<th>Área</th>
+				<th>Rol</th>
 				<th>Acciones</th>
 			</tr>
 		</thead>
@@ -384,20 +386,23 @@
 		border-bottom: 2px solid #e9ecef;
 	}
 
-	.page-header h1 {
-		margin: 0;
-		color: #ffffff;
-		padding: 20px;
-		border-radius: 10px;
-		font-size: 2rem;
-		font-weight: 600;
-		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+	.page-header-title {
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		position: relative;
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+		color: white;
+		padding: 30px 40px;
+		margin: 0;
+		max-width: 1000px;
+		border-radius: 28px;
 		overflow: hidden;
-		isolation: isolate;
+		text-align: center;
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+			0 20px 60px rgba(30, 64, 175, 0.4);
 	}
 
-	.page-header h1::before {
+	.page-header-title::before {
 		content: "";
 		position: absolute;
 		top: 0;
@@ -406,13 +411,48 @@
 		bottom: 0;
 		background-image: linear-gradient(
 				90deg,
-				rgba(255, 255, 255, 0.07) 1px,
+				rgba(255, 255, 255, 0.03) 1px,
 				transparent 1px
 			),
-			linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+			linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 		background-size: 50px 50px;
 		animation: moveLines 20s linear infinite;
-		z-index: -1;
+	}
+
+	.page-header h1 {
+		margin: 10px;
+		font-weight: 800;
+		font-size: 30px;
+		letter-spacing: 0.2px;
+		font-family:
+			"Segoe UI",
+			system-ui,
+			-apple-system,
+			"Inter",
+			"Roboto",
+			"Helvetica Neue",
+			Arial,
+			sans-serif;
+		position: relative;
+		padding-bottom: 12px;
+		overflow: hidden;
+		display: inline-block;
+	}
+
+	.page-header-title h1::after {
+		content: "";
+		position: absolute;
+		width: 40%;
+		height: 3px;
+		bottom: 0;
+		left: 0;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.9),
+			transparent
+		);
+		animation: moveLine 2s linear infinite;
 	}
 
 	@keyframes moveLine {
@@ -475,25 +515,26 @@
 
 	.filtro-actions {
 		display: flex;
-		gap: 0.5rem;
+		gap: 10px;
+		flex-shrink: 0;
 	}
 
 	.btn-limpiar {
-		background: #f8f9fa;
-		color: #6c757d;
-		border: 1px solid #ced4da;
-		padding: 0.75rem 1rem;
+		padding: 10px 25px;
+		background: #6c757d;
+		color: white;
+		border: none;
 		border-radius: 6px;
 		font-size: 0.9rem;
 		cursor: pointer;
-		transition: all 0.2s;
+		transition: all 0.3s ease;
 		white-space: nowrap;
+		height: 42px;
 	}
 
 	.btn-limpiar:hover {
-		background: #e9ecef;
-		color: #495057;
-		border-color: #adb5bd;
+		background: #5a6268;
+		transform: translateY(-1px);
 	}
 
 	.filtros-resumen {
@@ -530,15 +571,20 @@
 	}
 
 	.btn-primary {
-		background: linear-gradient(135deg, #e79043, #f39c12);
-		color: white;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		padding: 16px 32px;
 		border: none;
-		padding: 0.75rem 1.5rem;
-		border-radius: 6px;
-		font-size: 1rem;
-		font-weight: 500;
+		border-radius: 10px;
+		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.3s ease;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		font-size: 18px;
+		background: linear-gradient(135deg, #e79043, #f39c12);
+		color: white;
 		box-shadow: 0 2px 4px rgba(237, 160, 93, 0.756);
 	}
 
@@ -549,67 +595,117 @@
 
 	.table-container {
 		overflow-x: auto;
-		border-radius: 8px;
-		border: 1px solid #e9ecef;
+		max-height: 600px;
+		overflow-y: auto;
+		position: relative;
+		border-radius: 24px;
+		box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+		background: white;
+	}
+
+	.table-container::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	.table-container::-webkit-scrollbar-track {
+		background: #f1f3f4;
+		border-radius: 10px;
+	}
+
+	.table-container::-webkit-scrollbar-thumb {
+		background: #c1c7cd;
+		border-radius: 10px;
+		transition: background 0.3s ease;
+	}
+
+	.table-container::-webkit-scrollbar-thumb:hover {
+		background: #a8aeb4;
 	}
 
 	table {
 		width: 100%;
 		border-collapse: collapse;
 		background: white;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	thead {
-		background: #f8f9fa;
+		background: linear-gradient(135deg, #4865e9 0%, #527ab6d0 100%);
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 	}
 
 	th {
-		padding: 1rem;
+		padding: 15px 20px;
 		text-align: left;
 		font-weight: 600;
-		color: #495057;
-		border-bottom: 2px solid #e9ecef;
+		color: white;
+		border-bottom: none;
+		font-size: 0.9rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		background: transparent;
 	}
 
 	td {
-		padding: 1rem;
-		border-bottom: 1px solid #e9ecef;
+		padding: 15px 20px;
+		border-bottom: 1px solid #f1f3f4;
+		vertical-align: middle;
+		font-size: 0.95rem;
+	}
+
+	tbody tr {
+		transition: all 0.3s ease;
 	}
 
 	tbody tr:hover {
 		background-color: #f8f9fa;
+		transform: scale(1.01);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 	}
 
 	.actions {
 		display: flex;
 		gap: 0.5rem;
+		align-items: center;
 	}
 
 	.btn-icon,
 	.btn-icon-danger {
-		background: none;
+		padding: 8px 12px;
 		border: none;
-		font-size: 1.2rem;
+		border-radius: 6px;
 		cursor: pointer;
-		padding: 0.25rem;
-		border-radius: 4px;
-		transition: background-color 0.2s;
+		font-size: 14px;
+		transition: all 0.3s ease;
+		background: #75757528;
 	}
 
 	.btn-icon:hover {
-		background-color: #e9ecef;
+		background: #61616134;
+		transform: translateY(-3px);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	}
+
+	.btn-icon-danger {
+		background: #e46570d8;
 	}
 
 	.btn-icon-danger:hover {
-		background-color: #f8d7da;
+		background: #be3b48;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
 	}
 
 	.btn-icon-disabled {
-		background: none;
+		padding: 8px 12px;
 		border: none;
-		font-size: 1.2rem;
-		padding: 0.25rem;
-		border-radius: 4px;
+		border-radius: 6px;
+		font-size: 14px;
+		background: #f8f9fa;
 		color: #6c757d;
 		cursor: not-allowed;
 		opacity: 0.5;
@@ -617,13 +713,56 @@
 
 	/* Estilos para badges */
 	.badge {
-		display: inline-block;
-		padding: 0.25rem 0.5rem;
+		padding: 6px 12px;
+		border-radius: 20px;
 		font-size: 0.75rem;
-		font-weight: 500;
-		border-radius: 4px;
-		text-align: center;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
 		white-space: nowrap;
+		display: inline-block;
+	}
+
+	.badge-area {
+		background: #d1ecf1;
+		color: #0c5460;
+		border: 1px solid #bee5eb;
+	}
+
+	.badge-sin-area {
+		background: #f8d7da;
+		color: #721c24;
+		border: 1px solid #f5c6cb;
+	}
+
+	.badge-role {
+		background: #cff4fc;
+		color: #055160;
+		border: 1px solid #b6effb;
+	}
+
+	.badge-sin-rol {
+		background: #f8d7da;
+		color: #721c24;
+		border: 1px solid #f5c6cb;
+	}
+
+	.badge-secondary {
+		background: #6c757d;
+		color: white;
+		border: none;
+		margin-left: 0.25rem;
+		padding: 4px 8px;
+	}
+
+	.badge-current-user {
+		background: linear-gradient(135deg, #e79043, #f39c12);
+		color: white;
+		border: none;
+		margin-left: 0.5rem;
+		font-size: 0.7rem;
+		padding: 4px 10px;
+		box-shadow: 0 2px 4px rgba(231, 144, 67, 0.3);
 	}
 
 	.badge-epu {
@@ -656,52 +795,14 @@
 		border: 1px solid #d6d8db;
 	}
 
-	.badge-role {
-		background-color: #cff4fc;
-		color: #055160;
-		border: 1px solid #b6effb;
-		margin-right: 0.25rem;
-	}
-
-	.badge-sin-rol {
-		background-color: #f8d7da;
-		color: #721c24;
-		border: 1px solid #f5c6cb;
-	}
-
-	.badge-secondary {
-		background-color: #6c757d;
-		color: white;
-		border: 1px solid #5a6268;
-		font-size: 0.75rem;
-		margin-left: 0.25rem;
-	}
-
-	.badge-area {
-		background-color: #d1ecf1;
-		color: #0c5460;
-		border: 1px solid #bee5eb;
-	}
-
-	.badge-sin-area {
-		background-color: #f8d7da;
-		color: #721c24;
-		border: 1px solid #f5c6cb;
-	}
-
-	.badge-current-user {
-		background-color: #e79043;
-		color: white;
-		border: 1px solid #d68a3b;
-		margin-left: 0.5rem;
-		font-size: 0.7rem;
-	}
-
 	.current-user {
-		background-color: #fef9e7;
+		background-color: #fff8e1 !important;
 		border-left: 4px solid #e79043;
 	}
 
+	.current-user:hover {
+		background-color: #ffecb3 !important;
+	}
 	.roles-container {
 		display: flex;
 		flex-direction: column;

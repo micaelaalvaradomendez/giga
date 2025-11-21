@@ -1,21 +1,37 @@
 <script>
-	import { onMount } from 'svelte';
-	import { rolesController } from '$lib/paneladmin/controllers';
-	import { goto } from '$app/navigation';
+	import { onMount } from "svelte";
+	import { rolesController } from "$lib/paneladmin/controllers";
+	import { goto } from "$app/navigation";
 
 	// Obtener referencias a los stores individuales para usar con $
-	const { agentes, rolesDisponibles, areasDisponibles, loading, error, filteredAgentes, estadisticas, searchTerm, filtroArea, editingRoleId, savingRoleId, currentUser } = rolesController;
+	const {
+		agentes,
+		rolesDisponibles,
+		areasDisponibles,
+		loading,
+		error,
+		filteredAgentes,
+		estadisticas,
+		searchTerm,
+		filtroArea,
+		editingRoleId,
+		savingRoleId,
+		currentUser,
+	} = rolesController;
 
 	// Verificar autenticación al montar
 	onMount(async () => {
 		try {
-			console.log('🚀 Iniciando controlador de roles...');
+			console.log("🚀 Iniciando controlador de roles...");
 			await rolesController.init();
-			console.log('✅ Controlador de roles inicializado');
+			console.log("✅ Controlador de roles inicializado");
 		} catch (err) {
-			console.error('❌ Error inicializando controlador:', err);
-			if (err.message === 'Usuario no autenticado' || err.message === 'Sesión expirada') {
-				goto('/');
+			console.error("❌ Error inicializando controlador:", err);
+			if (
+				err.message === "Usuario no autenticado" ||
+				err.message === "Sesión expirada"
+			) {
+				goto("/");
 				return;
 			}
 			// El controlador maneja el error automáticamente
@@ -34,7 +50,6 @@
 	function limpiarFiltros() {
 		rolesController.limpiarFiltros();
 	}
-
 </script>
 
 <svelte:head>
@@ -46,10 +61,13 @@
 		<div class="header-content">
 			<div class="header-title">
 				<h1>🛡️ Gestión de Roles y Permisos</h1>
-				<p>Administra los roles y permisos de los usuarios del sistema</p>
 			</div>
 			<div class="header-actions">
-				<button class="btn btn-secondary" on:click={() => rolesController.cargarDatos()} disabled={$loading}>
+				<button
+					class="btn btn-secondary"
+					on:click={() => rolesController.cargarDatos()}
+					disabled={$loading}
+				>
 					{#if $loading}
 						<span class="spinner"></span>
 					{:else}
@@ -64,8 +82,12 @@
 	<div class="page-content">
 		{#if $error}
 			<div class="alert alert-error">
-				<strong>❌ Error:</strong> {$error}
-				<button class="btn btn-sm btn-primary" on:click={() => rolesController.cargarDatos()}>
+				<strong>❌ Error:</strong>
+				{$error}
+				<button
+					class="btn btn-sm btn-primary"
+					on:click={() => rolesController.cargarDatos()}
+				>
 					Reintentar
 				</button>
 			</div>
@@ -85,18 +107,30 @@
 				</div>
 				<div class="filter-box">
 					<label for="filtroArea">Filtrar por Área:</label>
-					<select id="filtroArea" bind:value={$filtroArea} on:change={actualizarFiltroArea} class="filter-select">
-						<option value="">Todas las áreas ({$areasDisponibles.length})</option>
+					<select
+						id="filtroArea"
+						bind:value={$filtroArea}
+						on:change={actualizarFiltroArea}
+						class="filter-select"
+					>
+						<option value=""
+							>Todas las áreas ({$areasDisponibles.length})</option
+						>
 						{#each $areasDisponibles as area}
 							<option value={area.id_area}>{area.nombre}</option>
 						{/each}
 					</select>
 					{#if $areasDisponibles.length === 0}
-						<small style="color: red;">❌ No se cargaron áreas</small>
+						<small style="color: red;"
+							>❌ No se cargaron áreas</small
+						>
 					{/if}
 				</div>
 				<div class="filter-actions">
-					<button class="btn btn-secondary btn-sm" on:click={limpiarFiltros}>
+					<button
+						class="btn btn-secondary btn-sm"
+						on:click={limpiarFiltros}
+					>
 						🗑️ Limpiar
 					</button>
 				</div>
@@ -123,7 +157,10 @@
 					{/if}
 				</p>
 				{#if $searchTerm}
-					<button class="btn btn-primary" on:click={() => rolesController.limpiarBusqueda()}>
+					<button
+						class="btn btn-primary"
+						on:click={() => rolesController.limpiarBusqueda()}
+					>
 						Limpiar búsqueda
 					</button>
 				{/if}
@@ -145,66 +182,108 @@
 					</thead>
 					<tbody>
 						{#each $filteredAgentes as agente (agente.id_agente)}
-							{@const rolActual = rolesController.obtenerRolActual(agente)}
+							{@const rolActual =
+								rolesController.obtenerRolActual(agente)}
 							<tr class="agente-row">
 								<td class="legajo">
-									<span class="legajo-badge">{agente.legajo || 'N/A'}</span>
+									<span class="legajo-badge"
+										>{agente.legajo || "N/A"}</span
+									>
 								</td>
 								<td class="nombre">
 									<div class="nombre-info">
-										<strong>{agente.nombre} {agente.apellido}</strong>
-										<small>{agente.email || 'Sin email'}</small>
+										<strong
+											>{agente.nombre}
+											{agente.apellido}</strong
+										>
+										<small
+											>{agente.email ||
+												"Sin email"}</small
+										>
 									</div>
 								</td>
 								<td class="dni">
-									<span class="dni-text">{agente.dni || 'No disponible'}</span>
+									<span class="dni-text"
+										>{agente.dni || "No disponible"}</span
+									>
 								</td>
 								<td class="categoria">
 									<span class="categoria-badge">
-										{agente.categoria_revista || 'N/A'}
+										{agente.categoria_revista || "N/A"}
 									</span>
 								</td>
 								<td class="area">
 									<span class="area-badge">
-										{agente.area_nombre || rolesController.obtenerNombreArea(agente.area_id) || 'Sin área'}
+										{agente.area_nombre ||
+											rolesController.obtenerNombreArea(
+												agente.area_id,
+											) ||
+											"Sin área"}
 									</span>
 								</td>
 								<td class="rol">
 									{#if $editingRoleId === agente.id_agente}
 										<div class="rol-editor">
-											<select 
-												class="rol-select" 
-												value={rolActual?.id || rolActual?.id_rol || ''}
-												on:keydown={(e) => rolesController.handleKeyPress(e, agente, e.target.value)}
-												disabled={$savingRoleId === agente.id_agente}
+											<select
+												class="rol-select"
+												value={rolActual?.id ||
+													rolActual?.id_rol ||
+													""}
+												on:keydown={(e) =>
+													rolesController.handleKeyPress(
+														e,
+														agente,
+														e.target.value,
+													)}
+												disabled={$savingRoleId ===
+													agente.id_agente}
 											>
-												<option value="">🚫 Sin rol asignado</option>
+												<option value=""
+													>🚫 Sin rol asignado</option
+												>
 												{#each $rolesDisponibles as rol}
-													<option value={rol.id_rol}>{rol.nombre}</option>
+													<option value={rol.id_rol}
+														>{rol.nombre}</option
+													>
 												{/each}
 												{#if $rolesDisponibles.length === 0}
-													<option disabled>❌ No hay roles cargados</option>
+													<option disabled
+														>❌ No hay roles
+														cargados</option
+													>
 												{/if}
 											</select>
 											<div class="rol-actions">
-												<button 
+												<button
 													class="btn btn-sm btn-success"
 													on:click={(e) => {
-														const select = e.target.closest('.rol-editor').querySelector('.rol-select');
-														rolesController.guardarCambioRol(agente, select.value);
+														const select = e.target
+															.closest(
+																".rol-editor",
+															)
+															.querySelector(
+																".rol-select",
+															);
+														rolesController.guardarCambioRol(
+															agente,
+															select.value,
+														);
 													}}
-													disabled={$savingRoleId === agente.id_agente}
+													disabled={$savingRoleId ===
+														agente.id_agente}
 												>
 													{#if $savingRoleId === agente.id_agente}
-														<span class="spinner-sm"></span>
+														<span class="spinner-sm"
+														></span>
 													{:else}
 														✓
 													{/if}
 												</button>
-												<button 
+												<button
 													class="btn btn-sm btn-secondary"
 													on:click={rolesController.cancelarEdicionRol}
-													disabled={$savingRoleId === agente.id_agente}
+													disabled={$savingRoleId ===
+														agente.id_agente}
 												>
 													✕
 												</button>
@@ -212,8 +291,14 @@
 										</div>
 									{:else}
 										<div class="rol-display">
-											<span class="rol-badge {rolActual ? 'rol-asignado' : 'sin-rol'}">
-												{rolActual ? rolActual.nombre : 'Sin rol asignado'}
+											<span
+												class="rol-badge {rolActual
+													? 'rol-asignado'
+													: 'sin-rol'}"
+											>
+												{rolActual
+													? rolActual.nombre
+													: "Sin rol asignado"}
 											</span>
 										</div>
 									{/if}
@@ -221,15 +306,21 @@
 								<td class="acciones">
 									{#if $editingRoleId !== agente.id_agente}
 										{#if rolesController.puedeEditarRol(agente, $currentUser)}
-											<button 
+											<button
 												class="btn btn-sm btn-primary"
-												on:click={() => rolesController.iniciarEdicionRol(agente.id_agente)}
-												disabled={$savingRoleId !== null}
+												on:click={() =>
+													rolesController.iniciarEdicionRol(
+														agente.id_agente,
+													)}
+												disabled={$savingRoleId !==
+													null}
 											>
 												✏️ Cambiar Rol
 											</button>
 										{:else}
-											<span class="text-muted">Tu propio rol</span>
+											<span class="text-muted"
+												>Tu propio rol</span
+											>
 										{/if}
 									{/if}
 								</td>
@@ -266,12 +357,6 @@
 		font-size: 2rem;
 	}
 
-	.header-title p {
-		margin: 0;
-		color: #6c757d;
-		font-size: 1.1rem;
-	}
-
 	.header-actions {
 		display: flex;
 		gap: 1rem;
@@ -292,17 +377,11 @@
 		border: 1px solid #f5c6cb;
 	}
 
-	.alert-info {
-		background: #d1ecf1;
-		color: #0c5460;
-		border: 1px solid #bee5eb;
-	}
-
 	.filters-section {
 		background: white;
 		padding: 1.5rem;
 		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		margin-bottom: 2rem;
 	}
 
@@ -338,7 +417,8 @@
 		align-items: end;
 	}
 
-	.search-input, .filter-select {
+	.search-input,
+	.filter-select {
 		padding: 0.75rem 1rem;
 		border: 2px solid #e9ecef;
 		border-radius: 8px;
@@ -347,7 +427,8 @@
 		background: white;
 	}
 
-	.search-input:focus, .filter-select:focus {
+	.search-input:focus,
+	.filter-select:focus {
 		outline: none;
 		border-color: #e79043;
 		box-shadow: 0 0 0 3px rgba(231, 144, 67, 0.1);
@@ -382,7 +463,7 @@
 		padding: 4rem 2rem;
 		background: white;
 		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
 
 	.empty-icon {
@@ -403,7 +484,7 @@
 	.table-container {
 		background: white;
 		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		overflow: hidden;
 	}
 
@@ -587,7 +668,8 @@
 		background: #1e7e34;
 	}
 
-	.spinner, .spinner-sm {
+	.spinner,
+	.spinner-sm {
 		border: 2px solid transparent;
 		border-top: 2px solid currentColor;
 		border-radius: 50%;
@@ -615,12 +697,12 @@
 		.roles-table {
 			font-size: 0.85rem;
 		}
-		
+
 		.roles-table th,
 		.roles-table td {
 			padding: 0.75rem 0.5rem;
 		}
-		
+
 		.filters-row {
 			grid-template-columns: 1fr;
 			gap: 1rem;
@@ -631,25 +713,25 @@
 		.page-container {
 			padding: 1rem;
 		}
-		
+
 		.header-content {
 			flex-direction: column;
 			align-items: stretch;
 		}
-		
+
 		.filters-row {
 			grid-template-columns: 1fr;
 			gap: 1rem;
 		}
-		
+
 		.filter-box {
 			min-width: auto;
 		}
-		
+
 		.table-container {
 			overflow-x: auto;
 		}
-		
+
 		.roles-table {
 			min-width: 900px;
 		}
