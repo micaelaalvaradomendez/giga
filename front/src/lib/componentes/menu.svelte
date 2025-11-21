@@ -107,17 +107,6 @@
                         </div>
                     </a>
                     <a
-                        href="/perfil"
-                        class="menu-item"
-                        class:active={currentPath === "/perfil"}
-                        on:click={closeMenu}
-                    >
-                        <span class="menu-item-icon">👤</span>
-                        <div class="menu-item-text">
-                            <div class="menu-item-title">Mi Perfil</div>
-                        </div>
-                    </a>
-                    <a
                         href="/notificar-incidencia"
                         class="menu-item menu-item-highlight"
                         class:active={currentPath === "/notificar-incidencia"}

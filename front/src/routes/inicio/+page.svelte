@@ -1,576 +1,756 @@
 <script>
-    import { onMount } from "svelte";
-    import { goto } from "$app/navigation";
-    import AuthService from "../../lib/login/authService.js";
-    import CalendarioBase from "../../lib/componentes/calendarioBase.svelte";
-    import CambioContrasenaObligatorio from "../../lib/componentes/CambioContrasenaObligatorio.svelte";
-    import { guardiasService } from "../../lib/services.js";
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import AuthService from '../../lib/login/authService.js';
+	import ModalUsuario from '../../lib/componentes/ModalUsuario.svelte';
+	import EditarPerfil from '../../lib/componentes/EditarPerfil.svelte';
+	import CambioContrasenaObligatorio from '../../lib/componentes/CambioContrasenaObligatorio.svelte';
+	import CalendarioBase from '../../lib/componentes/calendarioBase.svelte';
+	import { guardiasService } from '../../lib/services.js';
 
-    let user = null;
-    let isLoading = true;
-    let errorMessage = "";
-    let showEditProfile = false;
-    let showMandatoryPasswordChange = false;
-    let feriados = [];
-    let guardias = [];
-    let loadingFeriados = false;
-    let loadingGuardias = false;
+	let user = null;
+	let isLoading = true;
+	let errorMessage = '';
+	let showModalUsuario = false;
+	let showEditProfile = false;
+	let showMandatoryPasswordChange = false;
+	let feriados = [];
+	let guardias = [];
+	let loadingFeriados = false;
+	let loadingGuardias = false;
+	let asistenciaHoy = null;
+	let loadingAsistencia = false;
 
-    onMount(async () => {
-        // Verificar si el usuario está autenticado
-        try {
-            const sessionCheck = await AuthService.checkSession();
+	onMount(async () => {
+		try {
+			const sessionCheck = await AuthService.checkSession();
 
-            if (sessionCheck.authenticated) {
-                user = sessionCheck.user;
+			if (sessionCheck.authenticated) {
+				user = sessionCheck.user;
 
-                // Verificar si se requiere cambio obligatorio de contraseña
-                if (
-                    sessionCheck.requires_password_change ||
-                    AuthService.requiresPasswordChange()
-                ) {
-                    showMandatoryPasswordChange = true;
-                }
+				if (sessionCheck.requires_password_change || AuthService.requiresPasswordChange()) {
+					showMandatoryPasswordChange = true;
+				}
 
-                // Cargar feriados y guardias para el calendario
-                await cargarFeriados();
-                await cargarGuardias();
-            } else {
-                // Si no está autenticado, redirigir al login
-                goto("/");
-                return;
-            }
-        } catch (error) {
-            console.error("Error verificando sesión:", error);
-            errorMessage = "Error verificando la sesión";
-            // Redirigir al login en caso de error
-            setTimeout(() => goto("/"), 2000);
-        } finally {
-            isLoading = false;
-        }
-    });
+				await Promise.all([
+					cargarFeriados(),
+					cargarGuardias(),
+					cargarEstadoAsistencia()
+				]);
+			} else {
+				goto('/');
+				return;
+			}
+		} catch (error) {
+			console.error('Error verificando sesión:', error);
+			errorMessage = 'Error verificando la sesión';
+			setTimeout(() => goto('/'), 2000);
+		} finally {
+			isLoading = false;
+		}
+	});
 
-    async function handleLogout() {
-        try {
-            await AuthService.logout();
-            goto("/");
-        } catch (error) {
-            console.error("Error durante logout:", error);
-            // Aun con error, intentar ir al login
-            goto("/");
-        }
-    }
+	async function cargarFeriados() {
+		try {
+			loadingFeriados = true;
+			const response = await guardiasService.getFeriados();
+			feriados = response.data?.results || response.data || [];
+		} catch (error) {
+			console.error('Error cargando feriados:', error);
+			feriados = [];
+		} finally {
+			loadingFeriados = false;
+		}
+	}
 
-    async function cargarFeriados() {
-        try {
-            loadingFeriados = true;
-            const response = await guardiasService.getFeriados();
-            feriados = response.data?.results || response.data || [];
-            console.log("Feriados cargados en inicio:", feriados);
-        } catch (error) {
-            console.error("Error cargando feriados:", error);
-            feriados = []; // En caso de error, asegurar que sea un array vacío
-        } finally {
-            loadingFeriados = false;
-        }
-    }
+	async function cargarGuardias() {
+		if (!user || !user.id) return;
 
-    async function cargarGuardias() {
-        if (!user || !user.id) return;
+		try {
+			loadingGuardias = true;
+			const response = await guardiasService.getGuardiasAgente(user.id);
+			guardias = response.data?.guardias || [];
+		} catch (error) {
+			console.error('Error cargando guardias:', error);
+			guardias = [];
+		} finally {
+			loadingGuardias = false;
+		}
+	}
 
-        try {
-            loadingGuardias = true;
-            const response = await guardiasService.getGuardiasAgente(user.id);
-            guardias = response.data?.guardias || [];
-            console.log("Guardias cargadas en inicio:", guardias);
-        } catch (error) {
-            console.error("Error cargando guardias:", error);
-            guardias = [];
-        } finally {
-            loadingGuardias = false;
-        }
-    }
+	async function cargarEstadoAsistencia() {
+		try {
+			loadingAsistencia = true;
+			const response = await fetch('/api/asistencia/estado/', {
+				credentials: 'include'
+			});
+			if (response.ok) {
+				const data = await response.json();
+				asistenciaHoy = data.data;
+			}
+		} catch (error) {
+			console.error('Error cargando estado asistencia:', error);
+		} finally {
+			loadingAsistencia = false;
+		}
+	}
 
-    function getRoleBadgeClass(rol) {
-        const roleClasses = {
-            Administrador: "role-admin",
-            Director: "role-director",
-            Jefatura: "role-jefatura",
-            "Agente Avanzado": "role-agente-avanzado",
-            Agente: "role-agente",
-        };
-        return roleClasses[rol] || "role-default";
-    }
+	async function handleLogout() {
+		try {
+			await AuthService.logout();
+			goto('/');
+		} catch (error) {
+			console.error('Error durante logout:', error);
+			goto('/');
+		}
+	}
 
-    function openEditProfile() {
-        showEditProfile = true;
-    }
+	function toggleModalUsuario() {
+		showModalUsuario = !showModalUsuario;
+	}
 
-    function closeEditProfile() {
-        showEditProfile = false;
-    }
+	function handleEditarPerfil() {
+		showModalUsuario = false;
+		showEditProfile = true;
+	}
 
-    function handleUserUpdated(event) {
-        // Actualizar la información del usuario en la interfaz
-        user = { ...user, ...event.detail };
-    }
+	function handleCerrarSesion() {
+		showModalUsuario = false;
+		handleLogout();
+	}
+
+	function closeEditProfile() {
+		showEditProfile = false;
+	}
+
+	function handleUserUpdated(event) {
+		user = { ...user, ...event.detail };
+	}
+
+	function getProximasGuardias() {
+		if (!guardias || guardias.length === 0) return [];
+		const hoy = new Date();
+		hoy.setHours(0, 0, 0, 0);
+		
+		return guardias
+			.filter(g => {
+				const fechaGuardia = new Date(g.fecha);
+				fechaGuardia.setHours(0, 0, 0, 0);
+				return fechaGuardia >= hoy;
+			})
+			.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+			.slice(0, 3);
+	}
+
+	function formatearFecha(fecha) {
+		if (!fecha) return '';
+		const d = new Date(fecha);
+		return d.toLocaleDateString('es-AR', {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric'
+		});
+	}
+
+	function formatearHora(hora) {
+		if (!hora) return '';
+		return hora.slice(0, 5);
+	}
+
+	function esAdministrador() {
+		if (!user || !user.roles) return false;
+		return user.roles.some(r => ['Administrador', 'Director', 'Jefatura'].includes(r.nombre));
+	}
+
+	function getIniciales() {
+		if (!user) return '';
+		const first = user.first_name?.charAt(0).toUpperCase() || '';
+		const last = user.last_name?.charAt(0).toUpperCase() || '';
+		return first + last;
+	}
 </script>
 
-{#if isLoading}
-    <div class="loading-container">
-        <div class="loading-spinner"></div>
-        <p>Verificando sesión...</p>
-    </div>
-{:else if errorMessage}
-    <div class="error-container">
-        <h2>Error</h2>
-        <p>{errorMessage}</p>
-        <p>Redirigiendo al login...</p>
-    </div>
-{:else if user}
-    <div class="welcome-container">
-        <header class="welcome-header">
-            <div class="user-info">
-                <h1>¡Bienvenido/a, {user.first_name}!</h1>
-                <div class="user-details">
-                    <div class="detail-item">
-                        <span class="label">Nombre completo:</span>
-                        <span class="value">{user.nombre_completo}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Email:</span>
-                        <span class="value">{user.email}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">CUIL:</span>
-                        <span class="value"
-                            >{AuthService.formatCuil(user.cuil)}</span
-                        >
-                    </div>
-                    {#if user.roles && user.roles.length > 0}
-                        <div class="detail-item">
-                            <span class="label">Rol principal:</span>
-                            <span
-                                class="role-badge {getRoleBadgeClass(
-                                    user.roles[0].nombre,
-                                )}"
-                            >
-                                {user.roles[0].nombre}
-                            </span>
-                        </div>
-                        {#if user.roles.length > 1}
-                            <div class="detail-item">
-                                <span class="label">Otros roles:</span>
-                                <div class="roles-list">
-                                    {#each user.roles.slice(1) as role}
-                                        <span
-                                            class="role-badge {getRoleBadgeClass(
-                                                role.nombre,
-                                            )}">{role.nombre}</span
-                                        >
-                                    {/each}
-                                </div>
-                            </div>
-                        {/if}
-                    {/if}
-                </div>
-            </div>
-            <div class="actions">
-                <button class="logout-button" on:click={handleLogout}>
-                    Cerrar Sesión
-                </button>
-            </div>
-        </header>
-
-        <main class="dashboard-content">
-            <div class="welcome-message">
-                <h2>Sesión iniciada correctamente</h2>
-                <p>Has ingresado exitosamente al sistema GIGA.</p>
-                <div class="session-info">
-                    <p>
-                        <strong>Fecha de acceso:</strong>
-                        {new Date().toLocaleString("es-AR")}
-                    </p>
-                    <p>
-                        <strong>Estado:</strong>
-                        <span class="status-active">Activo</span>
-                    </p>
-                </div>
-            </div>
-        </main>
-
-        <div class="container">
-            <div class="left-panel">
-                <div class="quick-actions">
-                    <h3>Acciones rápidas</h3>
-                    <div class="actions-grid">
-                        <a href="/asistencia">
-                            <div class="action-card">
-                                <h4>Asistencia</h4>
-                                <p>Registrar entrada/salida</p>
-                                <button class="action-button">Ir a Asistencia</button>
-                            </div>
-                        </a>
-                        <a href="/guardias">
-                            <div class="action-card">
-                                <h4>Guardias</h4>
-                                <p>Consultar guardias asignadas</p>
-                                <button class="action-button">Ver Guardias</button>
-                            </div>
-                        </a>
-                        <a href="/reportes">
-                            <div class="action-card">
-                                <h4>Reportes</h4>
-                                <p>Generar reportes del sistema</p>
-                                <button class="action-button"
-                                    >Generar Reportes</button
-                                >
-                            </div>
-                        </a>
-                        {#if AuthService.hasRole("Administrador")}
-                            <a href="/paneladmin">
-                                <div class="action-card admin-card">
-                                    <h4>Administración</h4>
-                                    <p>Panel de administrador</p>
-                                    <button class="action-button admin-button">
-                                        Panel Admin
-                                    </button>
-                                </div>
-                            </a>
-                        {/if}
-                    </div>
-                </div>
-            </div>
-            <div class="right-panel">
-                {#if loadingFeriados || loadingGuardias}
-                    <div class="loading">Cargando calendario...</div>
-                {:else}
-                    <CalendarioBase {feriados} {guardias} />
-                {/if}
-            </div>
-        </div>
-    </div>
-{:else}
-    <div class="error-container">
-        <h2>Error de autenticación</h2>
-        <p>No se pudo verificar la sesión.</p>
-        <button on:click={() => goto("/")}>Ir al Login</button>
-    </div>
+{#if showMandatoryPasswordChange}
+	<CambioContrasenaObligatorio
+		bind:showModal={showMandatoryPasswordChange}
+		on:passwordChanged={() => {
+			showMandatoryPasswordChange = false;
+		}}
+	/>
 {/if}
 
-<!-- Componente para cambio obligatorio de contraseña -->
-<CambioContrasenaObligatorio showAlert={showMandatoryPasswordChange} {user} />
+{#if showEditProfile && user}
+	<EditarPerfil
+		bind:showModal={showEditProfile}
+		{user}
+		on:close={closeEditProfile}
+		on:userUpdated={handleUserUpdated}
+	/>
+{/if}
+
+<ModalUsuario
+	bind:isOpen={showModalUsuario}
+	{user}
+	on:cerrar={toggleModalUsuario}
+	on:editarPerfil={handleEditarPerfil}
+	on:cerrarSesion={handleCerrarSesion}
+/>
+
+{#if isLoading}
+	<div class="loading-container">
+		<div class="loading-spinner"></div>
+		<p>Cargando dashboard...</p>
+	</div>
+{:else if errorMessage}
+	<div class="error-container">
+		<h2>Error</h2>
+		<p>{errorMessage}</p>
+		<p>Redirigiendo al login...</p>
+	</div>
+{:else if user}
+	<div class="dashboard-container">
+		<!-- Header con usuario -->
+		<header class="dashboard-header">
+			<div class="header-content">
+				<h1 class="dashboard-title">¡Bienvenido/a, {user.first_name}!</h1>
+				
+				<!-- Avatar clickeable -->
+				<button class="user-avatar" on:click={toggleModalUsuario}>
+					<div class="avatar-circle">
+						{getIniciales()}
+					</div>
+					<span class="avatar-name">{user.first_name}</span>
+					<span class="avatar-icon">▼</span>
+				</button>
+			</div>
+		</header>
+
+		<!-- Layout principal: 2 columnas -->
+		<div class="dashboard-layout">
+			<!-- Columna izquierda: Tarjetas funcionales -->
+			<div class="left-column">
+				<!-- Tarjeta de Guardias -->
+				<div class="dashboard-card guardias-card">
+					<div class="card-header">
+						<h2>🛡️ Mis Guardias</h2>
+						<button class="btn-ir" on:click={() => goto('/guardias')}>
+							Ir a Guardias →
+						</button>
+					</div>
+					<div class="card-body">
+						{#if loadingGuardias}
+							<div class="card-loading">
+								<div class="loading-spinner-small"></div>
+								<span>Cargando...</span>
+							</div>
+						{:else}
+							{@const proximasGuardias = getProximasGuardias()}
+							{#if proximasGuardias.length > 0}
+								<div class="guardias-list">
+									{#each proximasGuardias as guardia}
+										<div class="guardia-item">
+											<div class="guardia-fecha">
+												<span class="fecha-dia">{new Date(guardia.fecha).getDate()}</span>
+												<span class="fecha-mes">
+													{new Date(guardia.fecha).toLocaleDateString('es-AR', { month: 'short' })}
+												</span>
+											</div>
+											<div class="guardia-info">
+												<span class="guardia-turno">{guardia.turno || 'Turno completo'}</span>
+												<span class="guardia-detalle">
+													{guardia.hora_inicio ? `${formatearHora(guardia.hora_inicio)} - ${formatearHora(guardia.hora_fin)}` : 'Día completo'}
+												</span>
+											</div>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<div class="empty-state">
+									<span class="empty-icon">📅</span>
+									<p>No tienes guardias próximas asignadas</p>
+								</div>
+							{/if}
+						{/if}
+					</div>
+				</div>
+
+				<!-- Tarjeta de Asistencia -->
+				<div class="dashboard-card asistencia-card">
+					<div class="card-header">
+						<h2>Asistencia Hoy</h2>
+						<button class="btn-ir" on:click={() => goto('/asistencia')}>
+							Ir a Asistencia →
+						</button>
+					</div>
+					<div class="card-body">
+						{#if loadingAsistencia}
+							<div class="card-loading">
+								<div class="loading-spinner-small"></div>
+								<span>Cargando...</span>
+							</div>
+						{:else if asistenciaHoy}
+							<div class="asistencia-estado">
+								<div class="estado-item {asistenciaHoy.tiene_entrada ? 'marcado' : 'pendiente'}">
+									<span class="estado-icon">{asistenciaHoy.tiene_entrada ? '✓' : '○'}</span>
+									<div class="estado-info">
+										<span class="estado-label">Entrada</span>
+										<span class="estado-hora">
+											{asistenciaHoy.hora_entrada ? formatearHora(asistenciaHoy.hora_entrada) : 'Sin marcar'}
+										</span>
+									</div>
+								</div>
+								<div class="estado-item {asistenciaHoy.tiene_salida ? 'marcado' : 'pendiente'}">
+									<span class="estado-icon">{asistenciaHoy.tiene_salida ? '✓' : '○'}</span>
+									<div class="estado-info">
+										<span class="estado-label">Salida</span>
+										<span class="estado-hora">
+											{asistenciaHoy.hora_salida ? formatearHora(asistenciaHoy.hora_salida) : 'Sin marcar'}
+										</span>
+									</div>
+								</div>
+							</div>
+						{:else}
+							<div class="empty-state">
+								<span class="empty-icon">📋</span>
+								<p>No hay registro de asistencia hoy</p>
+							</div>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Botones de acceso rápido -->
+				<div class="dashboard-card accesos-card">
+					<div class="card-header">
+						<h2>Accesos Rápidos</h2>
+					</div>
+					<div class="card-body">
+						<div class="accesos-grid">
+							<button class="acceso-btn" on:click={() => goto('/reportes')}>
+								<span class="acceso-icon">📊</span>
+								<span class="acceso-label">Reportes</span>
+							</button>
+							<button class="acceso-btn" on:click={() => goto('/guardias')}>
+								<span class="acceso-icon">🛡️</span>
+								<span class="acceso-label">Guardias</span>
+							</button>
+							{#if esAdministrador()}
+								<button class="acceso-btn admin" on:click={() => goto('/paneladmin')}>
+									<span class="acceso-icon">⚙️</span>
+									<span class="acceso-label">Administración</span>
+								</button>
+							{/if}
+							<button class="acceso-btn" on:click={() => goto('/organigrama')}>
+								<span class="acceso-icon">🏢</span>
+								<span class="acceso-label">Organigrama</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Columna derecha: Calendario -->
+			<div class="right-column">
+                <div class="card-body calendario-body">
+                    <CalendarioBase {feriados} {guardias} />
+                </div>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
-    .container {
-        display: flex;
-        gap: 2rem;
-        margin-top: 30px;
-    }
+	.loading-container,
+	.error-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 80vh;
+		padding: 2rem;
+	}
 
-    .left-panel {
-        flex: 1;
-    }
+	.loading-spinner {
+		border: 4px solid #f3f3f3;
+		border-top: 4px solid #667eea;
+		border-radius: 50%;
+		width: 50px;
+		height: 50px;
+		animation: spin 1s linear infinite;
+		margin-bottom: 1rem;
+	}
 
-    .right-panel {
-        flex: 1;
-    }
+	@keyframes spin {
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
+	}
 
-    .loading-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 50vh;
-        gap: 1rem;
-    }
+	.dashboard-container {
+		min-height: 100vh;
+		padding: 2rem;
+	}
 
-    .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #e79043;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
+	.dashboard-header {
+		margin-bottom: 2rem;
+	}
 
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(360deg);
-        }
-    }
+	.header-content {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		max-width: 1400px;
+		margin: 0 auto;
+	}
 
-    .error-container {
-        text-align: center;
-        padding: 2rem;
-        color: #d32f2f;
-    }
+	.dashboard-title {
+		font-size: 2rem;
+		font-weight: 700;
+		color: #1a1a1a;
+		margin: 0;
+	}
 
-    .welcome-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem;
-        font-family: sans-serif;
-    }
+	.user-avatar {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		background: white;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 50px;
+		cursor: pointer;
+		transition: all 0.2s;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	}
 
-    .welcome-header {
-        background: linear-gradient(135deg, #e79043, #d17a2e);
-        color: white;
-        padding: 2rem;
-        border-radius: 15px;
-        margin-bottom: 2rem;
-        box-shadow: 0 8px 25px rgba(231, 144, 67, 0.3);
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
+	.user-avatar:hover {
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		transform: translateY(-2px);
+	}
 
-    .user-info h1 {
-        margin: 0 0 1rem 0;
-        font-size: 2.5rem;
-        font-weight: 700;
-    }
+	.avatar-circle {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1rem;
+		font-weight: bold;
+		color: white;
+	}
 
-    .user-details {
-        display: grid;
-        gap: 0.8rem;
-    }
+	.avatar-name {
+		font-weight: 600;
+		color: #1a1a1a;
+	}
 
-    .detail-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
+	.avatar-icon {
+		font-size: 0.7rem;
+		color: #6c757d;
+	}
 
-    .label {
-        font-weight: 600;
-        min-width: 120px;
-    }
+	.dashboard-layout {
+		max-width: 1400px;
+		margin: 0 auto;
+		display: grid;
+		grid-template-columns: 380px 1fr;
+		gap: 2rem;
+	}
 
-    .value {
-        background: rgba(255, 255, 255, 0.2);
-        padding: 0.3rem 0.8rem;
-        border-radius: 8px;
-        font-weight: 500;
-    }
+	.left-column {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
 
-    .role-badge {
-        padding: 0.4rem 1rem;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
+	.right-column {
+		display: flex;
+		flex-direction: column;
+	}
 
-    .role-admin {
-        background: #d32f2f;
-        color: white;
-    }
+	.dashboard-card {
+		background: white;
+		border-radius: 16px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+		overflow: hidden;
+		transition: all 0.3s;
+	}
 
-    .role-director {
-        background: #7b1fa2;
-        color: white;
-    }
+	.dashboard-card:hover {
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+	}
 
-    .role-jefatura {
-        background: #303f9f;
-        color: white;
-    }
+	.card-header {
+		padding: 1.5rem;
+		border-bottom: 2px solid #f1f3f5;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
 
-    .role-agente-avanzado {
-        background: #388e3c;
-        color: white;
-    }
+	.card-header h2 {
+		margin: 0;
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: #1a1a1a;
+	}
 
-    .role-agente {
-        background: #1976d2;
-        color: white;
-    }
+	.btn-ir {
+		padding: 0.5rem 1rem;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		border-radius: 8px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
 
-    .role-default {
-        background: #616161;
-        color: white;
-    }
+	.btn-ir:hover {
+		transform: translateX(4px);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+	}
 
-    .roles-list {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
+	.card-body {
+		padding: 1.5rem;
+	}
 
-    .actions {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
+	.card-loading {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		padding: 2rem;
+		color: #6c757d;
+	}
 
-    .edit-profile-button {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        border: 2px solid rgba(255, 255, 255, 0.5);
-        padding: 0.8rem 1.5rem;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
+	.loading-spinner-small {
+		border: 3px solid #f3f3f3;
+		border-top: 3px solid #667eea;
+		border-radius: 50%;
+		width: 24px;
+		height: 24px;
+		animation: spin 1s linear infinite;
+	}
 
-    .edit-profile-button:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: white;
-    }
+	.empty-state {
+		text-align: center;
+		padding: 2rem;
+		color: #6c757d;
+	}
 
-    .logout-button {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: 2px solid white;
-        padding: 0.8rem 1.5rem;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
+	.empty-icon {
+		font-size: 3rem;
+		display: block;
+		margin-bottom: 1rem;
+	}
 
-    .logout-button:hover {
-        background: white;
-        color: #e79043;
-    }
+	/* Guardias */
+	.guardias-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
 
-    .dashboard-content {
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-    }
+	.guardia-item {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem;
+		background: linear-gradient(135deg, #fff7e6 0%, #fff3dc 100%);
+		border-radius: 12px;
+		border-left: 4px solid #ffc107;
+	}
 
-    .welcome-message {
-        background: white;
-        padding: 2rem;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        text-align: center;
-    }
+	.guardia-fecha {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background: white;
+		padding: 0.75rem;
+		border-radius: 8px;
+		min-width: 60px;
+	}
 
-    .welcome-message h2 {
-        color: #e79043;
-        margin: 0 0 1rem 0;
-        font-size: 1.8rem;
-    }
+	.fecha-dia {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #1a1a1a;
+		line-height: 1;
+	}
 
-    .session-info {
-        margin-top: 1.5rem;
-        padding-top: 1rem;
-        border-top: 1px solid #eee;
-        display: flex;
-        justify-content: center;
-        gap: 2rem;
-        flex-wrap: wrap;
-    }
+	.fecha-mes {
+		font-size: 0.75rem;
+		color: #6c757d;
+		text-transform: uppercase;
+	}
 
-    .status-active {
-        color: #4caf50;
-        font-weight: 600;
-    }
+	.guardia-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
 
-    .quick-actions {
-        background: white;
-        padding: 2rem;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
+	.guardia-turno {
+		font-weight: 600;
+		color: #1a1a1a;
+	}
 
-    .quick-actions h3 {
-        color: #333;
-        margin: 0 0 1.5rem 0;
-        font-size: 1.5rem;
-        text-align: center;
-    }
+	.guardia-detalle {
+		font-size: 0.875rem;
+		color: #6c757d;
+	}
 
-    .actions-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-    }
+	/* Asistencia */
+	.asistencia-estado {
+		display: flex;
+		gap: 1rem;
+	}
 
-    .action-card {
-        background: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 12px;
-        text-align: center;
-        border: 2px solid transparent;
-        transition: all 0.3s ease;
-    }
+	.estado-item {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem;
+		border-radius: 12px;
+		border: 2px solid;
+	}
 
-    .action-card:hover {
-        border-color: #e79043;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(231, 144, 67, 0.2);
-    }
+	.estado-item.marcado {
+		background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+		border-color: #28a745;
+	}
 
-    .admin-card {
-        background: linear-gradient(135deg, #fff3e0, #ffcc02);
-    }
+	.estado-item.pendiente {
+		background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+		border-color: #dc3545;
+	}
 
-    .action-card h4 {
-        color: #333;
-        margin: 0 0 0.5rem 0;
-        font-size: 1.2rem;
-    }
+	.estado-icon {
+		font-size: 1.5rem;
+		font-weight: bold;
+	}
 
-    .action-card p {
-        color: #666;
-        margin: 0 0 1rem 0;
-        font-size: 0.9rem;
-    }
+	.estado-item.marcado .estado-icon {
+		color: #28a745;
+	}
 
-    .action-button {
-        background: #e79043;
-        color: white;
-        border: none;
-        padding: 0.7rem 1.5rem;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        width: 100%;
-    }
+	.estado-item.pendiente .estado-icon {
+		color: #dc3545;
+	}
 
-    .action-button:hover {
-        background: #d17a2e;
-        transform: translateY(-1px);
-    }
+	.estado-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
 
-    .admin-button {
-        background: #d32f2f;
-    }
+	.estado-label {
+		font-size: 0.75rem;
+		color: #6c757d;
+		text-transform: uppercase;
+		font-weight: 600;
+	}
 
-    .admin-button:hover {
-        background: #b71c1c;
-    }
+	.estado-hora {
+		font-weight: 600;
+		font-size: 1rem;
+		color: #1a1a1a;
+	}
 
-    @media (max-width: 768px) {
-        .welcome-header {
-            flex-direction: column;
-            text-align: center;
-        }
+	/* Accesos rápidos */
+	.accesos-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1rem;
+	}
 
-        .user-info h1 {
-            font-size: 2rem;
-        }
+	.acceso-btn {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 1.5rem 1rem;
+		background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+		border: 2px solid #e0e0e0;
+		border-radius: 12px;
+		cursor: pointer;
+		transition: all 0.2s;
+		font-weight: 600;
+	}
 
-        .session-info {
-            flex-direction: column;
-            gap: 0.5rem;
-        }
+	.acceso-btn:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+		border-color: #667eea;
+	}
 
-        .actions-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+	.acceso-btn.admin {
+		background: linear-gradient(135deg, #fff7e6 0%, #fff3dc 100%);
+		border-color: #ffc107;
+	}
+
+	.acceso-icon {
+		font-size: 2rem;
+	}
+
+	.acceso-label {
+		font-size: 0.9rem;
+		color: #1a1a1a;
+	}
+
+	/* Calendario */
+	.calendario-card {
+		height: fit-content;
+		position: sticky;
+		top: 2rem;
+	}
+
+	.calendario-body {
+		padding: 1rem;
+	}
+
+	@media (max-width: 1024px) {
+		.dashboard-layout {
+			grid-template-columns: 1fr;
+		}
+
+		.calendario-card {
+			position: static;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.dashboard-container {
+			padding: 1rem;
+		}
+
+		.dashboard-title {
+			font-size: 1.5rem;
+		}
+
+		.user-avatar {
+			padding: 0.5rem;
+		}
+
+		.avatar-name {
+			display: none;
+		}
+
+		.accesos-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.asistencia-estado {
+			flex-direction: column;
+		}
+	}
 </style>

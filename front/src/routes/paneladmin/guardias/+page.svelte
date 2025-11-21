@@ -1,36 +1,42 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import CalendarioBase from '$lib/componentes/calendarioBase.svelte';
-  import { guardiasService } from '$lib/services.js';
+  import { guardiasMainController } from '$lib/paneladmin/controllers';
 
+  // Items de navegación
   const items = [
     { title: 'Planificador', desc: 'Crear nueva guardia', href: '/paneladmin/guardias/planificador', emoji: '➕' },
     { title: 'Aprobaciones', desc: 'Revisar y publicar', href: '/paneladmin/guardias/aprobaciones', emoji: '📝' }
   ];
 
-  let loading = false;
-  let error = '';
-  let guardias = [];
-  let guardiasParaCalendario = [];
-  let feriados = [];
-  let fechaSeleccionada = null;
-  let guardiasDeFecha = [];
-  let mostrarModal = false;
+  // Obtener stores del controller
+  const {
+    loading,
+    error,
+    guardiasParaCalendario,
+    feriados,
+    fechaSeleccionada,
+    guardiasDeFecha,
+    mostrarModal,
+    estadisticas
+  } = guardiasMainController;
 
   onMount(async () => {
-    await cargarDatos();
+    console.log('🔄 Componente de guardias montado, iniciando controller...');
+    await guardiasMainController.init();
+    console.log('✅ Controller de guardias inicializado');
     
-    // Recargar cuando la página vuelve a ser visible (después de navegar de vuelta)
+    // Recargar cuando la página vuelve a ser visible
     if (browser) {
       const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
-          cargarDatos();
+          guardiasMainController.recargar();
         }
       };
       
       const handleFocus = () => {
-        cargarDatos();
+        guardiasMainController.recargar();
       };
       
       document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -43,164 +49,14 @@
     }
   });
 
-  async function cargarDatos() {
-    await Promise.all([
-      cargarGuardias(),
-      cargarFeriados()
-    ]);
-  }
-
-  async function cargarGuardias() {
-    try {
-      loading = true;
-      error = '';
-      const response = await guardiasService.getResumenGuardias('');
-      guardias = response.data?.guardias || [];
-      
-      // Agrupar guardias por fecha, área y hora para mostrar en calendario
-      agruparGuardias();
-      
-      console.log('Guardias cargadas:', guardias);
-      console.log('Guardias para calendario:', guardiasParaCalendario);
-    } catch (e) {
-      error = 'Error al cargar las guardias';
-      console.error('Error cargando guardias:', e);
-    } finally {
-      loading = false;
-    }
-  }
-
-  async function cargarFeriados() {
-    try {
-      const response = await guardiasService.getFeriados();
-      feriados = response.data?.results || response.data || [];
-      console.log('Feriados cargados:', feriados);
-    } catch (e) {
-      console.error('Error cargando feriados:', e);
-      feriados = [];
-    }
-  }
-
-  /**
-   * Calcula todas las fechas que abarca una guardia.
-   * Si la hora_fin es menor que hora_inicio, significa que cruza medianoche.
-   */
-  function calcularFechasGuardia(fechaInicio, horaInicio, horaFin) {
-    const fechas = [];
-    const fechaInicioDate = new Date(fechaInicio + 'T00:00:00');
-    
-    // Extraer horas (formato HH:MM:SS o HH:MM)
-    const horaInicioNum = parseInt(horaInicio.split(':')[0]);
-    const horaFinNum = parseInt(horaFin.split(':')[0]);
-    
-    // Agregar fecha de inicio
-    fechas.push(fechaInicio);
-    
-    // Si la hora de fin es menor o igual que la hora de inicio, cruza medianoche
-    if (horaFinNum <= horaInicioNum) {
-      // Agregar día siguiente
-      const fechaSiguiente = new Date(fechaInicioDate);
-      fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
-      const fechaSiguienteStr = fechaSiguiente.toISOString().split('T')[0];
-      fechas.push(fechaSiguienteStr);
-    }
-    
-    return fechas;
-  }
-
-  function agruparGuardias() {
-    // Estructura: { fecha: { 'area-hora': [guardias] } }
-    const agrupadas = {};
-    
-    guardias.forEach(guardia => {
-      // Calcular todas las fechas que abarca esta guardia
-      const fechasGuardia = calcularFechasGuardia(
-        guardia.fecha, 
-        guardia.hora_inicio, 
-        guardia.hora_fin
-      );
-      
-      // Agregar la guardia a todas las fechas que abarca
-      fechasGuardia.forEach(fecha => {
-        if (!agrupadas[fecha]) {
-          agrupadas[fecha] = {};
-        }
-        
-        // Agrupar por área y hora para separar guardias de diferentes áreas/horarios
-        const clave = `${guardia.area_nombre || 'sin-area'}-${guardia.hora_inicio}-${guardia.hora_fin}`;
-        
-        if (!agrupadas[fecha][clave]) {
-          agrupadas[fecha][clave] = {
-            area_nombre: guardia.area_nombre || 'Sin área',
-            hora_inicio: guardia.hora_inicio,
-            hora_fin: guardia.hora_fin,
-            tipo: guardia.tipo,
-            agentes: []
-          };
-        }
-        
-        // Solo agregar el agente si no está ya en el grupo (evitar duplicados)
-        const yaExiste = agrupadas[fecha][clave].agentes.some(
-          a => a.id_guardia === guardia.id_guardia
-        );
-        if (!yaExiste) {
-          agrupadas[fecha][clave].agentes.push(guardia);
-        }
-      });
-    });
-    
-    // Convertir a formato para el calendario
-    guardiasParaCalendario = [];
-    Object.keys(agrupadas).forEach(fecha => {
-      Object.values(agrupadas[fecha]).forEach(grupo => {
-        guardiasParaCalendario.push({
-          fecha,
-          tipo: grupo.tipo,
-          estado: 'planificada',
-          area_nombre: grupo.area_nombre,
-          agente_nombre: `${grupo.area_nombre} (${grupo.agentes.length} agente${grupo.agentes.length > 1 ? 's' : ''})`,
-          hora_inicio: grupo.hora_inicio || '08:00:00',
-          hora_fin: grupo.hora_fin || '16:00:00',
-          agentes: grupo.agentes,
-          cantidad: grupo.agentes.length
-        });
-      });
-    });
-  }
-
+  // Handlers delegados al controller
   function handleDayClick(event) {
     const { date, guardias: guardiasDelDia } = event.detail;
-    if (guardiasDelDia && guardiasDelDia.length > 0) {
-      const fechaStr = date.toISOString().split('T')[0];
-      fechaSeleccionada = fechaStr;
-      
-      // Buscar todas las guardias de esa fecha (incluyendo las que cruzan medianoche)
-      guardiasDeFecha = guardias.filter(g => {
-        const fechasGuardia = calcularFechasGuardia(g.fecha, g.hora_inicio, g.hora_fin);
-        return fechasGuardia.includes(fechaStr);
-      });
-      
-      mostrarModal = true;
-      
-      console.log('Guardias del día seleccionado:', guardiasDeFecha);
-    }
+    guardiasMainController.handleDayClick(date, guardiasDelDia);
   }
 
-  function cerrarModal() {
-    mostrarModal = false;
-    fechaSeleccionada = null;
-    guardiasDeFecha = [];
-  }
-
-  function formatearFecha(fechaStr) {
-    if (!fechaStr) return '';
-    const fecha = new Date(fechaStr + 'T00:00:00');
-    return fecha.toLocaleDateString('es-AR', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
+  function handleCerrarModal() {
+    guardiasMainController.cerrarModal();
   }
 </script>
 
@@ -224,18 +80,18 @@
   </div>
 
   <!-- Estadísticas de guardias -->
-  {#if guardias.length > 0}
+  {#if $estadisticas.total > 0}
     <div class="estadisticas">
       <div class="stat-card">
-        <div class="stat-number">{guardias.length}</div>
+        <div class="stat-number">{$estadisticas.total}</div>
         <div class="stat-label">Guardias Total</div>
       </div>
       <div class="stat-card">
-        <div class="stat-number">{guardias.filter(g => g.estado === 'planificada').length}</div>
+        <div class="stat-number">{$estadisticas.planificadas}</div>
         <div class="stat-label">Planificadas</div>
       </div>
       <div class="stat-card">
-        <div class="stat-number">{guardias.filter(g => g.activa).length}</div>
+        <div class="stat-number">{$estadisticas.activas}</div>
         <div class="stat-label">Activas</div>
       </div>
     </div>
@@ -244,21 +100,21 @@
   <!-- Calendario de guardias -->
   <div class="calendario-section">
     <h2>Calendario de Guardias</h2>
-    {#if error}
-      <div class="alert alert-error">{error}</div>
+    {#if $error}
+      <div class="alert alert-error">{$error}</div>
     {/if}
     
     <div class="calendario-container">
-      {#if loading}
+      {#if $loading}
         <div class="loading-container">
           <div class="loading-spinner"></div>
           <p>Cargando calendario...</p>
         </div>
       {:else}
         <CalendarioBase 
-          {feriados} 
-          guardias={guardiasParaCalendario} 
-          on:dayclick={handleDayClick} 
+          feriados={$feriados}
+          guardias={$guardiasParaCalendario}
+          on:dayclick={handleDayClick}
         />
       {/if}
     </div>
@@ -266,22 +122,17 @@
 </section>
 
 <!-- Modal para mostrar guardias de una fecha -->
-{#if mostrarModal}
-  <div class="modal-overlay" on:click={cerrarModal}>
+{#if $mostrarModal}
+  <div class="modal-overlay" on:click={handleCerrarModal}>
     <div class="modal-content" on:click|stopPropagation>
       <div class="modal-header">
-        <h3>Guardias del {formatearFecha(fechaSeleccionada)}</h3>
-        <button class="close-button" on:click={cerrarModal}>&times;</button>
+        <h3>Guardias del {guardiasMainController.formatearFecha($fechaSeleccionada)}</h3>
+        <button class="close-button" on:click={handleCerrarModal}>&times;</button>
       </div>
       <div class="modal-body">
-        {#if guardiasDeFecha.length > 0}
+        {#if $guardiasDeFecha.length > 0}
           <!-- Agrupar por área y horario -->
-          {@const guardiasPorAreaHora = guardiasDeFecha.reduce((acc, g) => {
-            const clave = `${g.area_nombre || 'Sin área'} (${g.hora_inicio} - ${g.hora_fin})`;
-            if (!acc[clave]) acc[clave] = [];
-            acc[clave].push(g);
-            return acc;
-          }, {})}
+          {@const guardiasPorAreaHora = guardiasMainController.agruparGuardiasPorAreaHora($guardiasDeFecha)}
           
           <div class="guardias-lista">
             {#each Object.entries(guardiasPorAreaHora) as [grupo, guardiasGrupo]}

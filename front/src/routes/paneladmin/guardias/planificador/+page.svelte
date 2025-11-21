@@ -1,470 +1,86 @@
 <script>
   import { onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
-  import { goto, invalidateAll } from '$app/navigation';
-  import { page } from '$app/stores';
-  import { personasService, guardiasService } from '$lib/services.js';
+  import { planificadorGuardiasController } from '$lib/paneladmin/controllers';
 
-  let loading = false;
-  let error = '';
-  let success = '';
-  let paso = 1;
-
-  let nombre = '';
-  let tipo = 'regular';
-  let areaSeleccionada = null;
-  let fechaInicio = '';
-  let horaInicio = '08:00';
-  let fechaFin = '';
-  let horaFin = '16:00';
-  let observaciones = '';
-
-  let areas = [];
-  let agentesDisponibles = [];
-  let agentesSeleccionados = new Set();
-  let agentesConConflicto = new Set();
-
-  let toastVisible = false;
-  let toastMensaje = '';
-  let toastTipo = 'success';
-  
-  // Modo edición
-  let modoEdicion = false;
-  let cronogramaId = null;
-  let token = null;
+  // Obtener stores del controller
+  const {
+    loading,
+    error,
+    success,
+    paso,
+    nombre,
+    tipo,
+    areaSeleccionada,
+    fechaInicio,
+    horaInicio,
+    fechaFin,
+    horaFin,
+    observaciones,
+    areas,
+    agentesDisponibles,
+    agentesSeleccionados,
+    agentesConConflicto,
+    toastVisible,
+    toastMensaje,
+    toastTipo,
+    modoEdicion,
+    cronogramaId
+  } = planificadorGuardiasController;
 
   onMount(async () => {
-    token = localStorage.getItem('token');
+    console.log('🔄 Componente de planificador montado, iniciando controller...');
     
     // Verificar si viene parámetro de edición
     const urlParams = new URLSearchParams(window.location.search);
-    const editarId = urlParams.get('editar');
+    await planificadorGuardiasController.init(urlParams);
     
-    await cargarAreas();
-    
-    if (editarId) {
-      modoEdicion = true;
-      cronogramaId = editarId;
-      await cargarCronogramaParaEditar(editarId);
-    }
+    console.log('✅ Controller de planificador inicializado');
   });
 
-  async function cargarAreas() {
-    try {
-      loading = true;
-      error = '';
-      const response = await personasService.getAreas(token);
-      // La API devuelve { data: { results: [...] } }
-      areas = response.data?.results || response.data?.data?.results || [];
-      console.log('Áreas cargadas:', areas);
-    } catch (e) {
-      error = 'Error al cargar las áreas';
-      console.error('Error cargando áreas:', e);
-    } finally {
-      loading = false;
-    }
-  }
-  
-  async function cargarCronogramaParaEditar(id) {
-    try {
-      loading = true;
-      error = '';
-      
-      // Cargar cronograma y sus guardias
-      const responseCronograma = await guardiasService.getCronograma(id, token);
-      const cronograma = responseCronograma.data;
-      
-      console.log('Cronograma cargado para editar:', cronograma);
-      
-      // Pre-llenar formulario
-      nombre = cronograma.nombre || '';
-      tipo = cronograma.tipo || 'regular';
-      areaSeleccionada = cronograma.id_area;
-      observaciones = cronograma.observaciones || '';
-      
-      // Cargar agentes del área primero
-      await cargarAgentesDeArea();
-      
-      // Cargar guardias del cronograma
-      const responseGuardias = await guardiasService.getResumenGuardias(`id_cronograma=${id}`, token);
-      const guardias = responseGuardias.data?.guardias || [];
-      
-      console.log('Guardias del cronograma:', guardias);
-      
-      if (guardias.length > 0) {
-        // Tomar datos de la primera guardia (asumiendo que todas tienen las mismas fechas/horas)
-        const primeraGuardia = guardias[0];
-        fechaInicio = primeraGuardia.fecha;
-        horaInicio = primeraGuardia.hora_inicio;
-        horaFin = primeraGuardia.hora_fin;
-        
-        // Pre-seleccionar agentes
-        agentesSeleccionados = new Set(guardias.map(g => String(g.id_agente)));
-      }
-      
-      mostrarToast('📝 Editando cronograma', 'info');
-      
-    } catch (e) {
-      error = 'Error al cargar cronograma para editar';
-      console.error('Error cargando cronograma:', e);
-      mostrarToast('❌ Error al cargar cronograma', 'error');
-    } finally {
-      loading = false;
-    }
+  // Handlers delegados al controller
+  async function handleAreaChange() {
+    await planificadorGuardiasController.cargarAgentesDeArea();
   }
 
-  async function cargarAgentesDeArea() {
-    if (!areaSeleccionada) return;
-
-    try {
-      loading = true;
-      error = '';
-      const response = await personasService.getAgentes();
-      // La API puede devolver { results: [...] } (paginado) o { data: { results: [...] } }
-      const todosAgentes = response.data?.results || response.data?.data?.results || response.data || [];
-      console.log('Agentes cargados:', todosAgentes);
-
-      // Filtrar agentes que pertenecen al área seleccionada y están activos
-      // Los agentes tienen area_id que debe coincidir con areaSeleccionada
-      agentesDisponibles = todosAgentes.filter(agente => {
-        return agente.area_id === areaSeleccionada && agente.activo !== false;
-      });
-      console.log('Agentes disponibles para área', areaSeleccionada, ':', agentesDisponibles);
-
-      if (agentesDisponibles.length === 0) {
-        error = 'No hay agentes en esta área';
-      }
-      
-      // Verificar conflictos cuando se avanza al paso 2 y hay fechas seleccionadas
-      if (fechaInicio && fechaFin && paso === 2) {
-        await verificarConflictosAgentes();
-      }
-    } catch (e) {
-      error = 'Error al cargar los agentes';
-      console.error('Error cargando agentes:', e);
-    } finally {
-      loading = false;
-    }
-  }
-  
-  async function verificarConflictosAgentes() {
-    agentesConConflicto.clear();
-    for (const agente of agentesDisponibles) {
-      const tieneConflicto = await verificarDisponibilidadAgente(agente.id_agente);
-      if (tieneConflicto) {
-        agentesConConflicto.add(String(agente.id_agente));
-      }
-    }
-    agentesConConflicto = new Set(agentesConConflicto);
+  async function handleToggleAgente(agenteId) {
+    await planificadorGuardiasController.toggleAgente(agenteId);
   }
 
-  function handleAreaChange() {
-    agentesSeleccionados.clear();
-    agentesSeleccionados = agentesSeleccionados;
-    if (areaSeleccionada) {
-      cargarAgentesDeArea();
-    } else {
-      agentesDisponibles = [];
-    }
+  async function handleAvanzarPaso2() {
+    await planificadorGuardiasController.avanzarPaso2();
   }
 
-  async function toggleAgente(agenteId) {
-    const id = String(agenteId);
-    
-    // Si ya está seleccionado, simplemente lo deseleccionamos
-    if (agentesSeleccionados.has(id)) {
-      agentesSeleccionados.delete(id);
-      agentesSeleccionados = new Set(agentesSeleccionados);
-      return;
-    }
-    
-    // Si no está seleccionado, verificamos que no tenga guardias en las fechas seleccionadas
-    if (fechaInicio && fechaFin) {
-      const tieneConflicto = await verificarDisponibilidadAgente(agenteId);
-      if (tieneConflicto) {
-        const agente = agentesDisponibles.find(a => String(a.id_agente) === id);
-        const nombreAgente = agente ? `${agente.nombre} ${agente.apellido}` : 'Este agente';
-        error = `${nombreAgente} ya tiene una guardia asignada que se superpone con las fechas seleccionadas (${fechaInicio} - ${fechaFin})`;
-        mostrarToast(`⚠️ ${error}`, 'error');
-        return;
-      }
-    }
-    
-    // Si no hay conflicto, lo agregamos
-    agentesSeleccionados.add(id);
-    agentesSeleccionados = new Set(agentesSeleccionados);
+  function handleVolverPaso1() {
+    planificadorGuardiasController.volverPaso1();
   }
 
-  async function verificarDisponibilidadAgente(agenteId) {
-    try {
-      // Obtener todas las guardias del agente
-      const response = await guardiasService.getGuardiasAgente(agenteId);
-      const guardiasAgente = response.data?.guardias || [];
-      
-      // Verificar si alguna guardia se superpone con las fechas seleccionadas
-      const fechaInicioSeleccionada = new Date(fechaInicio);
-      const fechaFinSeleccionada = new Date(fechaFin);
-      
-      for (const guardia of guardiasAgente) {
-        // Solo verificamos guardias activas y no canceladas
-        if (guardia.activa === false || guardia.estado === 'cancelada') {
-          continue;
-        }
-        
-        const fechaGuardia = new Date(guardia.fecha);
-        
-        // Verificar si la fecha de la guardia existente está dentro del rango seleccionado
-        if (fechaGuardia >= fechaInicioSeleccionada && fechaGuardia <= fechaFinSeleccionada) {
-          console.log('Conflicto encontrado:', guardia);
-          return true;
-        }
-      }
-      
-      return false;
-    } catch (e) {
-      console.error('Error verificando disponibilidad:', e);
-      // En caso de error, permitimos la selección pero mostramos advertencia
-      return false;
-    }
+  async function handleGuardarGuardia() {
+    await planificadorGuardiasController.guardarGuardia();
   }
 
-  function validarPaso1() {
-    if (!nombre.trim()) {
-      error = 'El nombre de la guardia es obligatorio';
-      return false;
-    }
-    if (!areaSeleccionada) {
-      error = 'Debe seleccionar un área';
-      return false;
-    }
-    if (!fechaInicio) {
-      error = 'La fecha de inicio es obligatoria';
-      return false;
-    }
-    if (!fechaFin) {
-      error = 'La fecha de fin es obligatoria';
-      return false;
-    }
-    
-    // Validar que la fecha de inicio no sea anterior a hoy
-    const fechaInicioDate = new Date(fechaInicio);
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    
-    if (fechaInicioDate < hoy) {
-      error = 'La fecha de inicio no puede ser anterior a hoy';
-      return false;
-    }
-    
-    if (!horaInicio || !horaFin) {
-      error = 'Las horas de inicio y fin son obligatorias';
-      return false;
-    }
-    
-    // Validar que fecha fin no sea anterior a fecha inicio
-    const fechaFinDate = new Date(fechaFin);
-    if (fechaFinDate < fechaInicioDate) {
-      error = 'La fecha de fin no puede ser anterior a la fecha de inicio';
-      return false;
-    }
-    
-    // Validar que si es el mismo día, la hora fin sea diferente a la hora inicio
-    if (fechaInicio === fechaFin && horaInicio === horaFin) {
-      error = 'Si la guardia es en el mismo día, las horas de inicio y fin no pueden ser iguales';
-      return false;
-    }
-    
-    // Si es el mismo día, validar que hora fin sea posterior a hora inicio
-    if (fechaInicio === fechaFin && horaInicio >= horaFin) {
-      error = 'Si la guardia es en el mismo día, la hora de fin debe ser posterior a la hora de inicio';
-      return false;
-    }
-    
-    return true;
-  }
-
-  async function avanzarPaso2() {
-    if (!validarPaso1()) return;
-    error = '';
-    paso = 2;
-    // Verificar conflictos de los agentes con las fechas seleccionadas
-    await verificarConflictosAgentes();
-  }
-
-  function volverPaso1() {
-    paso = 1;
-    error = '';
-  }
-
-  async function guardarGuardia() {
-    if (agentesSeleccionados.size === 0) {
-      error = 'Debe seleccionar al menos un agente';
-      return;
-    }
-
-    // Verificar disponibilidad de todos los agentes seleccionados antes de guardar
-    const agentesConConflicto = [];
-    for (const agenteId of agentesSeleccionados) {
-      const tieneConflicto = await verificarDisponibilidadAgente(agenteId);
-      if (tieneConflicto) {
-        const agente = agentesDisponibles.find(a => String(a.id_agente) === agenteId);
-        if (agente) {
-          agentesConConflicto.push(`${agente.nombre} ${agente.apellido}`);
-        }
-      }
-    }
-    
-    if (agentesConConflicto.length > 0) {
-      error = `Los siguientes agentes ya tienen guardias asignadas en estas fechas: ${agentesConConflicto.join(', ')}`;
-      mostrarToast('⚠️ Algunos agentes tienen conflictos de horarios', 'error');
-      return;
-    }
-
-    // Confirmación antes de guardar
-    const infoMultiDia = esGuardiaMultiDia ? ` (${diasGuardia} días)` : '';
-    const confirmar = confirm(
-      `¿Confirmar la creación de la guardia?\n\n` +
-      `Guardia: ${nombre}\n` +
-      `Área: ${nombreArea(areaSeleccionada)}\n` +
-      `Inicio: ${fechaInicio} a las ${horaInicio}\n` +
-      `Fin: ${fechaFin} a las ${horaFin}\n` +
-      `Duración: ${duracionGuardia}${infoMultiDia}\n` +
-      `Agentes: ${agentesSeleccionados.size}\n\n` +
-      `Se creará el cronograma y se asignará la guardia a los agentes seleccionados. Esta acción quedará registrada en auditoría.`
-    );
-    
-    if (!confirmar) return;
-
-    try {
-      loading = true;
-      error = '';
-
-      // Preparar observaciones con información de fecha fin si es multi-día
-      let observacionesCompletas = observaciones || '';
-      if (esGuardiaMultiDia) {
-        const infoMultiDia = `\n[Guardia de ${diasGuardia} días: Inicio ${fechaInicio} ${horaInicio} - Fin ${fechaFin} ${horaFin}]`;
-        observacionesCompletas = observacionesCompletas ? observacionesCompletas + infoMultiDia : infoMultiDia.trim();
-      }
-
-      // Obtener agente actual para el payload
-      const agenteActual = JSON.parse(localStorage.getItem('agente') || '{}');
-      
-      const payload = {
-        nombre: nombre,
-        tipo: tipo,
-        id_area: areaSeleccionada,
-        fecha: fechaInicio, // Fecha de inicio de la guardia
-        hora_inicio: horaInicio,
-        hora_fin: horaFin,
-        observaciones: observacionesCompletas,
-        agente_id: agenteActual.id_agente,
-        agentes: Array.from(agentesSeleccionados).map(id => {
-          const agente = agentesDisponibles.find(a => String(a.id_agente) === id);
-          return {
-            id_agente: agente.id_agente
-          };
-        })
-      };
-
-      let response;
-      let accion;
-      
-      // Usar endpoint correcto según modo
-      if (modoEdicion && cronogramaId) {
-        response = await guardiasService.actualizarConGuardias(cronogramaId, payload, token);
-        accion = 'actualizado';
-      } else {
-        response = await guardiasService.crearGuardia(payload, token);
-        accion = 'creado';
-      }
-
-      const mensaje = response.data?.mensaje || `Cronograma ${accion} exitosamente`;
-      const guardiasCreadas = response.data?.guardias_creadas || agentesSeleccionados.size;
-      const guardiasEliminadas = response.data?.guardias_eliminadas || 0;
-      const cronogramaIdResponse = response.data?.cronograma_id || cronogramaId;
-      
-      // Obtener información del cronograma para saber el estado
-      let estadoMensaje = '';
-      let estadoIcono = '';
-      try {
-        if (cronogramaIdResponse) {
-          const cronogramaResponse = await guardiasService.getCronograma(cronogramaIdResponse, token);
-          const cronograma = cronogramaResponse.data;
-          
-          if (cronograma.estado === 'aprobada') {
-            estadoIcono = '🎉';
-            estadoMensaje = '\n\nEstado: Auto-aprobada\nComo tienes rol de Administrador, la guardia fue aprobada automáticamente y está lista para ser publicada.';
-          } else if (cronograma.estado === 'pendiente') {
-            estadoIcono = '⏳';
-            const rolesAprobadores = cronograma.puede_aprobar_rol?.join(', ') || 'superior';
-            estadoMensaje = `\n\nEstado: Pendiente de aprobación\nRequiere aprobación de: ${rolesAprobadores}\nPodrá ser aprobada desde la página de Aprobaciones.`;
-          } else if (cronograma.estado === 'generada') {
-            estadoIcono = '📋';
-            estadoMensaje = '\n\nEstado: Generada\nLa guardia ha sido creada y registrada exitosamente.';
-          }
-        }
-      } catch (e) {
-        console.log('No se pudo obtener estado del cronograma:', e);
-        estadoIcono = '✅';
-      }
-      
-      let detallesCambios = `\n\nAgentes asignados: ${guardiasCreadas}`;
-      if (modoEdicion && guardiasEliminadas > 0) {
-        detallesCambios += `\nGuardias previas eliminadas: ${guardiasEliminadas}`;
-      }
-      
-      success = `${estadoIcono} ${mensaje}${detallesCambios}${estadoMensaje}\n\nTodos los cambios han sido registrados en auditoría.`;
-      mostrarToast(`✅ Cronograma ${accion} y registrado exitosamente`, 'success');
-
-      // Invalidar cache y redirigir
-      await invalidateAll();
-      
-      setTimeout(() => {
-        goto('/paneladmin/guardias', { replaceState: true, invalidateAll: true });
-      }, 2000);
-
-    } catch (e) {
-      const mensaje = e?.response?.data?.detail || e?.response?.data?.error || 'Error al crear la guardia';
-      error = mensaje;
-      mostrarToast(mensaje, 'error');
-      console.error('Error completo:', e.response || e);
-    } finally {
-      loading = false;
-    }
-  }
-
-  function mostrarToast(mensaje, tipo = 'success') {
-    toastMensaje = mensaje;
-    toastTipo = tipo;
-    toastVisible = true;
-    setTimeout(() => {
-      toastVisible = false;
-    }, 3000);
-  }
-
-  async function cancelar() {
-    await invalidateAll();
-    goto('/paneladmin/guardias', { replaceState: true, invalidateAll: true });
+  function handleCancelar() {
+    planificadorGuardiasController.cancelar();
   }
 
   const nombreArea = (areaId) => {
-    const area = areas.find(a => a.id_area === areaId);
+    const area = $areas.find(a => a.id_area === areaId);
     return area ? area.nombre : '';
   };
 
   // Calcular la duración de la guardia en días y horas
   $: duracionGuardia = (() => {
-    if (!fechaInicio || !fechaFin || !horaInicio || !horaFin) return '';
+    if (!$fechaInicio || !$fechaFin || !$horaInicio || !$horaFin) return '';
     
     try {
       // Crear objetos Date completos con fecha y hora
-      const [horaI, minI] = horaInicio.split(':').map(Number);
-      const [horaF, minF] = horaFin.split(':').map(Number);
+      const [horaI, minI] = $horaInicio.split(':').map(Number);
+      const [horaF, minF] = $horaFin.split(':').map(Number);
       
-      const inicio = new Date(fechaInicio);
+      const inicio = new Date($fechaInicio);
       inicio.setHours(horaI, minI, 0, 0);
       
-      const fin = new Date(fechaFin);
+      const fin = new Date($fechaFin);
       fin.setHours(horaF, minF, 0, 0);
       
       // Calcular diferencia en minutos
@@ -488,13 +104,13 @@
   })();
   
   // Verificar si la guardia es de múltiples días
-  $: esGuardiaMultiDia = fechaInicio && fechaFin && fechaInicio !== fechaFin;
+  $: esGuardiaMultiDia = $fechaInicio && $fechaFin && $fechaInicio !== $fechaFin;
   
   // Calcular cuántos días abarca la guardia
   $: diasGuardia = (() => {
-    if (!fechaInicio || !fechaFin) return 0;
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
+    if (!$fechaInicio || !$fechaFin) return 0;
+    const inicio = new Date($fechaInicio);
+    const fin = new Date($fechaFin);
     const diffTime = fin - inicio;
     return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
   })();
@@ -502,24 +118,24 @@
 
 <section class="guardias-wrap">
   <header class="head">
-    <h1>{modoEdicion ? '✏️ Editar Guardia' : '➕ Crear Nueva Guardia'}</h1>
+    <h1>{$modoEdicion ? '✏️ Editar Guardia' : '➕ Crear Nueva Guardia'}</h1>
     <p class="subtitle">
-      {#if modoEdicion}
-        Editando cronograma #{cronogramaId} • 
+      {#if $modoEdicion}
+        Editando cronograma #{$cronogramaId} • 
       {/if}
-      Paso {paso} de 2 • Los cambios se aplicarán al hacer clic en "{modoEdicion ? 'Actualizar' : 'Guardar'} Guardia"
+      Paso {$paso} de 2 • Los cambios se aplicarán al hacer clic en "{$modoEdicion ? 'Actualizar' : 'Guardar'} Guardia"
     </p>
   </header>
 
-  {#if error}
-    <div class="alert alert-error" transition:fade>{error}</div>
+  {#if $error}
+    <div class="alert alert-error" transition:fade>{$error}</div>
   {/if}
 
-  {#if success}
-    <div class="alert alert-success" transition:fade>{success}</div>
+  {#if $success}
+    <div class="alert alert-success" transition:fade>{$success}</div>
   {/if}
 
-  {#if paso === 1}
+  {#if $paso === 1}
     <div class="panel card">
       <h2>Datos de la Guardia</h2>
       
@@ -530,15 +146,15 @@
             class="input"
             id="nombre" 
             type="text"
-            bind:value={nombre}
+            bind:value={$nombre}
             placeholder="Ej: Guardia de Emergencias Diciembre"
-            disabled={loading}
+            disabled={$loading}
           />
         </div>
 
         <div class="campo">
           <label for="tipo">Tipo</label>
-          <select class="input" id="tipo" bind:value={tipo} disabled={loading}>
+          <select class="input" id="tipo" bind:value={$tipo} disabled={$loading}>
             <option value="regular">Regular</option>
             <option value="especial">Especial</option>
             <option value="feriado">Feriado</option>
@@ -551,12 +167,12 @@
           <select 
             class="input"
             id="area"
-            bind:value={areaSeleccionada}
+            bind:value={$areaSeleccionada}
             on:change={handleAreaChange}
-            disabled={loading}
+            disabled={$loading}
           >
             <option value={null}>Seleccione un área</option>
-            {#each areas as area}
+            {#each $areas as area}
               <option value={area.id_area}>{area.nombre}</option>
             {/each}
           </select>
@@ -568,8 +184,8 @@
             class="input"
             id="fechaInicio" 
             type="date"
-            bind:value={fechaInicio}
-            disabled={loading}
+            bind:value={$fechaInicio}
+            disabled={$loading}
           />
         </div>
 
@@ -579,8 +195,8 @@
             class="input"
             id="horaInicio" 
             type="time"
-            bind:value={horaInicio}
-            disabled={loading}
+            bind:value={$horaInicio}
+            disabled={$loading}
           />
         </div>
 
@@ -590,9 +206,9 @@
             class="input"
             id="fechaFin" 
             type="date"
-            bind:value={fechaFin}
-            disabled={loading}
-            min={fechaInicio}
+            bind:value={$fechaFin}
+            disabled={$loading}
+            min={$fechaInicio}
           />
         </div>
 
@@ -602,12 +218,12 @@
             class="input"
             id="horaFin" 
             type="time"
-            bind:value={horaFin}
-            disabled={loading}
+            bind:value={$horaFin}
+            disabled={$loading}
           />
         </div>
 
-        {#if fechaInicio && fechaFin && horaInicio && horaFin && duracionGuardia}
+        {#if $fechaInicio && $fechaFin && $horaInicio && $horaFin && duracionGuardia}
           <div class="campo campo-full">
             <div class="info-duracion">
               <strong>Duración de la guardia:</strong> {duracionGuardia}
@@ -623,10 +239,10 @@
           <textarea 
             class="input textarea"
             id="observaciones" 
-            bind:value={observaciones}
+            bind:value={$observaciones}
             placeholder="Información adicional sobre la guardia... (Ej: turnos especiales, instrucciones, etc.)"
             rows="3"
-            disabled={loading}
+            disabled={$loading}
           ></textarea>
           {#if esGuardiaMultiDia}
             <span class="campo-ayuda" style="color: #64748b;">
@@ -637,16 +253,16 @@
       </div>
 
       <div class="acciones">
-        <button class="btn btn-secondary" on:click={cancelar} disabled={loading}>
+        <button class="btn btn-secondary" on:click={handleCancelar} disabled={$loading}>
           Cancelar
         </button>
-        <button class="btn btn-primary" on:click={avanzarPaso2} disabled={loading}>
+        <button class="btn btn-primary" on:click={handleAvanzarPaso2} disabled={$loading}>
           Siguiente →
         </button>
       </div>
     </div>
 
-  {:else if paso === 2}
+  {:else if $paso === 2}
     <div class="panel card">
       <h2>Seleccionar Agentes</h2>
       <p class="card-description">
@@ -654,11 +270,11 @@
       </p>
       
       <div class="resumen-guardia">
-        <div><strong>Guardia:</strong> {nombre}</div>
-        <div><strong>Área:</strong> {nombreArea(areaSeleccionada)}</div>
-        <div><strong>Inicio:</strong> {fechaInicio} a las {horaInicio}</div>
+        <div><strong>Guardia:</strong> {$nombre}</div>
+        <div><strong>Área:</strong> {nombreArea($areaSeleccionada)}</div>
+        <div><strong>Inicio:</strong> {$fechaInicio} a las {$horaInicio}</div>
         <div>
-          <strong>Fin:</strong> {fechaFin} a las {horaFin}
+          <strong>Fin:</strong> {$fechaFin} a las {$horaFin}
           {#if esGuardiaMultiDia}
             <span class="badge-nocturna-small">📅 {diasGuardia} día(s)</span>
           {/if}
@@ -668,12 +284,12 @@
         {/if}
       </div>
 
-      {#if loading}
+      {#if $loading}
         <div class="placeholder">
           <div class="placeholder-icon">⏳</div>
           <div class="placeholder-title">Cargando agentes...</div>
         </div>
-      {:else if agentesDisponibles.length === 0}
+      {:else if $agentesDisponibles.length === 0}
         <div class="placeholder">
           <div class="placeholder-icon">👥</div>
           <div class="placeholder-title">No hay agentes activos en esta área</div>
@@ -682,19 +298,19 @@
       {:else}
         <div class="agentes-lista">
           <p class="info-text">
-            <strong>{agentesDisponibles.length}</strong> agente(s) activo(s) en esta área • <strong>{agentesSeleccionados.size}</strong> seleccionado(s)
-            {#if agentesConConflicto.size > 0}
-              <span class="advertencia-conflictos">⚠️ {agentesConConflicto.size} con guardias existentes</span>
+            <strong>{$agentesDisponibles.length}</strong> agente(s) activo(s) en esta área • <strong>{$agentesSeleccionados.size}</strong> seleccionado(s)
+            {#if $agentesConConflicto.size > 0}
+              <span class="advertencia-conflictos">⚠️ {$agentesConConflicto.size} con guardias existentes</span>
             {/if}
           </p>
-          {#each agentesDisponibles as agente}
-            {@const tieneConflicto = agentesConConflicto.has(String(agente.id_agente))}
+          {#each $agentesDisponibles as agente}
+            {@const tieneConflicto = $agentesConConflicto.has(String(agente.id_agente))}
             <label class="agente-item" class:tiene-conflicto={tieneConflicto}>
               <input 
                 type="checkbox" 
-                checked={agentesSeleccionados.has(String(agente.id_agente))}
-                on:change={() => toggleAgente(agente.id_agente)}
-                disabled={loading}
+                checked={$agentesSeleccionados.has(String(agente.id_agente))}
+                on:change={() => handleToggleAgente(agente.id_agente)}
+                disabled={$loading}
               />
               <div class="agente-info">
                 <div class="agente-nombre">
@@ -718,18 +334,18 @@
       {/if}
 
       <div class="acciones">
-        <button class="btn btn-secondary" on:click={volverPaso1} disabled={loading}>
+        <button class="btn btn-secondary" on:click={handleVolverPaso1} disabled={$loading}>
           ← Volver
         </button>
         <button 
           class="btn btn-primary" 
-          on:click={guardarGuardia} 
-          disabled={loading || agentesSeleccionados.size === 0}
+          on:click={handleGuardarGuardia} 
+          disabled={$loading || $agentesSeleccionados.size === 0}
         >
-          {#if loading}
-            {modoEdicion ? 'Actualizando...' : 'Guardando...'}
+          {#if $loading}
+            {$modoEdicion ? 'Actualizando...' : 'Guardando...'}
           {:else}
-            {modoEdicion ? '✏️ Actualizar Guardia' : '💾 Guardar Guardia'}
+            {$modoEdicion ? '✏️ Actualizar Guardia' : '💾 Guardar Guardia'}
           {/if}
         </button>
       </div>
@@ -737,16 +353,16 @@
   {/if}
 </section>
 
-{#if toastVisible}
+{#if $toastVisible}
   <div 
-    class="toast toast-{toastTipo}" 
+    class="toast toast-{$toastTipo}" 
     in:fly={{ y: -20, duration: 200 }} 
     out:fade={{ duration: 300 }}
   >
-    {#if toastTipo === 'success'}
-      ✅ {toastMensaje}
+    {#if $toastTipo === 'success'}
+      ✅ {$toastMensaje}
     {:else}
-      ❌ {toastMensaje}
+      ❌ {$toastMensaje}
     {/if}
   </div>
 {/if}
