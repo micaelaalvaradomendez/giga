@@ -167,7 +167,7 @@
                             <span class="menu-item-icon">🏥</span>
                             <div class="menu-item-text">
                                 <div class="menu-item-title">
-                                    Licencias y Novedades
+                                    Licencias
                                 </div>
                             </div>
                         </a>

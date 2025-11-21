@@ -68,6 +68,7 @@ SCRIPTS=(
     "05-seed-data.sql"
     "06-add-approval-tracking.sql"
     "07-add-nota-guardia.sql"
+    "08-refactor-asistencia.sql"
 )
 
 # Ejecutar cada script en orden

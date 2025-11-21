@@ -318,13 +318,51 @@ services:
       - giga-network
 ```
 
-## 📝 Notas de Desarrollo
+## � Scripts de Inicialización
+
+Los scripts de inicialización se ejecutan automáticamente al crear el contenedor. Se ejecutan en el siguiente orden:
+
+1. **01-init-database.sh**: Script maestro que orquesta la ejecución de todos los demás
+2. **02-setup-functions.sql**: Configuración de funciones base
+3. **03-create-tables.sql**: Creación de tablas principales
+4. **04-functions-triggers.sql**: Funciones y triggers de negocio
+5. **05-seed-data.sql**: Datos iniciales (seed data)
+6. **06-add-approval-tracking.sql**: Sistema de aprobaciones
+7. **07-add-nota-guardia.sql**: Notas de guardias
+8. **08-refactor-asistencia.sql**: Sistema de asistencias con DNI y detección de fraude
+
+### Sistema de Asistencias (Script 08)
+
+El script `08-refactor-asistencia.sql` implementa un sistema completo de registro de asistencias con:
+
+**Tablas:**
+- `asistencia`: Registro de entradas/salidas con marcación automática
+- `intento_marcacion_fraudulenta`: Registro de intentos con DNI incorrecto
+
+**Características:**
+- Validación de DNI al marcar entrada/salida
+- Detección y registro de intentos fraudulentos
+- Marcación automática de salida a las 22:00
+- Sistema de correcciones manuales por administradores
+- Integración completa con auditoría
+- Filtros por área y fecha
+
+**Funciones:**
+- `marcar_salidas_automaticas()`: Marca salidas automáticas a las 22:00
+- `obtener_estado_asistencia()`: Obtiene estado actual del agente
+
+**Triggers:**
+- `audit_asistencia_changes()`: Audita cambios en asistencias
+- `audit_intento_fraudulento()`: Audita intentos fraudulentos
+
+## �📝 Notas de Desarrollo
 
 - Los scripts de inicialización se ejecutan automáticamente al crear el contenedor
 - Los datos se persisten en un volumen de Docker (`postgres_data`)
 - Los logs se guardan en `./logs/`
 - La configuración regional está optimizada para Argentina
 - El timezone se configura automáticamente para Buenos Aires
+- El sistema de asistencias requiere llamar a `marcar_salidas_automaticas()` diariamente a las 22:00 (vía cron)
 
 ## 🤝 Contribución
 

@@ -8,6 +8,7 @@
 	import ModalAgrupacion from "$lib/componentes/ModalAgrupacion.svelte";
 	import ModalHorarios from "$lib/componentes/ModalHorarios.svelte";
 	import ModalEliminar from "$lib/componentes/ModalEliminar.svelte";
+	import ModalHorarioGlobal from "$lib/componentes/ModalHorarioGlobal.svelte";
 
 	// Obtener referencias a los stores individuales
 	const {
@@ -77,20 +78,86 @@
 		parametrosController.actualizarBusquedaAgrupaciones(event.target.value);
 	}
 
+	let mensajeExito = '';
+	let mensajeError = '';
+
+	// Estado para modal de horario global
+	let modalHorarioGlobal = false;
+	let guardandoHorarioGlobal = false;
+
+	function mostrarExito(mensaje) {
+		mensajeExito = mensaje;
+		setTimeout(() => {
+			mensajeExito = '';
+		}, 5000);
+	}
+
+	function mostrarError(mensaje) {
+		mensajeError = mensaje;
+		setTimeout(() => {
+			mensajeError = '';
+		}, 5000);
+	}
+
+	function abrirModalHorarioGlobal() {
+		modalHorarioGlobal = true;
+	}
+
+	function cerrarModalHorarioGlobal() {
+		modalHorarioGlobal = false;
+		guardandoHorarioGlobal = false;
+	}
+
+	async function guardarHorarioGlobal(event) {
+		const { horario_entrada, horario_salida } = event.detail;
+		
+		guardandoHorarioGlobal = true;
+		try {
+			const response = await fetch('/api/personas/parametros/horario-global/', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({
+					horario_entrada,
+					horario_salida
+				})
+			});
+
+			const data = await response.json();
+
+			if (response.ok && data.success) {
+				mostrarExito(`✅ ${data.message}`);
+				cerrarModalHorarioGlobal();
+				await parametrosController.init(); // Recargar datos
+			} else {
+				mostrarError(data.message || 'Error al aplicar horario global');
+			}
+		} catch (error) {
+			console.error('Error aplicando horario global:', error);
+			mostrarError('Error de conexión al aplicar horario global');
+		} finally {
+			guardandoHorarioGlobal = false;
+		}
+	}
+
 	// Event handlers para modales
 	async function actualizarHorarios() {
 		try {
 			const formData = $scheduleForm;
 			const modalData = $modalSchedule;
 
-			await parametrosController.actualizarHorarios(
+			const result = await parametrosController.actualizarHorarios(
 				formData,
 				modalData.tipo,
 				modalData.target,
 			);
+			
+			if (result.success) {
+				mostrarExito('✅ Horarios actualizados correctamente');
+			}
 		} catch (error) {
 			console.error("Error actualizando horarios:", error);
-			// Manejar error - podríamos mostrar una notificación
+			mostrarError(error.message || 'Error al actualizar horarios');
 		}
 	}
 
@@ -143,6 +210,12 @@
 	</div>
 	<div class="header-actions">
 		<button
+			class="btn-horario-global"
+			on:click={abrirModalHorarioGlobal}
+		>
+			🕐 Horario Global
+		</button>
+		<button
 			class="btn-primary"
 			on:click={() => parametrosController.agregarArea()}
 		>
@@ -157,7 +230,22 @@
 	</div>
 </div>
 
+<!-- Mensajes de éxito -->
+{#if mensajeExito}
+	<div class="alert alert-success">
+		{mensajeExito}
+		<button class="btn-close" on:click={() => (mensajeExito = '')}>×</button>
+	</div>
+{/if}
+
 <!-- Mensajes de error -->
+{#if mensajeError}
+	<div class="alert alert-error">
+		❌ {mensajeError}
+		<button class="btn-close" on:click={() => (mensajeError = '')}>×</button>
+	</div>
+{/if}
+
 {#if $error}
 	<div class="alert alert-error">
 		❌ {$error}
@@ -175,6 +263,7 @@
 		<p>Cargando parámetros del sistema...</p>
 	</div>
 {:else}
+	<!-- Sección de Horario Global -->
 	<div class="content-grid">
 		<!-- Panel de Áreas -->
 		<div class="panel-areas">
@@ -527,6 +616,13 @@
 		}))}
 />
 
+<ModalHorarioGlobal
+	isOpen={modalHorarioGlobal}
+	isSaving={guardandoHorarioGlobal}
+	on:guardar={guardarHorarioGlobal}
+	on:cerrar={cerrarModalHorarioGlobal}
+/>
+
 <style>
 	.page-header {
 		display: flex;
@@ -621,7 +717,8 @@
 	}
 
 	.btn-primary,
-	.btn-secondary {
+	.btn-secondary,
+	.btn-horario-global {
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		padding: 16px 32px;
 		border: none;
@@ -634,6 +731,17 @@
 		align-items: center;
 		gap: 10px;
 		font-size: 16px;
+	}
+
+	.btn-horario-global {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+	}
+
+	.btn-horario-global:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 	}
 
 	.btn-primary {
@@ -664,12 +772,43 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		animation: slideIn 0.3s ease-out;
+	}
+
+	@keyframes slideIn {
+		from {
+			opacity: 0;
+			transform: translateY(-20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.alert-success {
+		background: #e8f5e9;
+		color: #2e7d32;
+		border-left: 4px solid #4caf50;
 	}
 
 	.alert-error {
 		background: #ffebee;
 		color: #c62828;
 		border-left: 4px solid #f44336;
+	}
+
+	.btn-close {
+		background: none;
+		border: none;
+		font-size: 1.5rem;
+		cursor: pointer;
+		opacity: 0.6;
+		transition: opacity 0.2s;
+	}
+
+	.btn-close:hover {
+		opacity: 1;
 	}
 
 	.btn-close {

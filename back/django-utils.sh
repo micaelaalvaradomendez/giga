@@ -48,7 +48,11 @@ show_help() {
     echo "Comandos de Desarrollo:"
     echo "  dev            - Modo desarrollo (build + start + logs)"
     echo "  check          - Verificar configuración Django"
-    echo "  requirements   - Actualizar requirements.txt"
+    requirements   - Actualizar requirements.txt"
+    echo ""
+    echo "Comandos de Asistencias:"
+    echo "  marcar-salidas - Marcar salidas automáticas (22:00)"
+    echo ""
     echo "  help           - Mostrar esta ayuda"
     echo ""
 }
@@ -322,6 +326,21 @@ case "$1" in
     requirements)
         echo "# Ejecutar en el contenedor Django:"
         echo "pip freeze > requirements.txt"
+        ;;
+    marcar-salidas)
+        check_docker
+        echo -e "${BLUE}⏰ Ejecutando marcación automática de salidas...${NC}"
+        RESPONSE=$(docker exec $DJANGO_CONTAINER curl -s -X POST http://localhost:8000/api/asistencia/cron/marcar-salidas/ \
+            -H "Content-Type: application/json" \
+            -d '{"auth_key":"GIGA_CRON_KEY_2025"}')
+        
+        if echo "$RESPONSE" | grep -q '"success":true'; then
+            MARCADAS=$(echo "$RESPONSE" | grep -o '"total_marcadas":[0-9]*' | cut -d':' -f2)
+            echo -e "${GREEN}✅ Se marcaron $MARCADAS salidas automáticas${NC}"
+        else
+            echo -e "${RED}❌ Error al marcar salidas${NC}"
+            echo "$RESPONSE"
+        fi
         ;;
     help|--help|-h)
         show_help

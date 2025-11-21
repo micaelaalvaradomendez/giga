@@ -204,25 +204,29 @@
                 <div class="quick-actions">
                     <h3>Acciones rápidas</h3>
                     <div class="actions-grid">
-                        <div class="action-card">
-                            <h4>Asistencia</h4>
-                            <p>Registrar entrada/salida</p>
-                            <button class="action-button"
-                                >Ir a Asistencia</button
-                            >
-                        </div>
-                        <div class="action-card">
-                            <h4>Guardias</h4>
-                            <p>Consultar guardias asignadas</p>
-                            <button class="action-button">Ver Guardias</button>
-                        </div>
-                        <div class="action-card">
-                            <h4>Reportes</h4>
-                            <p>Generar reportes del sistema</p>
-                            <button class="action-button"
-                                >Generar Reportes</button
-                            >
-                        </div>
+                        <a href="/asistencia">
+                            <div class="action-card">
+                                <h4>Asistencia</h4>
+                                <p>Registrar entrada/salida</p>
+                                <button class="action-button">Ir a Asistencia</button>
+                            </div>
+                        </a>
+                        <a href="/guardias">
+                            <div class="action-card">
+                                <h4>Guardias</h4>
+                                <p>Consultar guardias asignadas</p>
+                                <button class="action-button">Ver Guardias</button>
+                            </div>
+                        </a>
+                        <a href="/reportes">
+                            <div class="action-card">
+                                <h4>Reportes</h4>
+                                <p>Generar reportes del sistema</p>
+                                <button class="action-button"
+                                    >Generar Reportes</button
+                                >
+                            </div>
+                        </a>
                         {#if AuthService.hasRole("Administrador")}
                             <a href="/paneladmin">
                                 <div class="action-card admin-card">

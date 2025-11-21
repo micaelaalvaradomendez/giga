@@ -50,6 +50,9 @@ asignaciones_patterns = [
 
 # URLs de parámetros del sistema
 parametros_patterns = [
+    # Horario global
+    path('horario-global/', views.update_global_schedule, name='update_global_schedule'),
+    
     # Gestión de áreas
     path('areas/create/', views.create_area, name='create_area'),
     path('areas/<int:area_id>/update/', views.update_area, name='update_area'),

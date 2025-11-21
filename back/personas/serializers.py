@@ -60,7 +60,8 @@ class AgenteListSerializer(serializers.ModelSerializer):
             'id_agente', 'legajo', 'nombre', 'apellido', 'dni', 'email',
             'telefono', 'fecha_nacimiento', 'provincia', 'ciudad', 
             'direccion_completa', 'agrupacion', 'agrupacion_display',
-            'categoria_revista', 'area_nombre', 'area_id', 'roles', 'activo'
+            'categoria_revista', 'area_nombre', 'area_id', 'roles', 'activo',
+            'horario_entrada', 'horario_salida'
         ]
     
     def get_roles(self, obj):

@@ -23,6 +23,7 @@ urlpatterns = [
     path('api/personas/', include('personas.urls')),
     path('api/guardias/', include('guardias.urls')),
     path('api/auditoria/', include('auditoria.urls')),
+    path('api/asistencia/', include('asistencia.urls')),
     # Health check endpoints
     path('health/', simple_health, name='health'),
     path('api/health/', health_check, name='api_health'),

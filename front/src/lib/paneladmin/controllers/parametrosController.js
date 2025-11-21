@@ -522,7 +522,10 @@ class ParametrosController {
 	 * Actualizar horarios por área o agrupación
 	 */
 	async actualizarHorarios(formData, tipo, target) {
+		console.log('📋 actualizarHorarios llamado con:', { formData, tipo, target });
+		
 		if (!formData.horario_entrada || !formData.horario_salida) {
+			console.error('❌ Faltan datos de horarios:', formData);
 			throw new Error('Horarios de entrada y salida son requeridos');
 		}
 
@@ -534,10 +537,13 @@ class ParametrosController {
 				horario_salida: formData.horario_salida
 			};
 
+			console.log('📤 Enviando datos:', horarioData);
+
 			let response;
 
 			if (tipo === 'area') {
 				// Actualizar horarios por área
+				console.log('🏢 Actualizando horarios por área:', target.id_area);
 				response = await personasService.updateAreaSchedule(target.id_area, horarioData);
 			} else if (tipo === 'agrupacion') {
 				// Actualizar horarios por agrupación
@@ -545,15 +551,20 @@ class ParametrosController {
 					agrupacion: target.nombre,
 					...horarioData
 				};
-				
+				console.log('👥 Actualizando horarios por agrupación:', agrupacionData);
 				response = await personasService.updateAgrupacionSchedule(agrupacionData);
 			}
+			
+			console.log('📥 Respuesta recibida:', response);
 			
 			if (response && response.data && response.data.success) {
 				console.log('✅ Horarios actualizados correctamente');
 			}
 			
 			this.modalSchedule.set({ isOpen: false, tipo: '', target: null, isSaving: false });
+			
+			// Recargar datos para mostrar cambios
+			await this.init();
 			
 			return { success: true, message: 'Horarios actualizados correctamente' };
 		} catch (error) {

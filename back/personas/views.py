@@ -1154,9 +1154,66 @@ def delete_area(request, area_id):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
+def update_global_schedule(request):
+    """
+    Actualizar horarios de TODOS los agentes activos del sistema.
+    Solo accesible por administradores.
+    """
+    try:
+        # Verificar autenticación
+        agente_id = request.session.get('user_id')
+        if not agente_id:
+            return Response({
+                'success': False,
+                'message': 'No hay sesión activa'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        agente = Agente.objects.get(id_agente=agente_id)
+        rol = agente.agenterol_set.first()
+        
+        if not rol or rol.id_rol.nombre not in ['Administrador', 'Director']:
+            return Response({
+                'success': False,
+                'message': 'No tiene permisos para establecer horario global'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        with transaction.atomic():
+            horario_entrada = request.data.get('horario_entrada')
+            horario_salida = request.data.get('horario_salida')
+            
+            if not horario_entrada or not horario_salida:
+                return Response({
+                    'success': False,
+                    'message': 'Horario de entrada y salida son requeridos'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Actualizar horarios de TODOS los agentes activos
+            agentes_actualizados = Agente.objects.filter(
+                activo=True
+            ).update(
+                horario_entrada=horario_entrada,
+                horario_salida=horario_salida
+            )
+            
+            return Response({
+                'success': True,
+                'message': f'Horario global aplicado a {agentes_actualizados} agente(s) activo(s)',
+                'data': {
+                    'agentes_actualizados': agentes_actualizados,
+                    'horario_entrada': horario_entrada,
+                    'horario_salida': horario_salida
+                }
+            })
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al actualizar horario global: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 def update_area_schedule(request, area_id):
     """
     Actualizar horarios de todos los agentes de un área.
