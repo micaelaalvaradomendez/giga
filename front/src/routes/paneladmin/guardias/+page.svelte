@@ -59,30 +59,72 @@
     }
   }
 
+  /**
+   * Calcula todas las fechas que abarca una guardia.
+   * Si la hora_fin es menor que hora_inicio, significa que cruza medianoche.
+   */
+  function calcularFechasGuardia(fechaInicio, horaInicio, horaFin) {
+    const fechas = [];
+    const fechaInicioDate = new Date(fechaInicio + 'T00:00:00');
+    
+    // Extraer horas (formato HH:MM:SS o HH:MM)
+    const horaInicioNum = parseInt(horaInicio.split(':')[0]);
+    const horaFinNum = parseInt(horaFin.split(':')[0]);
+    
+    // Agregar fecha de inicio
+    fechas.push(fechaInicio);
+    
+    // Si la hora de fin es menor o igual que la hora de inicio, cruza medianoche
+    if (horaFinNum <= horaInicioNum) {
+      // Agregar día siguiente
+      const fechaSiguiente = new Date(fechaInicioDate);
+      fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
+      const fechaSiguienteStr = fechaSiguiente.toISOString().split('T')[0];
+      fechas.push(fechaSiguienteStr);
+    }
+    
+    return fechas;
+  }
+
   function agruparGuardias() {
     // Estructura: { fecha: { 'area-hora': [guardias] } }
     const agrupadas = {};
     
     guardias.forEach(guardia => {
-      const fecha = guardia.fecha;
-      if (!agrupadas[fecha]) {
-        agrupadas[fecha] = {};
-      }
+      // Calcular todas las fechas que abarca esta guardia
+      const fechasGuardia = calcularFechasGuardia(
+        guardia.fecha, 
+        guardia.hora_inicio, 
+        guardia.hora_fin
+      );
       
-      // Agrupar por área y hora para separar guardias de diferentes áreas/horarios
-      const clave = `${guardia.area_nombre || 'sin-area'}-${guardia.hora_inicio}-${guardia.hora_fin}`;
-      
-      if (!agrupadas[fecha][clave]) {
-        agrupadas[fecha][clave] = {
-          area_nombre: guardia.area_nombre || 'Sin área',
-          hora_inicio: guardia.hora_inicio,
-          hora_fin: guardia.hora_fin,
-          tipo: guardia.tipo,
-          agentes: []
-        };
-      }
-      
-      agrupadas[fecha][clave].agentes.push(guardia);
+      // Agregar la guardia a todas las fechas que abarca
+      fechasGuardia.forEach(fecha => {
+        if (!agrupadas[fecha]) {
+          agrupadas[fecha] = {};
+        }
+        
+        // Agrupar por área y hora para separar guardias de diferentes áreas/horarios
+        const clave = `${guardia.area_nombre || 'sin-area'}-${guardia.hora_inicio}-${guardia.hora_fin}`;
+        
+        if (!agrupadas[fecha][clave]) {
+          agrupadas[fecha][clave] = {
+            area_nombre: guardia.area_nombre || 'Sin área',
+            hora_inicio: guardia.hora_inicio,
+            hora_fin: guardia.hora_fin,
+            tipo: guardia.tipo,
+            agentes: []
+          };
+        }
+        
+        // Solo agregar el agente si no está ya en el grupo (evitar duplicados)
+        const yaExiste = agrupadas[fecha][clave].agentes.some(
+          a => a.id_guardia === guardia.id_guardia
+        );
+        if (!yaExiste) {
+          agrupadas[fecha][clave].agentes.push(guardia);
+        }
+      });
     });
     
     // Convertir a formato para el calendario
@@ -110,8 +152,12 @@
       const fechaStr = date.toISOString().split('T')[0];
       fechaSeleccionada = fechaStr;
       
-      // Buscar todas las guardias de esa fecha (sin agrupar)
-      guardiasDeFecha = guardias.filter(g => g.fecha === fechaStr);
+      // Buscar todas las guardias de esa fecha (incluyendo las que cruzan medianoche)
+      guardiasDeFecha = guardias.filter(g => {
+        const fechasGuardia = calcularFechasGuardia(g.fecha, g.hora_inicio, g.hora_fin);
+        return fechasGuardia.includes(fechaStr);
+      });
+      
       mostrarModal = true;
       
       console.log('Guardias del día seleccionado:', guardiasDeFecha);

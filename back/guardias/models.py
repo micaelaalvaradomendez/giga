@@ -118,6 +118,11 @@ class Cronograma(models.Model):
     id_area = models.ForeignKey('personas.Area', models.DO_NOTHING, db_column='id_area')
     estado = models.CharField(max_length=50, blank=True, null=True)
     fecha_creacion = models.DateField(blank=True, null=True)
+    
+    # Campos de aprobación jerárquica
+    creado_por_rol = models.CharField(max_length=50, blank=True, null=True)  # jefatura, director, administrador
+    creado_por_id = models.ForeignKey('personas.Agente', models.DO_NOTHING, db_column='creado_por_id', blank=True, null=True, related_name='cronogramas_creados')
+    aprobado_por_id = models.ForeignKey('personas.Agente', models.DO_NOTHING, db_column='aprobado_por_id', blank=True, null=True, related_name='cronogramas_aprobados')
 
     class Meta:
         managed = False
@@ -125,6 +130,28 @@ class Cronograma(models.Model):
         
     def __str__(self):
         return f"Cronograma {self.tipo} - {self.fecha_aprobacion}"
+    
+    @property
+    def requiere_aprobacion(self):
+        """Verifica si el cronograma requiere aprobación según el rol del creador"""
+        if not self.creado_por_rol:
+            return True  # Por defecto, requiere aprobación
+        return self.creado_por_rol.lower() in ['jefatura', 'director']
+    
+    @property
+    def puede_aprobar_rol(self):
+        """Retorna qué roles pueden aprobar este cronograma"""
+        if not self.creado_por_rol:
+            return ['administrador']
+        
+        rol_lower = self.creado_por_rol.lower()
+        if rol_lower == 'jefatura':
+            return ['director', 'administrador']
+        elif rol_lower == 'director':
+            return ['administrador']
+        elif rol_lower == 'administrador':
+            return []  # Ya está auto-aprobado
+        return ['administrador']
 
 
 class Guardia(models.Model):

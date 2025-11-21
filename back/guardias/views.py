@@ -299,9 +299,42 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 )
             
             # Obtener el agente del usuario autenticado
-            agente_id = None
-            if hasattr(request.user, 'agente'):
+            from .utils import get_agente_rol, requiere_aprobacion_rol
+            
+            agente_id = data.get('agente_id')  # Por ahora recibir del request
+            if not agente_id and hasattr(request.user, 'agente'):
                 agente_id = request.user.agente.id_agente
+            
+            if not agente_id:
+                return Response(
+                    {'error': 'No se pudo determinar el agente creador'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Obtener agente completo
+            try:
+                from personas.models import Agente
+                agente_creador = Agente.objects.get(id_agente=agente_id)
+            except Agente.DoesNotExist:
+                return Response(
+                    {'error': 'Agente no encontrado'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Determinar rol del creador
+            rol_creador = get_agente_rol(agente_creador)
+            if not rol_creador:
+                rol_creador = 'jefatura'  # Por defecto
+            
+            # Determinar estado inicial según rol
+            if rol_creador.lower() == 'administrador':
+                estado_inicial = 'aprobada'  # Auto-aprobado
+                fecha_aprobacion = timezone.now().date()
+                aprobado_por_id = agente_id  # Se aprueba a sí mismo
+            else:
+                estado_inicial = 'pendiente'  # Requiere aprobación
+                fecha_aprobacion = None
+                aprobado_por_id = None
             
             # Crear el cronograma
             cronograma = Cronograma.objects.create(
@@ -311,8 +344,12 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 tipo=data['tipo'],
                 hora_inicio=data['hora_inicio'],
                 hora_fin=data['hora_fin'],
-                estado='generada',
-                fecha_creacion=timezone.now().date()
+                estado=estado_inicial,
+                fecha_creacion=timezone.now().date(),
+                fecha_aprobacion=fecha_aprobacion,
+                creado_por_rol=rol_creador,
+                creado_por_id_id=agente_id,
+                aprobado_por_id_id=aprobado_por_id
             )
             
             # Registrar auditoría del cronograma
@@ -419,21 +456,76 @@ class CronogramaViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['patch'])
     def aprobar(self, request, pk=None):
-        """Aprueba un cronograma"""
+        """Aprueba un cronograma con validación de jerarquía de roles"""
+        from .utils import get_agente_rol, puede_aprobar
+        
         cronograma = self.get_object()
         
-        if cronograma.estado != 'generada':
+        # Validar estado actual
+        if cronograma.estado not in ['generada', 'pendiente']:
             return Response(
-                {'error': 'Solo se pueden aprobar cronogramas en estado "generada"'},
+                {'error': f'Solo se pueden aprobar cronogramas en estado "generada" o "pendiente". Estado actual: {cronograma.estado}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Obtener agente que aprueba (simular con agente_id del request por ahora)
+        # En producción usar: agente_aprobador = request.user.agente
+        agente_id = request.data.get('agente_id')
+        if not agente_id:
+            return Response(
+                {'error': 'Se requiere agente_id para aprobar'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from personas.models import Agente
+            agente_aprobador = Agente.objects.get(id_agente=agente_id)
+        except Agente.DoesNotExist:
+            return Response(
+                {'error': 'Agente no encontrado'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Obtener rol del aprobador
+        rol_aprobador = get_agente_rol(agente_aprobador)
+        if not rol_aprobador:
+            return Response(
+                {'error': 'El agente no tiene un rol asignado'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Validar si puede aprobar según jerarquía
+        if not puede_aprobar(cronograma, rol_aprobador):
+            roles_permitidos = cronograma.puede_aprobar_rol
+            return Response(
+                {
+                    'error': f'No tiene permisos para aprobar este cronograma',
+                    'detalle': f'Roles permitidos: {", ".join(roles_permitidos)}. Su rol: {rol_aprobador}'
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Aprobar cronograma
         cronograma.estado = 'aprobada'
         cronograma.fecha_aprobacion = date.today()
-        # cronograma.aprobado_por = request.user.agente  # Si tienes auth
+        cronograma.aprobado_por_id = agente_aprobador
         cronograma.save()
         
-        return Response({'mensaje': 'Cronograma aprobado exitosamente'})
+        # Registrar en auditoría
+        from auditoria.models import RegistroAuditoria
+        RegistroAuditoria.objects.create(
+            tipo_accion='aprobacion_cronograma',
+            detalle=f'Cronograma {cronograma.id_cronograma} aprobado por {agente_aprobador.nombre} {agente_aprobador.apellido} (rol: {rol_aprobador})',
+            modelo_afectado='cronograma',
+            id_registro=cronograma.id_cronograma
+        )
+        
+        return Response({
+            'mensaje': 'Cronograma aprobado exitosamente',
+            'cronograma_id': cronograma.id_cronograma,
+            'aprobado_por': f'{agente_aprobador.nombre} {agente_aprobador.apellido}',
+            'fecha_aprobacion': cronograma.fecha_aprobacion
+        })
     
     @action(detail=True, methods=['patch'])
     def publicar(self, request, pk=None):
@@ -453,6 +545,137 @@ class CronogramaViewSet(viewsets.ModelViewSet):
         # NotificacionManager.notificar_cronograma_publicado(cronograma.id_cronograma)
         
         return Response({'mensaje': 'Cronograma publicado exitosamente'})
+    
+    @action(detail=False, methods=['get'])
+    def pendientes(self, request):
+        """Lista cronogramas pendientes de aprobación según rol del usuario"""
+        from .utils import get_agente_rol, get_approval_hierarchy
+        
+        # Obtener agente del usuario (por ahora via query param)
+        agente_id = request.query_params.get('agente_id')
+        if not agente_id:
+            if hasattr(request.user, 'agente'):
+                agente_id = request.user.agente.id_agente
+            else:
+                return Response(
+                    {'error': 'No se pudo determinar el agente'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        try:
+            from personas.models import Agente
+            agente = Agente.objects.get(id_agente=agente_id)
+        except Agente.DoesNotExist:
+            return Response(
+                {'error': 'Agente no encontrado'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Obtener rol del agente
+        rol_agente = get_agente_rol(agente)
+        if not rol_agente:
+            return Response(
+                {'error': 'El agente no tiene un rol asignado'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Filtrar cronogramas pendientes que el agente puede aprobar
+        cronogramas_pendientes = []
+        queryset = Cronograma.objects.filter(estado='pendiente').select_related(
+            'id_area', 'id_jefe', 'creado_por_id'
+        ).prefetch_related('guardia_set')
+        
+        for cronograma in queryset:
+            # Verificar si el rol del agente puede aprobar este cronograma
+            if cronograma.creado_por_rol:
+                roles_permitidos = get_approval_hierarchy(cronograma.creado_por_rol)
+                if rol_agente.lower() in roles_permitidos:
+                    cronogramas_pendientes.append(cronograma)
+            elif rol_agente.lower() == 'administrador':
+                # Si no tiene creado_por_rol, solo admin puede aprobar
+                cronogramas_pendientes.append(cronograma)
+        
+        # Serializar resultados
+        serializer = CronogramaExtendidoSerializer(cronogramas_pendientes, many=True)
+        
+        return Response({
+            'count': len(cronogramas_pendientes),
+            'rol_agente': rol_agente,
+            'cronogramas': serializer.data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def rechazar(self, request, pk=None):
+        """Rechaza un cronograma con motivo"""
+        from .utils import get_agente_rol, puede_aprobar
+        
+        cronograma = self.get_object()
+        
+        # Validar estado actual
+        if cronograma.estado not in ['generada', 'pendiente']:
+            return Response(
+                {'error': f'Solo se pueden rechazar cronogramas pendientes. Estado actual: {cronograma.estado}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Obtener motivo de rechazo
+        motivo = request.data.get('motivo')
+        if not motivo:
+            return Response(
+                {'error': 'Se requiere un motivo de rechazo'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Obtener agente que rechaza
+        agente_id = request.data.get('agente_id')
+        if not agente_id:
+            return Response(
+                {'error': 'Se requiere agente_id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from personas.models import Agente
+            agente_rechazador = Agente.objects.get(id_agente=agente_id)
+        except Agente.DoesNotExist:
+            return Response(
+                {'error': 'Agente no encontrado'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Validar permisos
+        rol_rechazador = get_agente_rol(agente_rechazador)
+        if not rol_rechazador:
+            return Response(
+                {'error': 'El agente no tiene un rol asignado'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if not puede_aprobar(cronograma, rol_rechazador):
+            return Response(
+                {'error': 'No tiene permisos para rechazar este cronograma'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Rechazar cronograma
+        cronograma.estado = 'rechazada'
+        cronograma.save()
+        
+        # Registrar en auditoría
+        from auditoria.models import RegistroAuditoria
+        RegistroAuditoria.objects.create(
+            tipo_accion='rechazo_cronograma',
+            detalle=f'Cronograma {cronograma.id_cronograma} rechazado por {agente_rechazador.nombre} {agente_rechazador.apellido}. Motivo: {motivo}',
+            modelo_afectado='cronograma',
+            id_registro=cronograma.id_cronograma
+        )
+        
+        return Response({
+            'mensaje': 'Cronograma rechazado',
+            'cronograma_id': cronograma.id_cronograma,
+            'rechazado_por': f'{agente_rechazador.nombre} {agente_rechazador.apellido}',
+            'motivo': motivo
+        })
 
 
 class GuardiaViewSet(viewsets.ModelViewSet):

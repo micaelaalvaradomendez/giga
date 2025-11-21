@@ -326,3 +326,114 @@ class NotificacionManager:
         # TODO: Implementar sistema de notificaciones
         logger.info(f"Guardia {guardia_id} asignada")
         return True
+
+
+# ============================================================================
+# SISTEMA DE APROBACIÓN JERÁRQUICA
+# ============================================================================
+
+def get_approval_hierarchy(creado_por_rol):
+    """
+    Retorna qué roles pueden aprobar un cronograma según quién lo creó.
+    
+    Jerarquía:
+    - Jefatura crea → Director o Administrador aprueba
+    - Director crea → Administrador aprueba
+    - Administrador crea → Auto-aprobado (no requiere aprobación)
+    
+    Args:
+        creado_por_rol (str): Rol del agente que creó el cronograma
+        
+    Returns:
+        list: Lista de roles que pueden aprobar
+    """
+    if not creado_por_rol:
+        return ['administrador']
+    
+    rol_lower = creado_por_rol.lower().strip()
+    
+    if rol_lower == 'jefatura':
+        return ['director', 'administrador']
+    elif rol_lower == 'director':
+        return ['administrador']
+    elif rol_lower == 'administrador':
+        return []  # Auto-aprobado, no requiere aprobación adicional
+    
+    # Por defecto, solo administrador puede aprobar
+    return ['administrador']
+
+
+def puede_aprobar(cronograma, rol_aprobador):
+    """
+    Verifica si un agente con un rol específico puede aprobar un cronograma.
+    
+    Args:
+        cronograma: Instancia de Cronograma
+        rol_aprobador (str): Rol del agente que intenta aprobar
+        
+    Returns:
+        bool: True si puede aprobar, False en caso contrario
+    """
+    if not cronograma.creado_por_rol:
+        # Si no hay rol de creador, solo administrador puede aprobar
+        return rol_aprobador.lower().strip() == 'administrador'
+    
+    roles_permitidos = get_approval_hierarchy(cronograma.creado_por_rol)
+    return rol_aprobador.lower().strip() in roles_permitidos
+
+
+def get_agente_rol(agente):
+    """
+    Obtiene el rol principal de un agente.
+    
+    Args:
+        agente: Instancia de Agente
+        
+    Returns:
+        str: Nombre del rol (jefatura, director, administrador) o None
+    """
+    try:
+        # Buscar asignación activa del agente
+        from personas.models import AgenteRol
+        asignacion = AgenteRol.objects.filter(
+            id_agente=agente
+        ).select_related('id_rol').first()
+        
+        if asignacion and asignacion.id_rol:
+            rol_nombre = asignacion.id_rol.nombre.lower().strip()
+            
+            # Mapear roles a categorías de aprobación
+            if 'admin' in rol_nombre or 'administrador' in rol_nombre:
+                return 'administrador'
+            elif 'director' in rol_nombre:
+                return 'director'
+            elif 'jefatura' in rol_nombre or 'jefe' in rol_nombre:
+                return 'jefatura'
+            
+            # Si tiene algún rol pero no es ninguno de los anteriores,
+            # retornar el nombre del rol tal cual
+            return rol_nombre
+        
+        return None
+    except Exception as e:
+        logger.error(f"Error obteniendo rol del agente: {e}")
+        return None
+
+
+def requiere_aprobacion_rol(creado_por_rol):
+    """
+    Verifica si un cronograma requiere aprobación según el rol del creador.
+    
+    Args:
+        creado_por_rol (str): Rol del agente que creó el cronograma
+        
+    Returns:
+        bool: True si requiere aprobación, False si es auto-aprobado
+    """
+    if not creado_por_rol:
+        return True
+    
+    rol_lower = creado_por_rol.lower().strip()
+    
+    # Solo administrador no requiere aprobación (auto-aprobado)
+    return rol_lower != 'administrador'

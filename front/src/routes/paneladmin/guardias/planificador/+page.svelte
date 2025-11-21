@@ -300,13 +300,39 @@
 
       const mensaje = response.data?.mensaje || 'Guardia creada exitosamente';
       const guardiasCreadas = response.data?.guardias_creadas || agentesSeleccionados.size;
+      const cronogramaId = response.data?.cronograma_id;
       
-      success = `${mensaje}. Se asignó la guardia a ${guardiasCreadas} agente(s). Los cambios han sido registrados en auditoría.`;
+      // Obtener información del cronograma creado para saber el estado
+      let estadoMensaje = '';
+      let estadoIcono = '';
+      try {
+        if (cronogramaId) {
+          const cronogramaResponse = await guardiasService.getCronograma(cronogramaId);
+          const cronograma = cronogramaResponse.data;
+          
+          if (cronograma.estado === 'aprobada') {
+            estadoIcono = '🎉';
+            estadoMensaje = '\n\nEstado: Auto-aprobada\nComo tienes rol de Administrador, la guardia fue aprobada automáticamente y está lista para ser publicada.';
+          } else if (cronograma.estado === 'pendiente') {
+            estadoIcono = '⏳';
+            const rolesAprobadores = cronograma.puede_aprobar_rol?.join(', ') || 'superior';
+            estadoMensaje = `\n\nEstado: Pendiente de aprobación\nRequiere aprobación de: ${rolesAprobadores}\nPodrá ser aprobada desde la página de Aprobaciones.`;
+          } else if (cronograma.estado === 'generada') {
+            estadoIcono = '📋';
+            estadoMensaje = '\n\nEstado: Generada\nLa guardia ha sido creada y registrada exitosamente.';
+          }
+        }
+      } catch (e) {
+        console.log('No se pudo obtener estado del cronograma:', e);
+        estadoIcono = '✅';
+      }
+      
+      success = `${estadoIcono} ${mensaje}\n\nAgentes asignados: ${guardiasCreadas}${estadoMensaje}\n\nLos cambios han sido registrados en auditoría.`;
       mostrarToast('✅ Guardia creada y registrada exitosamente', 'success');
 
       setTimeout(() => {
         goto('/paneladmin/guardias');
-      }, 3000);
+      }, 5000);
 
     } catch (e) {
       const mensaje = e?.response?.data?.detail || e?.response?.data?.error || 'Error al crear la guardia';
@@ -955,12 +981,17 @@ select.input {
   background: #fef2f2;
   color: #b91c1c;
   border: 1px solid #fecaca;
+  white-space: pre-line;
+  line-height: 1.6;
 }
 
 .alert-success {
   background: #f0fdf4;
   color: #166534;
   border: 1px solid #bbf7d0;
+  line-height: 1.6;
+  white-space: pre-line;
+  font-size: 0.95rem;
 }
 
 .placeholder {

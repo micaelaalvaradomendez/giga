@@ -60,10 +60,18 @@ class FeriadoSerializer(serializers.ModelSerializer):
 class CronogramaExtendidoSerializer(serializers.ModelSerializer):
     """Serializer extendido para cronogramas con nuevos campos"""
     
-    area_nombre = serializers.CharField(source='id_area.nombre', read_only=True)
-    jefe_nombre = serializers.CharField(source='id_jefe.nombre', read_only=True)
-    jefe_apellido = serializers.CharField(source='id_jefe.apellido', read_only=True)
+    area_nombre = serializers.CharField(source='id_area.nombre', read_only=True, allow_null=True)
+    jefe_nombre = serializers.CharField(source='id_jefe.nombre', read_only=True, allow_null=True)
+    jefe_apellido = serializers.CharField(source='id_jefe.apellido', read_only=True, allow_null=True)
     total_guardias = serializers.SerializerMethodField()
+    
+    # Campos de aprobación - con manejo de NULL
+    creado_por_nombre = serializers.CharField(source='creado_por_id.nombre', read_only=True, allow_null=True, default=None)
+    creado_por_apellido = serializers.CharField(source='creado_por_id.apellido', read_only=True, allow_null=True, default=None)
+    aprobado_por_nombre = serializers.CharField(source='aprobado_por_id.nombre', read_only=True, allow_null=True, default=None)
+    aprobado_por_apellido = serializers.CharField(source='aprobado_por_id.apellido', read_only=True, allow_null=True, default=None)
+    requiere_aprobacion = serializers.SerializerMethodField()
+    puede_aprobar_rol = serializers.SerializerMethodField()
     
     class Meta:
         model = Cronograma
@@ -71,13 +79,31 @@ class CronogramaExtendidoSerializer(serializers.ModelSerializer):
             'id_cronograma', 'fecha_aprobacion', 'tipo',
             'hora_inicio', 'hora_fin', 'creado_en', 'actualizado_en',
             'id_jefe', 'jefe_nombre', 'jefe_apellido',
-            'id_area', 'area_nombre', 'total_guardias'
+            'id_area', 'area_nombre', 'total_guardias', 'estado', 'fecha_creacion',
+            'creado_por_rol', 'creado_por_id', 'creado_por_nombre', 'creado_por_apellido',
+            'aprobado_por_id', 'aprobado_por_nombre', 'aprobado_por_apellido',
+            'requiere_aprobacion', 'puede_aprobar_rol'
         ]
-        read_only_fields = ['id_cronograma', 'creado_en', 'actualizado_en', 'total_guardias']
+        read_only_fields = ['id_cronograma', 'creado_en', 'actualizado_en', 'total_guardias', 
+                          'requiere_aprobacion', 'puede_aprobar_rol']
     
     def get_total_guardias(self, obj):
         """Cuenta el total de guardias del cronograma"""
         return obj.guardia_set.count()
+    
+    def get_requiere_aprobacion(self, obj):
+        """Calcula si requiere aprobación de forma segura"""
+        try:
+            return obj.requiere_aprobacion
+        except:
+            return True  # Por defecto, requiere aprobación
+    
+    def get_puede_aprobar_rol(self, obj):
+        """Calcula roles que pueden aprobar de forma segura"""
+        try:
+            return obj.puede_aprobar_rol
+        except:
+            return ['administrador']  # Por defecto, solo admin
 
 
 class GuardiaResumenSerializer(serializers.ModelSerializer):
