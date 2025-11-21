@@ -43,24 +43,30 @@
 	onMount(async () => {
 		if (browser) {
 			await loadOrganigrama();
-			
+
 			// Recargar cuando la página vuelve a ser visible
 			const handleVisibilityChange = () => {
-				if (document.visibilityState === 'visible') {
+				if (document.visibilityState === "visible") {
 					loadOrganigrama();
 				}
 			};
-			
+
 			const handleFocus = () => {
 				loadOrganigrama();
 			};
-			
-			document.addEventListener('visibilitychange', handleVisibilityChange);
-			window.addEventListener('focus', handleFocus);
-			
+
+			document.addEventListener(
+				"visibilitychange",
+				handleVisibilityChange,
+			);
+			window.addEventListener("focus", handleFocus);
+
 			return () => {
-				document.removeEventListener('visibilitychange', handleVisibilityChange);
-				window.removeEventListener('focus', handleFocus);
+				document.removeEventListener(
+					"visibilitychange",
+					handleVisibilityChange,
+				);
+				window.removeEventListener("focus", handleFocus);
 			};
 		}
 	});
@@ -140,33 +146,44 @@
 
 	async function sincronizarConAreas() {
 		if (!browser) return;
-		
-		if (!confirm('¿Sincronizar el organigrama con la estructura actual de áreas? Esto reemplazará el organigrama actual.')) {
+
+		if (
+			!confirm(
+				"¿Sincronizar el organigrama con la estructura actual de áreas? Esto reemplazará el organigrama actual.",
+			)
+		) {
 			return;
 		}
 
 		try {
 			loading = true;
 
-			const response = await fetch("/api/personas/organigrama/sincronizar/", {
-				method: "POST",
-				credentials: "include",
-				headers: {
-					"Content-Type": "application/json",
-				}
-			});
+			const response = await fetch(
+				"/api/personas/organigrama/sincronizar/",
+				{
+					method: "POST",
+					credentials: "include",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				},
+			);
 
 			if (response.ok) {
 				const result = await response.json();
 				if (result.success) {
 					console.log("✅ Organigrama sincronizado correctamente");
-					alert('Organigrama sincronizado exitosamente con las áreas del sistema');
-					
+					alert(
+						"Organigrama sincronizado exitosamente con las áreas del sistema",
+					);
+
 					// Recargar el organigrama
 					await loadOrganigrama();
 					return true;
 				} else {
-					throw new Error(result.message || "Error al sincronizar organigrama");
+					throw new Error(
+						result.message || "Error al sincronizar organigrama",
+					);
 				}
 			} else {
 				throw new Error("Error de conexión con el servidor");
@@ -767,19 +784,13 @@
 <!-- El componente AdminNodeRenderer se importa al inicio -->
 
 <style>
-	.admin-container {
-		max-width: 1200px;
-		margin: 0 auto;
-		padding: 2rem;
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
-
 	.admin-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin: 0;
+		margin: 0 25px 0 25px;
 		padding-bottom: 20px;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.admin-header-title {
@@ -892,6 +903,7 @@
 		background: white;
 		border-radius: 8px;
 		padding: 2rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.loading {
@@ -1063,13 +1075,14 @@
 		border: none;
 		border-radius: 10px;
 		cursor: pointer;
-		font-weight: 500;
+		font-weight: 600;
 		text-decoration: none;
 		display: inline-flex;
 		align-items: center;
 		gap: 10px;
 		transition: all 0.3s ease;
 		font-size: 16px;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.btn:hover {

@@ -26,25 +26,31 @@
 			console.log("🚀 Iniciando controlador de roles...");
 			await rolesController.init();
 			console.log("✅ Controlador de roles inicializado");
-			
+
 			// Recargar cuando la página vuelve a ser visible
 			if (browser) {
 				const handleVisibilityChange = () => {
-					if (document.visibilityState === 'visible') {
+					if (document.visibilityState === "visible") {
 						rolesController.init();
 					}
 				};
-				
+
 				const handleFocus = () => {
 					rolesController.init();
 				};
-				
-				document.addEventListener('visibilitychange', handleVisibilityChange);
-				window.addEventListener('focus', handleFocus);
-				
+
+				document.addEventListener(
+					"visibilitychange",
+					handleVisibilityChange,
+				);
+				window.addEventListener("focus", handleFocus);
+
 				return () => {
-					document.removeEventListener('visibilitychange', handleVisibilityChange);
-					window.removeEventListener('focus', handleFocus);
+					document.removeEventListener(
+						"visibilitychange",
+						handleVisibilityChange,
+					);
+					window.removeEventListener("focus", handleFocus);
 				};
 			}
 		} catch (err) {
@@ -80,24 +86,23 @@
 
 <div class="page-container">
 	<div class="page-header">
-		<div class="header-content">
-			<div class="header-title">
-				<h1>🛡️ Gestión de Roles y Permisos</h1>
-			</div>
-			<div class="header-actions">
-				<button
-					class="btn btn-secondary"
-					on:click={() => rolesController.cargarDatos()}
-					disabled={$loading}
-				>
-					{#if $loading}
-						<span class="spinner"></span>
-					{:else}
-						🔄
-					{/if}
-					Actualizar
-				</button>
-			</div>
+		<div class="header-title">
+			<h1>Gestión de Roles y Permisos</h1>
+		</div>
+		<div class="header-actions">
+			<button
+				class="btn-header"
+				style="background: #8b5cf6; color: white"
+				on:click={() => rolesController.cargarDatos()}
+				disabled={$loading}
+			>
+				{#if $loading}
+					<span class="spinner"></span>
+				{:else}
+					🔄
+				{/if}
+				Actualizar
+			</button>
 		</div>
 	</div>
 
@@ -107,7 +112,7 @@
 				<strong>❌ Error:</strong>
 				{$error}
 				<button
-					class="btn btn-sm btn-primary"
+					class="btn-primary"
 					on:click={() => rolesController.cargarDatos()}
 				>
 					Reintentar
@@ -115,25 +120,27 @@
 			</div>
 		{/if}
 
-		<!-- Filtros y búsqueda -->
-		<div class="filters-section">
-			<div class="filters-row">
-				<div class="search-box">
+		<!-- Controles de filtrado -->
+		<div class="filtros-container">
+			<div class="filtros-row">
+				<div class="filtro-group">
+					<label for="busqueda">🔍 Buscar agente</label>
 					<input
 						type="text"
-						placeholder="🔍 Buscar por nombre, apellido, legajo, DNI, email o categoría..."
-						value={$searchTerm}
+						id="busqueda"
+						bind:value={$searchTerm}
 						on:input={actualizarBusqueda}
-						class="search-input"
+						placeholder="Buscar por nombre, apellido, DNI, email o legajo..."
+						class="input-busqueda"
 					/>
 				</div>
-				<div class="filter-box">
-					<label for="filtroArea">Filtrar por Área:</label>
+				<div class="filtro-group">
+					<label for="filtroArea">📍 Filtrar por área</label>
 					<select
 						id="filtroArea"
 						bind:value={$filtroArea}
 						on:change={actualizarFiltroArea}
-						class="filter-select"
+						class="select-area"
 					>
 						<option value=""
 							>Todas las áreas ({$areasDisponibles.length})</option
@@ -141,24 +148,20 @@
 						{#each $areasDisponibles as area}
 							<option value={area.id_area}>{area.nombre}</option>
 						{/each}
+						{#if $areasDisponibles.length === 0}
+							<option disabled>❌ No hay áreas cargadas</option>
+						{/if}
 					</select>
-					{#if $areasDisponibles.length === 0}
-						<small style="color: red;"
-							>❌ No se cargaron áreas</small
-						>
-					{/if}
 				</div>
-				<div class="filter-actions">
+				<div class="filtro-actions">
 					<button
-						class="btn btn-secondary btn-sm"
+						class="btn-limpiar"
 						on:click={limpiarFiltros}
+						title="Limpiar filtros"
 					>
 						🗑️ Limpiar
 					</button>
 				</div>
-			</div>
-			<div class="search-results">
-				{$estadisticas.mostrados} de {$estadisticas.total} agentes
 			</div>
 		</div>
 
@@ -180,7 +183,7 @@
 				</p>
 				{#if $searchTerm}
 					<button
-						class="btn btn-primary"
+						class="btn-primary"
 						on:click={() => rolesController.limpiarBusqueda()}
 					>
 						Limpiar búsqueda
@@ -277,7 +280,7 @@
 											</select>
 											<div class="rol-actions">
 												<button
-													class="btn btn-sm btn-success"
+													class="btn-success"
 													on:click={(e) => {
 														const select = e.target
 															.closest(
@@ -302,7 +305,7 @@
 													{/if}
 												</button>
 												<button
-													class="btn btn-sm btn-secondary"
+													class="btn-secondary"
 													on:click={rolesController.cancelarEdicionRol}
 													disabled={$savingRoleId ===
 														agente.id_agente}
@@ -329,7 +332,7 @@
 									{#if $editingRoleId !== agente.id_agente}
 										{#if rolesController.puedeEditarRol(agente, $currentUser)}
 											<button
-												class="btn btn-sm btn-primary"
+												class="btn-primary"
 												on:click={() =>
 													rolesController.iniciarEdicionRol(
 														agente.id_agente,
@@ -356,27 +359,81 @@
 </div>
 
 <style>
-	.page-container {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 2rem;
-	}
-
 	.page-header {
-		margin-bottom: 2rem;
-	}
-
-	.header-content {
 		display: flex;
 		justify-content: space-between;
-		align-items: flex-start;
-		gap: 2rem;
+		align-items: center;
+		margin-bottom: 1rem;
+		padding-bottom: 1rem;
+	}
+
+	.header-title {
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		position: relative;
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+		color: white;
+		padding: 30px 40px;
+		margin: 0;
+		max-width: 1000px;
+		border-radius: 28px;
+		overflow: hidden;
+		text-align: center;
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+			0 20px 60px rgba(30, 64, 175, 0.4);
+	}
+
+	.header-title::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: linear-gradient(
+				90deg,
+				rgba(255, 255, 255, 0.03) 1px,
+				transparent 1px
+			),
+			linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+		background-size: 50px 50px;
+		animation: moveLines 20s linear infinite;
 	}
 
 	.header-title h1 {
-		margin: 0 0 0.5rem 0;
-		color: #2c3e50;
-		font-size: 2rem;
+		margin: 10px;
+		font-weight: 800;
+		font-size: 30px;
+		letter-spacing: 0.2px;
+		position: relative;
+		padding-bottom: 12px;
+		overflow: hidden;
+		display: inline-block;
+	}
+
+	.header-title h1::after {
+		content: "";
+		position: absolute;
+		width: 40%;
+		height: 3px;
+		bottom: 0;
+		left: 0;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.9),
+			transparent
+		);
+		animation: moveLine 2s linear infinite;
+	}
+
+	@keyframes moveLine {
+		0% {
+			left: -40%;
+		}
+		100% {
+			left: 100%;
+		}
 	}
 
 	.header-actions {
@@ -399,70 +456,58 @@
 		border: 1px solid #f5c6cb;
 	}
 
-	.filters-section {
+	.filtros-container {
 		background: white;
+		border: 1px solid #e9ecef;
+		border-radius: 8px;
 		padding: 1.5rem;
-		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		margin-bottom: 2rem;
+		margin-bottom: 1.5rem;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		font-size: 12px;
 	}
 
-	.filters-row {
+	.filtros-row {
 		display: grid;
 		grid-template-columns: 1fr auto auto;
-		gap: 1.5rem;
+		gap: 1rem;
 		align-items: end;
 		margin-bottom: 1rem;
 	}
 
-	.search-box {
+	.filtro-group {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
 	}
-
-	.filter-box {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		min-width: 200px;
-	}
-
-	.filter-box label {
-		font-size: 0.9rem;
+	.filtro-group label {
 		font-weight: 500;
 		color: #495057;
+		font-size: 0.9rem;
 	}
 
-	.filter-actions {
-		display: flex;
-		align-items: end;
+	.input-busqueda,
+	.select-area {
+		padding: 0.75rem;
+		border: 1px solid #ced4da;
+		border-radius: 6px;
+		font-size: 0.9rem;
+		transition:
+			border-color 0.2s,
+			box-shadow 0.2s;
+		min-width: 250px;
 	}
 
-	.search-input,
-	.filter-select {
-		padding: 0.75rem 1rem;
-		border: 2px solid #e9ecef;
-		border-radius: 8px;
-		font-size: 1rem;
-		transition: border-color 0.2s;
-		background: white;
-	}
-
-	.search-input:focus,
-	.filter-select:focus {
+	.input-busqueda:focus,
+	.select-area:focus {
 		outline: none;
 		border-color: #e79043;
-		box-shadow: 0 0 0 3px rgba(231, 144, 67, 0.1);
+		box-shadow: 0 0 0 2px rgba(231, 144, 67, 0.25);
 	}
 
-	.search-results {
-		color: #6c757d;
-		font-size: 0.9rem;
-		text-align: center;
-		padding: 0.5rem;
-		background: #f8f9fa;
-		border-radius: 6px;
+	.filtro-actions {
+		display: flex;
+		align-items: end;
 	}
 
 	.loading-container {
@@ -504,34 +549,77 @@
 	}
 
 	.table-container {
+		overflow-x: auto;
+		max-height: 600px;
+		overflow-y: auto;
+		position: relative;
+		border-radius: 24px;
+		box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
 		background: white;
-		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		overflow: hidden;
 	}
 
-	.roles-table {
+	.table-container::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	.table-container::-webkit-scrollbar-track {
+		background: #f1f3f4;
+		border-radius: 10px;
+	}
+
+	.table-container::-webkit-scrollbar-thumb {
+		background: #c1c7cd;
+		border-radius: 10px;
+		transition: background 0.3s ease;
+	}
+
+	.table-container::-webkit-scrollbar-thumb:hover {
+		background: #a8aeb4;
+	}
+
+	table {
 		width: 100%;
 		border-collapse: collapse;
+		background: white;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
-	.roles-table th {
-		background: linear-gradient(135deg, #e79043, #f39c12);
-		color: white;
-		padding: 1rem;
+	thead {
+		background: linear-gradient(135deg, #4865e9 0%, #527ab6d0 100%);
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+	}
+
+	th {
+		padding: 15px 20px;
 		text-align: left;
 		font-weight: 600;
+		color: white;
 		border-bottom: none;
+		font-size: 0.9rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		background: transparent;
 	}
 
-	.roles-table td {
-		padding: 1rem;
-		border-bottom: 1px solid #e9ecef;
+	td {
+		padding: 15px 20px;
+		border-bottom: 1px solid #f1f3f4;
 		vertical-align: middle;
+		font-size: 0.95rem;
 	}
 
-	.agente-row:hover {
-		background: #f8f9fa;
+	tbody tr {
+		transition: all 0.3s ease;
+	}
+
+	tbody tr:hover {
+		background-color: #f8f9fa;
+		transform: scale(1.01);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 	}
 
 	.legajo-badge {
@@ -561,11 +649,10 @@
 	}
 
 	.categoria-badge {
-		background: #6c757d;
-		color: white;
+		color: black;
 		padding: 0.25rem 0.5rem;
 		border-radius: 4px;
-		font-size: 0.85rem;
+		font-size: 15px;
 		font-weight: 500;
 	}
 
@@ -637,57 +724,76 @@
 		font-style: italic;
 	}
 
-	.btn {
-		padding: 0.5rem 1rem;
+	.btn-header {
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		padding: 16px 32px;
+		border-radius: 10px;
 		border: none;
-		border-radius: 6px;
+		font-weight: 600;
 		cursor: pointer;
-		font-size: 0.9rem;
-		font-weight: 500;
-		transition: all 0.2s;
+		transition: all 0.3s ease;
+		text-decoration: none;
 		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
-		text-decoration: none;
+		gap: 10px;
+		font-size: 18px;
+		color: white;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.219);
 	}
 
-	.btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.btn-sm {
-		padding: 0.375rem 0.75rem;
-		font-size: 0.8rem;
+	.btn-header:hover {
+		transform: translateY(-3px);
 	}
 
 	.btn-primary {
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		padding: 8px 12px;
+		border: none;
+		border-radius: 6px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		font-size: 14px;
 		background: linear-gradient(135deg, #e79043, #f39c12);
 		color: white;
 	}
 
-	.btn-primary:hover:not(:disabled) {
-		background: linear-gradient(135deg, #d17d38, #e67e22);
-		transform: translateY(-1px);
-		box-shadow: 0 4px 8px rgba(231, 144, 67, 0.3);
-	}
-
-	.btn-secondary {
+	.btn-limpiar {
+		padding: 10px 25px;
 		background: #6c757d;
 		color: white;
+		border: none;
+		border-radius: 6px;
+		font-size: 0.9rem;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		white-space: nowrap;
+		height: 42px;
 	}
 
-	.btn-secondary:hover:not(:disabled) {
-		background: #545b62;
+	.btn-limpiar:hover {
+		background: #5a6268;
+		transform: translateY(-1px);
 	}
 
 	.btn-success {
+		border: none;
+		border-radius: 4px;
 		background: #28a745;
 		color: white;
+		padding: 3px 5px 3px 5px;
 	}
 
 	.btn-success:hover:not(:disabled) {
 		background: #1e7e34;
+	}
+
+	.btn-secondary {
+		border: none;
+		border-radius: 4px;
+		background: #4b4b4baf;
+		color: white;
+		padding: 5px 5px 5px 5px;
 	}
 
 	.spinner,
@@ -724,30 +830,11 @@
 		.roles-table td {
 			padding: 0.75rem 0.5rem;
 		}
-
-		.filters-row {
-			grid-template-columns: 1fr;
-			gap: 1rem;
-		}
 	}
 
 	@media (max-width: 768px) {
 		.page-container {
 			padding: 1rem;
-		}
-
-		.header-content {
-			flex-direction: column;
-			align-items: stretch;
-		}
-
-		.filters-row {
-			grid-template-columns: 1fr;
-			gap: 1rem;
-		}
-
-		.filter-box {
-			min-width: auto;
 		}
 
 		.table-container {
@@ -774,10 +861,6 @@
 
 		.roles-table {
 			min-width: 1000px;
-		}
-
-		.filters-section {
-			padding: 1rem;
 		}
 	}
 </style>

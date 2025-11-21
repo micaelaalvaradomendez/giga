@@ -56,25 +56,31 @@
 		try {
 			await usuariosController.init();
 			console.log("✅ Controlador inicializado exitosamente");
-			
+
 			// Recargar cuando la página vuelve a ser visible
-			if (typeof window !== 'undefined') {
+			if (typeof window !== "undefined") {
 				const handleVisibilityChange = () => {
-					if (document.visibilityState === 'visible') {
+					if (document.visibilityState === "visible") {
 						usuariosController.init();
 					}
 				};
-				
+
 				const handleFocus = () => {
 					usuariosController.init();
 				};
-				
-				document.addEventListener('visibilitychange', handleVisibilityChange);
-				window.addEventListener('focus', handleFocus);
-				
+
+				document.addEventListener(
+					"visibilitychange",
+					handleVisibilityChange,
+				);
+				window.addEventListener("focus", handleFocus);
+
 				return () => {
-					document.removeEventListener('visibilitychange', handleVisibilityChange);
-					window.removeEventListener('focus', handleFocus);
+					document.removeEventListener(
+						"visibilitychange",
+						handleVisibilityChange,
+					);
+					window.removeEventListener("focus", handleFocus);
 				};
 			}
 		} catch (err) {
@@ -137,6 +143,10 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>Gestión de Agentes - GIGA</title>
+</svelte:head>
 
 <div class="logo">
 	<a href="/paneladmin">Panel de Administración</a>
@@ -402,9 +412,8 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 2rem;
+		margin-bottom: 1rem;
 		padding-bottom: 1rem;
-		border-bottom: 2px solid #e9ecef;
 	}
 
 	.page-header-title {
