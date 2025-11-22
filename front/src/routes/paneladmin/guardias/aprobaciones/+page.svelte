@@ -114,7 +114,7 @@
       class:active={$tabActiva === 'aprobadas'}
       on:click={() => handleCambiarTab('aprobadas')}
     >
-      Aprobadas ({$cronogramasAprobadas.length})
+      Publicadas ({$cronogramasAprobadas.length})
     </button>
   </div>
 
@@ -193,7 +193,7 @@
                 ✏️ Editar
               </button>
               <button class="btn btn-success" on:click={() => handleAprobar(cronograma)} disabled={$loading}>
-                ✓ Aprobar
+                ✓ Aprobar y Publicar
               </button>
               <button class="btn btn-danger" on:click={() => handleIniciarRechazo(cronograma)} disabled={$loading}>
                 ✗ Rechazar
@@ -209,7 +209,7 @@
     <div class="cronogramas-lista">
       {#if $cronogramasAprobadas.length === 0}
         <div class="empty-state">
-          <p>No hay cronogramas aprobadas</p>
+          <p>No hay cronogramas publicadas</p>
         </div>
       {:else}
         {#each $cronogramasAprobadas as cronograma}
@@ -226,9 +226,16 @@
             
             <div class="cronograma-body">
               <div class="info-row">
-                <span class="label">Aprobado:</span>
+                <span class="label">Creado:</span>
+                <span class="value">{aprobacionesGuardiasController.formatearFecha(cronograma.fecha_creacion)}</span>
+              </div>
+              
+              {#if cronograma.fecha_aprobacion}
+              <div class="info-row">
+                <span class="label">Publicado:</span>
                 <span class="value">{aprobacionesGuardiasController.formatearFecha(cronograma.fecha_aprobacion)}</span>
               </div>
+              {/if}
               
               <div class="info-row">
                 <span class="label">Guardias:</span>
@@ -238,13 +245,8 @@
             
             <div class="cronograma-actions">
               <button class="btn btn-secondary" on:click={() => handleVerDetalles(cronograma)}>
-                Ver Detalles
+                📋 Ver Detalles
               </button>
-              {#if cronograma.estado === 'aprobada'}
-                <button class="btn btn-primary" on:click={() => handlePublicar(cronograma)} disabled={$loading}>
-                  Publicar
-                </button>
-              {/if}
             </div>
           </div>
         {/each}
@@ -507,6 +509,11 @@
   .badge-publicada {
     background: #dbeafe;
     color: #1e40af;
+  }
+
+  .badge-generada {
+    background: #fef3c7;
+    color: #92400e;
   }
 
   .badge-rechazada {

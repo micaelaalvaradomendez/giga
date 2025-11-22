@@ -303,6 +303,10 @@ case "$1" in
     urls)
         show_urls
         ;;
+    reset)
+        check_docker
+        reset_database
+        ;;
     clean)
         check_docker
         clean_system

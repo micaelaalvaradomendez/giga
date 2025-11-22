@@ -82,6 +82,13 @@
             alert(result.message);
         }
     }
+
+    async function handleCorregirAsistencia() {
+        const result = await asistenciasController.corregirAsistencia();
+        if (result.message) {
+            alert(result.message);
+        }
+    }
 </script>
 
 <svelte:head>
@@ -348,7 +355,13 @@
         <!-- svelte-ignore a11y-no-static-element-interactions -->
         <div class="modal-content" on:click|stopPropagation>
             <div class="modal-header">
-                <h2>Marcar Asistencia</h2>
+                <h2>
+                    {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
+                        ✏️ Corregir Asistencia
+                    {:else}
+                        ➕ Marcar Asistencia
+                    {/if}
+                </h2>
                 <button
                     class="btn-close"
                     on:click={() => asistenciasController.cerrarModal()}
@@ -431,13 +444,33 @@
                     </div>
                 </div>
 
+                {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
+                    <div class="info-correccion">
+                        <div class="info-header">
+                            <span class="info-icon">ℹ️</span>
+                            <strong>Corrección de Asistencia</strong>
+                        </div>
+                        <p>Esta asistencia ya tiene marcaciones registradas. Puede corregir las horas especificando los nuevos valores.</p>
+                        <p><strong>Importante:</strong> La corrección quedará registrada en el historial de auditoría.</p>
+                    </div>
+                {/if}
+
                 <div class="form-group">
-                    <label for="observacion_edit">Observación (opcional)</label>
+                    <label for="observacion_edit">
+                        Observación 
+                        {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
+                            (requerida para corrección)
+                        {:else}
+                            (opcional)
+                        {/if}
+                    </label>
                     <textarea
                         id="observacion_edit"
                         bind:value={$observacionEdit}
-                        placeholder="Motivo de la corrección (ej: 'Agente olvidó marcar')"
-                        rows="2"
+                        placeholder={$asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida 
+                            ? "Explique el motivo de la corrección (ej: 'Error en marcación original', 'Horario corregido por supervisor')"
+                            : "Motivo de la corrección (ej: 'Agente olvidó marcar')"}
+                        rows="3"
                     ></textarea>
                 </div>
 
@@ -450,14 +483,23 @@
                             bind:checked={$usarHoraEspecifica}
                         />
                         <label for="usar_hora_especifica">
-                            Especificar hora real de entrada/salida
+                            {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
+                                Corregir horas existentes
+                            {:else}
+                                Especificar hora real de entrada/salida
+                            {/if}
                         </label>
                     </div>
 
                     {#if $usarHoraEspecifica}
                         <div class="horas-grid">
                             <div class="form-group">
-                                <label for="hora_entrada_input">🕐 Hora de entrada</label>
+                                <label for="hora_entrada_input">
+                                    🕐 Hora de entrada
+                                    {#if $asistenciaEditando.hora_entrada}
+                                        <span class="actual-time">(Actual: {asistenciasController.formatTime($asistenciaEditando.hora_entrada)})</span>
+                                    {/if}
+                                </label>
                                 <input
                                     type="time"
                                     id="hora_entrada_input"
@@ -465,12 +507,21 @@
                                     placeholder="HH:MM"
                                 />
                                 <small class="help-text">
-                                    Solo se usará si marcas entrada
+                                    {#if $asistenciaEditando.hora_entrada}
+                                        Nueva hora de entrada a registrar
+                                    {:else}
+                                        Solo se usará si marcas entrada
+                                    {/if}
                                 </small>
                             </div>
 
                             <div class="form-group">
-                                <label for="hora_salida_input">🕔 Hora de salida</label>
+                                <label for="hora_salida_input">
+                                    🕔 Hora de salida
+                                    {#if $asistenciaEditando.hora_salida}
+                                        <span class="actual-time">(Actual: {asistenciasController.formatTime($asistenciaEditando.hora_salida)})</span>
+                                    {/if}
+                                </label>
                                 <input
                                     type="time"
                                     id="hora_salida_input"
@@ -478,19 +529,16 @@
                                     placeholder="HH:MM"
                                 />
                                 <small class="help-text">
-                                    Solo se usará si marcas salida
+                                    {#if $asistenciaEditando.hora_salida}
+                                        Nueva hora de salida a registrar
+                                    {:else}
+                                        Solo se usará si marcas salida
+                                    {/if}
                                 </small>
                             </div>
                         </div>
                     {/if}
                 </div>
-
-                {#if $asistenciaEditando.observaciones}
-                    <div class="observaciones-previas">
-                        <strong>Observaciones anteriores:</strong>
-                        <p>{$asistenciaEditando.observaciones}</p>
-                    </div>
-                {/if}
             </div>
 
             <div class="modal-footer">
@@ -500,21 +548,34 @@
                 >
                     Cancelar
                 </button>
-                <button
-                    class="btn-marcar-entrada"
-                    on:click={handleMarcarEntrada}
-                    disabled={$asistenciaEditando.hora_entrada}
-                >
-                    🕐 Marcar Entrada
-                </button>
-                <button
-                    class="btn-marcar-salida"
-                    on:click={handleMarcarSalida}
-                    disabled={!$asistenciaEditando.hora_entrada ||
-                        $asistenciaEditando.hora_salida}
-                >
-                    🕐 Marcar Salida
-                </button>
+                
+                {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
+                    <!-- Botones para corregir asistencia existente -->
+                    <button
+                        class="btn-corregir"
+                        on:click={handleCorregirAsistencia}
+                        disabled={!$usarHoraEspecifica || 
+                                 (!$horaEntrada && !$horaSalida) ||
+                                 !$observacionEdit.trim()}
+                    >
+                        ✏️ Aplicar Corrección
+                    </button>
+                {:else}
+                    <!-- Botones para marcar nueva asistencia -->
+                    <button
+                        class="btn-marcar-entrada"
+                        on:click={handleMarcarEntrada}
+                    >
+                        🕐 Marcar Entrada
+                    </button>
+                    <button
+                        class="btn-marcar-salida"
+                        on:click={handleMarcarSalida}
+                        disabled={!$asistenciaEditando.hora_entrada}
+                    >
+                        🕐 Marcar Salida
+                    </button>
+                {/if}
             </div>
         </div>
     </div>
@@ -1031,6 +1092,42 @@
         color: #333;
     }
 
+    .info-correccion {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+        border: 1px solid #90caf9;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+
+    .info-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        color: #1565c0;
+    }
+
+    .info-icon {
+        font-size: 1.2rem;
+    }
+
+    .info-correccion p {
+        margin: 0.5rem 0;
+        color: #333;
+        line-height: 1.4;
+    }
+
+    .info-correccion p:first-of-type {
+        margin-top: 0;
+    }
+
+    .info-correccion p:last-of-type {
+        margin-bottom: 0;
+        font-weight: 600;
+        color: #d32f2f;
+    }
+
     .modal-footer {
         padding: 1.5rem 2rem;
         border-top: 1px solid #e0e0e0;
@@ -1075,6 +1172,23 @@
     .btn-marcar-salida:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
+    }
+
+    .btn-corregir {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+        color: white;
+    }
+
+    .btn-corregir:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+    }
+
+    .actual-time {
+        font-weight: 400;
+        color: #666;
+        font-size: 0.85rem;
+        margin-left: 0.5rem;
     }
 
     .modal-footer button:disabled {

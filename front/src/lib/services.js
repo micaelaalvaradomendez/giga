@@ -99,6 +99,8 @@ export const asistenciaService = {
 export const guardiasService = {
   // Cronogramas
   getCronogramas: (token = null) => createApiClient(token).get('/guardias/cronogramas/'),
+  getCronogramasPendientes: (token = null) => createApiClient(token).get('/guardias/cronogramas/?estado=generada'),
+  getCronogramasAprobadas: (token = null) => createApiClient(token).get('/guardias/cronogramas/?estado=publicada'),
   getCronograma: (id, token = null) => createApiClient(token).get(`/guardias/cronogramas/${id}/`),
   createCronograma: (data, token = null) => createApiClient(token).post('/guardias/cronogramas/', data),
   updateCronograma: (id, data, token = null) => createApiClient(token).put(`/guardias/cronogramas/${id}/`, data),
@@ -111,6 +113,7 @@ export const guardiasService = {
   // Aprobaciones jerárquicas
   getPendientesAprobacion: (agenteId, token = null) => createApiClient(token).get(`/guardias/cronogramas/pendientes/?agente_id=${agenteId}`),
   rechazarCronograma: (id, data, token = null) => createApiClient(token).post(`/guardias/cronogramas/${id}/rechazar/`, data),
+  deleteCronograma: (id, token = null) => createApiClient(token).delete(`/guardias/cronogramas/${id}/`),
 
   // Guardias
   getGuardias: (token = null) => createApiClient(token).get('/guardias/guardias/'),

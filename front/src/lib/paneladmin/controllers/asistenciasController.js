@@ -225,9 +225,18 @@ class AsistenciasController {
 	abrirModalCorreccion(asistencia) {
 		this.asistenciaEditando.set(asistencia);
 		this.observacionEdit.set('');
-		this.horaEntrada.set('');
-		this.horaSalida.set('');
-		this.usarHoraEspecifica.set(false);
+		
+		// Si ya tiene horas marcadas, pre-llenar los campos para permitir edición
+		if (asistencia.hora_entrada || asistencia.hora_salida) {
+			this.horaEntrada.set(asistencia.hora_entrada || '');
+			this.horaSalida.set(asistencia.hora_salida || '');
+			this.usarHoraEspecifica.set(true);
+		} else {
+			this.horaEntrada.set('');
+			this.horaSalida.set('');
+			this.usarHoraEspecifica.set(false);
+		}
+		
 		this.modalCorreccion.set(true);
 	}
 
@@ -364,6 +373,97 @@ class AsistenciasController {
 			}
 		} catch (error) {
 			console.error('Error al marcar salida:', error);
+			return { success: false, message: '❌ Error de conexión' };
+		}
+	}
+
+	// ========== CORRECCIÓN DE ASISTENCIA EXISTENTE ==========
+	async corregirAsistencia() {
+		let asistencia, observacion, usarHora, horaEntrada, horaSalida;
+		this.asistenciaEditando.subscribe((value) => (asistencia = value))();
+		this.observacionEdit.subscribe((value) => (observacion = value))();
+		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
+		this.horaEntrada.subscribe((value) => (horaEntrada = value))();
+		this.horaSalida.subscribe((value) => (horaSalida = value))();
+
+		if (!asistencia || !asistencia.id_asistencia) {
+			return {
+				success: false,
+				message: 'No se puede corregir: información de asistencia inválida'
+			};
+		}
+
+		if (!usarHora) {
+			return {
+				success: false,
+				message: 'Debe especificar las horas para corregir la asistencia'
+			};
+		}
+
+		if (!horaEntrada && !horaSalida) {
+			return {
+				success: false,
+				message: 'Debe especificar al menos una hora (entrada o salida)'
+			};
+		}
+
+		// Validar observación para correcciones
+		if ((asistencia.hora_entrada || asistencia.hora_salida) && !observacion.trim()) {
+			return {
+				success: false,
+				message: 'Debe proporcionar una observación al corregir una asistencia existente'
+			};
+		}
+
+		// Validar que la hora de salida sea posterior a la de entrada
+		if (horaEntrada && horaSalida && horaEntrada >= horaSalida) {
+			return {
+				success: false,
+				message: 'La hora de salida debe ser posterior a la hora de entrada'
+			};
+		}
+
+		const confirmar = confirm(
+			'¿Está seguro que desea corregir esta asistencia? Esta acción quedará registrada en el sistema.'
+		);
+		if (!confirmar) {
+			return { success: false, message: 'Operación cancelada' };
+		}
+
+		try {
+			const requestBody = {
+				observacion: observacion || 'Corrección realizada por administrador'
+			};
+
+			// Solo enviar las horas que se han especificado
+			if (horaEntrada) {
+				requestBody.hora_entrada = horaEntrada;
+			}
+			if (horaSalida) {
+				requestBody.hora_salida = horaSalida;
+			}
+
+			const response = await fetch(`/api/asistencia/admin/corregir/${asistencia.id_asistencia}/`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify(requestBody)
+			});
+
+			const data = await response.json();
+
+			if (response.ok && data.success) {
+				this.cerrarModal();
+				await this.cargarDatos();
+				return { success: true, message: '✅ Asistencia corregida correctamente' };
+			} else {
+				return {
+					success: false,
+					message: '❌ Error: ' + (data.message || 'No se pudo corregir la asistencia')
+				};
+			}
+		} catch (error) {
+			console.error('Error al corregir asistencia:', error);
 			return { success: false, message: '❌ Error de conexión' };
 		}
 	}

@@ -85,7 +85,7 @@ class AprobacionesGuardiasController {
 	}
 
 	/**
-	 * Carga cronogramas pendientes de aprobación
+	 * Carga cronogramas pendientes de aprobación (generadas)
 	 */
 	async cargarPendientes() {
 		try {
@@ -95,11 +95,12 @@ class AprobacionesGuardiasController {
 			let token;
 			this.token.subscribe(t => token = t)();
 			
+			console.log('🔍 Cargando cronogramas generadas...');
 			const response = await guardiasService.getCronogramasPendientes(token);
-			const pendientes = response.data || [];
+			const pendientes = response.data?.results || response.data || [];
 			this.cronogramasPendientes.set(pendientes);
 			
-			console.log('✅ Cronogramas pendientes cargados:', pendientes.length);
+			console.log('✅ Cronogramas pendientes (generadas) cargados:', pendientes.length);
 		} catch (e) {
 			this.error.set('Error al cargar los cronogramas pendientes');
 			console.error('❌ Error cargando pendientes:', e);
@@ -109,7 +110,7 @@ class AprobacionesGuardiasController {
 	}
 
 	/**
-	 * Carga cronogramas aprobados
+	 * Carga cronogramas aprobados (publicadas)
 	 */
 	async cargarAprobadas() {
 		try {
@@ -119,13 +120,16 @@ class AprobacionesGuardiasController {
 			let token;
 			this.token.subscribe(t => token = t)();
 			
+			console.log('🔍 Cargando cronogramas publicadas...');
 			const response = await guardiasService.getCronogramasAprobadas(token);
-			const aprobadas = response.data || [];
+			console.log('📦 Respuesta getCronogramasAprobadas:', response);
+			
+			const aprobadas = response.data?.results || response.data || [];
 			this.cronogramasAprobadas.set(aprobadas);
 			
-			console.log('✅ Cronogramas aprobadas cargadas:', aprobadas.length);
+			console.log('✅ Cronogramas publicadas cargadas:', aprobadas.length);
 		} catch (e) {
-			this.error.set('Error al cargar los cronogramas aprobados');
+			this.error.set('Error al cargar los cronogramas publicados');
 			console.error('❌ Error cargando aprobadas:', e);
 		} finally {
 			this.loading.set(false);
@@ -160,11 +164,11 @@ class AprobacionesGuardiasController {
 	}
 
 	/**
-	 * Aprueba un cronograma
+	 * Aprueba y publica un cronograma
 	 * @param {Object} cronograma - Cronograma a aprobar
 	 */
 	async aprobar(cronograma) {
-		if (!confirm('¿Está seguro de aprobar este cronograma?')) {
+		if (!confirm('¿Está seguro de aprobar y publicar este cronograma?')) {
 			return;
 		}
 
@@ -175,12 +179,13 @@ class AprobacionesGuardiasController {
 			let token;
 			this.token.subscribe(t => token = t)();
 			
-			await guardiasService.aprobarCronograma(cronograma.id_cronograma, token);
+			// Usar la función de publicar que cambia el estado a 'publicada'
+			await guardiasService.publicarCronograma(cronograma.id_cronograma, token);
 			
-			alert('Cronograma aprobado exitosamente');
+			alert('Cronograma aprobado y publicado exitosamente');
 			await this.cargarDatos();
 			
-			console.log('✅ Cronograma aprobado:', cronograma.id_cronograma);
+			console.log('✅ Cronograma aprobado y publicado:', cronograma.id_cronograma);
 		} catch (e) {
 			const mensaje = e.response?.data?.message || 'Error al aprobar el cronograma';
 			this.error.set(mensaje);

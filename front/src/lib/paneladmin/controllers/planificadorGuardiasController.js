@@ -169,7 +169,7 @@ class PlanificadorGuardiasController {
 			let agentes = response.data?.results || response.data || [];
 			
 			// Filtrar solo agentes activos
-			agentes = agentes.filter(a => a.estado === 'activo');
+			agentes = agentes.filter(a => a.activo === true);
 			
 			this.agentesDisponibles.set(agentes);
 			console.log('✅ Agentes del área cargados:', agentes.length);
