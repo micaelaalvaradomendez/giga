@@ -254,16 +254,18 @@ class AsistenciasController {
 		this.asistenciaEditando.set(asistencia);
 		this.observacionEdit.set('');
 		
-		// Si ya tiene horas marcadas, pre-llenar los campos para permitir edición
-		if (asistencia.hora_entrada || asistencia.hora_salida) {
-			this.horaEntrada.set(asistencia.hora_entrada || '');
-			this.horaSalida.set(asistencia.hora_salida || '');
-			this.usarHoraEspecifica.set(true);
-		} else {
-			this.horaEntrada.set('');
-			this.horaSalida.set('');
-			this.usarHoraEspecifica.set(false);
-		}
+		// SIEMPRE iniciar en modo normal (sin checkbox marcado)
+		// Los campos de hora se pre-llenarán solo cuando el usuario active el checkbox
+		this.horaEntrada.set('');
+		this.horaSalida.set('');
+		this.usarHoraEspecifica.set(false);
+		
+		console.log('📝 Abriendo modal para:', {
+			agente: asistencia.agente_nombre,
+			tiene_entrada: !!asistencia.hora_entrada,
+			tiene_salida: !!asistencia.hora_salida,
+			modo_inicial: 'normal'
+		});
 		
 		this.modalCorreccion.set(true);
 	}
@@ -275,6 +277,35 @@ class AsistenciasController {
 		this.horaEntrada.set('');
 		this.horaSalida.set('');
 		this.usarHoraEspecifica.set(false);
+	}
+
+	// ========== MANEJO DEL CHECKBOX ==========
+	toggleHoraEspecifica() {
+		let usarHora, asistencia;
+		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
+		this.asistenciaEditando.subscribe((value) => (asistencia = value))();
+
+		if (usarHora) {
+			// Si se activa el checkbox, pre-llenar con las horas actuales
+			const horaEntradaFormatted = asistencia.hora_entrada ? 
+				asistencia.hora_entrada.substring(0, 5) : '';
+			const horaSalidaFormatted = asistencia.hora_salida ? 
+				asistencia.hora_salida.substring(0, 5) : '';
+				
+			this.horaEntrada.set(horaEntradaFormatted);
+			this.horaSalida.set(horaSalidaFormatted);
+			
+			console.log('⏰ Activando modo hora específica:', {
+				entrada_prellenada: horaEntradaFormatted,
+				salida_prellenada: horaSalidaFormatted
+			});
+		} else {
+			// Si se desactiva el checkbox, limpiar los campos
+			this.horaEntrada.set('');
+			this.horaSalida.set('');
+			
+			console.log('🔄 Desactivando modo hora específica');
+		}
 	}
 
 	// ========== MARCACIÓN DE ASISTENCIA ==========
@@ -345,6 +376,14 @@ class AsistenciasController {
 		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
 		this.horaSalida.subscribe((value) => (horaSalida = value))();
 
+		console.log('🚪 Intentando marcar salida:', {
+			asistencia_id: asistencia?.id_asistencia,
+			tiene_entrada: !!asistencia?.hora_entrada,
+			tiene_salida: !!asistencia?.hora_salida,
+			usar_hora: usarHora,
+			hora_salida: horaSalida
+		});
+
 		if (!asistencia || !asistencia.agente_dni) {
 			return {
 				success: false,
@@ -414,6 +453,14 @@ class AsistenciasController {
 		this.horaEntrada.subscribe((value) => (horaEntrada = value))();
 		this.horaSalida.subscribe((value) => (horaSalida = value))();
 
+		console.log('🔧 Iniciando corrección de asistencia:', {
+			asistencia_id: asistencia?.id_asistencia,
+			usarHora,
+			horaEntrada,
+			horaSalida,
+			observacion
+		});
+
 		if (!asistencia || !asistencia.id_asistencia) {
 			return {
 				success: false,
@@ -432,6 +479,22 @@ class AsistenciasController {
 			return {
 				success: false,
 				message: 'Debe especificar al menos una hora (entrada o salida)'
+			};
+		}
+
+		// Validar formato de horas
+		const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+		if (horaEntrada && !timeRegex.test(horaEntrada)) {
+			return {
+				success: false,
+				message: 'Formato de hora de entrada inválido. Use HH:MM (ej: 08:30)'
+			};
+		}
+
+		if (horaSalida && !timeRegex.test(horaSalida)) {
+			return {
+				success: false,
+				message: 'Formato de hora de salida inválido. Use HH:MM (ej: 17:30)'
 			};
 		}
 
@@ -460,7 +523,7 @@ class AsistenciasController {
 
 		try {
 			const requestBody = {
-				observacion: observacion || 'Corrección realizada por administrador'
+				observacion: observacion.trim() || 'Corrección realizada por administrador'
 			};
 
 			// Solo enviar las horas que se han especificado
@@ -471,6 +534,8 @@ class AsistenciasController {
 				requestBody.hora_salida = horaSalida;
 			}
 
+			console.log('📤 Enviando solicitud de corrección:', requestBody);
+
 			const response = await fetch(`/api/asistencia/admin/corregir/${asistencia.id_asistencia}/`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
@@ -479,20 +544,22 @@ class AsistenciasController {
 			});
 
 			const data = await response.json();
+			console.log('📥 Respuesta del servidor:', data);
 
 			if (response.ok && data.success) {
 				this.cerrarModal();
 				await this.cargarDatos();
 				return { success: true, message: '✅ Asistencia corregida correctamente' };
 			} else {
+				console.error('❌ Error del servidor:', data);
 				return {
 					success: false,
 					message: '❌ Error: ' + (data.message || 'No se pudo corregir la asistencia')
 				};
 			}
 		} catch (error) {
-			console.error('Error al corregir asistencia:', error);
-			return { success: false, message: '❌ Error de conexión' };
+			console.error('❌ Error al corregir asistencia:', error);
+			return { success: false, message: '❌ Error de conexión: ' + error.message };
 		}
 	}
 

@@ -89,6 +89,10 @@
             alert(result.message);
         }
     }
+
+    function handleCheckboxChange() {
+        asistenciasController.toggleHoraEspecifica();
+    }
 </script>
 
 <svelte:head>
@@ -459,7 +463,7 @@
                     <label for="observacion_edit">
                         Observación 
                         {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
-                            (requerida para corrección)
+                            <span class="requerido">*REQUERIDA para corrección</span>
                         {:else}
                             (opcional)
                         {/if}
@@ -468,10 +472,14 @@
                         id="observacion_edit"
                         bind:value={$observacionEdit}
                         placeholder={$asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida 
-                            ? "Explique el motivo de la corrección (ej: 'Error en marcación original', 'Horario corregido por supervisor')"
+                            ? "REQUERIDO: Explique el motivo de la corrección (ej: 'Error en marcación original', 'Horario corregido por supervisor')"
                             : "Motivo de la corrección (ej: 'Agente olvidó marcar')"}
                         rows="3"
+                        class={($asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida) && !$observacionEdit.trim() ? "campo-requerido" : ""}
                     ></textarea>
+                    {#if ($asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida) && !$observacionEdit.trim()}
+                        <small class="error-text">⚠️ La observación es obligatoria cuando se corrigen marcaciones existentes</small>
+                    {/if}
                 </div>
 
                 <!-- Sección para especificar hora -->
@@ -481,13 +489,17 @@
                             type="checkbox"
                             id="usar_hora_especifica"
                             bind:checked={$usarHoraEspecifica}
+                            on:change={handleCheckboxChange}
                         />
                         <label for="usar_hora_especifica">
-                            {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
-                                Corregir horas existentes
-                            {:else}
-                                Especificar hora real de entrada/salida
-                            {/if}
+                            ⏰ Especificar horas manualmente
+                            <small class="checkbox-help">
+                                {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
+                                    Permite corregir las horas existentes
+                                {:else}
+                                    Permite marcar con hora específica en lugar de la hora actual
+                                {/if}
+                            </small>
                         </label>
                     </div>
 
@@ -549,32 +561,62 @@
                     Cancelar
                 </button>
                 
-                {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
-                    <!-- Botones para corregir asistencia existente -->
+                {#if $usarHoraEspecifica}
+                    <!-- Modo corrección con horas específicas -->
                     <button
                         class="btn-corregir"
                         on:click={handleCorregirAsistencia}
-                        disabled={!$usarHoraEspecifica || 
-                                 (!$horaEntrada && !$horaSalida) ||
-                                 !$observacionEdit.trim()}
+                        disabled={(!$horaEntrada && !$horaSalida) ||
+                                 (($asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida) && !$observacionEdit.trim())}
+                        title={(!$horaEntrada && !$horaSalida) ? 
+                               "Debe especificar al menos una hora" : 
+                               (($asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida) && !$observacionEdit.trim()) ? 
+                               "Debe agregar una observación para corregir marcaciones existentes" : 
+                               "Aplicar corrección"}
                     >
                         ✏️ Aplicar Corrección
                     </button>
                 {:else}
-                    <!-- Botones para marcar nueva asistencia -->
-                    <button
-                        class="btn-marcar-entrada"
-                        on:click={handleMarcarEntrada}
-                    >
-                        🕐 Marcar Entrada
-                    </button>
-                    <button
-                        class="btn-marcar-salida"
-                        on:click={handleMarcarSalida}
-                        disabled={!$asistenciaEditando.hora_entrada}
-                    >
-                        🕐 Marcar Salida
-                    </button>
+                    <!-- Botones para marcación normal -->
+                    {#if !$asistenciaEditando.hora_entrada}
+                        <button
+                            class="btn-marcar-entrada"
+                            on:click={handleMarcarEntrada}
+                        >
+                            🕐 Marcar Entrada
+                        </button>
+                    {/if}
+                    
+                    {#if !$asistenciaEditando.hora_salida}
+                        <button
+                            class="btn-marcar-salida"
+                            on:click={handleMarcarSalida}
+                            disabled={!$asistenciaEditando.hora_entrada}
+                        >
+                            🕐 Marcar Salida
+                        </button>
+                    {/if}
+                    
+                    <!-- Botón para re-marcar si ya existe -->
+                    {#if $asistenciaEditando.hora_entrada}
+                        <button
+                            class="btn-remarcar-entrada"
+                            on:click={handleMarcarEntrada}
+                            title="Volver a marcar entrada"
+                        >
+                            🔄 Re-marcar Entrada
+                        </button>
+                    {/if}
+                    
+                    {#if $asistenciaEditando.hora_salida}
+                        <button
+                            class="btn-remarcar-salida"
+                            on:click={handleMarcarSalida}
+                            title="Volver a marcar salida"
+                        >
+                            🔄 Re-marcar Salida
+                        </button>
+                    {/if}
                 {/if}
             </div>
         </div>
@@ -1184,6 +1226,18 @@
         box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
     }
 
+    .btn-remarcar-entrada,
+    .btn-remarcar-salida {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+    }
+
+    .btn-remarcar-entrada:hover:not(:disabled),
+    .btn-remarcar-salida:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+    }
+
     .actual-time {
         font-weight: 400;
         color: #666;
@@ -1266,6 +1320,16 @@
         color: #333;
         cursor: pointer;
         margin-bottom: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .checkbox-help {
+        font-weight: 400;
+        color: #666;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+        font-style: italic;
     }
 
     .horas-grid {
@@ -1280,6 +1344,29 @@
         font-size: 0.8rem;
         margin-top: 0.25rem;
         font-style: italic;
+    }
+
+    .requerido {
+        color: #dc3545;
+        font-weight: 700;
+        font-size: 0.85rem;
+        background: rgba(220, 53, 69, 0.1);
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        margin-left: 0.5rem;
+    }
+
+    .campo-requerido {
+        border: 2px solid #dc3545 !important;
+        background-color: rgba(220, 53, 69, 0.05);
+    }
+
+    .error-text {
+        color: #dc3545;
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+        font-weight: 600;
+        display: block;
     }
 
     @media (max-width: 768px) {

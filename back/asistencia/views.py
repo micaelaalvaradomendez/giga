@@ -546,18 +546,52 @@ def corregir_asistencia(request, asistencia_id):
         
         asistencia = Asistencia.objects.get(id_asistencia=asistencia_id)
         
-        # Actualizar campos
-        asistencia.hora_entrada = request.data.get('hora_entrada', asistencia.hora_entrada)
-        asistencia.hora_salida = request.data.get('hora_salida', asistencia.hora_salida)
+        # Validar y procesar horas
+        hora_entrada = request.data.get('hora_entrada')
+        hora_salida = request.data.get('hora_salida')
+        
+        # Validar formato de horas si se proporcionan
+        if hora_entrada:
+            try:
+                from datetime import datetime
+                datetime.strptime(hora_entrada, '%H:%M')
+                asistencia.hora_entrada = hora_entrada
+            except ValueError:
+                return Response({
+                    'success': False,
+                    'message': 'Formato de hora de entrada inválido. Use HH:MM'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if hora_salida:
+            try:
+                from datetime import datetime
+                datetime.strptime(hora_salida, '%H:%M')
+                asistencia.hora_salida = hora_salida
+            except ValueError:
+                return Response({
+                    'success': False,
+                    'message': 'Formato de hora de salida inválido. Use HH:MM'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validar que la salida sea posterior a la entrada
+        if asistencia.hora_entrada and asistencia.hora_salida:
+            if asistencia.hora_entrada >= asistencia.hora_salida:
+                return Response({
+                    'success': False,
+                    'message': 'La hora de salida debe ser posterior a la hora de entrada'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Marcar como corrección
         asistencia.es_correccion = True
         asistencia.corregido_por = agente
         
+        # Actualizar observaciones
         observacion = request.data.get('observacion', '')
         if observacion:
             if asistencia.observaciones:
-                asistencia.observaciones += f" | {observacion}"
+                asistencia.observaciones += f" | CORRECCIÓN: {observacion}"
             else:
-                asistencia.observaciones = observacion
+                asistencia.observaciones = f"CORRECCIÓN: {observacion}"
         
         asistencia.save()
         

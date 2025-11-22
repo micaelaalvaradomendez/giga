@@ -24,7 +24,9 @@
 	
 	// Inicialización
 	onMount(async () => {
+		console.log('🔄 ONMOUNT EJECUTÁNDOSE...');
 		await reporteController.inicializar();
+		console.log('✅ INICIALIZACIÓN COMPLETADA');
 	});
 	
 	// Funciones del componente
@@ -120,11 +122,6 @@
 
 	<!-- Selector de tipo de reporte -->
 	<section class="selector-tipo">
-		<div class="tipos-categoria">
-			<div class="categoria-titulo">
-				<h3>📊 Reportes de Guardias</h3>
-				<p>Reportes tradicionales del sistema de guardias</p>
-			</div>
 			<div class="selector-tipo-container">
 				<label class="selector-opcion">
 					<input 
@@ -163,17 +160,10 @@
 						disabled={$cargandoGeneral}
 					/>
 					<div class="opcion-contenido">
-						<strong>⏰ Horas Trabajadas y Turnos</strong>
-						<span>Horas efectivas por tipo de jornada (diurna, nocturna, feriados)</span>
+						<strong>⏰ Guardias y Compensaciones</strong>
+						<span>Horas de guardia programadas vs efectivas (fines de semana/feriados únicamente)</span>
 					</div>
 				</label>
-			</div>
-		</div>
-
-		<div class="tipos-categoria">
-			<div class="categoria-titulo">
-				<h3>📋 Reportes de Asistencia y Novedades</h3>
-				<p>Control de asistencias, licencias y novedades</p>
 			</div>
 			<div class="selector-tipo-container">
 				<label class="selector-opcion">
@@ -204,13 +194,7 @@
 					</div>
 				</label>
 			</div>
-		</div>
 
-		<div class="tipos-categoria">
-			<div class="categoria-titulo">
-				<h3>💰 Reportes de Liquidación y Plus</h3>
-				<p>Cálculos para liquidación de haberes</p>
-			</div>
 			<div class="selector-tipo-container">
 				<label class="selector-opcion">
 					<input 
@@ -221,17 +205,10 @@
 						disabled={$cargandoGeneral}
 					/>
 					<div class="opcion-contenido">
-						<strong>💲 Cálculo de Horas Plus (20% / 40%)</strong>
-						<span>Documento para liquidación discriminado por área y modalidad</span>
+						<strong>💲 Cálculo Plus por Guardias (20% / 40%)</strong>
+						<span>Área operativa + guardia = 40% | Otras áreas + 32h = 40% | Resto = 20%</span>
 					</div>
 				</label>
-			</div>
-		</div>
-
-		<div class="tipos-categoria">
-			<div class="categoria-titulo">
-				<h3>⚖️ Reportes de Validación Normativa</h3>
-				<p>Control de cumplimiento del Convenio Colectivo</p>
 			</div>
 			<div class="selector-tipo-container">
 				<label class="selector-opcion">
@@ -248,7 +225,6 @@
 					</div>
 				</label>
 			</div>
-		</div>
 	</section>
 
 	<!-- Panel de filtros -->
@@ -475,7 +451,7 @@
 					<!-- Vista previa reporte de horas trabajadas -->
 					<div class="reporte-horas-trabajadas">
 						<div class="reporte-header">
-							<h3>⏰ Reporte de Horas Trabajadas y Turnos</h3>
+							<h3>⏰ Reporte de Guardias y Compensaciones</h3>
 							<div class="datos-area">
 								<p><strong>Área:</strong> {$datosReporte.area_nombre || 'Todas las áreas'}</p>
 								<p><strong>Período:</strong> {$datosReporte.periodo.fecha_desde} - {$datosReporte.periodo.fecha_hasta}</p>
@@ -489,9 +465,9 @@
 									<tr>
 										<th>Agente</th>
 										<th>Legajo</th>
-										<th>Horas Diurnas</th>
-										<th>Horas Nocturnas</th>
-										<th>Horas Feriados</th>
+										<th>Horas Programadas</th>
+										<th>Horas Efectivas</th>
+										<th>Guardias Fines/Feriados</th>
 										<th>Total Horas</th>
 									</tr>
 								</thead>
@@ -499,18 +475,18 @@
 									<tr class="ejemplo-fila">
 										<td>Tayra Aguila</td>
 										<td>001</td>
-										<td class="horas-diurnas">128h</td>
-										<td class="horas-nocturnas">32h</td>
-										<td class="horas-feriados">16h</td>
+										<td class="horas-programadas">160h</td>
+										<td class="horas-efectivas">176h</td>
+										<td class="guardias-feriados">12</td>
 										<td class="total-horas"><strong>176h</strong></td>
 									</tr>
 									<tr class="ejemplo-fila">
 										<td>Micaela Alvarado</td>
 										<td>002</td>
-										<td class="horas-diurnas">144h</td>
-										<td class="horas-nocturnas">24h</td>
-										<td class="horas-feriados">8h</td>
-										<td class="total-horas"><strong>176h</strong></td>
+										<td class="horas-programadas">144h</td>
+										<td class="horas-efectivas">168h</td>
+										<td class="guardias-feriados">8</td>
+										<td class="total-horas"><strong>168h</strong></td>
 									</tr>
 								</tbody>
 							</table>
@@ -630,11 +606,18 @@
 					<!-- Vista previa cálculo plus -->
 					<div class="reporte-calculo-plus">
 						<div class="reporte-header">
-							<h3>💲 Cálculo de Horas Plus (20% / 40%)</h3>
+							<h3>💲 Cálculo Plus por Guardias</h3>
 							<div class="datos-area">
-								<p><strong>Período:</strong> {$datosReporte.periodo.fecha_desde} - {$datosReporte.periodo.fecha_hasta}</p>
-								<p><strong>Área:</strong> {$datosReporte.area_nombre || 'Todas las áreas'}</p>
+								<p><strong>Período:</strong> Octubre 2025</p>
+								<p><strong>Área:</strong> Todas las áreas</p>
 								<p><strong>Generado:</strong> {new Date().toLocaleDateString()}</p>
+							</div>
+							<div class="reglas-plus">
+								<h4>Reglas de Plus Aplicadas:</h4>
+								<ul>
+									<li><strong>40% Plus:</strong> Área operativa + guardia | Otras áreas + 32+ horas</li>
+									<li><strong>20% Plus:</strong> Resto con guardias</li>
+								</ul>
 							</div>
 						</div>
 						
@@ -644,35 +627,54 @@
 									<tr>
 										<th>Agente</th>
 										<th>Área</th>
-										<th>Horas Normales</th>
-										<th>Plus 20% (Operativo)</th>
-										<th>Plus 40% (Nocturno/Feriado)</th>
-										<th>Total a Liquidar</th>
+										<th>Horas de Guardia</th>
+										<th>Tipo Plus</th>
+										<th>Motivo</th>
 									</tr>
 								</thead>
 								<tbody>
-									<tr>
+									<tr class="plus-40">
 										<td>Carlos Rodriguez</td>
-										<td class="area-operativa">Depto. Operativo</td>
-										<td class="horas-normales">160h</td>
-										<td class="plus-20">32h</td>
-										<td class="plus-40">16h</td>
-										<td class="total-liquidar"><strong>208h equivalentes</strong></td>
+										<td class="area-operativa">Secretaría de Protección Civil</td>
+										<td class="horas-guardia">48h</td>
+										<td class="plus-valor"><strong>40%</strong></td>
+										<td class="motivo-plus">Área operativa con guardias</td>
 									</tr>
-									<tr>
+									<tr class="plus-40">
 										<td>Jorge Gutierrez</td>
 										<td class="area-administrativa">Depto. Administrativo</td>
-										<td class="horas-normales">176h</td>
-										<td class="plus-20">0h</td>
-										<td class="plus-40">8h</td>
-										<td class="total-liquidar"><strong>184h equivalentes</strong></td>
+										<td class="horas-guardia">36h</td>
+										<td class="plus-valor"><strong>40%</strong></td>
+										<td class="motivo-plus">Otras áreas con 36h (≥32h)</td>
+									</tr>
+									<tr class="plus-20">
+										<td>Ana Torres</td>
+										<td class="area-administrativa">División de Planificación</td>
+										<td class="horas-guardia">24h</td>
+										<td class="plus-valor">20%</td>
+										<td class="motivo-plus">Guardias con menos de 32h</td>
 									</tr>
 								</tbody>
 							</table>
 						</div>
 						
+						<div class="totales-plus">
+							<div class="total-item">
+								<span class="total-label">Agentes con 40% Plus:</span>
+								<span class="total-valor plus-40-count">2</span>
+							</div>
+							<div class="total-item">
+								<span class="total-label">Agentes con 20% Plus:</span>
+								<span class="total-valor plus-20-count">1</span>
+							</div>
+							<div class="total-item">
+								<span class="total-label">Total agentes con Plus:</span>
+								<span class="total-valor"><strong>3</strong></span>
+							</div>
+						</div>
+						
 						<div class="preview-note">
-							<p>💰 Documento clave para liquidación de haberes. Diferencia áreas operativas (plus 20%) vs. administrativas.</p>
+							<p>💰 Cálculo automático según CCT. Áreas operativas tienen plus garantizado, otras dependen de horas acumuladas.</p>
 						</div>
 					</div>
 				{:else if $tipoReporteActual === 'incumplimiento_normativo'}
@@ -723,6 +725,17 @@
 							<p>⚖️ Monitorea automáticamente el cumplimiento de normas del Convenio Colectivo. Genera alertas preventivas.</p>
 						</div>
 					</div>
+				{:else}
+					<!-- Vista previa reporte general -->
+					<div class="reporte-general">
+						<div class="reporte-header">
+							<h3>Planilla General/Preventiva</h3>
+							<div class="datos-area">
+								<p><strong>Dirección:</strong> {$datosReporte.area_nombre}</p>
+								<p><strong>Mes:</strong> {$datosReporte.periodo.mes}</p>
+								<p><strong>Período:</strong> {$datosReporte.periodo.fecha_desde} - {$datosReporte.periodo.fecha_hasta}</p>
+							</div>
+						</div>
 
 						<div class="tabla-container">
 							<table class="tabla-reporte tabla-individual">
@@ -850,17 +863,6 @@
 							</div>
 						</div>
 					</div>
-				{:else}
-					<!-- Vista previa reporte general -->
-					<div class="reporte-general">
-						<div class="reporte-header">
-							<h3>Planilla General/Preventiva</h3>
-							<div class="datos-area">
-								<p><strong>Dirección:</strong> {$datosReporte.area_nombre}</p>
-								<p><strong>Mes:</strong> {$datosReporte.periodo.mes}</p>
-								<p><strong>Período:</strong> {$datosReporte.periodo.fecha_desde} - {$datosReporte.periodo.fecha_hasta}</p>
-							</div>
-						</div>
 
 						{#if $datosReporte.dias_columnas && $datosReporte.dias_columnas.length > 0}
 							<div class="tabla-container tabla-grilla">
@@ -990,7 +992,6 @@
 								</div>
 							</div>
 						</div>
-					</div>
 				{/if}
 			</div>
 		</section>
@@ -1986,20 +1987,90 @@
 
 	/* ===== ESTILOS ESPECÍFICOS NUEVOS REPORTES ===== */
 	
-	/* Reporte Horas Trabajadas */
-	.tabla-horas-trabajadas .horas-diurnas {
+	/* Reporte de Guardias y Compensaciones */
+	.tabla-horas-trabajadas .horas-programadas {
+		color: #007bff;
+		font-weight: 600;
+	}
+	
+	.tabla-horas-trabajadas .horas-efectivas {
 		color: #28a745;
 		font-weight: 600;
 	}
 	
-	.tabla-horas-trabajadas .horas-nocturnas {
-		color: #6f42c1;
+	.tabla-horas-trabajadas .guardias-feriados {
+		color: #fd7e14;
+		font-weight: 600;
+		text-align: center;
+	}
+	
+	/* Reporte de Plus */
+	.reglas-plus {
+		background: #f8f9fa;
+		padding: 1rem;
+		border-radius: 6px;
+		margin-top: 1rem;
+	}
+	
+	.reglas-plus h4 {
+		margin: 0 0 0.5rem 0;
+		color: #495057;
+	}
+	
+	.reglas-plus ul {
+		margin: 0;
+		padding-left: 1.5rem;
+	}
+	
+	.tabla-plus .plus-40 {
+		background-color: rgba(40, 167, 69, 0.1);
+	}
+	
+	.tabla-plus .plus-20 {
+		background-color: rgba(255, 193, 7, 0.1);
+	}
+	
+	.tabla-plus .plus-valor {
+		font-weight: 700;
+		text-align: center;
+	}
+	
+	.tabla-plus .area-operativa {
+		color: #28a745;
 		font-weight: 600;
 	}
 	
-	.tabla-horas-trabajadas .horas-feriados {
-		color: #fd7e14;
+	.tabla-plus .area-administrativa {
+		color: #6c757d;
+	}
+	
+	.tabla-plus .horas-guardia {
 		font-weight: 600;
+		text-align: center;
+		color: #007bff;
+	}
+	
+	.totales-plus {
+		display: flex;
+		justify-content: space-around;
+		background: #f8f9fa;
+		padding: 1rem;
+		border-radius: 6px;
+		margin-top: 1rem;
+	}
+	
+	.totales-plus .total-item {
+		text-align: center;
+	}
+	
+	.totales-plus .plus-40-count {
+		color: #28a745;
+		font-weight: 700;
+	}
+	
+	.totales-plus .plus-20-count {
+		color: #ffc107;
+		font-weight: 700;
 	}
 	
 	.tabla-horas-trabajadas .total-horas {

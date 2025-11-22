@@ -34,9 +34,78 @@ class CalculadoraPlus:
             return Decimal('0.0')
     
     @staticmethod
+    def calcular_plus_simplificado(agente_id, mes, anio):
+        """
+        Calcula el plus según las reglas simplificadas:
+        1. Área operativa + guardia = 40% plus
+        2. Otras áreas + 32+ horas = 40% plus  
+        3. Cualquier otro caso = 20% plus
+        """
+        try:
+            from personas.models import Agente
+            from django.db.models import Sum
+            
+            # Obtener agente y área
+            agente = Agente.objects.get(id_agente=agente_id)
+            area_nombre = agente.id_area.nombre.lower() if agente.id_area else ""
+            
+            # Determinar si es área operativa
+            areas_operativas = [
+                'secretaría de protección civil',
+                'departamento operativo',
+                'operativo',
+                'emergencias',
+                'rescate'
+            ]
+            es_area_operativa = any(op in area_nombre for op in areas_operativas)
+            
+            # Obtener horas de guardia en el mes
+            from .models import Guardia
+            from datetime import date
+            
+            fecha_inicio = date(anio, mes, 1)
+            if mes == 12:
+                fecha_fin = date(anio + 1, 1, 1)
+            else:
+                fecha_fin = date(anio, mes + 1, 1)
+            
+            guardias_mes = Guardia.objects.filter(
+                id_agente=agente_id,
+                fecha__gte=fecha_inicio,
+                fecha__lt=fecha_fin,
+                activa=True,
+                estado='planificada'
+            )
+            
+            total_horas = guardias_mes.aggregate(
+                total=Sum('horas_efectivas')
+            )['total'] or 0
+            
+            tiene_guardias = guardias_mes.exists()
+            
+            # Aplicar reglas de plus
+            if es_area_operativa and tiene_guardias:
+                # Regla 1: Área operativa + guardia = 40%
+                return Decimal('40.0')
+            elif not es_area_operativa and total_horas >= 32:
+                # Regla 2: Otras áreas + 32+ horas = 40%
+                return Decimal('40.0')
+            elif tiene_guardias:
+                # Regla 3: Cualquier otro caso con guardias = 20%
+                return Decimal('20.0')
+            else:
+                # Sin guardias = sin plus
+                return Decimal('0.0')
+                
+        except Exception as e:
+            logger.error(f"Error calculando plus simplificado para agente {agente_id}: {e}")
+            return Decimal('0.0')
+    
+    @staticmethod
     def evaluar_reglas_plus(horas_efectivas, area_id=None):
         """
         Evalúa las reglas de plus vigentes para determinar el porcentaje aplicable.
+        DEPRECADO: Usar calcular_plus_simplificado en su lugar.
         """
         from .models import ReglaPlus
         
@@ -262,6 +331,49 @@ class ValidadorHorarios:
         except Exception as e:
             logger.error(f"Error validando ventana horaria: {e}")
             return False, "Error en validación"
+    
+    @staticmethod
+    def validar_fecha_guardia(fecha):
+        """
+        Valida que la fecha sea apta para programar guardias.
+        Las guardias solo pueden ser en fines de semana o feriados.
+        """
+        from datetime import datetime
+        
+        # Verificar si es fin de semana (sábado=5, domingo=6)
+        if fecha.weekday() >= 5:  # Sábado o Domingo
+            return True, "Fin de semana - válido para guardia"
+        
+        # Verificar si es feriado
+        if ValidadorHorarios.es_feriado(fecha):
+            return True, "Feriado - válido para guardia"
+        
+        # Día de semana regular - no permitido
+        return False, "Las guardias solo pueden programarse en fines de semana o feriados"
+    
+    @staticmethod
+    def validar_duracion_guardia(hora_inicio, hora_fin):
+        """
+        Valida que la duración de la guardia no exceda el límite normativo.
+        Máximo 10 horas por día según CCT.
+        """
+        from datetime import datetime, timedelta
+        
+        # Calcular duración
+        inicio = datetime.combine(datetime.today().date(), hora_inicio)
+        fin = datetime.combine(datetime.today().date(), hora_fin)
+        
+        # Si la hora fin es menor, asume que cruza medianoche
+        if fin < inicio:
+            fin += timedelta(days=1)
+        
+        duracion = fin - inicio
+        horas_duracion = duracion.total_seconds() / 3600
+        
+        if horas_duracion > 10:
+            return False, f"La guardia excede el límite de 10 horas (duración: {horas_duracion:.1f}h)"
+        
+        return True, f"Duración válida: {horas_duracion:.1f} horas"
     
     @staticmethod
     def es_feriado(fecha):

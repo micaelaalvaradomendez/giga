@@ -13,7 +13,7 @@ class ReporteController {
 		
 		// Estados de carga
 		this.loading = writable(false);
-		this.loadingFiltros = writable(true);
+		this.loadingFiltros = writable(false); // Cambiado a false por defecto para que la UI sea funcional
 		this.exportando = writable(false);
 		this.error = writable(null);
 		this.mensaje = writable('');
@@ -179,6 +179,7 @@ class ReporteController {
 	// ========================================
 	
 	async inicializar() {
+		console.log('🚀 INICIANDO CONTROLADOR DE REPORTES...');
 		this.loadingFiltros.set(true);
 		this.error.set(null);
 		
@@ -942,54 +943,42 @@ class ReporteController {
 
 	async _generarReporteCalculoPlusReal(filtros) {
 		try {
-			// Obtener guardias del período
-			const response = await guardiasService.getGuardias();
-			const guardias = response.data?.results || [];
+			// Usar el nuevo endpoint simplificado del backend
+			const params = new URLSearchParams();
+			if (filtros.fecha_desde) params.append('fecha_desde', filtros.fecha_desde);
+			if (filtros.fecha_hasta) params.append('fecha_hasta', filtros.fecha_hasta);
+			if (filtros.area_id) params.append('area_id', filtros.area_id);
 
-			// Obtener agentes del área
-			const agentesResponse = await personasService.getAgentes();
-			const todosAgentes = agentesResponse.data?.results || [];
-			const agentesArea = filtros.area_id ? 
-				todosAgentes.filter(a => a.id_area === filtros.area_id) : 
-				todosAgentes;
+			const response = await fetch(`http://localhost:8000/api/guardias/cronogramas/reporte_plus_simplificado/?${params}`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
 
-			const calculosAgentes = agentesArea.map(agente => {
-				const guardiasAgente = guardias.filter(g => g.id_agente === agente.id_agente);
-				
-				let horasNormales = 0;
-				let plus20 = 0;
-				let plus40 = 0;
+			if (!response.ok) {
+				throw new Error('Error al obtener datos del plus simplificado');
+			}
 
-				guardiasAgente.forEach(guardia => {
-					const horas = guardia.horas_planificadas || 8;
-					horasNormales += horas;
+			const data = await response.json();
+			const calculosAgentes = data.agentes || [];
 
-					// Determinar plus según área y horario
-					const area = agente.area_nombre || '';
-					const esOperativa = area.toLowerCase().includes('operativo') || area.toLowerCase().includes('seguridad');
-					const esNocturna = guardia.hora_inicio && parseInt(guardia.hora_inicio.split(':')[0]) >= 22;
-					const esFeriado = Math.random() > 0.9; // Simular algunos feriados
-
-					if (esFeriado || esNocturna) {
-						plus40 += horas * 0.4; // Plus del 40%
-					} else if (esOperativa) {
-						plus20 += horas * 0.2; // Plus del 20%
-					}
-				});
-
-				const totalEquivalente = horasNormales + plus20 + plus40;
-
+			// Transformar los datos para que coincidan con el formato esperado
+			const agentesFormateados = calculosAgentes.map(agente => {
 				return {
 					agente: `${agente.nombre} ${agente.apellido}`,
 					legajo: agente.legajo,
 					area: agente.area_nombre || 'Sin área',
-					horas_normales: Math.round(horasNormales),
-					plus_20: Math.round(plus20 * 100) / 100,
-					plus_40: Math.round(plus40 * 100) / 100,
-					total_liquidar: Math.round(totalEquivalente * 100) / 100,
+					horas_guardia: agente.horas_guardia || 0,
+					porcentaje_plus: agente.porcentaje_plus || 0,
+					area_operativa: agente.area_operativa || false,
+					cumple_requisitos: agente.cumple_requisitos || false,
 					es_operativa: agente.area_nombre?.toLowerCase().includes('operativo') || false
 				};
 			});
+
+			// Usar los totales del backend
+			const totales = data.resumen || {};
 
 			return {
 				area_nombre: filtros.area_id ? 'Área seleccionada' : 'Todas las áreas',
@@ -997,12 +986,17 @@ class ReporteController {
 					fecha_desde: filtros.fecha_desde,
 					fecha_hasta: filtros.fecha_hasta
 				},
-				agentes: calculosAgentes,
+				agentes: agentesFormateados,
 				totales: {
-					total_horas_normales: calculosAgentes.reduce((sum, a) => sum + a.horas_normales, 0),
-					total_plus_20: calculosAgentes.reduce((sum, a) => sum + a.plus_20, 0),
-					total_plus_40: calculosAgentes.reduce((sum, a) => sum + a.plus_40, 0),
-					total_a_liquidar: calculosAgentes.reduce((sum, a) => sum + a.total_liquidar, 0)
+					total_agentes: totales.total_agentes || agentesFormateados.length,
+					agentes_con_plus_40: totales.agentes_con_plus_40 || 0,
+					agentes_con_plus_20: totales.agentes_con_plus_20 || 0,
+					total_horas_guardia: totales.total_horas_guardia || 0
+				},
+				reglas: {
+					operativa_con_guardia: "Área operativa + guardia = 40%",
+					otras_areas_32h: "Otras áreas + 32h guardia = 40%", 
+					resto: "Resto de casos = 20%"
 				}
 			};
 		} catch (error) {

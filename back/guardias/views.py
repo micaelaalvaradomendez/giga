@@ -393,6 +393,36 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 estado_guardias = 'planificada'
                 guardias_activas = True
             
+            # Validar fecha y duración de guardia antes de crear
+            from datetime import datetime
+            from .utils import ValidadorHorarios
+            
+            fecha_guardia = datetime.strptime(data['fecha'], '%Y-%m-%d').date()
+            
+            # Validar que la fecha sea apta para guardias
+            fecha_valida, mensaje_fecha = ValidadorHorarios.validar_fecha_guardia(fecha_guardia)
+            if not fecha_valida:
+                return Response(
+                    {'error': f'Fecha no válida para guardia: {mensaje_fecha}'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validar duración de la guardia  
+            from datetime import time
+            hora_inicio_obj = datetime.strptime(data['hora_inicio'], '%H:%M').time()
+            hora_fin_obj = datetime.strptime(data['hora_fin'], '%H:%M').time()
+            
+            duracion_valida, mensaje_duracion = ValidadorHorarios.validar_duracion_guardia(
+                hora_inicio_obj, hora_fin_obj
+            )
+            if not duracion_valida:
+                return Response(
+                    {'error': f'Duración no válida: {mensaje_duracion}'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            print(f"✅ Validaciones pasadas - {mensaje_fecha}, {mensaje_duracion}")
+            
             # Crear las guardias para cada agente
             guardias_creadas = []
             for agente_data in data['agentes']:
@@ -1443,3 +1473,131 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
                 )
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'])
+    def reporte_plus_simplificado(self, request):
+        """
+        Genera reporte de plus usando las reglas simplificadas:
+        - Área operativa + guardia = 40%
+        - Otras áreas + 32+ horas = 40%  
+        - Resto = 20%
+        """
+        mes = request.query_params.get('mes')
+        anio = request.query_params.get('anio')
+        area_id = request.query_params.get('area_id')
+        
+        if not all([mes, anio]):
+            return Response(
+                {'error': 'Se requieren parámetros: mes, anio'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from personas.models import Agente, Area
+            from .utils import CalculadoraPlus
+            from django.db.models import Sum
+            
+            # Filtrar agentes
+            agentes_query = Agente.objects.filter(activo=True)
+            if area_id:
+                agentes_query = agentes_query.filter(id_area_id=area_id)
+                area = Area.objects.get(id_area=area_id)
+                area_nombre = area.nombre
+            else:
+                area_nombre = "Todas las áreas"
+            
+            agentes_plus = []
+            total_agentes_plus20 = 0
+            total_agentes_plus40 = 0
+            
+            for agente in agentes_query:
+                # Calcular plus usando nueva lógica
+                porcentaje_plus = CalculadoraPlus.calcular_plus_simplificado(
+                    agente.id_agente, int(mes), int(anio)
+                )
+                
+                if porcentaje_plus > 0:
+                    # Obtener detalles de guardias para el reporte
+                    from .models import Guardia
+                    from datetime import date
+                    
+                    fecha_inicio = date(int(anio), int(mes), 1)
+                    if int(mes) == 12:
+                        fecha_fin = date(int(anio) + 1, 1, 1)
+                    else:
+                        fecha_fin = date(int(anio), int(mes) + 1, 1)
+                    
+                    guardias = Guardia.objects.filter(
+                        id_agente=agente.id_agente,
+                        fecha__gte=fecha_inicio,
+                        fecha__lt=fecha_fin,
+                        activa=True,
+                        estado='planificada'
+                    )
+                    
+                    total_horas = guardias.aggregate(
+                        total=Sum('horas_efectivas')
+                    )['total'] or 0
+                    
+                    area_nombre_agente = agente.id_area.nombre if agente.id_area else "Sin área"
+                    es_operativa = any(op in area_nombre_agente.lower() for op in [
+                        'secretaría de protección civil', 'operativo', 'emergencias'
+                    ])
+                    
+                    # Determinar motivo del plus
+                    if es_operativa and guardias.exists():
+                        motivo = "Área operativa con guardias"
+                    elif not es_operativa and total_horas >= 32:
+                        motivo = f"Otras áreas con {total_horas}h (≥32h)"
+                    else:
+                        motivo = "Guardias con menos de 32h"
+                    
+                    agentes_plus.append({
+                        'agente_id': agente.id_agente,
+                        'nombre_completo': f"{agente.apellido}, {agente.nombre}",
+                        'legajo': agente.legajo,
+                        'area_nombre': area_nombre_agente,
+                        'es_area_operativa': es_operativa,
+                        'total_horas_guardia': float(total_horas),
+                        'cantidad_guardias': guardias.count(),
+                        'porcentaje_plus': float(porcentaje_plus),
+                        'motivo_plus': motivo
+                    })
+                    
+                    if porcentaje_plus >= 40:
+                        total_agentes_plus40 += 1
+                    else:
+                        total_agentes_plus20 += 1
+            
+            resultado = {
+                'area_nombre': area_nombre,
+                'periodo': {
+                    'mes': int(mes),
+                    'anio': int(anio),
+                    'mes_nombre': date(int(anio), int(mes), 1).strftime('%B %Y')
+                },
+                'agentes': agentes_plus,
+                'resumen': {
+                    'total_agentes_con_plus': len(agentes_plus),
+                    'agentes_plus_20': total_agentes_plus20,
+                    'agentes_plus_40': total_agentes_plus40,
+                    'total_horas_todas_guardias': sum(a['total_horas_guardia'] for a in agentes_plus)
+                },
+                'reglas_aplicadas': {
+                    'regla_1': "Área operativa + guardia = 40% plus",
+                    'regla_2': "Otras áreas + 32+ horas = 40% plus",
+                    'regla_3': "Resto con guardias = 20% plus"
+                }
+            }
+            
+            return Response({
+                'success': True,
+                'data': resultado
+            })
+            
+        except Exception as e:
+            logger.error(f"Error generando reporte plus: {e}")
+            return Response(
+                {'error': f'Error generando reporte: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
