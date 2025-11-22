@@ -22,7 +22,7 @@
 			description: "Revisar registros de asistencia",
 		},
 		{
-			name: "Licencias (falta)",
+			name: "Licencias",
 			path: "/paneladmin/licencias",
 			description: "Administrar licencias y novedades",
 		},

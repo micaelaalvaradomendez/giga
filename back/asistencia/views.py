@@ -321,6 +321,136 @@ def obtener_estado_asistencia(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+def listar_tipos_licencia(request):
+    """
+    Listar todos los tipos de licencia disponibles.
+    """
+    try:
+        agente_id = request.session.get('user_id')
+        if not agente_id:
+            return Response({'success': False, 'message': 'No hay sesión activa'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # El modelo TipoLicencia tiene campos 'codigo' y 'descripcion'.
+        # Antes se ordenaba por 'nombre' (inexistente) lo que provocaba
+        # "Cannot resolve keyword 'nombre' into field" en las consultas.
+        tipos_licencia = TipoLicencia.objects.all().order_by('codigo')
+        serializer = TipoLicenciaSerializer(tipos_licencia, many=True)
+
+        return Response({
+            'success': True,
+            'data': serializer.data
+        })
+
+    except Exception as e:
+        logger.error(f'Error en listar_tipos_licencia: {str(e)}')
+        return Response({'success': False, 'message': f'Error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def crear_tipo_licencia(request):
+    """
+    Crear un nuevo tipo de licencia (solo administradores).
+    """
+    try:
+        agente_id = request.session.get('user_id')
+        if not agente_id:
+            return Response({'success': False, 'message': 'No hay sesión activa'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        agente = Agente.objects.get(id_agente=agente_id)
+        rol = agente.agenterol_set.first()
+
+        if not rol or rol.id_rol.nombre not in ['Administrador', 'Director']:
+            return Response({'success': False, 'message': 'No tiene permisos para crear tipos de licencia'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = TipoLicenciaSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'success': True,
+                'message': 'Tipo de licencia creado correctamente',
+                'data': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response({
+            'success': False,
+            'message': 'Datos inválidos',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        logger.error(f'Error en crear_tipo_licencia: {str(e)}')
+        return Response({'success': False, 'message': f'Error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PUT', 'PATCH'])
+@permission_classes([AllowAny])
+def actualizar_tipo_licencia(request, tipo_licencia_id):
+    """
+    Actualizar un tipo de licencia existente (solo administradores).
+    """
+    try:
+        agente_id = request.session.get('user_id')
+        if not agente_id:
+            return Response({'success': False, 'message': 'No hay sesión activa'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        agente = Agente.objects.get(id_agente=agente_id)
+        rol = agente.agenterol_set.first()
+
+        if not rol or rol.id_rol.nombre not in ['Administrador', 'Director']:
+            return Response({'success': False, 'message': 'No tiene permisos para actualizar tipos de licencia'}, status=status.HTTP_403_FORBIDDEN)
+
+        tipo_licencia = TipoLicencia.objects.get(id_tipo_licencia=tipo_licencia_id)
+        serializer = TipoLicenciaSerializer(tipo_licencia, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'success': True,
+                'message': 'Tipo de licencia actualizado correctamente',
+                'data': serializer.data
+            })
+        
+        return Response({'success': False, 'message': 'Datos inválidos', 'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    except TipoLicencia.DoesNotExist:
+        return Response({'success': False, 'message': 'Tipo de licencia no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f'Error en actualizar_tipo_licencia: {str(e)}')
+        return Response({'success': False, 'message': f'Error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def eliminar_tipo_licencia(request, tipo_licencia_id):
+    """
+    Eliminar un tipo de licencia (solo administradores).
+    """
+    try:
+        agente_id = request.session.get('user_id')
+        if not agente_id:
+            return Response({'success': False, 'message': 'No hay sesión activa'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        agente = Agente.objects.get(id_agente=agente_id)
+        rol = agente.agenterol_set.first()
+
+        if not rol or rol.id_rol.nombre not in ['Administrador', 'Director']:
+            return Response({'success': False, 'message': 'No tiene permisos para eliminar tipos de licencia'}, status=status.HTTP_403_FORBIDDEN)
+
+        tipo_licencia = TipoLicencia.objects.get(id_tipo_licencia=tipo_licencia_id)
+        tipo_licencia.delete()
+
+        return Response({'success': True, 'message': 'Tipo de licencia eliminado correctamente'}, status=status.HTTP_204_NO_CONTENT)
+
+    except TipoLicencia.DoesNotExist:
+        return Response({'success': False, 'message': 'Tipo de licencia no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f'Error en eliminar_tipo_licencia: {str(e)}')
+        return Response({'success': False, 'message': f'Error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def listar_asistencias(request):
     """
     Listar asistencias con filtros por fecha, área, estado.

@@ -87,6 +87,11 @@ export const asistenciaService = {
   getLicencia: (id) => api.get(`/asistencia/licencias/${id}/`),
   createLicencia: (data) => api.post('/asistencia/licencias/', data),
   updateLicencia: (id, data) => api.put(`/asistencia/licencias/${id}/`, data),
+  // Tipos de licencia (ABM - nomenclador)
+  getTiposLicencia: (token = null) => createApiClient(token).get('/asistencia/admin/tipos-licencia/'),
+  createTipoLicencia: (data, token = null) => createApiClient(token).post('/asistencia/admin/tipos-licencia/crear/', data),
+  updateTipoLicencia: (id, data, token = null) => createApiClient(token).put(`/asistencia/admin/tipos-licencia/actualizar/${id}/`, data),
+  deleteTipoLicencia: (id, token = null) => createApiClient(token).delete(`/asistencia/admin/tipos-licencia/eliminar/${id}/`),
 
   // Novedades
   getNovedades: () => api.get('/asistencia/novedades/'),
