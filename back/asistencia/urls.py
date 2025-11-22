@@ -15,6 +15,12 @@ urlpatterns = [
     path('admin/corregir/<int:asistencia_id>/', views.corregir_asistencia, name='corregir_asistencia'),
     path('admin/marcar-ausente/<int:asistencia_id>/', views.marcar_como_ausente, name='marcar_como_ausente'),
     path('admin/licencias/', views.listar_licencias, name='listar_licencias'),
+
+    # Endpoints para ABM de Tipos de Licencia
+    path('admin/tipos-licencia/', views.listar_tipos_licencia, name='listar_tipos_licencia'),
+    path('admin/tipos-licencia/crear/', views.crear_tipo_licencia, name='crear_tipo_licencia'),
+    path('admin/tipos-licencia/actualizar/<int:tipo_licencia_id>/', views.actualizar_tipo_licencia, name='actualizar_tipo_licencia'),
+    path('admin/tipos-licencia/eliminar/<int:tipo_licencia_id>/', views.eliminar_tipo_licencia, name='eliminar_tipo_licencia'),
     
     # Endpoint para cron job
     path('cron/marcar-salidas/', views.ejecutar_marcacion_automatica, name='ejecutar_marcacion_automatica'),
