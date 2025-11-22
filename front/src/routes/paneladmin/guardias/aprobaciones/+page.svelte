@@ -17,7 +17,15 @@
     guardiasDelCronograma,
     mostrarModalRechazo,
     motivoRechazo,
-    cronogramaARechazar
+    cronogramaARechazar,
+    // Filtros
+    areas,
+    filtroArea,
+    filtroTipo,
+    filtroEstado,
+    busqueda,
+    cronogramasPendientesFiltrados,
+    cronogramasAprobadasFiltradas
   } = aprobacionesGuardiasController;
 
   onMount(async () => {
@@ -87,6 +95,14 @@
   function handleCambiarTab(tab) {
     aprobacionesGuardiasController.cambiarTab(tab);
   }
+
+  async function handleDespublicar(cronograma) {
+    await aprobacionesGuardiasController.despublicar(cronograma);
+  }
+
+  async function handleEliminar(cronograma) {
+    await aprobacionesGuardiasController.eliminar(cronograma);
+  }
 </script>
 
 <section class="aprobaciones-wrap">
@@ -100,6 +116,61 @@
     {/if}
   </header>
 
+  <!-- Filtros -->
+  <div class="filtros-section">
+    <div class="filtros-grid">
+      <div class="filtro-item">
+        <label>Área:</label>
+        <select bind:value={$filtroArea}>
+          <option value="">Todas las áreas</option>
+          {#each $areas as area}
+            <option value={area.id_area}>{area.nombre}</option>
+          {/each}
+        </select>
+      </div>
+      
+      <div class="filtro-item">
+        <label>Tipo:</label>
+        <select bind:value={$filtroTipo}>
+          <option value="">Todos los tipos</option>
+          <option value="regular">Regular</option>
+          <option value="especial">Especial</option>
+          <option value="feriado">Feriado</option>
+          <option value="emergencia">Emergencia</option>
+        </select>
+      </div>
+      
+      <div class="filtro-item">
+        <label>Estado:</label>
+        <select bind:value={$filtroEstado}>
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="aprobada">Aprobada</option>
+          <option value="publicada">Publicada</option>
+          <option value="rechazada">Rechazada</option>
+        </select>
+      </div>
+      
+      <div class="filtro-item">
+        <label>Buscar:</label>
+        <input 
+          type="text" 
+          placeholder="Nombre o área..." 
+          bind:value={$busqueda}
+        />
+      </div>
+      
+      <div class="filtro-item filtro-actions">
+        <button 
+          class="btn-limpiar" 
+          on:click={() => aprobacionesGuardiasController.limpiarFiltros()}
+        >
+          🗑️ Limpiar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Tabs -->
   <div class="tabs">
     <button 
@@ -107,14 +178,14 @@
       class:active={$tabActiva === 'pendientes'}
       on:click={() => handleCambiarTab('pendientes')}
     >
-      Pendientes ({$cronogramasPendientes.length})
+      Pendientes ({$cronogramasPendientesFiltrados.length})
     </button>
     <button 
       class="tab" 
       class:active={$tabActiva === 'aprobadas'}
       on:click={() => handleCambiarTab('aprobadas')}
     >
-      Publicadas ({$cronogramasAprobadas.length})
+      Publicadas ({$cronogramasAprobadasFiltradas.length})
     </button>
   </div>
 
@@ -130,12 +201,18 @@
   {:else if $tabActiva === 'pendientes'}
     <!-- Lista de pendientes -->
     <div class="cronogramas-lista">
-      {#if $cronogramasPendientes.length === 0}
+      {#if $cronogramasPendientesFiltrados.length === 0}
         <div class="empty-state">
-          <p>✓ No hay cronogramas pendientes de aprobación</p>
+          <p>
+            {#if $cronogramasPendientes.length > 0}
+              📋 No hay cronogramas que coincidan con los filtros aplicados
+            {:else}
+              ✓ No hay cronogramas pendientes de aprobación
+            {/if}
+          </p>
         </div>
       {:else}
-        {#each $cronogramasPendientes as cronograma}
+        {#each $cronogramasPendientesFiltrados as cronograma}
           <div class="cronograma-card pendiente">
             <div class="cronograma-header">
               <div class="cronograma-info">
@@ -211,12 +288,18 @@
   {:else}
     <!-- Lista de aprobadas -->
     <div class="cronogramas-lista">
-      {#if $cronogramasAprobadas.length === 0}
+      {#if $cronogramasAprobadasFiltradas.length === 0}
         <div class="empty-state">
-          <p>No hay cronogramas publicadas</p>
+          <p>
+            {#if $cronogramasAprobadas.length > 0}
+              📋 No hay cronogramas que coincidan con los filtros aplicados
+            {:else}
+              ✓ No hay cronogramas publicados
+            {/if}
+          </p>
         </div>
       {:else}
-        {#each $cronogramasAprobadas as cronograma}
+        {#each $cronogramasAprobadasFiltradas as cronograma}
           <div class="cronograma-card aprobada">
             <div class="cronograma-header">
               <div class="cronograma-info">
@@ -251,6 +334,16 @@
               <button class="btn btn-secondary" on:click={() => handleVerDetalles(cronograma)}>
                 📋 Ver Detalles
               </button>
+              {#if cronograma.estado === 'publicada'}
+                <button class="btn btn-warning" on:click={() => handleDespublicar(cronograma)}>
+                  📤 Despublicar
+                </button>
+              {/if}
+              {#if cronograma.estado === 'pendiente'}
+                <button class="btn btn-danger" on:click={() => handleEliminar(cronograma)}>
+                  🗑️ Eliminar
+                </button>
+              {/if}
             </div>
           </div>
         {/each}
@@ -873,5 +966,80 @@
     gap: 0.75rem;
     padding: 1rem 1.5rem;
     border-top: 1px solid #e5e7eb;
+  }
+
+  /* Estilos para filtros */
+  .filtros-section {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .filtros-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: end;
+  }
+
+  .filtro-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .filtro-item label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+  }
+
+  .filtro-item select,
+  .filtro-item input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: white;
+  }
+
+  .filtro-item select:focus,
+  .filtro-item input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .filtro-actions {
+    align-items: end;
+  }
+
+  .btn-limpiar {
+    padding: 0.5rem 1rem;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-limpiar:hover {
+    background: #e5e7eb;
+    color: #1f2937;
+  }
+
+  .btn-warning {
+    background: #f59e0b;
+    color: white;
+    border: 1px solid #d97706;
+  }
+
+  .btn-warning:hover {
+    background: #d97706;
+    border-color: #b45309;
   }
 </style>

@@ -344,7 +344,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             
             # Determinar estado inicial según rol
             if rol_creador.lower() == 'administrador':
-                estado_inicial = 'aprobada'  # Auto-aprobado
+                estado_inicial = 'publicada'  # Auto-aprobado y publicado
                 fecha_aprobacion = timezone.now().date()
                 aprobado_por_id = agente_id  # Se aprueba a sí mismo
             else:
@@ -391,6 +391,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 estado_guardias = 'pendiente_aprobacion'
                 guardias_activas = False  # No activar hasta aprobar
             else:
+                # Para admin (publicada) y otros estados aprobados
                 estado_guardias = 'planificada'
                 guardias_activas = True
             
@@ -549,8 +550,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             cronograma.hora_fin = data['hora_fin']
             cronograma.id_area_id = data['id_area']
             
-            # Si estaba aprobado y se modifica, volver a pendiente
-            if cronograma.estado == 'aprobada':
+            # Si estaba aprobado/publicado y se modifica, volver a pendiente
+            if cronograma.estado in ['aprobada', 'publicada']:
                 from .utils import get_agente_rol
                 rol_actualizador = get_agente_rol(agente_actualizador)
                 
@@ -581,11 +582,20 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             
             # Eliminar guardias existentes y registrar en auditoría
             for guardia_previa in guardias_previas:
+                # Convertir fechas a string para serialización JSON
+                guardia_previa_serializable = guardia_previa.copy()
+                if 'fecha' in guardia_previa_serializable:
+                    guardia_previa_serializable['fecha'] = str(guardia_previa_serializable['fecha'])
+                if 'hora_inicio' in guardia_previa_serializable:
+                    guardia_previa_serializable['hora_inicio'] = str(guardia_previa_serializable['hora_inicio'])
+                if 'hora_fin' in guardia_previa_serializable:
+                    guardia_previa_serializable['hora_fin'] = str(guardia_previa_serializable['hora_fin'])
+                
                 Auditoria.objects.create(
                     pk_afectada=guardia_previa['id_guardia'],
                     nombre_tabla='guardia',
                     creado_en=timezone.now(),
-                    valor_previo=guardia_previa,
+                    valor_previo=guardia_previa_serializable,
                     valor_nuevo=None,
                     accion='ELIMINAR',
                     id_agente_id=agente_id
@@ -598,6 +608,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 estado_guardias = 'pendiente_aprobacion'
                 guardias_activas = False
             else:
+                # Para estados aprobados y publicados
                 estado_guardias = 'planificada'
                 guardias_activas = True
             
@@ -643,12 +654,14 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 )
             
             # Registrar resumen en auditoría
-            from auditoria.models import RegistroAuditoria
-            RegistroAuditoria.objects.create(
-                tipo_accion='actualizacion_cronograma_completo',
-                detalle=f'Cronograma {cronograma.id_cronograma} actualizado por {agente_actualizador.nombre} {agente_actualizador.apellido}. Guardias eliminadas: {len(guardias_previas)}, Guardias creadas: {len(guardias_creadas)}',
-                modelo_afectado='cronograma',
-                id_registro=cronograma.id_cronograma
+            Auditoria.objects.create(
+                pk_afectada=cronograma.id_cronograma,
+                nombre_tabla='cronograma',
+                creado_en=timezone.now(),
+                valor_previo={'guardias_previas_count': len(guardias_previas)},
+                valor_nuevo={'guardias_nuevas_count': len(guardias_creadas), 'actualizacion_completa': True},
+                accion='ACTUALIZACION_COMPLETA',
+                id_agente_id=agente_id
             )
             
             return Response({
@@ -660,9 +673,15 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error al actualizar cronograma con guardias: {str(e)}")
+            import traceback
+            error_details = {
+                'error': str(e),
+                'traceback': traceback.format_exc(),
+                'data_received': request.data
+            }
+            logger.error(f"Error al actualizar cronograma con guardias: {error_details}")
             return Response(
-                {'error': f'Error al actualizar: {str(e)}'}, 
+                {'error': f'Error al actualizar: {str(e)}', 'details': error_details}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -747,8 +766,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Aprobar cronograma
-        cronograma.estado = 'aprobada'
+        # Aprobar y publicar cronograma directamente
+        cronograma.estado = 'publicada'
         cronograma.fecha_aprobacion = date.today()
         cronograma.aprobado_por_id = agente_aprobador
         cronograma.save()
@@ -762,16 +781,18 @@ class CronogramaViewSet(viewsets.ModelViewSet):
         )
         
         # Registrar en auditoría
-        from auditoria.models import RegistroAuditoria
-        RegistroAuditoria.objects.create(
-            tipo_accion='aprobacion_cronograma',
-            detalle=f'Cronograma {cronograma.id_cronograma} aprobado por {agente_aprobador.nombre} {agente_aprobador.apellido} (rol: {rol_aprobador}). {guardias_activadas} guardias activadas.',
-            modelo_afectado='cronograma',
-            id_registro=cronograma.id_cronograma
+        Auditoria.objects.create(
+            pk_afectada=cronograma.id_cronograma,
+            nombre_tabla='cronograma',
+            creado_en=timezone.now(),
+            valor_previo={'estado': 'pendiente'},
+            valor_nuevo={'estado': 'publicada', 'guardias_activadas': guardias_activadas},
+            accion='APROBAR_Y_PUBLICAR',
+            id_agente_id=agente_id
         )
         
         return Response({
-            'mensaje': 'Cronograma aprobado exitosamente',
+            'mensaje': 'Cronograma aprobado y publicado exitosamente',
             'cronograma_id': cronograma.id_cronograma,
             'aprobado_por': f'{agente_aprobador.nombre} {agente_aprobador.apellido}',
             'fecha_aprobacion': cronograma.fecha_aprobacion,
@@ -780,22 +801,155 @@ class CronogramaViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['patch'])
     def publicar(self, request, pk=None):
-        """Publica un cronograma aprobado"""
+        """Publica un cronograma pendiente o aprobado (método legacy)"""
         cronograma = self.get_object()
         
-        if cronograma.estado != 'aprobada':
+        if cronograma.estado not in ['aprobada', 'pendiente']:
             return Response(
-                {'error': 'Solo se pueden publicar cronogramas aprobados'},
+                {'error': f'Solo se pueden publicar cronogramas pendientes o aprobados. Estado actual: {cronograma.estado}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        estado_previo = cronograma.estado
         cronograma.estado = 'publicada'
         cronograma.save()
         
-        # Notificar publicación (implementar sistema de notificaciones)
-        # NotificacionManager.notificar_cronograma_publicado(cronograma.id_cronograma)
+        # Registrar en auditoría
+        Auditoria.objects.create(
+            pk_afectada=cronograma.id_cronograma,
+            nombre_tabla='cronograma',
+            creado_en=timezone.now(),
+            valor_previo={'estado': estado_previo},
+            valor_nuevo={'estado': 'publicada'},
+            accion='PUBLICAR_DIRECTO',
+            id_agente_id=request.data.get('agente_id', 1)
+        )
         
         return Response({'mensaje': 'Cronograma publicado exitosamente'})
+    
+    @action(detail=True, methods=['patch'])
+    def despublicar(self, request, pk=None):
+        """Despublica un cronograma para permitir edición"""
+        cronograma = self.get_object()
+        
+        if cronograma.estado != 'publicada':
+            return Response(
+                {'error': 'Solo se pueden despublicar cronogramas publicados'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Obtener agente que despublica
+        agente_id = request.data.get('agente_id')
+        if not agente_id:
+            return Response(
+                {'error': 'Se requiere agente_id para despublicar'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from personas.models import Agente
+            agente_despublicador = Agente.objects.get(id_agente=agente_id)
+        except Agente.DoesNotExist:
+            return Response(
+                {'error': 'Agente no encontrado'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Cambiar estado a pendiente (permite editar y eliminar)
+        estado_previo = cronograma.estado
+        cronograma.estado = 'pendiente'
+        cronograma.save()
+        
+        # Registrar en auditoría
+        Auditoria.objects.create(
+            pk_afectada=cronograma.id_cronograma,
+            nombre_tabla='cronograma',
+            creado_en=timezone.now(),
+            valor_previo={'estado': estado_previo},
+            valor_nuevo={'estado': 'pendiente'},
+            accion='DESPUBLICAR',
+            id_agente_id=agente_id
+        )
+        
+        return Response({
+            'mensaje': 'Cronograma despublicado exitosamente. Ahora está pendiente y puede editarse o eliminarse.',
+            'cronograma_id': cronograma.id_cronograma,
+            'nuevo_estado': cronograma.estado
+        })
+    
+    @action(detail=True, methods=['delete'])
+    def eliminar(self, request, pk=None):
+        """Elimina un cronograma solo si está en estado pendiente"""
+        cronograma = self.get_object()
+        
+        if cronograma.estado != 'pendiente':
+            return Response(
+                {'error': 'Solo se pueden eliminar cronogramas en estado pendiente'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Obtener agente que elimina
+        agente_id = request.data.get('agente_id') or request.query_params.get('agente_id')
+        if not agente_id:
+            return Response(
+                {'error': 'Se requiere agente_id para eliminar'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from personas.models import Agente
+            agente_eliminador = Agente.objects.get(id_agente=agente_id)
+        except Agente.DoesNotExist:
+            return Response(
+                {'error': 'Agente no encontrado'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Guardar datos para auditoría antes de eliminar
+        cronograma_id = cronograma.id_cronograma
+        cronograma_data = {
+            'id': cronograma_id,
+            'nombre': cronograma.nombre,
+            'estado': cronograma.estado,
+            'tipo': cronograma.tipo,
+            'fecha': str(cronograma.fecha),
+        }
+        
+        # Registrar eliminación de guardias asociadas
+        guardias = cronograma.guardia_set.all()
+        for guardia in guardias:
+            Auditoria.objects.create(
+                pk_afectada=guardia.id_guardia,
+                nombre_tabla='guardia',
+                creado_en=timezone.now(),
+                valor_previo={
+                    'id_guardia': guardia.id_guardia,
+                    'id_cronograma': cronograma_id,
+                    'id_agente': guardia.id_agente_id
+                },
+                valor_nuevo=None,
+                accion='ELIMINAR',
+                id_agente_id=agente_id
+            )
+        
+        # Registrar eliminación del cronograma
+        Auditoria.objects.create(
+            pk_afectada=cronograma_id,
+            nombre_tabla='cronograma',
+            creado_en=timezone.now(),
+            valor_previo=cronograma_data,
+            valor_nuevo=None,
+            accion='ELIMINAR',
+            id_agente_id=agente_id
+        )
+        
+        # Eliminar cronograma (esto también elimina las guardias por CASCADE)
+        cronograma.delete()
+        
+        return Response({
+            'mensaje': 'Cronograma eliminado exitosamente',
+            'cronograma_eliminado': cronograma_data
+        })
     
     @action(detail=False, methods=['get'])
     def pendientes(self, request):
@@ -908,17 +1062,22 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
+        # Guardar estado previo para auditoría
+        estado_previo = cronograma.estado
+        
         # Rechazar cronograma
         cronograma.estado = 'rechazada'
         cronograma.save()
         
         # Registrar en auditoría
-        from auditoria.models import RegistroAuditoria
-        RegistroAuditoria.objects.create(
-            tipo_accion='rechazo_cronograma',
-            detalle=f'Cronograma {cronograma.id_cronograma} rechazado por {agente_rechazador.nombre} {agente_rechazador.apellido}. Motivo: {motivo}',
-            modelo_afectado='cronograma',
-            id_registro=cronograma.id_cronograma
+        Auditoria.objects.create(
+            pk_afectada=cronograma.id_cronograma,
+            nombre_tabla='cronograma',
+            creado_en=timezone.now(),
+            valor_previo={'estado': estado_previo},
+            valor_nuevo={'estado': 'rechazada', 'motivo': motivo},
+            accion='RECHAZO',
+            id_agente_id=agente_id
         )
         
         return Response({

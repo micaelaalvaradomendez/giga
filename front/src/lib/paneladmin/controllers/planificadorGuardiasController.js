@@ -217,11 +217,19 @@ class PlanificadorGuardiasController {
 		let seleccionados;
 		this.agentesSeleccionados.subscribe(s => seleccionados = s)();
 		
+		console.log('🔍 DEBUG - Toggle agente:', {
+			agenteId,
+			agenteIdType: typeof agenteId,
+			seleccionadosAntes: Array.from(seleccionados),
+			seleccionadosSize: seleccionados.size
+		});
+		
 		const nuevoSet = new Set(seleccionados);
 		
 		if (nuevoSet.has(agenteId)) {
 			// Deseleccionar
 			nuevoSet.delete(agenteId);
+			console.log('🔍 DEBUG - Deseleccionando agente:', agenteId);
 			
 			let conflictos;
 			this.agentesConConflicto.subscribe(c => conflictos = c)();
@@ -231,6 +239,7 @@ class PlanificadorGuardiasController {
 		} else {
 			// Seleccionar y verificar conflictos
 			nuevoSet.add(agenteId);
+			console.log('🔍 DEBUG - Seleccionando agente:', agenteId);
 			
 			const tieneConflicto = await this.verificarDisponibilidadAgente(agenteId);
 			if (tieneConflicto) {
@@ -241,6 +250,11 @@ class PlanificadorGuardiasController {
 				this.agentesConConflicto.set(nuevosConflictos);
 			}
 		}
+		
+		console.log('🔍 DEBUG - Agentes después del toggle:', {
+			nuevoSetSize: nuevoSet.size,
+			nuevoSetArray: Array.from(nuevoSet)
+		});
 		
 		this.agentesSeleccionados.set(nuevoSet);
 	}
@@ -316,6 +330,12 @@ class PlanificadorGuardiasController {
 			if (fechaInicioDate < hoy) {
 				errores.push('La fecha de inicio no puede ser en el pasado');
 			}
+			
+			// Validar que sea fin de semana (sábado=6, domingo=0)
+			const diaSemana = fechaInicioDate.getDay();
+			if (diaSemana !== 0 && diaSemana !== 6) {
+				errores.push('Las guardias solo pueden programarse en fines de semana (sábado y domingo)');
+			}
 		}
 		
 		return {
@@ -379,6 +399,8 @@ class PlanificadorGuardiasController {
 			this.horaFin.subscribe(h => horaFin = h)();
 			this.observaciones.subscribe(o => observaciones = o)();
 			
+			const agentesArray = Array.from(agentesSeleccionados);
+			
 			const payload = {
 				nombre: nombre.trim(),
 				tipo,
@@ -389,16 +411,23 @@ class PlanificadorGuardiasController {
 				fecha_fin: fechaFin || fechaInicio,
 				hora_fin: horaFin,
 				observaciones: observaciones.trim(),
-				agentes: Array.from(agentesSeleccionados),
+				agentes: agentesArray,
 				agente_id: this._obtenerAgenteActual()
 			};
+			
+			console.log('🔍 DEBUG - Agentes seleccionados:', {
+				seleccionadosSet: agentesSeleccionados,
+				seleccionadosSetSize: agentesSeleccionados.size,
+				agentesArray,
+				agentesArrayLength: agentesArray.length
+			});
 			
 			console.log('📤 Guardando cronograma:', payload);
 			
 			let response;
 			if (modoEdicion && cronogramaId) {
-				// Actualizar cronograma existente
-				response = await guardiasService.updateCronograma(cronogramaId, payload, token);
+				// Actualizar cronograma existente con guardias
+				response = await guardiasService.actualizarConGuardias(cronogramaId, payload, token);
 				this.mostrarToast('Cronograma actualizado exitosamente', 'success');
 			} else {
 				// Crear nuevo cronograma con guardias

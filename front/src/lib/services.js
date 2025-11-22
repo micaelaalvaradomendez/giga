@@ -99,7 +99,7 @@ export const asistenciaService = {
 export const guardiasService = {
   // Cronogramas
   getCronogramas: (token = null) => createApiClient(token).get('/guardias/cronogramas/'),
-  getCronogramasPendientes: (token = null) => createApiClient(token).get('/guardias/cronogramas/?estado=generada'),
+  getCronogramasPendientes: (token = null) => createApiClient(token).get('/guardias/cronogramas/'),
   getCronogramasAprobadas: (token = null) => createApiClient(token).get('/guardias/cronogramas/?estado=publicada'),
   getCronograma: (id, token = null) => createApiClient(token).get(`/guardias/cronogramas/${id}/`),
   createCronograma: (data, token = null) => createApiClient(token).post('/guardias/cronogramas/', data),
@@ -114,6 +114,8 @@ export const guardiasService = {
   getPendientesAprobacion: (agenteId, token = null) => createApiClient(token).get(`/guardias/cronogramas/pendientes/?agente_id=${agenteId}`),
   rechazarCronograma: (id, data, token = null) => createApiClient(token).post(`/guardias/cronogramas/${id}/rechazar/`, data),
   deleteCronograma: (id, token = null) => createApiClient(token).delete(`/guardias/cronogramas/${id}/`),
+  despublicarCronograma: (id, data, token = null) => createApiClient(token).patch(`/guardias/cronogramas/${id}/despublicar/`, data),
+  eliminarCronograma: (id, data, token = null) => createApiClient(token).delete(`/guardias/cronogramas/${id}/eliminar/?agente_id=${data.agente_id}`),
 
   // Guardias
   getGuardias: (token = null) => createApiClient(token).get('/guardias/guardias/'),
@@ -123,6 +125,7 @@ export const guardiasService = {
   deleteGuardia: (id, token = null) => createApiClient(token).delete(`/guardias/guardias/${id}/`),
   getResumenGuardias: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?${params}`),
   getGuardiasAgente: (agenteId, token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?agente=${agenteId}`),
+  getGuardiasPorCronograma: (cronogramaId, token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?id_cronograma=${cronogramaId}`),
   
   // Notas de guardias
   getNotasGuardia: (guardiaId, token = null) => createApiClient(token).get(`/guardias/guardias/${guardiaId}/notas/`),
@@ -131,7 +134,7 @@ export const guardiasService = {
   deleteNotaGuardia: (notaId, agenteId, token = null) => createApiClient(token).delete(`/guardias/guardias/notas/${notaId}/?agente_id=${agenteId}`),
   
   // Verificaciones de disponibilidad
-  verificarDisponibilidad: (agenteId, fecha, token = null) => createApiClient(token).get(`/guardias/guardias/verificar-disponibilidad/?agente=${agenteId}&fecha=${fecha}`),
+  verificarDisponibilidad: (agenteId, fecha, token = null) => createApiClient(token).get(`/guardias/guardias/verificar_disponibilidad/?agente=${agenteId}&fecha=${fecha}`),
 
   // Feriados
   getFeriados: (token = null) => createApiClient(token).get('/guardias/feriados/'),

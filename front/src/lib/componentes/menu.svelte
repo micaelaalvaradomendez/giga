@@ -215,7 +215,6 @@
                             <span class="menu-item-icon">⏱️</span>
                             <div class="menu-item-text">
                                 <div class="menu-item-title">Compensaciones</div>
-                                <div class="menu-item-subtitle">Horas de emergencia</div>
                             </div>
                         </a>
 
