@@ -492,7 +492,7 @@
 
 	.bg-white.shadow-md.rounded-lg.overflow-x-auto::before {
 		content: "";
-		position: absolute;
+		position: relative;
 		top: 0;
 		left: 0;
 		right: 0;
@@ -525,7 +525,7 @@
 
 	.bg-gray-100::after {
 		content: "";
-		position: absolute;
+		position: relative;
 		top: 0;
 		left: 0;
 		right: 0;
@@ -696,6 +696,10 @@
 			margin-top: 0.5rem;
 			margin-left: 0;
 			width: 100%;
+		}
+
+		.table {
+			table-layout: fixed;
 		}
 
 		th,

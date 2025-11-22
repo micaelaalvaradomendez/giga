@@ -155,9 +155,7 @@
                         >
                             <span class="menu-item-icon">🏥</span>
                             <div class="menu-item-text">
-                                <div class="menu-item-title">
-                                    Licencias
-                                </div>
+                                <div class="menu-item-title">Licencias</div>
                             </div>
                         </a>
                     {/if}
@@ -209,12 +207,20 @@
                         <a
                             href="/paneladmin/compensaciones"
                             class="menu-item"
+<<<<<<< HEAD
                             class:active={currentPath.includes("/paneladmin/guardias/compensaciones")}
+=======
+                            class:active={currentPath.includes(
+                                "/compensaciones",
+                            )}
+>>>>>>> 3b539179693f516259d4663c7ba77dc419733e89
                             on:click={closeMenu}
                         >
                             <span class="menu-item-icon">⏱️</span>
                             <div class="menu-item-text">
-                                <div class="menu-item-title">Compensaciones</div>
+                                <div class="menu-item-title">
+                                    Compensaciones
+                                </div>
                             </div>
                         </a>
 
@@ -236,19 +242,6 @@
                         {/if}
 
                         {#if isAdmin}
-                            <a
-                                href="/paneladmin"
-                                class="menu-item"
-                                class:active={currentPath === "/paneladmin"}
-                                on:click={closeMenu}
-                            >
-                                <span class="menu-item-icon">👥</span>
-                                <div class="menu-item-text">
-                                    <div class="menu-item-title">
-                                        Panel Administrativo
-                                    </div>
-                                </div>
-                            </a>
                             <a
                                 href="/paneladmin/organigrama"
                                 class="menu-item"
@@ -274,6 +267,19 @@
                                 <span class="menu-item-icon">🛡️</span>
                                 <div class="menu-item-text">
                                     <div class="menu-item-title">Roles</div>
+                                </div>
+                            </a>
+                            <a
+                                href="/paneladmin"
+                                class="menu-item menu-item-admin"
+                                class:active={currentPath === "/paneladmin"}
+                                on:click={closeMenu}
+                            >
+                                <span class="menu-item-icon">👥</span>
+                                <div class="menu-item-text">
+                                    <div class="menu-item-title">
+                                        Panel Administrativo
+                                    </div>
                                 </div>
                             </a>
                         {/if}
@@ -707,6 +713,39 @@
             inset 0 1px 2px rgba(255, 255, 255, 0.95),
             inset 0 -1px 2px rgba(239, 68, 68, 0.15);
         border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .menu-item-admin {
+        background: linear-gradient(
+            135deg,
+            rgba(193, 210, 233, 0.95) 0%,
+            rgba(157, 201, 236, 0.85) 100%
+        );
+        border: 1px solid rgba(42, 87, 211, 0.2);
+        color: #4073d1;
+        font-weight: 700;
+        box-shadow:
+            0 4px 12px rgba(13, 78, 219, 0.12),
+            inset 0 1px 2px rgba(255, 255, 255, 0.9),
+            inset 0 -1px 2px rgba(11, 59, 219, 0.1);
+    }
+
+    .menu-item-admin::after {
+        background: linear-gradient(90deg, transparent, #4073d1, transparent);
+    }
+
+    .menu-item-admin:hover {
+        background: linear-gradient(
+            135deg,
+            rgba(193, 210, 233, 0.95) 0%,
+            rgba(157, 201, 236, 0.85) 100%
+        );
+        box-shadow:
+            0 6px 16pxrgba (13, 78, 219, 0.12),
+            0 0 12pxrgba (13, 78, 219, 0.12),
+            inset 0 1px 2px rgba(255, 255, 255, 0.95),
+            inset 0 -1px 2px rgba(13, 78, 219, 0.12);
+        border-color: rgba(13, 78, 219, 0.12);
     }
 
     .logout-button {
