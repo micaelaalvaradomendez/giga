@@ -141,8 +141,12 @@
       const response = await API.get(`/guardias/guardias/resumen/?agente=${agenteSeleccionado}`);
       console.log('Respuesta completa de guardias:', response);
       
-      // Manejar diferentes estructuras de respuesta
-      if (response.success && response.data && response.data.results) {
+      // El endpoint de guardias devuelve { estadisticas: {...}, guardias: [...] }
+      if (response.guardias && Array.isArray(response.guardias)) {
+        guardias = response.guardias;
+      } else if (response.success && response.data && response.data.guardias) {
+        guardias = response.data.guardias;
+      } else if (response.success && response.data && response.data.results) {
         guardias = response.data.results;
       } else if (response.results) {
         guardias = response.results;
@@ -153,6 +157,7 @@
       }
       
       console.log('Guardias procesadas:', guardias);
+      console.log('Total guardias encontradas:', guardias.length);
       // Limpiar selección de guardia cuando cambia el agente
       guardiaSeleccionada = '';
     } catch (err) {
@@ -240,6 +245,25 @@
     <button class="btn-nuevo" on:click={() => mostrandoFormulario = true}>
       ➕ Nueva Compensación
     </button>
+  </div>
+
+  <!-- Información explicativa -->
+  <div class="info-explicativa">
+    <h3>💡 ¿Qué son las Compensaciones?</h3>
+    <div class="explicacion-grid">
+      <div class="explicacion-item">
+        <h4>🚨 Situaciones de Emergencia</h4>
+        <p>Cuando una guardia se extiende más allá de las 10 horas reglamentarias debido a emergencias, accidentes, operativos especiales o situaciones imprevistas.</p>
+      </div>
+      <div class="explicacion-item">
+        <h4>⏰ Registro de Horas Extra</h4>
+        <p>Se documentan las horas adicionales trabajadas, el motivo de la extensión y se solicita la compensación correspondiente.</p>
+      </div>
+      <div class="explicacion-item">
+        <h4>✅ Proceso de Aprobación</h4>
+        <p>Las compensaciones deben ser aprobadas por superiores jerárquicos antes de ser incluidas en el cálculo de plus salarial.</p>
+      </div>
+    </div>
   </div>
 
   <!-- Errores -->
@@ -489,6 +513,48 @@
     font-size: 14px;
     margin: 0;
     max-width: 600px;
+  }
+
+  /* Información explicativa */
+  .info-explicativa {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%);
+    border: 1px solid #d4edda;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .info-explicativa h3 {
+    color: #155724;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+  }
+
+  .explicacion-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+  }
+
+  .explicacion-item {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #28a745;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .explicacion-item h4 {
+    color: #155724;
+    margin-bottom: 8px;
+    font-size: 1rem;
+  }
+
+  .explicacion-item p {
+    color: #333;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin: 0;
   }
 
   .btn-nuevo {

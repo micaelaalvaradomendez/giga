@@ -209,7 +209,7 @@
                         <a
                             href="/paneladmin/compensaciones"
                             class="menu-item"
-                            class:active={currentPath.includes("/compensaciones")}
+                            class:active={currentPath.includes("/paneladmin/guardias/compensaciones")}
                             on:click={closeMenu}
                         >
                             <span class="menu-item-icon">⏱️</span>
