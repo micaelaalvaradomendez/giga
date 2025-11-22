@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from rest_framework.routers import DefaultRouter
 from .views import (
     CronogramaViewSet, GuardiaViewSet, ResumenGuardiaMesViewSet,
-    ReglaPlusViewSet, ParametrosAreaViewSet, FeriadoViewSet
+    ReglaPlusViewSet, ParametrosAreaViewSet, FeriadoViewSet, HoraCompensacionViewSet
 )
 
 # Router para las APIs REST
@@ -17,6 +17,7 @@ router.register(r'resumenes-mes', ResumenGuardiaMesViewSet)
 router.register(r'reglas-plus', ReglaPlusViewSet)
 router.register(r'parametros-area', ParametrosAreaViewSet)
 router.register(r'feriados', FeriadoViewSet)
+router.register(r'compensaciones', HoraCompensacionViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -40,6 +41,11 @@ urlpatterns = [
             '/api/parametros-area/',
             '/api/feriados/',
             '/api/feriados/verificar-fecha/',
+            '/api/compensaciones/',
+            '/api/compensaciones/crear-compensacion/',
+            '/api/compensaciones/aprobar-lote/',
+            '/api/compensaciones/resumen-mensual/',
+            '/api/compensaciones/reporte-compensaciones/',
         ]
     }), name='guardias_index'),
 ]

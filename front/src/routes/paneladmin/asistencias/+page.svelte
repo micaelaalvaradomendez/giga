@@ -90,6 +90,13 @@
         }
     }
 
+    async function handleMarcarAusente() {
+        const result = await asistenciasController.marcarComoAusente();
+        if (result.message) {
+            alert(result.message);
+        }
+    }
+
     function handleCheckboxChange() {
         asistenciasController.toggleHoraEspecifica();
     }
@@ -330,10 +337,14 @@
                                 <td>
                                     <button
                                         class="btn-editar"
-                                        on:click={() =>
-                                            asistenciasController.abrirModalCorreccion(
-                                                asistencia,
-                                            )}
+                                        on:click={() => {
+                                            if (asistencia) {
+                                                asistenciasController.abrirModalCorreccion(asistencia);
+                                            } else {
+                                                alert('Error: Datos de asistencia no disponibles');
+                                                console.error('❌ Asistencia es null:', asistencia);
+                                            }
+                                        }}
                                     >
                                         ✏️ Corregir
                                     </button>
@@ -615,6 +626,17 @@
                             title="Volver a marcar salida"
                         >
                             🔄 Re-marcar Salida
+                        </button>
+                    {/if}
+                    
+                    <!-- Botón para marcar como ausente -->
+                    {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
+                        <button
+                            class="btn-marcar-ausente"
+                            on:click={handleMarcarAusente}
+                            title="Marcar como ausente (elimina presentismo)"
+                        >
+                            ❌ Marcar Ausente
                         </button>
                     {/if}
                 {/if}
@@ -1236,6 +1258,16 @@
     .btn-remarcar-salida:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+    }
+
+    .btn-marcar-ausente {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+    }
+
+    .btn-marcar-ausente:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
     }
 
     .actual-time {

@@ -3,7 +3,7 @@ Serializers para la app guardias - Incluyendo nuevos modelos de cronogramas.
 """
 
 from rest_framework import serializers
-from .models import Cronograma, Guardia, ResumenGuardiaMes, ReglaPlus, ParametrosArea, Feriado, NotaGuardia
+from .models import Cronograma, Guardia, ResumenGuardiaMes, ReglaPlus, ParametrosArea, Feriado, NotaGuardia, HoraCompensacion
 
 
 class ReglaPlusSerializer(serializers.ModelSerializer):
@@ -257,3 +257,139 @@ class AprobacionPlusSerializer(serializers.Serializer):
             raise serializers.ValidationError("Algunos resúmenes no existen o no están en estado pendiente")
         
         return value
+
+
+class HoraCompensacionSerializer(serializers.ModelSerializer):
+    """Serializer para horas de compensación por emergencias"""
+    
+    agente_nombre = serializers.CharField(source='id_agente.nombre', read_only=True)
+    agente_apellido = serializers.CharField(source='id_agente.apellido', read_only=True)
+    agente_legajo = serializers.CharField(source='id_agente.legajo', read_only=True)
+    
+    solicitado_por_nombre = serializers.CharField(source='solicitado_por.nombre', read_only=True)
+    solicitado_por_apellido = serializers.CharField(source='solicitado_por.apellido', read_only=True)
+    
+    aprobado_por_nombre = serializers.CharField(source='aprobado_por.nombre', read_only=True, allow_null=True)
+    aprobado_por_apellido = serializers.CharField(source='aprobado_por.apellido', read_only=True, allow_null=True)
+    
+    cronograma_tipo = serializers.CharField(source='id_cronograma.tipo', read_only=True)
+    guardia_fecha = serializers.DateField(source='id_guardia.fecha', read_only=True, allow_null=True)
+    
+    # Campos calculados
+    puede_aprobar = serializers.ReadOnlyField()
+    esta_vencida = serializers.ReadOnlyField()
+    
+    # Campos de display
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    motivo_display = serializers.CharField(source='get_motivo_display', read_only=True)
+    tipo_compensacion_display = serializers.CharField(source='get_tipo_compensacion_display', read_only=True)
+    
+    class Meta:
+        model = HoraCompensacion
+        fields = [
+            'id_hora_compensacion', 'id_agente', 'id_guardia', 'id_cronograma',
+            'agente_nombre', 'agente_apellido', 'agente_legajo',
+            'cronograma_tipo', 'guardia_fecha',
+            'fecha_servicio', 'hora_inicio_programada', 'hora_fin_programada', 'hora_fin_real',
+            'horas_programadas', 'horas_efectivas', 'horas_extra',
+            'motivo', 'motivo_display', 'descripcion_motivo', 'numero_acta',
+            'estado', 'estado_display', 'tipo_compensacion', 'tipo_compensacion_display',
+            'solicitado_por', 'solicitado_por_nombre', 'solicitado_por_apellido',
+            'aprobado_por', 'aprobado_por_nombre', 'aprobado_por_apellido',
+            'fecha_solicitud', 'fecha_aprobacion', 'observaciones_aprobacion',
+            'valor_hora_extra', 'monto_total',
+            'creado_en', 'actualizado_en',
+            'puede_aprobar', 'esta_vencida'
+        ]
+        read_only_fields = [
+            'id_hora_compensacion', 'horas_programadas', 'horas_efectivas', 'horas_extra',
+            'valor_hora_extra', 'monto_total', 'fecha_solicitud', 'fecha_aprobacion',
+            'creado_en', 'actualizado_en', 'puede_aprobar', 'esta_vencida'
+        ]
+
+
+class CrearCompensacionSerializer(serializers.Serializer):
+    """Serializer para crear una nueva compensación"""
+    
+    id_agente = serializers.IntegerField()
+    fecha_servicio = serializers.DateField()
+    hora_fin_real = serializers.TimeField()
+    motivo = serializers.ChoiceField(choices=HoraCompensacion.MOTIVO_CHOICES)
+    descripcion_motivo = serializers.CharField(max_length=1000)
+    numero_acta = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    tipo_compensacion = serializers.ChoiceField(
+        choices=HoraCompensacion.TIPO_COMPENSACION_CHOICES,
+        default='plus'
+    )
+    
+    def validate(self, data):
+        """Validaciones personalizadas"""
+        from .models import Guardia
+        from .utils import ValidadorHorarios
+        
+        # Verificar que existe una guardia para esa fecha
+        try:
+            guardia = Guardia.objects.get(
+                id_agente=data['id_agente'],
+                fecha=data['fecha_servicio'],
+                activa=True
+            )
+        except Guardia.DoesNotExist:
+            raise serializers.ValidationError("No hay guardia programada para esta fecha")
+        
+        # Validar las horas usando el validador
+        es_valida, mensaje, horas_extra = ValidadorHorarios.validar_horas_compensacion(
+            guardia.hora_inicio,
+            guardia.hora_fin,
+            data['hora_fin_real']
+        )
+        
+        if not es_valida:
+            raise serializers.ValidationError(f"Horas inválidas: {mensaje}")
+        
+        # Agregar datos calculados
+        data['guardia'] = guardia
+        data['horas_extra'] = horas_extra
+        
+        return data
+
+
+class AprobacionCompensacionSerializer(serializers.Serializer):
+    """Serializer para aprobar/rechazar compensaciones"""
+    
+    compensacion_ids = serializers.ListField(child=serializers.IntegerField())
+    accion = serializers.ChoiceField(choices=[('aprobar', 'Aprobar'), ('rechazar', 'Rechazar')])
+    observaciones = serializers.CharField(max_length=1000, required=False, allow_blank=True)
+    
+    def validate_compensacion_ids(self, value):
+        """Valida que las compensaciones existan y se puedan aprobar"""
+        from .models import HoraCompensacion
+        
+        compensaciones = HoraCompensacion.objects.filter(
+            id_hora_compensacion__in=value,
+            estado='pendiente'
+        )
+        
+        if compensaciones.count() != len(value):
+            raise serializers.ValidationError("Algunas compensaciones no existen o no están en estado pendiente")
+        
+        return value
+
+
+class ResumenCompensacionSerializer(serializers.Serializer):
+    """Serializer para resúmenes de compensaciones"""
+    
+    agente = serializers.IntegerField()
+    mes = serializers.IntegerField(min_value=1, max_value=12)
+    anio = serializers.IntegerField(min_value=2020, max_value=2030)
+    
+    def validate(self, data):
+        """Validaciones del resumen"""
+        from datetime import date
+        
+        # Verificar que no sea un período futuro
+        hoy = date.today()
+        if data['anio'] > hoy.year or (data['anio'] == hoy.year and data['mes'] > hoy.month):
+            raise serializers.ValidationError("No se puede consultar períodos futuros")
+        
+        return data

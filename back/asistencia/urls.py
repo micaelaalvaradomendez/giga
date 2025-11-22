@@ -13,6 +13,7 @@ urlpatterns = [
     path('admin/listar/', views.listar_asistencias, name='listar_asistencias'),
     path('admin/resumen/', views.resumen_asistencias, name='resumen_asistencias'),
     path('admin/corregir/<int:asistencia_id>/', views.corregir_asistencia, name='corregir_asistencia'),
+    path('admin/marcar-ausente/<int:asistencia_id>/', views.marcar_como_ausente, name='marcar_como_ausente'),
     path('admin/licencias/', views.listar_licencias, name='listar_licencias'),
     
     # Endpoint para cron job

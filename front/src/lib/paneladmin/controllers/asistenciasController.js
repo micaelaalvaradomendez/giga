@@ -155,11 +155,22 @@ class AsistenciasController {
 					const dataAsistencias = await responseAsistencias.json();
 					const dataAusentes = await responseAusentes.json();
 					
+					console.log('📊 Datos cargados:', {
+						asistencias_registradas: dataAsistencias.data?.length || 0,
+						ausentes: dataAusentes.data?.length || 0,
+						primer_ausente: dataAusentes.data?.[0]
+					});
+					
 					// Combinar ambos arrays
 					asistenciasData = [
 						...(dataAsistencias.data || []),
 						...(dataAusentes.data || [])
 					];
+					
+					// Verificar estructura de primer ausente si existe
+					if (dataAusentes.data && dataAusentes.data.length > 0) {
+						console.log('🔍 Estructura del primer ausente:', dataAusentes.data[0]);
+					}
 				}
 			} else {
 				// Para tabs específicas, usar el filtro correspondiente
@@ -251,6 +262,12 @@ class AsistenciasController {
 
 	// ========== GESTIÓN DE MODAL ==========
 	abrirModalCorreccion(asistencia) {
+		if (!asistencia) {
+			console.error('❌ Error: Se intentó abrir modal sin datos de asistencia');
+			alert('Error: No se puede abrir el modal sin información de asistencia');
+			return;
+		}
+
 		this.asistenciaEditando.set(asistencia);
 		this.observacionEdit.set('');
 		
@@ -260,11 +277,16 @@ class AsistenciasController {
 		this.horaSalida.set('');
 		this.usarHoraEspecifica.set(false);
 		
-		console.log('📝 Abriendo modal para:', {
-			agente: asistencia.agente_nombre,
+		console.log('📝 Abriendo modal para asistencia:', {
+			id_asistencia: asistencia.id_asistencia,
+			agente_nombre: asistencia.agente_nombre,
+			agente_dni: asistencia.agente_dni,
+			id_agente: asistencia.id_agente,
 			tiene_entrada: !!asistencia.hora_entrada,
 			tiene_salida: !!asistencia.hora_salida,
-			modo_inicial: 'normal'
+			fecha: asistencia.fecha,
+			area_nombre: asistencia.area_nombre,
+			estructura_completa: asistencia
 		});
 		
 		this.modalCorreccion.set(true);
@@ -316,10 +338,29 @@ class AsistenciasController {
 		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
 		this.horaEntrada.subscribe((value) => (horaEntrada = value))();
 
-		if (!asistencia || !asistencia.agente_dni) {
+		console.log('🕐 Marcando entrada:', {
+			agente: asistencia?.agente_nombre,
+			dni: asistencia?.agente_dni,
+			id_agente: asistencia?.id_agente,
+			usar_hora: usarHora,
+			hora_entrada: horaEntrada,
+			hora_especifica: horaEspecifica,
+			observacion: observacion,
+			asistencia_completa: asistencia
+		});
+
+		if (!asistencia) {
 			return {
 				success: false,
-				message: 'No se puede marcar entrada sin DNI del agente'
+				message: 'Error: No se recibió información del agente'
+			};
+		}
+
+		if (!asistencia.agente_dni) {
+			console.error('❌ Falta DNI del agente:', asistencia);
+			return {
+				success: false,
+				message: `Error: El agente ${asistencia.agente_nombre || 'desconocido'} no tiene DNI registrado`
 			};
 		}
 
@@ -344,6 +385,8 @@ class AsistenciasController {
 				requestBody.hora_especifica = horaEntrada;
 			}
 
+			console.log('📤 Enviando petición de marcación:', requestBody);
+
 			const response = await fetch('/api/asistencia/marcar/', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -352,20 +395,22 @@ class AsistenciasController {
 			});
 
 			const data = await response.json();
+			console.log('📥 Respuesta del servidor:', { status: response.status, data });
 
 			if (response.ok && data.success) {
 				this.cerrarModal();
 				await this.cargarDatos();
 				return { success: true, message: '✅ Entrada marcada correctamente' };
 			} else {
+				console.error('❌ Error en marcación:', { status: response.status, data });
 				return {
 					success: false,
 					message: '❌ Error: ' + (data.message || 'No se pudo marcar la entrada')
 				};
 			}
 		} catch (error) {
-			console.error('Error al marcar entrada:', error);
-			return { success: false, message: '❌ Error de conexión' };
+			console.error('❌ Error al marcar entrada:', error);
+			return { success: false, message: '❌ Error de conexión: ' + error.message };
 		}
 	}
 
@@ -378,16 +423,28 @@ class AsistenciasController {
 
 		console.log('🚪 Intentando marcar salida:', {
 			asistencia_id: asistencia?.id_asistencia,
+			agente: asistencia?.agente_nombre,
+			dni: asistencia?.agente_dni,
+			id_agente: asistencia?.id_agente,
 			tiene_entrada: !!asistencia?.hora_entrada,
 			tiene_salida: !!asistencia?.hora_salida,
 			usar_hora: usarHora,
-			hora_salida: horaSalida
+			hora_salida: horaSalida,
+			asistencia_completa: asistencia
 		});
 
-		if (!asistencia || !asistencia.agente_dni) {
+		if (!asistencia) {
 			return {
 				success: false,
-				message: 'No se puede marcar salida sin DNI del agente'
+				message: 'Error: No se recibió información del agente'
+			};
+		}
+
+		if (!asistencia.agente_dni) {
+			console.error('❌ Falta DNI del agente para salida:', asistencia);
+			return {
+				success: false,
+				message: `Error: El agente ${asistencia.agente_nombre || 'desconocido'} no tiene DNI registrado`
 			};
 		}
 
@@ -419,6 +476,8 @@ class AsistenciasController {
 				requestBody.hora_especifica = horaSalida;
 			}
 
+			console.log('📤 Enviando petición de marcación salida:', requestBody);
+
 			const response = await fetch('/api/asistencia/marcar/', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -427,20 +486,22 @@ class AsistenciasController {
 			});
 
 			const data = await response.json();
+			console.log('📥 Respuesta del servidor (salida):', { status: response.status, data });
 
 			if (response.ok && data.success) {
 				this.cerrarModal();
 				await this.cargarDatos();
 				return { success: true, message: '✅ Salida marcada correctamente' };
 			} else {
+				console.error('❌ Error en marcación salida:', { status: response.status, data });
 				return {
 					success: false,
 					message: '❌ Error: ' + (data.message || 'No se pudo marcar la salida')
 				};
 			}
 		} catch (error) {
-			console.error('Error al marcar salida:', error);
-			return { success: false, message: '❌ Error de conexión' };
+			console.error('❌ Error al marcar salida:', error);
+			return { success: false, message: '❌ Error de conexión: ' + error.message };
 		}
 	}
 
@@ -455,18 +516,123 @@ class AsistenciasController {
 
 		console.log('🔧 Iniciando corrección de asistencia:', {
 			asistencia_id: asistencia?.id_asistencia,
+			tiene_entrada: !!asistencia?.hora_entrada,
+			tiene_salida: !!asistencia?.hora_salida,
 			usarHora,
 			horaEntrada,
 			horaSalida,
 			observacion
 		});
 
-		if (!asistencia || !asistencia.id_asistencia) {
+		if (!asistencia) {
 			return {
 				success: false,
-				message: 'No se puede corregir: información de asistencia inválida'
+				message: 'Error: No se recibió información del agente'
 			};
 		}
+
+		if (!asistencia.agente_dni) {
+			console.error('❌ Falta DNI del agente para corrección:', asistencia);
+			return {
+				success: false,
+				message: `Error: El agente ${asistencia.agente_nombre || 'desconocido'} no tiene DNI registrado`
+			};
+		}
+
+		// CASO ESPECIAL: Si no tiene ID de asistencia, significa que no tiene marcaciones previas
+		// En este caso, usar los métodos de marcación en lugar de corrección
+		if (!asistencia.id_asistencia) {
+			console.log('📝 Sin asistencia previa, creando nuevas marcaciones...');
+			
+			if (!usarHora) {
+				return {
+					success: false,
+					message: 'Debe especificar las horas para crear la asistencia'
+				};
+			}
+
+			if (!horaEntrada && !horaSalida) {
+				return {
+					success: false,
+					message: 'Debe especificar al menos una hora (entrada o salida)'
+				};
+			}
+
+			// Validar formato de horas
+			const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+			if (horaEntrada && !timeRegex.test(horaEntrada)) {
+				return {
+					success: false,
+					message: 'Formato de hora de entrada inválido. Use HH:MM (ej: 08:30)'
+				};
+			}
+
+			if (horaSalida && !timeRegex.test(horaSalida)) {
+				return {
+					success: false,
+					message: 'Formato de hora de salida inválido. Use HH:MM (ej: 17:30)'
+				};
+			}
+
+			// Validar que la hora de salida sea posterior a la de entrada
+			if (horaEntrada && horaSalida && horaEntrada >= horaSalida) {
+				return {
+					success: false,
+					message: 'La hora de salida debe ser posterior a la hora de entrada'
+				};
+			}
+
+			// Crear marcaciones secuencialmente
+			try {
+				let resultado_final = { success: true, messages: [] };
+
+				// Marcar entrada si se especifica
+				if (horaEntrada) {
+					// Temporalmente setear la observación
+					this.observacionEdit.set(observacion || 'Marcación creada por administrador');
+					const resultado_entrada = await this.marcarEntrada(horaEntrada);
+					
+					if (!resultado_entrada.success) {
+						return resultado_entrada;
+					}
+					resultado_final.messages.push('Entrada creada');
+				}
+
+				// Marcar salida si se especifica (solo si también hay entrada)
+				if (horaSalida) {
+					if (!horaEntrada) {
+						return {
+							success: false,
+							message: 'No se puede crear salida sin entrada previa'
+						};
+					}
+					
+					// Actualizar la observación
+					this.observacionEdit.set(observacion || 'Marcación creada por administrador');
+					const resultado_salida = await this.marcarSalida(horaSalida);
+					
+					if (!resultado_salida.success) {
+						return resultado_salida;
+					}
+					resultado_final.messages.push('Salida creada');
+				}
+
+				return {
+					success: true,
+					message: '✅ ' + resultado_final.messages.join(' y ') + ' correctamente'
+				};
+
+			} catch (error) {
+				console.error('❌ Error creando marcaciones:', error);
+				return { 
+					success: false, 
+					message: '❌ Error creando marcaciones: ' + error.message 
+				};
+			}
+		}
+
+		// ========== CORRECCIÓN DE ASISTENCIA EXISTENTE ==========
+		console.log('🔧 Corrigiendo asistencia existente con ID:', asistencia.id_asistencia);
 
 		if (!usarHora) {
 			return {
@@ -534,7 +700,10 @@ class AsistenciasController {
 				requestBody.hora_salida = horaSalida;
 			}
 
-			console.log('📤 Enviando solicitud de corrección:', requestBody);
+			console.log('📤 Enviando solicitud de corrección:', {
+				url: `/api/asistencia/admin/corregir/${asistencia.id_asistencia}/`,
+				body: requestBody
+			});
 
 			const response = await fetch(`/api/asistencia/admin/corregir/${asistencia.id_asistencia}/`, {
 				method: 'PATCH',
@@ -544,14 +713,14 @@ class AsistenciasController {
 			});
 
 			const data = await response.json();
-			console.log('📥 Respuesta del servidor:', data);
+			console.log('📥 Respuesta del servidor (corrección):', { status: response.status, data });
 
 			if (response.ok && data.success) {
 				this.cerrarModal();
 				await this.cargarDatos();
 				return { success: true, message: '✅ Asistencia corregida correctamente' };
 			} else {
-				console.error('❌ Error del servidor:', data);
+				console.error('❌ Error del servidor (corrección):', { status: response.status, data });
 				return {
 					success: false,
 					message: '❌ Error: ' + (data.message || 'No se pudo corregir la asistencia')
@@ -608,6 +777,89 @@ class AsistenciasController {
 	setTabActiva(tab) {
 		this.tabActiva.set(tab);
 		this.cargarDatos();
+	}
+
+	// ========== MARCAR COMO AUSENTE ==========
+	async marcarComoAusente() {
+		let asistencia, observacion;
+		this.asistenciaEditando.subscribe((value) => (asistencia = value))();
+		this.observacionEdit.subscribe((value) => (observacion = value))();
+
+		console.log('❌ Marcando como ausente:', {
+			asistencia_id: asistencia?.id_asistencia,
+			agente: asistencia?.agente_nombre,
+			tenia_entrada: !!asistencia?.hora_entrada,
+			tenia_salida: !!asistencia?.hora_salida
+		});
+
+		if (!asistencia) {
+			return {
+				success: false,
+				message: 'Error: No se recibió información del agente'
+			};
+		}
+
+		if (!asistencia.id_asistencia) {
+			return {
+				success: false,
+				message: 'No se puede marcar como ausente un agente sin registros previos'
+			};
+		}
+
+		const confirmar = confirm(
+			`¿Está seguro que desea marcar a ${asistencia.agente_nombre} como AUSENTE?\n\n` +
+			'Esta acción eliminará su presentismo para el día de hoy y quedará registrada en el sistema.'
+		);
+		
+		if (!confirmar) {
+			return { success: false, message: 'Operación cancelada' };
+		}
+
+		if (!observacion.trim()) {
+			const motivo = prompt(
+				'MOTIVO OBLIGATORIO: Explique por qué se marca como ausente\n' +
+				'(ej: "No se presentó a trabajar", "Abandono de puesto sin aviso")'
+			);
+			
+			if (!motivo || !motivo.trim()) {
+				return {
+					success: false,
+					message: 'Debe proporcionar un motivo para marcar como ausente'
+				};
+			}
+			
+			this.observacionEdit.set(motivo.trim());
+			observacion = motivo.trim();
+		}
+
+		try {
+			const response = await fetch(`/api/asistencia/admin/marcar-ausente/${asistencia.id_asistencia}/`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify({
+					observacion: observacion.trim()
+				})
+			});
+
+			const data = await response.json();
+			console.log('📥 Respuesta marcar ausente:', { status: response.status, data });
+
+			if (response.ok && data.success) {
+				this.cerrarModal();
+				await this.cargarDatos();
+				return { success: true, message: '✅ Agente marcado como ausente correctamente' };
+			} else {
+				console.error('❌ Error marcando ausente:', { status: response.status, data });
+				return {
+					success: false,
+					message: '❌ Error: ' + (data.message || 'No se pudo marcar como ausente')
+				};
+			}
+		} catch (error) {
+			console.error('❌ Error al marcar ausente:', error);
+			return { success: false, message: '❌ Error de conexión: ' + error.message };
+		}
 	}
 
 	// ========== RECARGAR ==========

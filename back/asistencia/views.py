@@ -704,3 +704,83 @@ def ejecutar_marcacion_automatica(request):
             'success': False,
             'message': f'Error: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PATCH'])
+@permission_classes([AllowAny])
+def marcar_como_ausente(request, asistencia_id):
+    """
+    Marcar un agente como ausente (eliminar su presentismo).
+    Solo para administradores.
+    """
+    try:
+        agente_id = request.session.get('user_id')
+        if not agente_id:
+            return Response({
+                'success': False,
+                'message': 'No hay sesión activa'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        agente = Agente.objects.get(id_agente=agente_id)
+        rol = agente.agenterol_set.first()
+        
+        if not rol or rol.id_rol.nombre not in ['Administrador', 'Director']:
+            return Response({
+                'success': False,
+                'message': 'No tiene permisos para marcar ausentes'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        asistencia = Asistencia.objects.get(id_asistencia=asistencia_id)
+        
+        # Validar observación obligatoria
+        observacion = request.data.get('observacion', '').strip()
+        if not observacion:
+            return Response({
+                'success': False,
+                'message': 'Debe proporcionar una observación explicando el motivo'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Eliminar las marcaciones y marcar como ausente
+        asistencia.hora_entrada = None
+        asistencia.hora_salida = None
+        asistencia.horas_efectivas = None
+        asistencia.marcacion_entrada_automatica = False
+        asistencia.marcacion_salida_automatica = False
+        asistencia.es_correccion = True
+        asistencia.corregido_por = agente
+        
+        # Agregar observación de ausencia
+        if asistencia.observaciones:
+            asistencia.observaciones += f" | MARCADO COMO AUSENTE: {observacion}"
+        else:
+            asistencia.observaciones = f"MARCADO COMO AUSENTE: {observacion}"
+        
+        asistencia.save()
+        
+        logger.info(
+            f'Agente {asistencia.id_agente.id_agente} marcado como ausente '
+            f'para el {asistencia.fecha} por {agente.id_agente}'
+        )
+        
+        return Response({
+            'success': True,
+            'message': f'Agente {asistencia.id_agente.nombre} {asistencia.id_agente.apellido} marcado como ausente',
+            'data': {
+                'fecha': asistencia.fecha,
+                'agente': f"{asistencia.id_agente.nombre} {asistencia.id_agente.apellido}",
+                'motivo': observacion
+            }
+        })
+    
+    except Asistencia.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': 'Asistencia no encontrada'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    except Exception as e:
+        logger.error(f'Error en marcar_como_ausente: {str(e)}')
+        return Response({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

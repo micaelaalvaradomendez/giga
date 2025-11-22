@@ -52,6 +52,11 @@
 			path: "/paneladmin/auditoria",
 			description: "Rastrear cambios en el sistema",
 		},
+		{
+			name: "Compensaciones para Emergencias",
+			path: "/paneladmin/compensaciones",
+			description: "Modificaciones para guardias de Emergencia",
+		},
 	];
 
 	onMount(() => {

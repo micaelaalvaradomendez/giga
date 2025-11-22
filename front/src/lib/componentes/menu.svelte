@@ -206,6 +206,19 @@
                             </div>
                         </a>
 
+                        <a
+                            href="/paneladmin/compensaciones"
+                            class="menu-item"
+                            class:active={currentPath.includes("/compensaciones")}
+                            on:click={closeMenu}
+                        >
+                            <span class="menu-item-icon">⏱️</span>
+                            <div class="menu-item-text">
+                                <div class="menu-item-title">Compensaciones</div>
+                                <div class="menu-item-subtitle">Horas de emergencia</div>
+                            </div>
+                        </a>
+
                         {#if isDirector}
                             <a
                                 href="/paneladmin/parametros"

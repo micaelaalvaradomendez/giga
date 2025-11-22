@@ -258,3 +258,185 @@ class ResumenGuardiaMes(models.Model):
                 self.plus40 = compat['plus40']
                 return True
         return False
+
+
+class HoraCompensacion(models.Model):
+    """Registro de horas de compensación por emergencias que exceden el límite reglamentario"""
+    
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente de Aprobación'),
+        ('aprobada', 'Aprobada'),
+        ('rechazada', 'Rechazada'),
+        ('pagada', 'Pagada/Compensada'),
+    ]
+    
+    TIPO_COMPENSACION_CHOICES = [
+        ('pago', 'Pago Adicional'),
+        ('franco', 'Franco Compensatorio'),
+        ('plus', 'Plus Adicional'),
+    ]
+    
+    MOTIVO_CHOICES = [
+        ('siniestro', 'Siniestro/Accidente'),
+        ('emergencia', 'Emergencia Operativa'),
+        ('operativo', 'Operativo Especial'),
+        ('refuerzo', 'Refuerzo de Seguridad'),
+        ('otro', 'Otro Motivo'),
+    ]
+    
+    id_hora_compensacion = models.BigAutoField(primary_key=True)
+    
+    # Relaciones principales
+    id_agente = models.ForeignKey('personas.Agente', models.CASCADE, db_column='id_agente', related_name='horas_compensacion')
+    id_guardia = models.ForeignKey(Guardia, models.CASCADE, db_column='id_guardia', related_name='horas_compensacion', blank=True, null=True)
+    id_cronograma = models.ForeignKey(Cronograma, models.CASCADE, db_column='id_cronograma', related_name='horas_compensacion')
+    
+    # Información de la compensación
+    fecha_servicio = models.DateField(help_text="Fecha en que se prestó el servicio")
+    hora_inicio_programada = models.TimeField(help_text="Hora de inicio programada de la guardia")
+    hora_fin_programada = models.TimeField(help_text="Hora de fin programada de la guardia") 
+    hora_fin_real = models.TimeField(help_text="Hora real de finalización del servicio")
+    
+    horas_programadas = models.DecimalField(max_digits=4, decimal_places=2, help_text="Horas programadas originalmente")
+    horas_efectivas = models.DecimalField(max_digits=4, decimal_places=2, help_text="Horas realmente trabajadas")
+    horas_extra = models.DecimalField(max_digits=4, decimal_places=2, help_text="Horas extra trabajadas")
+    
+    # Motivo y justificación
+    motivo = models.CharField(max_length=20, choices=MOTIVO_CHOICES, default='emergencia')
+    descripcion_motivo = models.TextField(help_text="Descripción detallada del motivo de la extensión")
+    numero_acta = models.CharField(max_length=50, blank=True, null=True, help_text="Número de acta o expediente relacionado")
+    
+    # Estado y aprobación
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    tipo_compensacion = models.CharField(max_length=20, choices=TIPO_COMPENSACION_CHOICES, default='plus')
+    
+    # Información de aprobación
+    solicitado_por = models.ForeignKey('personas.Agente', models.CASCADE, db_column='solicitado_por', related_name='compensaciones_solicitadas')
+    aprobado_por = models.ForeignKey('personas.Agente', models.CASCADE, db_column='aprobado_por', related_name='compensaciones_aprobadas', blank=True, null=True)
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    fecha_aprobacion = models.DateTimeField(blank=True, null=True)
+    observaciones_aprobacion = models.TextField(blank=True, null=True)
+    
+    # Cálculos automáticos
+    valor_hora_extra = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, help_text="Valor por hora extra calculado")
+    monto_total = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, help_text="Monto total de compensación")
+    
+    # Auditoría
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        managed = False
+        db_table = 'hora_compensacion'
+        unique_together = (('id_agente', 'fecha_servicio', 'id_cronograma'),)
+        ordering = ['-fecha_servicio', '-creado_en']
+        
+    def __str__(self):
+        return f"Compensación {self.id_agente} - {self.fecha_servicio} ({self.horas_extra}h extra)"
+    
+    def clean(self):
+        """Validaciones del modelo"""
+        from django.core.exceptions import ValidationError
+        
+        # Validar que las horas extra sean positivas
+        if self.horas_extra <= 0:
+            raise ValidationError("Las horas extra deben ser mayor a 0")
+        
+        # Validar que la hora fin real sea posterior a la programada
+        if self.hora_fin_real <= self.hora_fin_programada:
+            raise ValidationError("La hora fin real debe ser posterior a la programada")
+        
+        # Validar que no se exceda un límite razonable (ej: 8 horas extra máximo)
+        if self.horas_extra > 8:
+            raise ValidationError("No se pueden registrar más de 8 horas extra por servicio")
+    
+    def save(self, *args, **kwargs):
+        """Cálculos automáticos antes de guardar"""
+        if self.hora_inicio_programada and self.hora_fin_programada:
+            # Calcular horas programadas
+            inicio = self.hora_inicio_programada
+            fin = self.hora_fin_programada
+            delta = (fin.hour * 60 + fin.minute) - (inicio.hour * 60 + inicio.minute)
+            self.horas_programadas = Decimal(str(delta / 60))
+        
+        if self.hora_inicio_programada and self.hora_fin_real:
+            # Calcular horas efectivas
+            inicio = self.hora_inicio_programada
+            fin = self.hora_fin_real
+            delta = (fin.hour * 60 + fin.minute) - (inicio.hour * 60 + inicio.minute)
+            if delta < 0:  # Cruzó medianoche
+                delta += 24 * 60
+            self.horas_efectivas = Decimal(str(delta / 60))
+            
+            # Calcular horas extra
+            self.horas_extra = self.horas_efectivas - self.horas_programadas
+        
+        super().save(*args, **kwargs)
+    
+    @property
+    def puede_aprobar(self):
+        """Verifica si la compensación puede ser aprobada"""
+        return self.estado == 'pendiente'
+    
+    @property
+    def esta_vencida(self):
+        """Verifica si la solicitud está vencida (más de 30 días)"""
+        from datetime import datetime, timedelta
+        return (datetime.now() - self.fecha_solicitud).days > 30
+    
+    def aprobar(self, aprobado_por_agente, observaciones=None):
+        """Aprueba la compensación"""
+        if not self.puede_aprobar:
+            raise ValueError("Esta compensación no puede ser aprobada")
+        
+        self.estado = 'aprobada'
+        self.aprobado_por = aprobado_por_agente
+        self.fecha_aprobacion = timezone.now()
+        self.observaciones_aprobacion = observaciones
+        self.save()
+    
+    def rechazar(self, rechazado_por_agente, observaciones):
+        """Rechaza la compensación"""
+        if not self.puede_aprobar:
+            raise ValueError("Esta compensación no puede ser rechazada")
+        
+        self.estado = 'rechazada'
+        self.aprobado_por = rechazado_por_agente
+        self.fecha_aprobacion = timezone.now()
+        self.observaciones_aprobacion = observaciones
+        self.save()
+    
+    @classmethod
+    def crear_desde_guardia_extendida(cls, guardia, hora_fin_real, motivo, descripcion, solicitado_por):
+        """Crea automáticamente una compensación desde una guardia extendida"""
+        compensacion = cls(
+            id_agente=guardia.id_agente,
+            id_guardia=guardia,
+            id_cronograma=guardia.id_cronograma,
+            fecha_servicio=guardia.fecha,
+            hora_inicio_programada=guardia.hora_inicio,
+            hora_fin_programada=guardia.hora_fin,
+            hora_fin_real=hora_fin_real,
+            motivo=motivo,
+            descripcion_motivo=descripcion,
+            solicitado_por=solicitado_por,
+        )
+        compensacion.save()
+        return compensacion
+    
+    @classmethod
+    def resumen_mensual_agente(cls, agente, mes, anio):
+        """Resumen de compensaciones del mes para un agente"""
+        compensaciones = cls.objects.filter(
+            id_agente=agente,
+            fecha_servicio__month=mes,
+            fecha_servicio__year=anio,
+            estado='aprobada'
+        )
+        
+        return {
+            'total_horas_extra': sum(c.horas_extra for c in compensaciones),
+            'total_compensaciones': compensaciones.count(),
+            'monto_total': sum(c.monto_total or Decimal('0') for c in compensaciones),
+            'por_motivo': {}
+        }

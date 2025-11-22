@@ -11,13 +11,14 @@ from django.db.models import Q, Sum, Count
 from datetime import datetime, date
 import logging
 
-from .models import Cronograma, Guardia, ResumenGuardiaMes, ReglaPlus, ParametrosArea, Feriado
+from .models import Cronograma, Guardia, ResumenGuardiaMes, ReglaPlus, ParametrosArea, Feriado, HoraCompensacion
 from auditoria.models import Auditoria
 from .serializers import (
     CronogramaExtendidoSerializer, GuardiaResumenSerializer, 
     ResumenGuardiaMesExtendidoSerializer, ReglaPlusSerializer,
     ParametrosAreaSerializer, FeriadoSerializer,
-    PlanificacionCronogramaSerializer, CalculoPlusSerializer, AprobacionPlusSerializer
+    PlanificacionCronogramaSerializer, CalculoPlusSerializer, AprobacionPlusSerializer,
+    HoraCompensacionSerializer, CrearCompensacionSerializer, AprobacionCompensacionSerializer, ResumenCompensacionSerializer
 )
 from .utils import CalculadoraPlus, PlanificadorCronograma, ValidadorHorarios
 
@@ -1599,5 +1600,409 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
             logger.error(f"Error generando reporte plus: {e}")
             return Response(
                 {'error': f'Error generando reporte: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class HoraCompensacionViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestión de horas de compensación por emergencias"""
+    
+    queryset = HoraCompensacion.objects.all()
+    serializer_class = HoraCompensacionSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Optimizar consultas
+        queryset = queryset.select_related(
+            'id_agente', 'id_guardia', 'id_cronograma',
+            'solicitado_por', 'aprobado_por'
+        )
+        
+        # Filtros
+        agente_id = self.request.query_params.get('agente')
+        estado = self.request.query_params.get('estado')
+        mes = self.request.query_params.get('mes')
+        anio = self.request.query_params.get('anio')
+        pendientes = self.request.query_params.get('pendientes')
+        
+        if agente_id:
+            queryset = queryset.filter(id_agente=agente_id)
+        if estado:
+            queryset = queryset.filter(estado=estado)
+        if mes and anio:
+            queryset = queryset.filter(
+                fecha_servicio__month=mes,
+                fecha_servicio__year=anio
+            )
+        if pendientes and pendientes.lower() == 'true':
+            queryset = queryset.filter(estado='pendiente')
+        
+        return queryset.order_by('-fecha_servicio', '-creado_en')
+    
+    @action(detail=False, methods=['post'])
+    def crear_compensacion(self, request):
+        """Crea una nueva solicitud de compensación"""
+        serializer = CrearCompensacionSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                from .utils import ValidadorHorarios
+                from personas.models import Agente
+                
+                # Obtener datos validados
+                data = serializer.validated_data
+                guardia = data['guardia']
+                agente = Agente.objects.get(id_agente=data['id_agente'])
+                
+                # Obtener agente que solicita (puede ser diferente al que trabajó)
+                agente_solicitante_id = request.data.get('solicitado_por', data['id_agente'])
+                agente_solicitante = Agente.objects.get(id_agente=agente_solicitante_id)
+                
+                # Calcular valor monetario
+                valor_hora, monto_total = ValidadorHorarios.calcular_valor_hora_compensacion(
+                    agente, data['horas_extra']
+                )
+                
+                # Crear la compensación
+                compensacion = HoraCompensacion.objects.create(
+                    id_agente=agente,
+                    id_guardia=guardia,
+                    id_cronograma=guardia.id_cronograma,
+                    fecha_servicio=data['fecha_servicio'],
+                    hora_inicio_programada=guardia.hora_inicio,
+                    hora_fin_programada=guardia.hora_fin,
+                    hora_fin_real=data['hora_fin_real'],
+                    motivo=data['motivo'],
+                    descripcion_motivo=data['descripcion_motivo'],
+                    numero_acta=data.get('numero_acta', ''),
+                    tipo_compensacion=data.get('tipo_compensacion', 'plus'),
+                    solicitado_por=agente_solicitante,
+                    valor_hora_extra=valor_hora,
+                    monto_total=monto_total
+                )
+                
+                # Registrar en auditoría
+                Auditoria.objects.create(
+                    pk_afectada=compensacion.id_hora_compensacion,
+                    nombre_tabla='hora_compensacion',
+                    creado_en=timezone.now(),
+                    valor_previo=None,
+                    valor_nuevo={
+                        'agente': agente.nombre + ' ' + agente.apellido,
+                        'fecha_servicio': str(data['fecha_servicio']),
+                        'horas_extra': float(compensacion.horas_extra),
+                        'motivo': data['motivo'],
+                        'monto_total': float(monto_total)
+                    },
+                    accion='CREAR_COMPENSACION',
+                    id_agente_id=agente_solicitante.id_agente
+                )
+                
+                serializer_response = HoraCompensacionSerializer(compensacion)
+                return Response({
+                    'mensaje': 'Compensación creada exitosamente',
+                    'compensacion': serializer_response.data
+                }, status=status.HTTP_201_CREATED)
+                
+            except Exception as e:
+                logger.error(f"Error creando compensación: {e}")
+                return Response(
+                    {'error': f'Error creando compensación: {str(e)}'}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['post'])
+    def aprobar_lote(self, request):
+        """Aprueba o rechaza un lote de compensaciones"""
+        serializer = AprobacionCompensacionSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                from personas.models import Agente
+                
+                compensacion_ids = serializer.validated_data['compensacion_ids']
+                accion = serializer.validated_data['accion']
+                observaciones = serializer.validated_data.get('observaciones', '')
+                
+                # Obtener agente aprobador
+                agente_id = request.data.get('agente_id')
+                if not agente_id:
+                    return Response(
+                        {'error': 'Se requiere agente_id para aprobar'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                agente_aprobador = Agente.objects.get(id_agente=agente_id)
+                
+                # Obtener compensaciones
+                compensaciones = HoraCompensacion.objects.filter(
+                    id_hora_compensacion__in=compensacion_ids,
+                    estado='pendiente'
+                )
+                
+                procesadas = 0
+                for compensacion in compensaciones:
+                    try:
+                        if accion == 'aprobar':
+                            compensacion.aprobar(agente_aprobador, observaciones)
+                        else:
+                            compensacion.rechazar(agente_aprobador, observaciones)
+                        
+                        # Registrar en auditoría
+                        Auditoria.objects.create(
+                            pk_afectada=compensacion.id_hora_compensacion,
+                            nombre_tabla='hora_compensacion',
+                            creado_en=timezone.now(),
+                            valor_previo={'estado': 'pendiente'},
+                            valor_nuevo={'estado': compensacion.estado},
+                            accion=f'APROBAR_COMPENSACION' if accion == 'aprobar' else 'RECHAZAR_COMPENSACION',
+                            id_agente_id=agente_aprobador.id_agente
+                        )
+                        
+                        procesadas += 1
+                        
+                    except Exception as e:
+                        logger.error(f"Error procesando compensación {compensacion.id_hora_compensacion}: {e}")
+                        continue
+                
+                return Response({
+                    'mensaje': f'{procesadas} compensaciones procesadas exitosamente',
+                    'accion': accion,
+                    'procesadas': procesadas,
+                    'total_solicitadas': len(compensacion_ids)
+                })
+                
+            except Exception as e:
+                logger.error(f"Error procesando compensaciones: {e}")
+                return Response(
+                    {'error': f'Error procesando compensaciones: {str(e)}'}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'])
+    def resumen_mensual(self, request):
+        """Resumen mensual de compensaciones por agente"""
+        serializer = ResumenCompensacionSerializer(data=request.query_params.dict())
+        if serializer.is_valid():
+            try:
+                from personas.models import Agente
+                
+                agente_id = serializer.validated_data['agente']
+                mes = serializer.validated_data['mes']
+                anio = serializer.validated_data['anio']
+                
+                agente = Agente.objects.get(id_agente=agente_id)
+                
+                # Obtener resumen usando el método del modelo
+                resumen = HoraCompensacion.resumen_mensual_agente(agente, mes, anio)
+                
+                # Obtener compensaciones del mes
+                compensaciones = self.get_queryset().filter(
+                    id_agente=agente,
+                    fecha_servicio__month=mes,
+                    fecha_servicio__year=anio
+                ).order_by('-fecha_servicio')
+                
+                compensaciones_data = HoraCompensacionSerializer(compensaciones, many=True).data
+                
+                return Response({
+                    'agente': {
+                        'id': agente.id_agente,
+                        'nombre_completo': f"{agente.apellido}, {agente.nombre}",
+                        'legajo': agente.legajo
+                    },
+                    'periodo': {
+                        'mes': mes,
+                        'anio': anio,
+                        'mes_nombre': date(anio, mes, 1).strftime('%B %Y')
+                    },
+                    'resumen': resumen,
+                    'compensaciones': compensaciones_data
+                })
+                
+            except Exception as e:
+                logger.error(f"Error generando resumen mensual: {e}")
+                return Response(
+                    {'error': f'Error generando resumen: {str(e)}'}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'])
+    def reporte_compensaciones(self, request):
+        """Reporte general de compensaciones por período y área"""
+        mes = request.query_params.get('mes')
+        anio = request.query_params.get('anio')
+        area_id = request.query_params.get('area_id')
+        estado = request.query_params.get('estado', 'aprobada')
+        
+        if not all([mes, anio]):
+            return Response(
+                {'error': 'Se requieren parámetros: mes, anio'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from personas.models import Area
+            from decimal import Decimal
+            
+            queryset = self.get_queryset().filter(
+                fecha_servicio__month=mes,
+                fecha_servicio__year=anio,
+                estado=estado
+            )
+            
+            if area_id:
+                queryset = queryset.filter(id_agente__id_area=area_id)
+                area = Area.objects.get(id_area=area_id)
+                area_nombre = area.nombre
+            else:
+                area_nombre = "Todas las áreas"
+            
+            # Agrupar por agente
+            compensaciones_por_agente = {}
+            total_horas_extra = Decimal('0')
+            total_monto = Decimal('0')
+            
+            for compensacion in queryset:
+                agente_id = compensacion.id_agente.id_agente
+                if agente_id not in compensaciones_por_agente:
+                    compensaciones_por_agente[agente_id] = {
+                        'agente': {
+                            'id': agente_id,
+                            'nombre_completo': f"{compensacion.id_agente.apellido}, {compensacion.id_agente.nombre}",
+                            'legajo': compensacion.id_agente.legajo,
+                            'area': compensacion.id_agente.id_area.nombre if compensacion.id_agente.id_area else "Sin área"
+                        },
+                        'compensaciones': [],
+                        'total_horas_extra': Decimal('0'),
+                        'total_monto': Decimal('0')
+                    }
+                
+                compensaciones_por_agente[agente_id]['compensaciones'].append({
+                    'fecha_servicio': compensacion.fecha_servicio,
+                    'horas_extra': compensacion.horas_extra,
+                    'motivo': compensacion.get_motivo_display(),
+                    'monto': compensacion.monto_total or Decimal('0')
+                })
+                
+                compensaciones_por_agente[agente_id]['total_horas_extra'] += compensacion.horas_extra
+                compensaciones_por_agente[agente_id]['total_monto'] += compensacion.monto_total or Decimal('0')
+                
+                total_horas_extra += compensacion.horas_extra
+                total_monto += compensacion.monto_total or Decimal('0')
+            
+            # Estadísticas por motivo
+            from django.db.models import Count, Sum
+            stats_por_motivo = queryset.values('motivo').annotate(
+                cantidad=Count('id_hora_compensacion'),
+                total_horas=Sum('horas_extra')
+            )
+            
+            resultado = {
+                'area_nombre': area_nombre,
+                'periodo': {
+                    'mes': int(mes),
+                    'anio': int(anio),
+                    'mes_nombre': date(int(anio), int(mes), 1).strftime('%B %Y')
+                },
+                'estado_filtrado': estado,
+                'agentes': list(compensaciones_por_agente.values()),
+                'totales': {
+                    'total_compensaciones': queryset.count(),
+                    'total_agentes': len(compensaciones_por_agente),
+                    'total_horas_extra': float(total_horas_extra),
+                    'total_monto': float(total_monto),
+                    'promedio_horas_agente': float(total_horas_extra / max(len(compensaciones_por_agente), 1))
+                },
+                'estadisticas_motivo': [
+                    {
+                        'motivo': item['motivo'],
+                        'motivo_display': dict(HoraCompensacion.MOTIVO_CHOICES).get(item['motivo'], item['motivo']),
+                        'cantidad': item['cantidad'],
+                        'total_horas': float(item['total_horas'] or 0)
+                    }
+                    for item in stats_por_motivo
+                ]
+            }
+            
+            return Response({
+                'success': True,
+                'data': resultado
+            })
+            
+        except Exception as e:
+            logger.error(f"Error generando reporte compensaciones: {e}")
+            return Response(
+                {'error': f'Error generando reporte: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def crear_desde_guardia(self, request, pk=None):
+        """Crea compensación directamente desde una guardia específica"""
+        try:
+            guardia = Guardia.objects.get(id_guardia=pk)
+            
+            # Validar que no exista ya una compensación para esta guardia
+            compensacion_existente = HoraCompensacion.objects.filter(
+                id_guardia=guardia
+            ).exists()
+            
+            if compensacion_existente:
+                return Response(
+                    {'error': 'Ya existe una compensación para esta guardia'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validar datos requeridos
+            required_fields = ['hora_fin_real', 'motivo', 'descripcion_motivo']
+            for field in required_fields:
+                if field not in request.data:
+                    return Response(
+                        {'error': f'Campo requerido: {field}'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Obtener agente solicitante
+            agente_solicitante_id = request.data.get('solicitado_por')
+            if not agente_solicitante_id:
+                return Response(
+                    {'error': 'Se requiere agente solicitante'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            from personas.models import Agente
+            agente_solicitante = Agente.objects.get(id_agente=agente_solicitante_id)
+            
+            # Crear compensación usando el método del modelo
+            compensacion = HoraCompensacion.crear_desde_guardia_extendida(
+                guardia=guardia,
+                hora_fin_real=request.data['hora_fin_real'],
+                motivo=request.data['motivo'],
+                descripcion=request.data['descripcion_motivo'],
+                solicitado_por=agente_solicitante
+            )
+            
+            serializer = HoraCompensacionSerializer(compensacion)
+            return Response({
+                'mensaje': 'Compensación creada desde guardia exitosamente',
+                'compensacion': serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Guardia.DoesNotExist:
+            return Response(
+                {'error': 'Guardia no encontrada'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error creando compensación desde guardia: {e}")
+            return Response(
+                {'error': f'Error creando compensación: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

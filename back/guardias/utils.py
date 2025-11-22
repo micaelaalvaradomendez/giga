@@ -60,7 +60,7 @@ class CalculadoraPlus:
             es_area_operativa = any(op in area_nombre for op in areas_operativas)
             
             # Obtener horas de guardia en el mes
-            from .models import Guardia
+            from .models import Guardia, HoraCompensacion
             from datetime import date
             
             fecha_inicio = date(anio, mes, 1)
@@ -81,20 +81,38 @@ class CalculadoraPlus:
                 total=Sum('horas_efectivas')
             )['total'] or 0
             
-            tiene_guardias = guardias_mes.exists()
+            # *** NUEVA FUNCIONALIDAD: Incluir horas de compensación aprobadas ***
+            # Las horas de compensación aprobadas se suman al total mensual
+            compensaciones_aprobadas = HoraCompensacion.objects.filter(
+                id_agente=agente_id,
+                fecha_servicio__gte=fecha_inicio,
+                fecha_servicio__lt=fecha_fin,
+                estado='aprobada'
+            )
             
-            # Aplicar reglas de plus
-            if es_area_operativa and tiene_guardias:
-                # Regla 1: Área operativa + guardia = 40%
+            horas_compensacion = compensaciones_aprobadas.aggregate(
+                total=Sum('horas_extra')
+            )['total'] or 0
+            
+            # Sumar horas regulares + horas de compensación
+            total_horas_completas = total_horas + horas_compensacion
+            
+            tiene_guardias = guardias_mes.exists()
+            tiene_compensaciones = compensaciones_aprobadas.exists()
+            
+            # *** REGLAS ACTUALIZADAS: Incluyen horas de compensación ***
+            # Aplicar reglas de plus (ahora con horas de compensación incluidas)
+            if es_area_operativa and (tiene_guardias or tiene_compensaciones):
+                # Regla 1: Área operativa + guardia/compensación = 40%
                 return Decimal('40.0')
-            elif not es_area_operativa and total_horas >= 32:
-                # Regla 2: Otras áreas + 32+ horas = 40%
+            elif not es_area_operativa and total_horas_completas >= 32:
+                # Regla 2: Otras áreas + 32+ horas (incluyendo compensaciones) = 40%
                 return Decimal('40.0')
-            elif tiene_guardias:
-                # Regla 3: Cualquier otro caso con guardias = 20%
+            elif tiene_guardias or tiene_compensaciones:
+                # Regla 3: Cualquier caso con guardias/compensaciones = 20%
                 return Decimal('20.0')
             else:
-                # Sin guardias = sin plus
+                # Sin guardias ni compensaciones = sin plus
                 return Decimal('0.0')
                 
         except Exception as e:
@@ -413,6 +431,135 @@ class ValidadorHorarios:
         except Exception as e:
             logger.error(f"Error obteniendo parámetros de área: {e}")
             return None
+    
+    @staticmethod
+    def validar_horas_compensacion(hora_inicio_programada, hora_fin_programada, hora_fin_real):
+        """
+        Valida una solicitud de horas de compensación.
+        
+        Args:
+            hora_inicio_programada (time): Hora de inicio programada de la guardia
+            hora_fin_programada (time): Hora de fin programada de la guardia  
+            hora_fin_real (time): Hora real de finalización del servicio
+            
+        Returns:
+            tuple: (es_valida, mensaje, horas_extra)
+        """
+        from datetime import datetime, timedelta
+        
+        try:
+            # Calcular duración programada
+            inicio = datetime.combine(datetime.today().date(), hora_inicio_programada)
+            fin_programado = datetime.combine(datetime.today().date(), hora_fin_programada)
+            fin_real = datetime.combine(datetime.today().date(), hora_fin_real)
+            
+            # Manejar cruces de medianoche
+            if fin_programado < inicio:
+                fin_programado += timedelta(days=1)
+            if fin_real < inicio:
+                fin_real += timedelta(days=1)
+            
+            # Validar que la hora real sea posterior a la programada
+            if fin_real <= fin_programado:
+                return False, "La hora fin real debe ser posterior a la hora fin programada", 0
+            
+            # Calcular horas
+            duracion_programada = (fin_programado - inicio).total_seconds() / 3600
+            duracion_real = (fin_real - inicio).total_seconds() / 3600
+            horas_extra = duracion_real - duracion_programada
+            
+            # Validar límites razonables
+            if horas_extra > 8:
+                return False, f"No se pueden registrar más de 8 horas extra por servicio (solicitadas: {horas_extra:.1f}h)", 0
+            
+            if duracion_real > 18:  # Máximo 18 horas de servicio total
+                return False, f"El servicio total no puede exceder 18 horas (registradas: {duracion_real:.1f}h)", 0
+            
+            return True, f"Compensación válida: {horas_extra:.1f} horas extra", horas_extra
+            
+        except Exception as e:
+            logger.error(f"Error validando horas de compensación: {e}")
+            return False, "Error en validación de compensación", 0
+    
+    @staticmethod
+    def calcular_valor_hora_compensacion(agente, horas_extra):
+        """
+        Calcula el valor monetario de las horas de compensación.
+        
+        Args:
+            agente: Instancia del agente
+            horas_extra (float): Cantidad de horas extra trabajadas
+            
+        Returns:
+            tuple: (valor_por_hora, monto_total)
+        """
+        try:
+            # Obtener salario base del agente (esto dependerá de cómo esté implementado)
+            # Por ahora, usar un valor base de referencia
+            salario_base_mensual = Decimal('500000.0')  # Valor ejemplo
+            horas_mensuales_normales = Decimal('160.0')  # 20 días x 8 horas
+            
+            # Calcular valor hora normal
+            valor_hora_normal = salario_base_mensual / horas_mensuales_normales
+            
+            # Las horas extra se pagan con recargo del 50%
+            valor_hora_extra = valor_hora_normal * Decimal('1.5')
+            
+            # Calcular monto total
+            monto_total = valor_hora_extra * Decimal(str(horas_extra))
+            
+            return valor_hora_extra, monto_total
+            
+        except Exception as e:
+            logger.error(f"Error calculando valor de compensación: {e}")
+            return Decimal('0.0'), Decimal('0.0')
+    
+    @staticmethod
+    def puede_solicitar_compensacion(agente, fecha_servicio):
+        """
+        Verifica si un agente puede solicitar compensación para una fecha dada.
+        
+        Args:
+            agente: Instancia del agente
+            fecha_servicio (date): Fecha del servicio prestado
+            
+        Returns:
+            tuple: (puede_solicitar, mensaje)
+        """
+        from datetime import datetime, timedelta
+        
+        try:
+            # Verificar que no haya pasado más de 30 días
+            dias_transcurridos = (datetime.now().date() - fecha_servicio).days
+            if dias_transcurridos > 30:
+                return False, f"No se puede solicitar compensación después de 30 días (transcurridos: {dias_transcurridos})"
+            
+            # Verificar que no exista ya una solicitud para esa fecha
+            from .models import HoraCompensacion
+            solicitud_existente = HoraCompensacion.objects.filter(
+                id_agente=agente,
+                fecha_servicio=fecha_servicio
+            ).exists()
+            
+            if solicitud_existente:
+                return False, "Ya existe una solicitud de compensación para esta fecha"
+            
+            # Verificar que el agente tenía guardia programada ese día
+            from .models import Guardia
+            guardia_programada = Guardia.objects.filter(
+                id_agente=agente,
+                fecha=fecha_servicio,
+                activa=True
+            ).exists()
+            
+            if not guardia_programada:
+                return False, "No hay guardia programada para esta fecha"
+            
+            return True, "Puede solicitar compensación"
+            
+        except Exception as e:
+            logger.error(f"Error verificando solicitud de compensación: {e}")
+            return False, "Error en validación de solicitud"
 
 
 class NotificacionManager:
