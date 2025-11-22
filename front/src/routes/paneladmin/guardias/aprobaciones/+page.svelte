@@ -125,8 +125,8 @@
   <div class="filtros-section">
     <div class="filtros-grid">
       <div class="filtro-item">
-        <label>Área:</label>
-        <select bind:value={$filtroArea}>
+        <label for="filtro-area">Área:</label>
+        <select id="filtro-area" bind:value={$filtroArea}>
           <option value="">Todas las áreas</option>
           {#each $areas as area}
             <option value={area.id_area}>{area.nombre}</option>
@@ -135,8 +135,8 @@
       </div>
 
       <div class="filtro-item">
-        <label>Tipo:</label>
-        <select bind:value={$filtroTipo}>
+        <label for="filtro-tipo">Tipo:</label>
+        <select id="filtro-tipo" bind:value={$filtroTipo}>
           <option value="">Todos los tipos</option>
           <option value="regular">Regular</option>
           <option value="especial">Especial</option>
@@ -146,8 +146,8 @@
       </div>
 
       <div class="filtro-item">
-        <label>Estado:</label>
-        <select bind:value={$filtroEstado}>
+        <label for="filtro-estado">Estado:</label>
+        <select id="filtro-estado" bind:value={$filtroEstado}>
           <option value="">Todos los estados</option>
           <option value="pendiente">Pendiente</option>
           <option value="aprobada">Aprobada</option>
@@ -157,8 +157,9 @@
       </div>
 
       <div class="filtro-item">
-        <label>Buscar:</label>
+        <label for="filtro-busqueda">Buscar:</label>
         <input
+          id="filtro-busqueda"
           type="text"
           placeholder="Nombre o área..."
           bind:value={$busqueda}
