@@ -137,35 +137,63 @@ class AsistenciasController {
 			this.areaSeleccionada.subscribe((value) => (area = value))();
 			this.tabActiva.subscribe((value) => (tab = value))();
 
-			let url = `/api/asistencia/admin/listar/?fecha_desde=${fecha}&fecha_hasta=${fecha}`;
+			let asistenciasData = [];
 
-			if (area) {
-				url += `&area_id=${area}`;
-			}
+			if (tab === 'todas') {
+				// Para "todas", cargar asistencias registradas + ausentes
+				const urlAsistencias = `/api/asistencia/admin/listar/?fecha_desde=${fecha}&fecha_hasta=${fecha}${area ? `&area_id=${area}` : ''}`;
+				const urlAusentes = `/api/asistencia/admin/listar/?fecha_desde=${fecha}&fecha_hasta=${fecha}&estado=sin_entrada${area ? `&area_id=${area}` : ''}`;
 
-			if (tab !== 'todas' && tab !== 'licencias') {
-				const estadoMap = {
-					completas: 'completa',
-					sin_salida: 'sin_salida',
-					sin_entrada: 'sin_entrada'
-				};
-				if (estadoMap[tab]) {
-					url += `&estado=${estadoMap[tab]}`;
+				console.log('🔍 Cargando todas las asistencias con URLs:', urlAsistencias, urlAusentes);
+
+				const [responseAsistencias, responseAusentes] = await Promise.all([
+					fetch(urlAsistencias, { credentials: 'include' }),
+					fetch(urlAusentes, { credentials: 'include' })
+				]);
+
+				if (responseAsistencias.ok && responseAusentes.ok) {
+					const dataAsistencias = await responseAsistencias.json();
+					const dataAusentes = await responseAusentes.json();
+					
+					// Combinar ambos arrays
+					asistenciasData = [
+						...(dataAsistencias.data || []),
+						...(dataAusentes.data || [])
+					];
+				}
+			} else {
+				// Para tabs específicas, usar el filtro correspondiente
+				let url = `/api/asistencia/admin/listar/?fecha_desde=${fecha}&fecha_hasta=${fecha}`;
+
+				if (area) {
+					url += `&area_id=${area}`;
+				}
+
+				if (tab !== 'licencias' && tab !== 'salidas_auto') {
+					const estadoMap = {
+						completas: 'completa',
+						sin_salida: 'sin_salida',
+						sin_entrada: 'sin_entrada'
+					};
+					if (estadoMap[tab]) {
+						url += `&estado=${estadoMap[tab]}`;
+					}
+				}
+
+				console.log('🔍 Cargando asistencias con URL:', url);
+
+				const response = await fetch(url, {
+					credentials: 'include'
+				});
+
+				if (response.ok) {
+					const data = await response.json();
+					asistenciasData = data.data || [];
 				}
 			}
 
-			console.log('🔍 Cargando asistencias con URL:', url);
-
-			const response = await fetch(url, {
-				credentials: 'include'
-			});
-
-			if (response.ok) {
-				const data = await response.json();
-				const asistenciasData = data.data || [];
-				this.asistencias.set(asistenciasData);
-				console.log(`✅ Asistencias cargadas (tab: ${tab}):`, asistenciasData.length, 'registros');
-			}
+			this.asistencias.set(asistenciasData);
+			console.log(`✅ Asistencias cargadas (tab: ${tab}):`, asistenciasData.length, 'registros');
 		} catch (error) {
 			console.error('Error al cargar asistencias:', error);
 		}

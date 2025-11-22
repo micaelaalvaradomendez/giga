@@ -165,11 +165,28 @@ export const guardiasService = {
   getReporteIndividual: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_individual/?${params}`),
   getReporteGeneral: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_general/?${params}`),
   
+  // Nuevos reportes según especificaciones
+  getReporteHorasTrabajadas: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_horas_trabajadas/?${params}`),
+  getReporteParteDiario: (params = '', token = null) => createApiClient(token).get(`/asistencia/reporte_parte_diario/?${params}`),
+  getReporteResumenLicencias: (params = '', token = null) => createApiClient(token).get(`/asistencia/reporte_licencias/?${params}`),
+  getReporteCalculoPlus: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_calculo_plus/?${params}`),
+  getReporteIncumplimientoNormativo: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_incumplimiento/?${params}`),
+
   // Exportaciones (placeholder para futura implementación)
   exportarReporteIndividual: (params = '', formato = 'pdf', token = null) => 
     createApiClient(token).get(`/guardias/reportes/individual/?${params}&formato=${formato}`, { responseType: 'blob' }),
   exportarReporteGeneral: (params = '', formato = 'pdf', token = null) => 
     createApiClient(token).get(`/guardias/reportes/general/?${params}&formato=${formato}`, { responseType: 'blob' }),
+  exportarReporteHorasTrabajadas: (params = '', formato = 'pdf', token = null) => 
+    createApiClient(token).get(`/guardias/reportes/horas_trabajadas/?${params}&formato=${formato}`, { responseType: 'blob' }),
+  exportarReporteParteDiario: (params = '', formato = 'pdf', token = null) => 
+    createApiClient(token).get(`/asistencia/reportes/parte_diario/?${params}&formato=${formato}`, { responseType: 'blob' }),
+  exportarReporteResumenLicencias: (params = '', formato = 'pdf', token = null) => 
+    createApiClient(token).get(`/asistencia/reportes/licencias/?${params}&formato=${formato}`, { responseType: 'blob' }),
+  exportarReporteCalculoPlus: (params = '', formato = 'pdf', token = null) => 
+    createApiClient(token).get(`/guardias/reportes/calculo_plus/?${params}&formato=${formato}`, { responseType: 'blob' }),
+  exportarReporteIncumplimientoNormativo: (params = '', formato = 'pdf', token = null) => 
+    createApiClient(token).get(`/guardias/reportes/incumplimiento/?${params}&formato=${formato}`, { responseType: 'blob' }),
 };
 
 // SERVICIOS PARA CONVENIO IA - Conectado a N8N

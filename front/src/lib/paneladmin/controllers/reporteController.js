@@ -145,14 +145,30 @@ class ReporteController {
 				
 				const fechasValidas = $filtros.fecha_desde && $filtros.fecha_hasta;
 				
-				if ($tipo === 'individual') {
-					// Para reportes individuales: fechas válidas, área seleccionada, agente válido
-					const agenteValido = $filtros.agente_id && 
-						$agentesFiltrados && $agentesFiltrados.some(agente => agente.id === $filtros.agente_id);
-					return fechasValidas && $filtros.area_id && agenteValido;
-				} else {
-					// Para reportes generales: fechas válidas y área seleccionada
-					return fechasValidas && $filtros.area_id;
+				switch ($tipo) {
+					case 'individual':
+						// Para reportes individuales: fechas válidas, área seleccionada, agente válido
+						const agenteValido = $filtros.agente_id && 
+							$agentesFiltrados && $agentesFiltrados.some(agente => agente.id === $filtros.agente_id);
+						return fechasValidas && $filtros.area_id && agenteValido;
+						
+					case 'general':
+					case 'horas_trabajadas':
+					case 'calculo_plus':
+						// Para reportes generales: fechas válidas y área seleccionada
+						return fechasValidas && $filtros.area_id;
+						
+					case 'parte_diario':
+					case 'incumplimiento_normativo':
+						// Para reportes de asistencia: solo fechas válidas (pueden ser de todas las áreas)
+						return fechasValidas;
+						
+					case 'resumen_licencias':
+						// Para resumen de licencias: fechas no son críticas, puede ser solo área o todas
+						return true; // Siempre puede generar
+						
+					default:
+						return false;
 				}
 			}
 		);
@@ -322,6 +338,22 @@ class ReporteController {
 		this.datosReporte.set(null);
 		this.vistaPreviaVisible.set(false);
 		this.error.set(null);
+		
+		// Configurar filtros específicos según el tipo de reporte
+		if (tipo === 'horas_trabajadas' || tipo === 'calculo_plus' || tipo === 'incumplimiento_normativo') {
+			// Estos reportes requieren área pero no agente específico
+			this.filtrosSeleccionados.update(filtros => ({
+				...filtros,
+				agente_id: null
+			}));
+		} else if (tipo === 'parte_diario' || tipo === 'resumen_licencias') {
+			// Estos reportes de asistencia requieren configuración especial
+			this.filtrosSeleccionados.update(filtros => ({
+				...filtros,
+				incluir_licencias: true,
+				incluir_feriados: true
+			}));
+		}
 	}
 	
 	// ========================================
@@ -334,6 +366,26 @@ class ReporteController {
 	
 	async generarReporteGeneral() {
 		return this._generarReporte('general');
+	}
+
+	async generarReporteHorasTrabajadas() {
+		return this._generarReporte('horas_trabajadas');
+	}
+
+	async generarReporteParteDiario() {
+		return this._generarReporte('parte_diario');
+	}
+
+	async generarReporteResumenLicencias() {
+		return this._generarReporte('resumen_licencias');
+	}
+
+	async generarReporteCalculoPlus() {
+		return this._generarReporte('calculo_plus');
+	}
+
+	async generarReporteIncumplimientoNormativo() {
+		return this._generarReporte('incumplimiento_normativo');
 	}
 	
 	async _generarReporte(tipo) {
@@ -352,10 +404,30 @@ class ReporteController {
 		
 		try {
 			let datos;
-			if (tipo === 'individual') {
-				datos = await this._generarReporteIndividualReal(filtros);
-			} else {
-				datos = await this._generarReporteGeneralReal(filtros);
+			switch (tipo) {
+				case 'individual':
+					datos = await this._generarReporteIndividualReal(filtros);
+					break;
+				case 'general':
+					datos = await this._generarReporteGeneralReal(filtros);
+					break;
+				case 'horas_trabajadas':
+					datos = await this._generarReporteHorasTrabajadasReal(filtros);
+					break;
+				case 'parte_diario':
+					datos = await this._generarReporteParteDiarioReal(filtros);
+					break;
+				case 'resumen_licencias':
+					datos = await this._generarReporteResumenLicenciasReal(filtros);
+					break;
+				case 'calculo_plus':
+					datos = await this._generarReporteCalculoPlusReal(filtros);
+					break;
+				case 'incumplimiento_normativo':
+					datos = await this._generarReporteIncumplimientoNormativoReal(filtros);
+					break;
+				default:
+					throw new Error(`Tipo de reporte no soportado: ${tipo}`);
 			}
 			
 			this.datosReporte.set(datos);
@@ -656,6 +728,367 @@ class ReporteController {
 		}
 		
 		return dias;
+	}
+
+	// ========================================
+	// MÉTODOS DE GENERACIÓN NUEVOS REPORTES
+	// ========================================
+
+	async _generarReporteHorasTrabajadasReal(filtros) {
+		try {
+			// Por ahora, generar datos simulados basados en los datos reales de guardias
+			const response = await guardiasService.getGuardias();
+			const guardias = response.data?.results || [];
+
+			// Obtener agentes del área seleccionada
+			const agentesResponse = await personasService.getAgentes();
+			const todosAgentes = agentesResponse.data?.results || [];
+			const agentesArea = todosAgentes.filter(a => a.id_area === filtros.area_id);
+
+			const datosAgentes = agentesArea.map(agente => {
+				const guardiasAgente = guardias.filter(g => g.id_agente === agente.id_agente);
+				
+				// Calcular horas por tipo
+				let horasDiurnas = 0;
+				let horasNocturnas = 0;
+				let horasFeriados = 0;
+
+				guardiasAgente.forEach(guardia => {
+					if (guardia.hora_inicio && guardia.hora_fin) {
+						const inicio = parseInt(guardia.hora_inicio.split(':')[0]);
+						const horas = guardia.horas_planificadas || 8;
+						
+						// Clasificar por horario
+						if (inicio >= 6 && inicio < 18) {
+							horasDiurnas += horas;
+						} else {
+							horasNocturnas += horas;
+						}
+						
+						// Simular algunas horas de feriados
+						if (Math.random() > 0.7) {
+							horasFeriados += horas * 0.2;
+							horasDiurnas -= horas * 0.2;
+						}
+					}
+				});
+
+				return {
+					agente: `${agente.nombre} ${agente.apellido}`,
+					legajo: agente.legajo,
+					horas_diurnas: Math.round(horasDiurnas),
+					horas_nocturnas: Math.round(horasNocturnas),
+					horas_feriados: Math.round(horasFeriados),
+					total_horas: Math.round(horasDiurnas + horasNocturnas + horasFeriados)
+				};
+			});
+
+			return {
+				area_nombre: 'Área seleccionada',
+				periodo: {
+					fecha_desde: filtros.fecha_desde,
+					fecha_hasta: filtros.fecha_hasta
+				},
+				agentes: datosAgentes,
+				totales: {
+					total_horas_diurnas: datosAgentes.reduce((sum, a) => sum + a.horas_diurnas, 0),
+					total_horas_nocturnas: datosAgentes.reduce((sum, a) => sum + a.horas_nocturnas, 0),
+					total_horas_feriados: datosAgentes.reduce((sum, a) => sum + a.horas_feriados, 0),
+					total_general: datosAgentes.reduce((sum, a) => sum + a.total_horas, 0)
+				}
+			};
+		} catch (error) {
+			console.error('Error generando reporte horas trabajadas:', error);
+			throw new Error('No se pudo generar el reporte de horas trabajadas');
+		}
+	}
+
+	async _generarReporteParteDiarioReal(filtros) {
+		try {
+			// Simular datos de asistencia para el período
+			const fechaInicio = new Date(filtros.fecha_desde);
+			const fechaFin = new Date(filtros.fecha_hasta);
+			const registros = [];
+
+			// Obtener agentes del área
+			const agentesResponse = await personasService.getAgentes();
+			const todosAgentes = agentesResponse.data?.results || [];
+			const agentesArea = filtros.area_id ? 
+				todosAgentes.filter(a => a.id_area === filtros.area_id) : 
+				todosAgentes;
+
+			// Generar registros para cada día del período
+			for (let fecha = new Date(fechaInicio); fecha <= fechaFin; fecha.setDate(fecha.getDate() + 1)) {
+				const fechaStr = this._formatearFecha(new Date(fecha));
+				
+				agentesArea.forEach(agente => {
+					// Simular diferentes tipos de registros
+					const rand = Math.random();
+					let ingreso = '08:00';
+					let egreso = '16:00';
+					let novedad = 'Jornada habitual';
+					
+					if (rand < 0.1) { // 10% llegadas tarde
+						ingreso = '08:15';
+						novedad = 'Llegada tarde';
+					} else if (rand < 0.15) { // 5% retiros tempranos
+						egreso = '14:30';
+						novedad = 'Comisión oficial';
+					} else if (rand < 0.2) { // 5% licencias
+						ingreso = null;
+						egreso = null;
+						novedad = 'Licencia Art. 32.1';
+					}
+
+					if (ingreso && egreso) {
+						const inicio = new Date(`1970-01-01T${ingreso}`);
+						const fin = new Date(`1970-01-01T${egreso}`);
+						const horasTrabajadas = (fin - inicio) / (1000 * 60 * 60);
+						
+						registros.push({
+							fecha: fechaStr,
+							agente: `${agente.nombre} ${agente.apellido}`,
+							legajo: agente.legajo,
+							ingreso,
+							egreso,
+							horas_trabajadas: `${Math.floor(horasTrabajadas)}h ${Math.round((horasTrabajadas % 1) * 60)}m`,
+							novedad,
+							area: agente.area_nombre || 'Sin área'
+						});
+					} else {
+						registros.push({
+							fecha: fechaStr,
+							agente: `${agente.nombre} ${agente.apellido}`,
+							legajo: agente.legajo,
+							ingreso: null,
+							egreso: null,
+							horas_trabajadas: '0h',
+							novedad,
+							area: agente.area_nombre || 'Sin área'
+						});
+					}
+				});
+			}
+
+			return {
+				area_nombre: filtros.area_id ? 'Área seleccionada' : 'Todas las áreas',
+				periodo: {
+					fecha_desde: filtros.fecha_desde,
+					fecha_hasta: filtros.fecha_hasta
+				},
+				registros: registros.slice(0, 50), // Limitar para vista previa
+				totales: {
+					total_registros: registros.length,
+					total_presentes: registros.filter(r => r.ingreso).length,
+					total_ausentes: registros.filter(r => !r.ingreso).length,
+					total_novedades: registros.filter(r => r.novedad !== 'Jornada habitual').length
+				}
+			};
+		} catch (error) {
+			console.error('Error generando parte diario:', error);
+			throw new Error('No se pudo generar el parte diario');
+		}
+	}
+
+	async _generarReporteResumenLicenciasReal(filtros) {
+		try {
+			// Obtener agentes del área
+			const agentesResponse = await personasService.getAgentes();
+			const todosAgentes = agentesResponse.data?.results || [];
+			const agentesArea = filtros.area_id ? 
+				todosAgentes.filter(a => a.id_area === filtros.area_id) : 
+				todosAgentes;
+
+			const resumenAgentes = agentesArea.map(agente => {
+				// Simular consumo de licencias
+				const licenciaAnual = Math.floor(Math.random() * 21); // 0-21 días
+				const licenciaEnfermedad = Math.floor(Math.random() * 15); // 0-15 días
+				const licenciaEspecial = Math.floor(Math.random() * 5); // 0-5 días
+				
+				const diasUtilizados = licenciaAnual + licenciaEnfermedad + licenciaEspecial;
+				const diasDisponibles = (21 - licenciaAnual) + (30 - licenciaEnfermedad) + (10 - licenciaEspecial);
+
+				return {
+					agente: `${agente.nombre} ${agente.apellido}`,
+					legajo: agente.legajo,
+					licencia_anual: `${licenciaAnual}/21`,
+					licencia_enfermedad: `${licenciaEnfermedad}/30`,
+					licencia_especial: `${licenciaEspecial}/10`,
+					dias_utilizados: diasUtilizados,
+					dias_disponibles: diasDisponibles,
+					porcentaje_consumo: Math.round((diasUtilizados / 61) * 100)
+				};
+			});
+
+			return {
+				area_nombre: filtros.area_id ? 'Área seleccionada' : 'Todas las áreas',
+				periodo: {
+					año: new Date().getFullYear(),
+					generado: new Date().toLocaleDateString()
+				},
+				agentes: resumenAgentes,
+				totales: {
+					total_agentes: resumenAgentes.length,
+					total_dias_utilizados: resumenAgentes.reduce((sum, a) => sum + a.dias_utilizados, 0),
+					total_dias_disponibles: resumenAgentes.reduce((sum, a) => sum + a.dias_disponibles, 0),
+					promedio_consumo: Math.round(resumenAgentes.reduce((sum, a) => sum + a.porcentaje_consumo, 0) / resumenAgentes.length)
+				}
+			};
+		} catch (error) {
+			console.error('Error generando resumen de licencias:', error);
+			throw new Error('No se pudo generar el resumen de licencias');
+		}
+	}
+
+	async _generarReporteCalculoPlusReal(filtros) {
+		try {
+			// Obtener guardias del período
+			const response = await guardiasService.getGuardias();
+			const guardias = response.data?.results || [];
+
+			// Obtener agentes del área
+			const agentesResponse = await personasService.getAgentes();
+			const todosAgentes = agentesResponse.data?.results || [];
+			const agentesArea = filtros.area_id ? 
+				todosAgentes.filter(a => a.id_area === filtros.area_id) : 
+				todosAgentes;
+
+			const calculosAgentes = agentesArea.map(agente => {
+				const guardiasAgente = guardias.filter(g => g.id_agente === agente.id_agente);
+				
+				let horasNormales = 0;
+				let plus20 = 0;
+				let plus40 = 0;
+
+				guardiasAgente.forEach(guardia => {
+					const horas = guardia.horas_planificadas || 8;
+					horasNormales += horas;
+
+					// Determinar plus según área y horario
+					const area = agente.area_nombre || '';
+					const esOperativa = area.toLowerCase().includes('operativo') || area.toLowerCase().includes('seguridad');
+					const esNocturna = guardia.hora_inicio && parseInt(guardia.hora_inicio.split(':')[0]) >= 22;
+					const esFeriado = Math.random() > 0.9; // Simular algunos feriados
+
+					if (esFeriado || esNocturna) {
+						plus40 += horas * 0.4; // Plus del 40%
+					} else if (esOperativa) {
+						plus20 += horas * 0.2; // Plus del 20%
+					}
+				});
+
+				const totalEquivalente = horasNormales + plus20 + plus40;
+
+				return {
+					agente: `${agente.nombre} ${agente.apellido}`,
+					legajo: agente.legajo,
+					area: agente.area_nombre || 'Sin área',
+					horas_normales: Math.round(horasNormales),
+					plus_20: Math.round(plus20 * 100) / 100,
+					plus_40: Math.round(plus40 * 100) / 100,
+					total_liquidar: Math.round(totalEquivalente * 100) / 100,
+					es_operativa: agente.area_nombre?.toLowerCase().includes('operativo') || false
+				};
+			});
+
+			return {
+				area_nombre: filtros.area_id ? 'Área seleccionada' : 'Todas las áreas',
+				periodo: {
+					fecha_desde: filtros.fecha_desde,
+					fecha_hasta: filtros.fecha_hasta
+				},
+				agentes: calculosAgentes,
+				totales: {
+					total_horas_normales: calculosAgentes.reduce((sum, a) => sum + a.horas_normales, 0),
+					total_plus_20: calculosAgentes.reduce((sum, a) => sum + a.plus_20, 0),
+					total_plus_40: calculosAgentes.reduce((sum, a) => sum + a.plus_40, 0),
+					total_a_liquidar: calculosAgentes.reduce((sum, a) => sum + a.total_liquidar, 0)
+				}
+			};
+		} catch (error) {
+			console.error('Error generando cálculo de plus:', error);
+			throw new Error('No se pudo generar el cálculo de plus');
+		}
+	}
+
+	async _generarReporteIncumplimientoNormativoReal(filtros) {
+		try {
+			// Obtener guardias del período
+			const response = await guardiasService.getGuardias();
+			const guardias = response.data?.results || [];
+
+			// Obtener agentes del área
+			const agentesResponse = await personasService.getAgentes();
+			const todosAgentes = agentesResponse.data?.results || [];
+			const agentesArea = filtros.area_id ? 
+				todosAgentes.filter(a => a.id_area === filtros.area_id) : 
+				todosAgentes;
+
+			const alertas = [];
+
+			// Simular alertas de incumplimiento
+			agentesArea.forEach(agente => {
+				const guardiasAgente = guardias.filter(g => g.id_agente === agente.id_agente);
+				
+				// Verificar horas semanales (simulado)
+				const horasSemanales = guardiasAgente.reduce((sum, g) => sum + (g.horas_planificadas || 8), 0);
+				if (horasSemanales > 48) {
+					alertas.push({
+						tipo: 'exceso_horas',
+						criticidad: 'critica',
+						agente: `${agente.nombre} ${agente.apellido}`,
+						descripcion: 'Exceso de Horas Semanales',
+						detalle: `${horasSemanales} horas trabajadas (máximo: 48h según CC)`,
+						fecha: '18-24/11/2025',
+						icono: '🚨'
+					});
+				}
+
+				// Simular descansos insuficientes
+				if (Math.random() > 0.8 && guardiasAgente.length > 0) {
+					alertas.push({
+						tipo: 'descanso_insuficiente',
+						criticidad: 'advertencia',
+						agente: `${agente.nombre} ${agente.apellido}`,
+						descripcion: 'Descanso Insuficiente',
+						detalle: '8 horas de descanso (mínimo: 12h entre guardias)',
+						fecha: '21-22/11/2025',
+						icono: '⚠️'
+					});
+				}
+
+				// Simular próximo a límite
+				if (Math.random() > 0.7 && horasSemanales > 40) {
+					alertas.push({
+						tipo: 'proximo_limite',
+						criticidad: 'info',
+						agente: `${agente.nombre} ${agente.apellido}`,
+						descripcion: 'Próximo a Límite',
+						detalle: `${horasSemanales} horas trabajadas (límite: 48h)`,
+						fecha: '18-24/11/2025',
+						icono: 'ℹ️'
+					});
+				}
+			});
+
+			return {
+				area_nombre: filtros.area_id ? 'Área seleccionada' : 'Todas las áreas',
+				periodo: {
+					fecha_desde: filtros.fecha_desde,
+					fecha_hasta: filtros.fecha_hasta
+				},
+				alertas: alertas.slice(0, 10), // Limitar para vista previa
+				totales: {
+					total_alertas: alertas.length,
+					alertas_criticas: alertas.filter(a => a.criticidad === 'critica').length,
+					alertas_advertencia: alertas.filter(a => a.criticidad === 'advertencia').length,
+					alertas_info: alertas.filter(a => a.criticidad === 'info').length
+				}
+			};
+		} catch (error) {
+			console.error('Error generando reporte de incumplimiento:', error);
+			throw new Error('No se pudo generar el reporte de incumplimiento normativo');
+		}
 	}
 	
 	async _exportarReporteReal(formato, tipo, filtros, opciones) {

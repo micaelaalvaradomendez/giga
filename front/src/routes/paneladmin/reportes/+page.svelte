@@ -43,10 +43,30 @@
 	
 	async function generarReporte() {
 		const tipo = $tipoReporteActual;
-		if (tipo === 'individual') {
-			await reporteController.generarReporteIndividual();
-		} else {
-			await reporteController.generarReporteGeneral();
+		switch (tipo) {
+			case 'individual':
+				await reporteController.generarReporteIndividual();
+				break;
+			case 'general':
+				await reporteController.generarReporteGeneral();
+				break;
+			case 'horas_trabajadas':
+				await reporteController.generarReporteHorasTrabajadas();
+				break;
+			case 'parte_diario':
+				await reporteController.generarReporteParteDiario();
+				break;
+			case 'resumen_licencias':
+				await reporteController.generarReporteResumenLicencias();
+				break;
+			case 'calculo_plus':
+				await reporteController.generarReporteCalculoPlus();
+				break;
+			case 'incumplimiento_normativo':
+				await reporteController.generarReporteIncumplimientoNormativo();
+				break;
+			default:
+				console.error('Tipo de reporte no soportado:', tipo);
 		}
 	}
 	
@@ -100,34 +120,134 @@
 
 	<!-- Selector de tipo de reporte -->
 	<section class="selector-tipo">
-		<div class="selector-tipo-container">
-			<label class="selector-opcion">
-				<input 
-					type="radio" 
-					bind:group={$tipoReporteActual} 
-					value="individual"
-					on:change={handleTipoReporteChange}
-					disabled={$cargandoGeneral}
-				/>
-				<div class="opcion-contenido">
-					<strong>📋 Reporte Individual</strong>
-					<span>Planilla detallada de guardias por agente</span>
-				</div>
-			</label>
-			
-			<label class="selector-opcion">
-				<input 
-					type="radio" 
-					bind:group={$tipoReporteActual} 
-					value="general"
-					on:change={handleTipoReporteChange}
-					disabled={$cargandoGeneral}
-				/>
-				<div class="opcion-contenido">
-					<strong>📊 Reporte General</strong>
-					<span>Resumen de guardias por área/dirección</span>
-				</div>
-			</label>
+		<div class="tipos-categoria">
+			<div class="categoria-titulo">
+				<h3>📊 Reportes de Guardias</h3>
+				<p>Reportes tradicionales del sistema de guardias</p>
+			</div>
+			<div class="selector-tipo-container">
+				<label class="selector-opcion">
+					<input 
+						type="radio" 
+						bind:group={$tipoReporteActual} 
+						value="individual"
+						on:change={handleTipoReporteChange}
+						disabled={$cargandoGeneral}
+					/>
+					<div class="opcion-contenido">
+						<strong>📋 Reporte Individual</strong>
+						<span>Planilla detallada de guardias por agente</span>
+					</div>
+				</label>
+				
+				<label class="selector-opcion">
+					<input 
+						type="radio" 
+						bind:group={$tipoReporteActual} 
+						value="general"
+						on:change={handleTipoReporteChange}
+						disabled={$cargandoGeneral}
+					/>
+					<div class="opcion-contenido">
+						<strong>📊 Reporte General</strong>
+						<span>Resumen de guardias por área/dirección</span>
+					</div>
+				</label>
+				
+				<label class="selector-opcion">
+					<input 
+						type="radio" 
+						bind:group={$tipoReporteActual} 
+						value="horas_trabajadas"
+						on:change={handleTipoReporteChange}
+						disabled={$cargandoGeneral}
+					/>
+					<div class="opcion-contenido">
+						<strong>⏰ Horas Trabajadas y Turnos</strong>
+						<span>Horas efectivas por tipo de jornada (diurna, nocturna, feriados)</span>
+					</div>
+				</label>
+			</div>
+		</div>
+
+		<div class="tipos-categoria">
+			<div class="categoria-titulo">
+				<h3>📋 Reportes de Asistencia y Novedades</h3>
+				<p>Control de asistencias, licencias y novedades</p>
+			</div>
+			<div class="selector-tipo-container">
+				<label class="selector-opcion">
+					<input 
+						type="radio" 
+						bind:group={$tipoReporteActual} 
+						value="parte_diario"
+						on:change={handleTipoReporteChange}
+						disabled={$cargandoGeneral}
+					/>
+					<div class="opcion-contenido">
+						<strong>📅 Parte Diario/Mensual Consolidado</strong>
+						<span>Marcas de ingreso/egreso y novedades (llegadas tarde, retiros, comisiones)</span>
+					</div>
+				</label>
+				
+				<label class="selector-opcion">
+					<input 
+						type="radio" 
+						bind:group={$tipoReporteActual} 
+						value="resumen_licencias"
+						on:change={handleTipoReporteChange}
+						disabled={$cargandoGeneral}
+					/>
+					<div class="opcion-contenido">
+						<strong>🏥 Resumen de Licencias</strong>
+						<span>Consumo de días por tipo de licencia y límites anuales</span>
+					</div>
+				</label>
+			</div>
+		</div>
+
+		<div class="tipos-categoria">
+			<div class="categoria-titulo">
+				<h3>💰 Reportes de Liquidación y Plus</h3>
+				<p>Cálculos para liquidación de haberes</p>
+			</div>
+			<div class="selector-tipo-container">
+				<label class="selector-opcion">
+					<input 
+						type="radio" 
+						bind:group={$tipoReporteActual} 
+						value="calculo_plus"
+						on:change={handleTipoReporteChange}
+						disabled={$cargandoGeneral}
+					/>
+					<div class="opcion-contenido">
+						<strong>💲 Cálculo de Horas Plus (20% / 40%)</strong>
+						<span>Documento para liquidación discriminado por área y modalidad</span>
+					</div>
+				</label>
+			</div>
+		</div>
+
+		<div class="tipos-categoria">
+			<div class="categoria-titulo">
+				<h3>⚖️ Reportes de Validación Normativa</h3>
+				<p>Control de cumplimiento del Convenio Colectivo</p>
+			</div>
+			<div class="selector-tipo-container">
+				<label class="selector-opcion">
+					<input 
+						type="radio" 
+						bind:group={$tipoReporteActual} 
+						value="incumplimiento_normativo"
+						on:change={handleTipoReporteChange}
+						disabled={$cargandoGeneral}
+					/>
+					<div class="opcion-contenido">
+						<strong>⚠️ Reporte de Incumplimiento Normativo</strong>
+						<span>Alertas de violaciones a reglas de horas semanales y descansos</span>
+					</div>
+				</label>
+			</div>
 		</div>
 	</section>
 
@@ -350,6 +470,259 @@
 								<p><strong>Período:</strong> {$datosReporte.periodo.fecha_desde} - {$datosReporte.periodo.fecha_hasta}</p>
 							</div>
 						</div>
+					</div>
+				{:else if $tipoReporteActual === 'horas_trabajadas'}
+					<!-- Vista previa reporte de horas trabajadas -->
+					<div class="reporte-horas-trabajadas">
+						<div class="reporte-header">
+							<h3>⏰ Reporte de Horas Trabajadas y Turnos</h3>
+							<div class="datos-area">
+								<p><strong>Área:</strong> {$datosReporte.area_nombre || 'Todas las áreas'}</p>
+								<p><strong>Período:</strong> {$datosReporte.periodo.fecha_desde} - {$datosReporte.periodo.fecha_hasta}</p>
+								<p><strong>Generado:</strong> {new Date().toLocaleDateString()}</p>
+							</div>
+						</div>
+						
+						<div class="tabla-container">
+							<table class="tabla-reporte tabla-horas-trabajadas">
+								<thead>
+									<tr>
+										<th>Agente</th>
+										<th>Legajo</th>
+										<th>Horas Diurnas</th>
+										<th>Horas Nocturnas</th>
+										<th>Horas Feriados</th>
+										<th>Total Horas</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr class="ejemplo-fila">
+										<td>Tayra Aguila</td>
+										<td>001</td>
+										<td class="horas-diurnas">128h</td>
+										<td class="horas-nocturnas">32h</td>
+										<td class="horas-feriados">16h</td>
+										<td class="total-horas"><strong>176h</strong></td>
+									</tr>
+									<tr class="ejemplo-fila">
+										<td>Micaela Alvarado</td>
+										<td>002</td>
+										<td class="horas-diurnas">144h</td>
+										<td class="horas-nocturnas">24h</td>
+										<td class="horas-feriados">8h</td>
+										<td class="total-horas"><strong>176h</strong></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						
+						<div class="preview-note">
+							<p>📊 Este reporte discrimina las horas según cronograma (diurna 08:00-16:00, nocturna 22:00-06:00, feriados según calendario)</p>
+						</div>
+					</div>
+				{:else if $tipoReporteActual === 'parte_diario'}
+					<!-- Vista previa parte diario -->
+					<div class="reporte-parte-diario">
+						<div class="reporte-header">
+							<h3>📅 Parte Diario/Mensual Consolidado</h3>
+							<div class="datos-area">
+								<p><strong>Área:</strong> {$datosReporte.area_nombre || 'Todas las áreas'}</p>
+								<p><strong>Período:</strong> {$datosReporte.periodo.fecha_desde} - {$datosReporte.periodo.fecha_hasta}</p>
+								<p><strong>Generado:</strong> {new Date().toLocaleDateString()}</p>
+							</div>
+						</div>
+						
+						<div class="tabla-container">
+							<table class="tabla-reporte tabla-parte-diario">
+								<thead>
+									<tr>
+										<th>Fecha</th>
+										<th>Agente</th>
+										<th>Ingreso</th>
+										<th>Egreso</th>
+										<th>Horas Trabajadas</th>
+										<th>Novedades</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td>22/11/2025</td>
+										<td>Tayra Aguila</td>
+										<td class="hora-ingreso">08:00</td>
+										<td class="hora-egreso">16:00</td>
+										<td class="horas-trabajadas">8h</td>
+										<td><span class="novedad-normal">Jornada habitual</span></td>
+									</tr>
+									<tr>
+										<td>22/11/2025</td>
+										<td>Cristian Garcia</td>
+										<td class="hora-ingreso tarde">08:15</td>
+										<td class="hora-egreso">16:00</td>
+										<td class="horas-trabajadas">7h 45m</td>
+										<td><span class="novedad-advertencia">Llegada tarde</span></td>
+									</tr>
+									<tr>
+										<td>22/11/2025</td>
+										<td>Teresa Criniti</td>
+										<td class="hora-ingreso">08:00</td>
+										<td class="hora-egreso">14:30</td>
+										<td class="horas-trabajadas">6h 30m</td>
+										<td><span class="novedad-comision">Comisión oficial</span></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						
+						<div class="preview-note">
+							<p>📋 Detalla ingresos, egresos y novedades registradas por el sistema de asistencias. Incluye alertas automáticas.</p>
+						</div>
+					</div>
+				{:else if $tipoReporteActual === 'resumen_licencias'}
+					<!-- Vista previa resumen licencias -->
+					<div class="reporte-resumen-licencias">
+						<div class="reporte-header">
+							<h3>🏥 Resumen de Licencias</h3>
+							<div class="datos-area">
+								<p><strong>Período:</strong> Año {new Date().getFullYear()}</p>
+								<p><strong>Área:</strong> {$datosReporte.area_nombre || 'Todas las áreas'}</p>
+								<p><strong>Generado:</strong> {new Date().toLocaleDateString()}</p>
+							</div>
+						</div>
+						
+						<div class="tabla-container">
+							<table class="tabla-reporte tabla-licencias">
+								<thead>
+									<tr>
+										<th>Agente</th>
+										<th>Art. 32.1 (Anual)</th>
+										<th>Art. 32.2 (Enfermedad)</th>
+										<th>Art. 33 (Especiales)</th>
+										<th>Días Utilizados</th>
+										<th>Días Disponibles</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td>Tayra Aguila</td>
+										<td class="licencia-anual">15/21</td>
+										<td class="licencia-enfermedad">3/30</td>
+										<td class="licencia-especial">2/10</td>
+										<td class="dias-utilizados">20</td>
+										<td class="dias-disponibles">41</td>
+									</tr>
+									<tr>
+										<td>Micaela Alvarado</td>
+										<td class="licencia-anual">8/21</td>
+										<td class="licencia-enfermedad">0/30</td>
+										<td class="licencia-especial">1/10</td>
+										<td class="dias-utilizados">9</td>
+										<td class="dias-disponibles">52</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						
+						<div class="preview-note">
+							<p>🏥 Control de consumo de licencias según articulado del Convenio Colectivo. Monitorea límites anuales.</p>
+						</div>
+					</div>
+				{:else if $tipoReporteActual === 'calculo_plus'}
+					<!-- Vista previa cálculo plus -->
+					<div class="reporte-calculo-plus">
+						<div class="reporte-header">
+							<h3>💲 Cálculo de Horas Plus (20% / 40%)</h3>
+							<div class="datos-area">
+								<p><strong>Período:</strong> {$datosReporte.periodo.fecha_desde} - {$datosReporte.periodo.fecha_hasta}</p>
+								<p><strong>Área:</strong> {$datosReporte.area_nombre || 'Todas las áreas'}</p>
+								<p><strong>Generado:</strong> {new Date().toLocaleDateString()}</p>
+							</div>
+						</div>
+						
+						<div class="tabla-container">
+							<table class="tabla-reporte tabla-plus">
+								<thead>
+									<tr>
+										<th>Agente</th>
+										<th>Área</th>
+										<th>Horas Normales</th>
+										<th>Plus 20% (Operativo)</th>
+										<th>Plus 40% (Nocturno/Feriado)</th>
+										<th>Total a Liquidar</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td>Carlos Rodriguez</td>
+										<td class="area-operativa">Depto. Operativo</td>
+										<td class="horas-normales">160h</td>
+										<td class="plus-20">32h</td>
+										<td class="plus-40">16h</td>
+										<td class="total-liquidar"><strong>208h equivalentes</strong></td>
+									</tr>
+									<tr>
+										<td>Jorge Gutierrez</td>
+										<td class="area-administrativa">Depto. Administrativo</td>
+										<td class="horas-normales">176h</td>
+										<td class="plus-20">0h</td>
+										<td class="plus-40">8h</td>
+										<td class="total-liquidar"><strong>184h equivalentes</strong></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						
+						<div class="preview-note">
+							<p>💰 Documento clave para liquidación de haberes. Diferencia áreas operativas (plus 20%) vs. administrativas.</p>
+						</div>
+					</div>
+				{:else if $tipoReporteActual === 'incumplimiento_normativo'}
+					<!-- Vista previa incumplimiento normativo -->
+					<div class="reporte-incumplimiento">
+						<div class="reporte-header">
+							<h3>⚠️ Reporte de Incumplimiento Normativo</h3>
+							<div class="datos-area">
+								<p><strong>Período:</strong> {$datosReporte.periodo.fecha_desde} - {$datosReporte.periodo.fecha_hasta}</p>
+								<p><strong>Área:</strong> {$datosReporte.area_nombre || 'Todas las áreas'}</p>
+								<p><strong>Generado:</strong> {new Date().toLocaleDateString()}</p>
+							</div>
+						</div>
+						
+						<div class="alertas-normativas">
+							<div class="alerta-item alerta-critica">
+								<div class="alerta-icono">🚨</div>
+								<div class="alerta-contenido">
+									<h4>Exceso de Horas Semanales</h4>
+									<p><strong>Agente:</strong> Tayra Aguila</p>
+									<p><strong>Semana:</strong> 18-24/11/2025</p>
+									<p><strong>Problema:</strong> 52 horas trabajadas (máximo: 48h según CC)</p>
+								</div>
+							</div>
+							
+							<div class="alerta-item alerta-advertencia">
+								<div class="alerta-icono">⚠️</div>
+								<div class="alerta-contenido">
+									<h4>Descanso Insuficiente</h4>
+									<p><strong>Agente:</strong> Carlos Rodriguez</p>
+									<p><strong>Fecha:</strong> 21-22/11/2025</p>
+									<p><strong>Problema:</strong> 8 horas de descanso (mínimo: 12h entre guardias)</p>
+								</div>
+							</div>
+							
+							<div class="alerta-item alerta-info">
+								<div class="alerta-icono">ℹ️</div>
+								<div class="alerta-contenido">
+									<h4>Próximo a Límite</h4>
+									<p><strong>Agente:</strong> Sandra Lopez</p>
+									<p><strong>Semana:</strong> 18-24/11/2025</p>
+									<p><strong>Problema:</strong> 46 horas trabajadas (límite: 48h)</p>
+								</div>
+							</div>
+						</div>
+						
+						<div class="preview-note">
+							<p>⚖️ Monitorea automáticamente el cumplimiento de normas del Convenio Colectivo. Genera alertas preventivas.</p>
+						</div>
+					</div>
 
 						<div class="tabla-container">
 							<table class="tabla-reporte tabla-individual">
@@ -690,9 +1063,36 @@
 		margin-bottom: 2rem;
 	}
 
+	.tipos-categoria {
+		margin-bottom: 2.5rem;
+	}
+
+	.tipos-categoria:last-child {
+		margin-bottom: 0;
+	}
+
+	.categoria-titulo {
+		margin-bottom: 1.5rem;
+		padding-bottom: 1rem;
+		border-bottom: 2px solid #e9ecef;
+	}
+
+	.categoria-titulo h3 {
+		margin: 0 0 0.5rem 0;
+		color: #2c3e50;
+		font-size: 1.3rem;
+		font-weight: 700;
+	}
+
+	.categoria-titulo p {
+		margin: 0;
+		color: #6c757d;
+		font-size: 0.95rem;
+	}
+
 	.selector-tipo-container {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 		gap: 1.5rem;
 	}
 
@@ -1447,6 +1847,29 @@
 			grid-template-columns: 1fr;
 		}
 
+		.tipos-categoria {
+			margin-bottom: 2rem;
+		}
+
+		.categoria-titulo h3 {
+			font-size: 1.1rem;
+		}
+
+		.alertas-normativas {
+			gap: 0.75rem;
+		}
+
+		.alerta-item {
+			flex-direction: column;
+			gap: 0.5rem;
+			text-align: center;
+		}
+
+		.preview-note {
+			margin-top: 0.75rem;
+			padding: 0.75rem;
+		}
+
 		.filtros-grid {
 			grid-template-columns: 1fr;
 		}
@@ -1559,6 +1982,226 @@
 		color: #856404;
 		font-size: 0.9rem;
 		line-height: 1.4;
+	}
+
+	/* ===== ESTILOS ESPECÍFICOS NUEVOS REPORTES ===== */
+	
+	/* Reporte Horas Trabajadas */
+	.tabla-horas-trabajadas .horas-diurnas {
+		color: #28a745;
+		font-weight: 600;
+	}
+	
+	.tabla-horas-trabajadas .horas-nocturnas {
+		color: #6f42c1;
+		font-weight: 600;
+	}
+	
+	.tabla-horas-trabajadas .horas-feriados {
+		color: #fd7e14;
+		font-weight: 600;
+	}
+	
+	.tabla-horas-trabajadas .total-horas {
+		background: linear-gradient(135deg, #e8f5e8 0%, #d5f4e6 100%);
+		text-align: center;
+		color: #155724;
+	}
+
+	/* Reporte Parte Diario */
+	.tabla-parte-diario .hora-ingreso,
+	.tabla-parte-diario .hora-egreso {
+		font-family: monospace;
+		font-weight: 600;
+		text-align: center;
+	}
+	
+	.tabla-parte-diario .hora-ingreso.tarde {
+		color: #e74c3c;
+		background: #fadbd8;
+	}
+	
+	.tabla-parte-diario .horas-trabajadas {
+		text-align: center;
+		font-weight: 600;
+		color: #2c3e50;
+	}
+	
+	.novedad-normal {
+		background: #d4edda;
+		color: #155724;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		font-size: 0.8rem;
+	}
+	
+	.novedad-advertencia {
+		background: #fff3cd;
+		color: #856404;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		font-size: 0.8rem;
+	}
+	
+	.novedad-comision {
+		background: #d1ecf1;
+		color: #0c5460;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		font-size: 0.8rem;
+	}
+
+	/* Reporte Licencias */
+	.tabla-licencias .licencia-anual,
+	.tabla-licencias .licencia-enfermedad,
+	.tabla-licencias .licencia-especial {
+		text-align: center;
+		font-weight: 600;
+	}
+	
+	.tabla-licencias .licencia-anual {
+		color: #007bff;
+	}
+	
+	.tabla-licencias .licencia-enfermedad {
+		color: #e74c3c;
+	}
+	
+	.tabla-licencias .licencia-especial {
+		color: #f39c12;
+	}
+	
+	.tabla-licencias .dias-utilizados {
+		text-align: center;
+		font-weight: 600;
+		color: #6c757d;
+	}
+	
+	.tabla-licencias .dias-disponibles {
+		text-align: center;
+		font-weight: 700;
+		color: #28a745;
+		background: #d4edda;
+	}
+
+	/* Reporte Plus */
+	.tabla-plus .area-operativa {
+		background: #fff3cd;
+		color: #856404;
+		font-weight: 600;
+	}
+	
+	.tabla-plus .area-administrativa {
+		background: #d1ecf1;
+		color: #0c5460;
+		font-weight: 600;
+	}
+	
+	.tabla-plus .horas-normales {
+		text-align: center;
+		color: #2c3e50;
+		font-weight: 600;
+	}
+	
+	.tabla-plus .plus-20 {
+		text-align: center;
+		color: #f39c12;
+		font-weight: 600;
+		background: #fef9e7;
+	}
+	
+	.tabla-plus .plus-40 {
+		text-align: center;
+		color: #e74c3c;
+		font-weight: 600;
+		background: #fdf2f2;
+	}
+	
+	.tabla-plus .total-liquidar {
+		text-align: center;
+		background: linear-gradient(135deg, #d4edda 0%, #a9dfbf 100%);
+		color: #155724;
+		font-size: 0.95rem;
+	}
+
+	/* Reporte Incumplimiento Normativo */
+	.alertas-normativas {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		margin-bottom: 1.5rem;
+	}
+	
+	.alerta-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 1rem;
+		padding: 1rem;
+		border-radius: 8px;
+		border-left: 4px solid;
+	}
+	
+	.alerta-critica {
+		background: linear-gradient(135deg, #fdf2f2 0%, #fadbd8 100%);
+		border-left-color: #e74c3c;
+	}
+	
+	.alerta-advertencia {
+		background: linear-gradient(135deg, #fef9e7 0%, #fff3cd 100%);
+		border-left-color: #f39c12;
+	}
+	
+	.alerta-info {
+		background: linear-gradient(135deg, #e3f2fd 0%, #d1ecf1 100%);
+		border-left-color: #17a2b8;
+	}
+	
+	.alerta-icono {
+		font-size: 1.5rem;
+		line-height: 1;
+		margin-top: 0.25rem;
+	}
+	
+	.alerta-contenido h4 {
+		margin: 0 0 0.5rem 0;
+		color: #2c3e50;
+		font-size: 1rem;
+		font-weight: 700;
+	}
+	
+	.alerta-contenido p {
+		margin: 0.25rem 0;
+		font-size: 0.9rem;
+		color: #495057;
+	}
+
+	/* Nota de vista previa */
+	.preview-note {
+		background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+		border: 1px solid #dee2e6;
+		border-radius: 8px;
+		padding: 1rem;
+		margin-top: 1rem;
+		border-left: 4px solid #007bff;
+	}
+	
+	.preview-note p {
+		margin: 0;
+		color: #495057;
+		font-size: 0.9rem;
+		line-height: 1.4;
+		font-style: italic;
+	}
+
+	/* Filas de ejemplo */
+	.ejemplo-fila {
+		background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+		opacity: 0.8;
+	}
+	
+	.ejemplo-fila:hover {
+		opacity: 1;
+		background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
 	}
 	
 </style>
