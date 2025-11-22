@@ -352,66 +352,77 @@
 						</div>
 
 						<div class="tabla-container">
-							<table class="tabla-reporte">
+							<table class="tabla-reporte tabla-individual">
 								<thead>
 									<tr>
-										<th>Fecha</th>
 										<th>Día</th>
-										<th>Horario Habitual</th>
-										<th>Horario Guardia</th>
-										<th>Horas Plan.</th>
-										<th>Horas Efect.</th>
-										<th>Estado</th>
+										<th>Horario Habitual / Novedad</th>
+										<th>Horario de Guardia</th>
+										<th>Horas</th>
+										<th>Motivo de la Guardia</th>
 									</tr>
 								</thead>
 								<tbody>
 									{#each $datosReporte.dias_mes.slice(0, 10) as dia}
-										<tr>
-											<td>{dia.fecha}</td>
-											<td>{dia.dia_semana}</td>
-											<td>
-												{#if dia.horario_habitual_inicio}
-													{dia.horario_habitual_inicio} - {dia.horario_habitual_fin}
+										<tr class:dia-con-guardia={dia.tiene_guardia} class:fin-semana={!dia.horario_habitual_inicio}>
+											<td class="dia-fecha">
+												<div class="fecha-completa">
+													<span class="numero-dia">{dia.dia_mes}</span>
+													<span class="nombre-dia">{dia.dia_semana}</span>
+												</div>
+											</td>
+											<td class="horario-novedad">
+												{#if dia.novedad && dia.novedad !== "Jornada habitual"}
+													<span class="novedad">{dia.novedad}</span>
+												{:else if dia.horario_habitual_inicio}
+													<span class="horario-habitual">{dia.horario_habitual_inicio} - {dia.horario_habitual_fin}</span>
 												{:else}
-													-
+													<span class="sin-jornada">-</span>
 												{/if}
 											</td>
-											<td>
+											<td class="horario-guardia">
 												{#if dia.guardia_inicio}
-													{dia.guardia_inicio} - {dia.guardia_fin}
-												{:else}
-													-
-												{/if}
-											</td>
-											<td class="text-center">
-												{#if dia.horas_planificadas > 0}
-													{dia.horas_planificadas}h
-												{:else}
-													-
-												{/if}
-											</td>
-											<td class="text-center">
-												{#if dia.horas_efectivas > 0}
-													<span class="horas-efectivas">{dia.horas_efectivas}h</span>
-												{:else if dia.tiene_guardia}
-													<span class="sin-registro">⚠️ Pendiente</span>
-												{:else}
-													-
-												{/if}
-											</td>
-											<td>
-												{#if dia.tiene_guardia}
-													<span class="badge badge-activo">Guardia</span>
-													{#if !dia.horas_efectivas}
-														<span class="badge badge-warning">Sin presentismo</span>
+													<span class="horario-guardia-valor">{dia.guardia_inicio} - {dia.guardia_fin}</span>
+													{#if dia.horas_efectivas > 0}
+														<span class="presentismo-ok">✓</span>
+													{:else}
+														<span class="presentismo-pendiente">⚠</span>
 													{/if}
 												{:else}
-													<span class="badge badge-inactivo">Normal</span>
+													-
+												{/if}
+											</td>
+											<td class="horas-columna text-center">
+												{#if dia.horas_planificadas > 0}
+													<div class="horas-planificadas">{dia.horas_planificadas}h</div>
+													{#if dia.horas_efectivas > 0 && dia.horas_efectivas !== dia.horas_planificadas}
+														<div class="horas-efectivas">({dia.horas_efectivas}h efec.)</div>
+													{/if}
+												{:else}
+													-
+												{/if}
+											</td>
+											<td class="motivo-guardia">
+												{#if dia.motivo_guardia}
+													<span class="motivo">{dia.motivo_guardia}</span>
+												{:else}
+													-
 												{/if}
 											</td>
 										</tr>
 									{/each}
 								</tbody>
+								<tfoot>
+									<tr class="total-row">
+										<td><strong>TOTAL</strong></td>
+										<td colspan="3" class="text-center">
+											<strong>Días con guardias: {$datosReporte.totales.total_dias_trabajados}</strong>
+										</td>
+										<td class="text-center">
+											<strong>{$datosReporte.totales.total_horas_planificadas}h</strong>
+										</td>
+									</tr>
+								</tfoot>
 							</table>
 						</div>
 
@@ -472,52 +483,138 @@
 						<div class="reporte-header">
 							<h3>Planilla General/Preventiva</h3>
 							<div class="datos-area">
-								<p><strong>Área:</strong> {$datosReporte.area_nombre}</p>
+								<p><strong>Dirección:</strong> {$datosReporte.area_nombre}</p>
+								<p><strong>Mes:</strong> {$datosReporte.periodo.mes}</p>
 								<p><strong>Período:</strong> {$datosReporte.periodo.fecha_desde} - {$datosReporte.periodo.fecha_hasta}</p>
 							</div>
 						</div>
 
-						<div class="tabla-container">
-							<table class="tabla-reporte">
-								<thead>
-									<tr>
-										<th>Agente</th>
-										<th>Legajo</th>
-										<th>Total Horas</th>
-										<th>Estado</th>
-									</tr>
-								</thead>
-								<tbody>
-									{#each $datosReporte.agentes as agente}
+						{#if $datosReporte.dias_columnas && $datosReporte.dias_columnas.length > 0}
+							<div class="tabla-container tabla-grilla">
+								<table class="tabla-reporte tabla-general">
+									<thead>
 										<tr>
-											<td>{agente.nombre_completo}</td>
-											<td>{agente.legajo}</td>
-											<td class="text-center">{agente.total_horas}h</td>
-											<td>
-												{#if agente.total_horas > 0}
-													<span class="badge badge-activo">Activo</span>
-												{:else}
-													<span class="badge badge-inactivo">Sin guardias</span>
-												{/if}
+											<th rowspan="2" class="agente-header">Agente y Legajo</th>
+											<th colspan="{$datosReporte.dias_columnas.length}" class="dias-header">Días del mes</th>
+											<th rowspan="2" class="total-header">Total</th>
+										</tr>
+										<tr class="dias-numeros">
+											{#each $datosReporte.dias_columnas as dia}
+												<th class="dia-numero" class:fin-semana={dia.dia_semana === 'Sáb' || dia.dia_semana === 'Dom'}>
+													<div class="dia-info">
+														<span class="numero">{dia.dia}</span>
+														<span class="dia-sem">{dia.dia_semana}</span>
+													</div>
+												</th>
+											{/each}
+										</tr>
+									</thead>
+									<tbody>
+										{#each $datosReporte.agentes.slice(0, 5) as agente}
+											<tr>
+												<td class="agente-info">
+													<div class="nombre-legajo">
+														<span class="nombre">{agente.nombre_completo}</span>
+														<span class="legajo">Leg: {agente.legajo}</span>
+													</div>
+												</td>
+												{#each $datosReporte.dias_columnas as dia}
+													{@const diaData = agente.dias?.find(d => d.fecha === dia.fecha)}
+													<td class="dia-celda" class:con-horas={diaData?.horas > 0} class:fin-semana={dia.dia_semana === 'Sáb' || dia.dia_semana === 'Dom'}>
+														{#if diaData}
+															{#if diaData.tipo === 'guardia'}
+																<span class="horas-guardia">{diaData.valor}</span>
+															{:else if diaData.valor === '-'}
+																<span class="sin-actividad">-</span>
+															{:else}
+																<span class="novedad">{diaData.valor}</span>
+															{/if}
+														{:else}
+															<span class="sin-datos">-</span>
+														{/if}
+													</td>
+												{/each}
+												<td class="total-agente">
+													<strong>{agente.total_horas}h</strong>
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+									<tfoot>
+										<tr class="total-direccion">
+											<td><strong>TOTAL DIRECCIÓN</strong></td>
+											{#each $datosReporte.dias_columnas as dia}
+												{@const totalDia = $datosReporte.agentes.reduce((sum, agente) => {
+													const diaData = agente.dias?.find(d => d.fecha === dia.fecha);
+													return sum + (diaData?.horas || 0);
+												}, 0)}
+												<td class="total-dia">
+													{#if totalDia > 0}
+														<strong>{totalDia.toFixed(1)}h</strong>
+													{:else}
+														-
+													{/if}
+												</td>
+											{/each}
+											<td class="total-general">
+												<strong>{$datosReporte.totales.total_horas_direccion}h</strong>
 											</td>
 										</tr>
-									{/each}
-								</tbody>
-							</table>
-						</div>
+									</tfoot>
+								</table>
+							</div>
+							
+							{#if $datosReporte.agentes.length > 5}
+								<div class="vista-limitada">
+									<p>Mostrando 5 de {$datosReporte.agentes.length} agentes. Exporte para ver el reporte completo con todos los agentes.</p>
+								</div>
+							{/if}
+						{:else}
+							<!-- Fallback si no hay datos de días por columnas -->
+							<div class="tabla-container">
+								<table class="tabla-reporte">
+									<thead>
+										<tr>
+											<th>Agente</th>
+											<th>Legajo</th>
+											<th>Total Horas</th>
+											<th>Estado</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each $datosReporte.agentes as agente}
+											<tr>
+												<td>{agente.nombre_completo}</td>
+												<td>{agente.legajo}</td>
+												<td class="text-center">{agente.total_horas}h</td>
+												<td>
+													{#if agente.total_horas > 0}
+														<span class="badge badge-activo">Activo</span>
+													{:else}
+														<span class="badge badge-inactivo">Sin guardias</span>
+													{/if}
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+						{/if}
 
 						<div class="totales-reporte">
-							<div class="total-item">
-								<span class="total-label">Total agentes:</span>
-								<span class="total-valor">{$datosReporte.totales.total_agentes}</span>
-							</div>
-							<div class="total-item">
-								<span class="total-label">Total horas área:</span>
-								<span class="total-valor">{$datosReporte.totales.total_horas_todas}h</span>
-							</div>
-							<div class="total-item">
-								<span class="total-label">Promedio por agente:</span>
-								<span class="total-valor">{$datosReporte.totales.promedio_horas_agente}h</span>
+							<div class="totales-row">
+								<div class="total-item">
+									<span class="total-label">Total agentes:</span>
+									<span class="total-valor">{$datosReporte.totales.total_agentes}</span>
+								</div>
+								<div class="total-item">
+									<span class="total-label">Total horas dirección:</span>
+									<span class="total-valor">{$datosReporte.totales.total_horas_direccion || $datosReporte.totales.total_horas_todas}h</span>
+								</div>
+								<div class="total-item">
+									<span class="total-label">Promedio por agente:</span>
+									<span class="total-valor">{$datosReporte.totales.promedio_horas_agente}h</span>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -1068,6 +1165,276 @@
 		text-align: center;
 		padding: 4rem 2rem;
 		color: #6c757d;
+	}
+
+	/* ===== ESTILOS ESPECÍFICOS REPORTES ===== */
+	
+	/* Tabla Individual */
+	.tabla-individual .dia-fecha {
+		text-align: center;
+		min-width: 80px;
+	}
+	
+	.fecha-completa {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25rem;
+	}
+	
+	.numero-dia {
+		font-size: 1.2rem;
+		font-weight: 700;
+		color: #2c3e50;
+	}
+	
+	.nombre-dia {
+		font-size: 0.8rem;
+		color: #6c757d;
+		text-transform: capitalize;
+	}
+	
+	.horario-novedad {
+		min-width: 150px;
+	}
+	
+	.novedad {
+		color: #ffc107;
+		font-weight: 600;
+		font-style: italic;
+	}
+	
+	.horario-habitual {
+		color: #28a745;
+		font-weight: 500;
+	}
+	
+	.sin-jornada {
+		color: #6c757d;
+		font-style: italic;
+	}
+	
+	.horario-guardia {
+		position: relative;
+		min-width: 120px;
+	}
+	
+	.horario-guardia-valor {
+		color: #007bff;
+		font-weight: 600;
+	}
+	
+	.presentismo-ok {
+		color: #28a745;
+		font-weight: bold;
+		margin-left: 0.5rem;
+	}
+	
+	.presentismo-pendiente {
+		color: #ffc107;
+		font-weight: bold;
+		margin-left: 0.5rem;
+	}
+	
+	.horas-columna {
+		min-width: 100px;
+	}
+	
+	.horas-planificadas {
+		font-weight: 600;
+		color: #2c3e50;
+	}
+	
+	.horas-efectivas {
+		font-size: 0.8rem;
+		color: #28a745;
+		font-style: italic;
+	}
+	
+	.motivo-guardia {
+		min-width: 100px;
+	}
+	
+	.motivo {
+		background: #e3f2fd;
+		color: #1976d2;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		font-size: 0.85rem;
+		font-weight: 500;
+	}
+	
+	.dia-con-guardia {
+		background: linear-gradient(135deg, #fff8e1 0%, #ffffff 100%);
+		border-left: 4px solid #ffc107;
+	}
+	
+	.fin-semana {
+		background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+	}
+	
+	.total-row {
+		background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+		border-top: 2px solid #28a745;
+		font-weight: 600;
+	}
+	
+	/* Tabla General/Grilla */
+	.tabla-grilla {
+		overflow-x: auto;
+		border-radius: 8px;
+		border: 1px solid #dee2e6;
+	}
+	
+	.tabla-general {
+		min-width: 800px;
+		font-size: 0.85rem;
+	}
+	
+	.agente-header,
+	.total-header {
+		background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+		color: white;
+		text-align: center;
+		font-weight: 600;
+		min-width: 150px;
+	}
+	
+	.dias-header {
+		background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+		color: white;
+		text-align: center;
+		font-weight: 600;
+	}
+	
+	.dias-numeros th {
+		background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
+		color: #2c3e50;
+		padding: 0.5rem 0.25rem;
+		border-bottom: 1px solid #95a5a6;
+		min-width: 45px;
+		max-width: 45px;
+	}
+	
+	.dias-numeros th.fin-semana {
+		background: linear-gradient(135deg, #fadbd8 0%, #f1948a 100%);
+		color: #922b21;
+	}
+	
+	.dia-info {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		line-height: 1.2;
+	}
+	
+	.dia-info .numero {
+		font-weight: 700;
+		font-size: 0.9rem;
+	}
+	
+	.dia-info .dia-sem {
+		font-size: 0.7rem;
+		text-transform: uppercase;
+	}
+	
+	.agente-info {
+		background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+		border-right: 2px solid #dee2e6;
+		min-width: 150px;
+		max-width: 150px;
+		padding: 0.75rem 0.5rem;
+	}
+	
+	.nombre-legajo {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+	
+	.nombre {
+		font-weight: 600;
+		color: #2c3e50;
+		font-size: 0.9rem;
+		line-height: 1.2;
+	}
+	
+	.legajo {
+		font-size: 0.75rem;
+		color: #7f8c8d;
+		font-style: italic;
+	}
+	
+	.dia-celda {
+		text-align: center;
+		padding: 0.5rem 0.25rem;
+		vertical-align: middle;
+		min-width: 45px;
+		max-width: 45px;
+		border-right: 1px solid #ecf0f1;
+	}
+	
+	.dia-celda.fin-semana {
+		background: linear-gradient(135deg, #fdf2e9 0%, #fadbd8 100%);
+	}
+	
+	.dia-celda.con-horas {
+		background: linear-gradient(135deg, #d5f4e6 0%, #a9dfbf 100%);
+		font-weight: 600;
+	}
+	
+	.horas-guardia {
+		color: #27ae60;
+		font-weight: 700;
+		font-size: 0.8rem;
+	}
+	
+	.sin-actividad,
+	.sin-datos {
+		color: #bdc3c7;
+		font-style: italic;
+	}
+	
+	.novedad {
+		background: #fff3cd;
+		color: #856404;
+		padding: 0.1rem 0.3rem;
+		border-radius: 3px;
+		font-size: 0.7rem;
+		font-weight: 500;
+		display: inline-block;
+		transform: rotate(-45deg);
+		font-style: normal;
+	}
+	
+	.total-agente {
+		background: linear-gradient(135deg, #e8f5e8 0%, #d5f4e6 100%);
+		border-left: 2px solid #27ae60;
+		text-align: center;
+		font-weight: 600;
+		color: #27ae60;
+		min-width: 80px;
+	}
+	
+	.total-direccion {
+		background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+		color: white;
+		font-weight: 700;
+	}
+	
+	.total-direccion td {
+		padding: 0.75rem 0.5rem;
+		text-align: center;
+		border-top: 3px solid #f39c12;
+	}
+	
+	.total-dia {
+		font-size: 0.8rem;
+	}
+	
+	.total-general {
+		background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+		font-size: 1.1rem;
 	}
 
 	/* ===== RESPONSIVE ===== */

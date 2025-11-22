@@ -521,114 +521,91 @@ class ReporteController {
 	
 	async _generarReporteIndividualReal(filtros) {
 		try {
-			// Obtener datos del agente
-			const agenteResponse = await personasService.getAgente(filtros.agente_id);
-			const agente = agenteResponse.data?.data || agenteResponse.data;
-			
-			// Construir parámetros para el resumen de guardias
+			// Construir parámetros para el nuevo endpoint
 			const params = new URLSearchParams({
 				agente: filtros.agente_id,
 				fecha_desde: filtros.fecha_desde,
 				fecha_hasta: filtros.fecha_hasta,
 			});
 			
-			// Obtener guardias del período
-			const guardiasResponse = await guardiasService.getResumenGuardias(params.toString());
-			console.log('📊 Guardias del período:', guardiasResponse.data?.guardias?.length || 0);
-			const guardias = guardiasResponse.data?.guardias || [];
-			const estadisticas = guardiasResponse.data?.estadisticas || {};
+			console.log('📊 Generando reporte individual con:', params.toString());
+			
+			// Usar el nuevo endpoint que implementa la documentación
+			const response = await guardiasService.getReporteIndividual(params.toString());
+			const reporte = response.data;
+			
+			console.log('✅ Reporte individual recibido:', reporte);
 			
 			return {
-				agente: {
-					nombre_completo: `${agente.apellido}, ${agente.nombre}`,
-					legajo: agente.legajo,
-					area_nombre: agente.area_nombre || 'Sin área'
-				},
-				periodo: {
-					fecha_desde: filtros.fecha_desde,
-					fecha_hasta: filtros.fecha_hasta,
-					mes: new Date(filtros.fecha_desde).getMonth() + 1,
-					anio: new Date(filtros.fecha_desde).getFullYear()
-				},
-				dias_mes: this._procesarGuardiasParaDias(guardias, filtros),
+				agente: reporte.agente,
+				periodo: reporte.periodo,
+				dias_mes: reporte.dias.map(dia => ({
+					fecha: dia.fecha,
+					dia_semana: dia.dia_semana,
+					dia_mes: new Date(dia.fecha).getDate(),
+					horario_habitual_inicio: dia.horario_habitual_inicio,
+					horario_habitual_fin: dia.horario_habitual_fin,
+					novedad: dia.novedad,
+					guardia_inicio: dia.horario_guardia_inicio,
+					guardia_fin: dia.horario_guardia_fin,
+					horas_planificadas: dia.horas_planificadas || 0,
+					horas_efectivas: dia.horas_efectivas || 0,
+					motivo_guardia: dia.motivo_guardia,
+					tiene_guardia: dia.tiene_guardia,
+					tiene_presentismo: !!dia.horas_efectivas,
+					estado_presentismo: dia.estado_asistencia
+				})),
 				totales: {
-					total_dias_trabajados: estadisticas.total_guardias || 0,
-					total_horas_planificadas: estadisticas.horas_planificadas || 0,
-					total_horas_efectivas: estadisticas.horas_efectivas || 0,
-					total_horas_guardia: estadisticas.horas_planificadas || 0, // backward compatibility
-					total_horas_trabajadas: estadisticas.horas_efectivas || 0,
-					promedio_horas_dia: estadisticas.total_guardias > 0 ? 
-						Math.round((estadisticas.horas_planificadas || 0) / estadisticas.total_guardias * 100) / 100 : 0,
-					dias_con_presentismo: guardias.filter(g => g.horas_efectivas > 0).length,
-					dias_sin_presentismo: guardias.filter(g => !g.horas_efectivas && g.activa).length,
-					porcentaje_presentismo: estadisticas.total_guardias > 0 ? 
-						Math.round((guardias.filter(g => g.horas_efectivas > 0).length / estadisticas.total_guardias) * 100) : 0
+					total_dias_trabajados: reporte.totales.total_dias_guardia,
+					total_horas_planificadas: reporte.totales.total_horas,
+					total_horas_efectivas: reporte.dias.reduce((sum, dia) => sum + (dia.horas_efectivas || 0), 0),
+					total_horas_guardia: reporte.totales.total_horas,
+					total_horas_trabajadas: reporte.dias.reduce((sum, dia) => sum + (dia.horas_efectivas || 0), 0),
+					promedio_horas_dia: reporte.totales.promedio_horas_dia,
+					dias_con_presentismo: reporte.dias.filter(d => d.horas_efectivas > 0).length,
+					dias_sin_presentismo: reporte.dias.filter(d => d.tiene_guardia && !d.horas_efectivas).length,
+					porcentaje_presentismo: reporte.totales.total_dias_guardia > 0 ? 
+						Math.round((reporte.dias.filter(d => d.horas_efectivas > 0).length / reporte.totales.total_dias_guardia) * 100) : 0
 				}
 			};
 		} catch (error) {
 			console.error('Error generando reporte individual:', error);
-			throw new Error('No se pudo generar el reporte individual');
+			throw new Error('No se pudo generar el reporte individual: ' + (error.response?.data?.error || error.message));
 		}
 	}
 	
 	async _generarReporteGeneralReal(filtros) {
 		try {
-			// Construir parámetros para el resumen de guardias por área
+			// Construir parámetros para el nuevo endpoint
 			const params = new URLSearchParams({
 				area: filtros.area_id,
 				fecha_desde: filtros.fecha_desde,
 				fecha_hasta: filtros.fecha_hasta,
 			});
 			
-			// Obtener guardias del área en el período
-			const guardiasResponse = await guardiasService.getResumenGuardias(params.toString());
-			const guardias = guardiasResponse.data?.guardias || [];
-			const estadisticas = guardiasResponse.data?.estadisticas || {};
+			console.log('📊 Generando reporte general con:', params.toString());
 			
-			// Obtener información del área de la lista ya cargada
-			const areasDisponibles = await new Promise(resolve => {
-				this.filtrosDisponibles.subscribe(resolve)();
-			});
-			const area = areasDisponibles.areas.find(a => a.id === filtros.area_id);
+			// Usar el nuevo endpoint que implementa la documentación
+			const response = await guardiasService.getReporteGeneral(params.toString());
+			const reporte = response.data;
 			
-			// Agrupar por agente
-			const agentesMap = {};
-			guardias.forEach(guardia => {
-				const agenteId = guardia.id_agente;
-				const agenteDatos = guardia.agente_datos || {};
-				
-				if (!agentesMap[agenteId]) {
-					agentesMap[agenteId] = {
-						nombre_completo: `${agenteDatos.apellido || ''}, ${agenteDatos.nombre || ''}`.trim(),
-						legajo: agenteDatos.legajo || '',
-						total_horas: 0
-					};
-				}
-				
-				agentesMap[agenteId].total_horas += guardia.horas_planificadas || 0;
-			});
-			
-			const agentesArray = Object.values(agentesMap);
+			console.log('✅ Reporte general recibido:', reporte);
 			
 			return {
-				area_nombre: area?.nombre || 'Área no encontrada',
-				periodo: {
-					fecha_desde: filtros.fecha_desde,
-					fecha_hasta: filtros.fecha_hasta,
-					mes: new Date(filtros.fecha_desde).getMonth() + 1,
-					anio: new Date(filtros.fecha_desde).getFullYear()
-				},
-				agentes: agentesArray,
-				totales: {
-					total_agentes: agentesArray.length,
-					total_horas_todas: agentesArray.reduce((sum, agente) => sum + agente.total_horas, 0),
-					promedio_horas_agente: agentesArray.length > 0 ? 
-						Math.round(agentesArray.reduce((sum, agente) => sum + agente.total_horas, 0) / agentesArray.length * 100) / 100 : 0
-				}
+				area_nombre: reporte.area.nombre,
+				area_completa: reporte.area,
+				periodo: reporte.periodo,
+				dias_columnas: reporte.dias_columnas,
+				agentes: reporte.agentes.map(agente => ({
+					...agente,
+					// Agregar estado para la vista
+					estado: agente.total_horas > 0 ? 'activo' : 'sin_guardias'
+				})),
+				totales: reporte.totales
 			};
 		} catch (error) {
 			console.error('Error generando reporte general:', error);
-			throw new Error('No se pudo generar el reporte general');
+			throw new Error('No se pudo generar el reporte general: ' + (error.response?.data?.error || error.message));
 		}
 	}
 	

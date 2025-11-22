@@ -264,21 +264,9 @@ class PlanificadorGuardiasController {
 		}
 
 		try {
-			const params = new URLSearchParams({
-				id_agente: agenteId,
-				fecha_inicio: fechaInicio,
-				hora_inicio: horaInicio,
-				fecha_fin: fechaFin || fechaInicio,
-				hora_fin: horaFin || horaInicio
-			});
-			
-			// Si estamos editando, excluir el cronograma actual de la verificación
-			if (cronogramaId) {
-				params.append('excluir_cronograma', cronogramaId);
-			}
-			
-			const response = await guardiasService.verificarDisponibilidad(params.toString(), token);
-			return response.data?.conflicto || false;
+			// Verificar disponibilidad para la fecha de inicio
+			const response = await guardiasService.verificarDisponibilidad(agenteId, fechaInicio, token);
+			return !response.data?.disponible; // Devolver true si NO está disponible (hay conflicto)
 		} catch (e) {
 			console.error('❌ Error verificando disponibilidad:', e);
 			return false;
@@ -395,12 +383,14 @@ class PlanificadorGuardiasController {
 				nombre: nombre.trim(),
 				tipo,
 				id_area: areaSeleccionada,
-				fecha_inicio: fechaInicio,
+				fecha: fechaInicio, // Backend espera 'fecha' no 'fecha_inicio'
+				fecha_inicio: fechaInicio, // Mantener para compatibilidad
 				hora_inicio: horaInicio,
 				fecha_fin: fechaFin || fechaInicio,
 				hora_fin: horaFin,
 				observaciones: observaciones.trim(),
-				agentes: Array.from(agentesSeleccionados)
+				agentes: Array.from(agentesSeleccionados),
+				agente_id: this._obtenerAgenteActual()
 			};
 			
 			console.log('📤 Guardando cronograma:', payload);
@@ -411,8 +401,8 @@ class PlanificadorGuardiasController {
 				response = await guardiasService.updateCronograma(cronogramaId, payload, token);
 				this.mostrarToast('Cronograma actualizado exitosamente', 'success');
 			} else {
-				// Crear nuevo cronograma
-				response = await guardiasService.createCronograma(payload, token);
+				// Crear nuevo cronograma con guardias
+				response = await guardiasService.crearGuardia(payload, token);
 				this.mostrarToast('Cronograma creado exitosamente', 'success');
 			}
 			
@@ -430,6 +420,20 @@ class PlanificadorGuardiasController {
 			console.error('❌ Error guardando cronograma:', e);
 		} finally {
 			this.loading.set(false);
+		}
+	}
+
+	/**
+	 * Obtiene el ID del agente actual desde localStorage
+	 * @returns {number} ID del agente actual
+	 */
+	_obtenerAgenteActual() {
+		try {
+			const user = JSON.parse(localStorage.getItem('agente') || '{}');
+			return user.id_agente || user.id || 1; // Fallback a ID 1 si no hay usuario
+		} catch (e) {
+			console.warn('⚠️ No se pudo obtener usuario de localStorage:', e);
+			return 1; // Fallback
 		}
 	}
 

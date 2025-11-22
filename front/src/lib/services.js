@@ -129,6 +129,9 @@ export const guardiasService = {
   createNotaGuardia: (guardiaId, data, token = null) => createApiClient(token).post(`/guardias/guardias/${guardiaId}/notas/`, data),
   updateNotaGuardia: (notaId, data, token = null) => createApiClient(token).put(`/guardias/guardias/notas/${notaId}/`, data),
   deleteNotaGuardia: (notaId, agenteId, token = null) => createApiClient(token).delete(`/guardias/guardias/notas/${notaId}/?agente_id=${agenteId}`),
+  
+  // Verificaciones de disponibilidad
+  verificarDisponibilidad: (agenteId, fecha, token = null) => createApiClient(token).get(`/guardias/guardias/verificar-disponibilidad/?agente=${agenteId}&fecha=${fecha}`),
 
   // Feriados
   getFeriados: (token = null) => createApiClient(token).get('/guardias/feriados/'),
@@ -158,7 +161,11 @@ export const guardiasService = {
   calcularPlusMensual: (data, token = null) => createApiClient(token).post('/guardias/resumen-mes/calcular_mensual/', data),
   aprobarLotePlus: (data, token = null) => createApiClient(token).patch('/guardias/resumen-mes/aprobar_lote/', data),
   
-  // Reportes y Exportaciones
+  // Reportes según documentación
+  getReporteIndividual: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_individual/?${params}`),
+  getReporteGeneral: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_general/?${params}`),
+  
+  // Exportaciones (placeholder para futura implementación)
   exportarReporteIndividual: (params = '', formato = 'pdf', token = null) => 
     createApiClient(token).get(`/guardias/reportes/individual/?${params}&formato=${formato}`, { responseType: 'blob' }),
   exportarReporteGeneral: (params = '', formato = 'pdf', token = null) => 
