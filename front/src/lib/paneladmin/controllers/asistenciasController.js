@@ -27,6 +27,11 @@ class AsistenciasController {
 		this.asistenciaEditando = writable(null);
 		this.observacionEdit = writable('');
 
+		// Campos para hora específica
+		this.horaEntrada = writable('');
+		this.horaSalida = writable('');
+		this.usarHoraEspecifica = writable(false);
+
 		// ========== DERIVED STORES ==========
 		// Filtrar asistencias según la tab activa
 		this.asistenciasFiltradas = derived(
@@ -220,6 +225,9 @@ class AsistenciasController {
 	abrirModalCorreccion(asistencia) {
 		this.asistenciaEditando.set(asistencia);
 		this.observacionEdit.set('');
+		this.horaEntrada.set('');
+		this.horaSalida.set('');
+		this.usarHoraEspecifica.set(false);
 		this.modalCorreccion.set(true);
 	}
 
@@ -227,13 +235,18 @@ class AsistenciasController {
 		this.modalCorreccion.set(false);
 		this.asistenciaEditando.set(null);
 		this.observacionEdit.set('');
+		this.horaEntrada.set('');
+		this.horaSalida.set('');
+		this.usarHoraEspecifica.set(false);
 	}
 
 	// ========== MARCACIÓN DE ASISTENCIA ==========
-	async marcarEntrada() {
-		let asistencia, observacion;
+	async marcarEntrada(horaEspecifica = null) {
+		let asistencia, observacion, usarHora, horaEntrada;
 		this.asistenciaEditando.subscribe((value) => (asistencia = value))();
 		this.observacionEdit.subscribe((value) => (observacion = value))();
+		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
+		this.horaEntrada.subscribe((value) => (horaEntrada = value))();
 
 		if (!asistencia || !asistencia.agente_dni) {
 			return {
@@ -250,15 +263,24 @@ class AsistenciasController {
 		}
 
 		try {
+			const requestBody = {
+				dni: asistencia.agente_dni,
+				tipo_marcacion: 'entrada',
+				observacion: observacion || 'Marcación corregida por administrador'
+			};
+
+			// Agregar hora específica si se proporciona
+			if (horaEspecifica) {
+				requestBody.hora_especifica = horaEspecifica;
+			} else if (usarHora && horaEntrada) {
+				requestBody.hora_especifica = horaEntrada;
+			}
+
 			const response = await fetch('/api/asistencia/marcar/', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
-				body: JSON.stringify({
-					dni: asistencia.agente_dni,
-					tipo_marcacion: 'entrada',
-					observacion: observacion || 'Marcación corregida por administrador'
-				})
+				body: JSON.stringify(requestBody)
 			});
 
 			const data = await response.json();
@@ -279,10 +301,12 @@ class AsistenciasController {
 		}
 	}
 
-	async marcarSalida() {
-		let asistencia, observacion;
+	async marcarSalida(horaEspecifica = null) {
+		let asistencia, observacion, usarHora, horaSalida;
 		this.asistenciaEditando.subscribe((value) => (asistencia = value))();
 		this.observacionEdit.subscribe((value) => (observacion = value))();
+		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
+		this.horaSalida.subscribe((value) => (horaSalida = value))();
 
 		if (!asistencia || !asistencia.agente_dni) {
 			return {
@@ -306,15 +330,24 @@ class AsistenciasController {
 		}
 
 		try {
+			const requestBody = {
+				dni: asistencia.agente_dni,
+				tipo_marcacion: 'salida',
+				observacion: observacion || 'Marcación corregida por administrador'
+			};
+
+			// Agregar hora específica si se proporciona
+			if (horaEspecifica) {
+				requestBody.hora_especifica = horaEspecifica;
+			} else if (usarHora && horaSalida) {
+				requestBody.hora_especifica = horaSalida;
+			}
+
 			const response = await fetch('/api/asistencia/marcar/', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
-				body: JSON.stringify({
-					dni: asistencia.agente_dni,
-					tipo_marcacion: 'salida',
-					observacion: observacion || 'Marcación corregida por administrador'
-				})
+				body: JSON.stringify(requestBody)
 			});
 
 			const data = await response.json();

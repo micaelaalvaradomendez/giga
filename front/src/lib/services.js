@@ -11,6 +11,7 @@ export const personasService = {
   // Agentes
   getAllAgentes: (token = null) => createApiClient(token).get('/personas/agentes/'),
   getAgentes: (token = null) => createApiClient(token).get('/personas/agentes/'), // Alias para consistencia
+  getAgentesByArea: (areaId, token = null) => createApiClient(token).get(`/personas/agentes/?area=${areaId}`),
   getAgente: (id, token = null) => createApiClient(token).get(`/personas/agentes/${id}/`),
   createAgente: (data, token = null) => createApiClient(token).post('/personas/agentes/create/', data),
   updateAgente: (id, data, token = null) => createApiClient(token).patch(`/personas/agentes/${id}/update/`, data),

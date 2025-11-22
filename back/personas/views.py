@@ -92,7 +92,11 @@ def get_agentes(request):
             queryset = queryset.filter(agrupacion__iexact=agrupacion)
         
         if area:
-            queryset = queryset.filter(id_area__nombre__icontains=area)
+            # Intentar filtrar por ID de área si es numérico, sino por nombre
+            if area.isdigit():
+                queryset = queryset.filter(id_area__id_area=int(area))
+            else:
+                queryset = queryset.filter(id_area__nombre__icontains=area)
         
         if activo:
             is_activo = activo.lower() in ['true', '1', 'yes', 'si']

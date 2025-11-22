@@ -166,7 +166,7 @@ class PlanificadorGuardiasController {
 			this.token.subscribe(t => token = t)();
 			
 			const response = await personasService.getAgentesByArea(areaId, token);
-			let agentes = response.data || [];
+			let agentes = response.data?.results || response.data || [];
 			
 			// Filtrar solo agentes activos
 			agentes = agentes.filter(a => a.estado === 'activo');

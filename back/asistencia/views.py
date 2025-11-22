@@ -43,6 +43,7 @@ def marcar_asistencia(request):
         dni_ingresado = request.data.get('dni', '').strip()
         tipo_marcacion = request.data.get('tipo_marcacion')  # 'entrada' o 'salida'
         observacion = request.data.get('observacion', '')
+        hora_especifica_str = request.data.get('hora_especifica')  # Nueva: hora específica en formato HH:MM
         
         if not dni_ingresado:
             return Response({
@@ -108,7 +109,18 @@ def marcar_asistencia(request):
         
         # DNI correcto, proceder con marcación
         hoy = date.today()
-        hora_actual = datetime.now().time()
+        
+        # Determinar la hora a usar (específica o actual)
+        if hora_especifica_str and es_admin:
+            try:
+                hora_para_marcar = datetime.strptime(hora_especifica_str, '%H:%M').time()
+            except ValueError:
+                return Response({
+                    'success': False,
+                    'message': 'Formato de hora inválido. Use HH:MM (ej: 08:30)'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            hora_para_marcar = datetime.now().time()
         
         with transaction.atomic():
             # Buscar o crear asistencia del día
@@ -125,7 +137,7 @@ def marcar_asistencia(request):
             # Si es admin y especificó tipo_marcacion, respetarlo
             if es_admin and tipo_marcacion:
                 if tipo_marcacion == 'entrada':
-                    asistencia.hora_entrada = hora_actual
+                    asistencia.hora_entrada = hora_para_marcar
                     if observacion:
                         asistencia.observaciones = observacion
                     asistencia.es_correccion = True
@@ -134,11 +146,11 @@ def marcar_asistencia(request):
                     
                     return Response({
                         'success': True,
-                        'message': f'Entrada registrada a las {hora_actual.strftime("%H:%M")} por administrador',
+                        'message': f'Entrada registrada a las {hora_para_marcar.strftime("%H:%M")} por administrador',
                         'tipo': 'entrada',
                         'data': {
                             'fecha': hoy,
-                            'hora_entrada': hora_actual,
+                            'hora_entrada': hora_para_marcar,
                             'agente': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}"
                         }
                     })
@@ -149,7 +161,7 @@ def marcar_asistencia(request):
                             'message': 'No se puede marcar salida sin entrada previa'
                         }, status=status.HTTP_400_BAD_REQUEST)
                     
-                    asistencia.hora_salida = hora_actual
+                    asistencia.hora_salida = hora_para_marcar
                     if observacion:
                         if asistencia.observaciones:
                             asistencia.observaciones += f" | {observacion}"
@@ -161,12 +173,12 @@ def marcar_asistencia(request):
                     
                     return Response({
                         'success': True,
-                        'message': f'Salida registrada a las {hora_actual.strftime("%H:%M")} por administrador',
+                        'message': f'Salida registrada a las {hora_para_marcar.strftime("%H:%M")} por administrador',
                         'tipo': 'salida',
                         'data': {
                             'fecha': hoy,
                             'hora_entrada': asistencia.hora_entrada,
-                            'hora_salida': hora_actual,
+                            'hora_salida': hora_para_marcar,
                             'agente': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}"
                         }
                     })
@@ -174,40 +186,53 @@ def marcar_asistencia(request):
             # Lógica normal: determinar automáticamente si es entrada o salida
             if asistencia.hora_entrada is None:
                 # Marcar entrada
-                asistencia.hora_entrada = hora_actual
+                asistencia.hora_entrada = hora_para_marcar
                 if observacion:
                     asistencia.observaciones = observacion
                 asistencia.save()
                 
                 return Response({
                     'success': True,
-                    'message': f'Entrada registrada a las {hora_actual.strftime("%H:%M")}',
+                    'message': f'Entrada registrada a las {hora_para_marcar.strftime("%H:%M")}',
                     'tipo': 'entrada',
                     'data': {
                         'fecha': hoy,
-                        'hora_entrada': hora_actual,
+                        'hora_entrada': hora_para_marcar,
                         'agente': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}"
                     }
                 })
             
             elif asistencia.hora_salida is None:
                 # Marcar salida
-                asistencia.hora_salida = hora_actual
+                asistencia.hora_salida = hora_para_marcar
                 if observacion:
                     if asistencia.observaciones:
                         asistencia.observaciones += f" | {observacion}"
                     else:
                         asistencia.observaciones = observacion
+                
+                # Calcular horas efectivas solo si ambas están presentes
+                if asistencia.hora_entrada:
+                    entrada_dt = timezone.make_aware(timezone.datetime.combine(hoy, asistencia.hora_entrada))
+                    salida_dt = timezone.make_aware(timezone.datetime.combine(hoy, hora_para_marcar))
+                    if salida_dt > entrada_dt:
+                        diferencia = salida_dt - entrada_dt
+                        horas_efectivas = diferencia.total_seconds() / 3600  # Convertir a horas
+                        asistencia.horas_efectivas = round(horas_efectivas, 2)
+                    else:
+                        asistencia.horas_efectivas = 0
+                
                 asistencia.save()
                 
                 return Response({
                     'success': True,
-                    'message': f'Salida registrada a las {hora_actual.strftime("%H:%M")}',
+                    'message': f'Salida registrada a las {hora_para_marcar.strftime("%H:%M")}',
                     'tipo': 'salida',
                     'data': {
                         'fecha': hoy,
                         'hora_entrada': asistencia.hora_entrada,
-                        'hora_salida': hora_actual,
+                        'hora_salida': hora_para_marcar,
+                        'horas_efectivas': asistencia.horas_efectivas,
                         'agente': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}"
                     }
                 })

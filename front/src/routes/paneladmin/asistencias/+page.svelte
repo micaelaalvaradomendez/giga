@@ -16,6 +16,9 @@
         modalCorreccion,
         asistenciaEditando,
         observacionEdit,
+        horaEntrada,
+        horaSalida,
+        usarHoraEspecifica,
     } = asistenciasController;
 
     onMount(async () => {
@@ -436,6 +439,50 @@
                         placeholder="Motivo de la corrección (ej: 'Agente olvidó marcar')"
                         rows="2"
                     ></textarea>
+                </div>
+
+                <!-- Sección para especificar hora -->
+                <div class="hora-especifica-section">
+                    <div class="checkbox-group">
+                        <input
+                            type="checkbox"
+                            id="usar_hora_especifica"
+                            bind:checked={$usarHoraEspecifica}
+                        />
+                        <label for="usar_hora_especifica">
+                            Especificar hora real de entrada/salida
+                        </label>
+                    </div>
+
+                    {#if $usarHoraEspecifica}
+                        <div class="horas-grid">
+                            <div class="form-group">
+                                <label for="hora_entrada_input">🕐 Hora de entrada</label>
+                                <input
+                                    type="time"
+                                    id="hora_entrada_input"
+                                    bind:value={$horaEntrada}
+                                    placeholder="HH:MM"
+                                />
+                                <small class="help-text">
+                                    Solo se usará si marcas entrada
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="hora_salida_input">🕔 Hora de salida</label>
+                                <input
+                                    type="time"
+                                    id="hora_salida_input"
+                                    bind:value={$horaSalida}
+                                    placeholder="HH:MM"
+                                />
+                                <small class="help-text">
+                                    Solo se usará si marcas salida
+                                </small>
+                            </div>
+                        </div>
+                    {/if}
                 </div>
 
                 {#if $asistenciaEditando.observaciones}
@@ -1075,6 +1122,55 @@
 
         .modal-footer button {
             width: 100%;
+        }
+    }
+
+    /* Estilos para hora específica */
+    .hora-especifica-section {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+        border-left: 4px solid #17a2b8;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #17a2b8;
+    }
+
+    .checkbox-group label {
+        font-weight: 600;
+        color: #333;
+        cursor: pointer;
+        margin-bottom: 0;
+    }
+
+    .horas-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .help-text {
+        color: #666;
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+        font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+        .horas-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
