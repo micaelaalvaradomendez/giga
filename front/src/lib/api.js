@@ -51,4 +51,32 @@ export const createApiClient = (token = null) => {
 // Exportamos una instancia por defecto para uso general en el cliente.
 const api = createApiClient();
 
+// Clase API para compatibilidad con componentes que la usan
+export class API {
+	static async get(url) {
+		const response = await api.get(url);
+		return response.data;
+	}
+	
+	static async post(url, data) {
+		const response = await api.post(url, data);
+		return response.data;
+	}
+	
+	static async put(url, data) {
+		const response = await api.put(url, data);
+		return response.data;
+	}
+	
+	static async delete(url) {
+		const response = await api.delete(url);
+		return response.data;
+	}
+	
+	static async patch(url, data) {
+		const response = await api.patch(url, data);
+		return response.data;
+	}
+}
+
 export default api;
