@@ -633,6 +633,10 @@ def puede_aprobar(cronograma, rol_aprobador):
         # Si no hay rol de creador, solo administrador puede aprobar
         return rol_aprobador.lower().strip() == 'administrador'
     
+    # Administrador SIEMPRE puede aprobar cualquier cronograma
+    if rol_aprobador.lower().strip() == 'administrador':
+        return True
+    
     roles_permitidos = get_approval_hierarchy(cronograma.creado_por_rol)
     return rol_aprobador.lower().strip() in roles_permitidos
 

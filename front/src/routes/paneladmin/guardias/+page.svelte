@@ -2,12 +2,13 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import CalendarioBase from '$lib/componentes/calendarioBase.svelte';
-  import { guardiasMainController } from '$lib/paneladmin/controllers';
+  import { guardiasMainController } from '$lib/paneladmin/controllers/index.js';
 
   // Items de navegación
   const items = [
     { title: 'Planificador', desc: 'Crear nueva guardia', href: '/paneladmin/guardias/planificador', emoji: '➕' },
-    { title: 'Aprobaciones', desc: 'Revisar y publicar', href: '/paneladmin/guardias/aprobaciones', emoji: '📝' }
+    { title: 'Aprobaciones', desc: 'Revisar y publicar', href: '/paneladmin/guardias/aprobaciones', emoji: '📝' },
+    { title: 'Compensaciones', desc: 'Compensaciones horas guardias y extras', href: '/paneladmin/guardias/compensaciones', emoji: '📝' },
   ];
 
   // Obtener stores del controller
