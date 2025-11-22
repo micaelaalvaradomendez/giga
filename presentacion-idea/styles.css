@@ -1,0 +1,318 @@
+/* ======================================= */
+/* 1. Base y Configuración (Estilo GIGA - Neumorphic Glass) */
+/* ======================================= */
+:root {
+    /* Colores primarios del componente Svelte (Azules claros y oscuros) */
+    --primary-color: #407bff; /* Azul vibrante (similar al fondo del sidebar-tab) */
+    --secondary-color: #2c57c7; /* Azul oscuro (similar a títulos del sidebar) */
+    --light-bg: #f7f7f7; /* Fondo muy claro, base del Neumorphism */
+    
+    /* Efectos de Glass-Neumorphism */
+    --glass-bg: rgba(255, 255, 255, 0.95); /* Base de la transparencia del sidebar */
+    --glass-border: rgba(64, 123, 255, 0.2); /* Borde azul suave */
+    --shadow-color-light: rgba(255, 255, 255, 0.9); /* Sombra interior clara */
+    --shadow-color-dark: rgba(64, 123, 255, 0.15); /* Sombra exterior azul suave */
+    
+    --text-color-dark: #2c57c7;
+    --text-color-light: #444;
+}
+
+html {
+    scroll-behavior: smooth;
+    box-sizing: border-box;
+}
+
+*, *::before, *::after {
+    box-sizing: inherit;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif, "Segoe UI", Tahoma, Geneva, Verdana;
+    margin: 0;
+    padding: 0;
+    color: var(--text-color-dark);
+    background-color: var(--light-bg); 
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 245, 255, 0.95)), url('fondo_giga.jpg'); 
+    background-attachment: fixed;
+    background-size: cover;
+    overflow-x: hidden;
+    font-weight: 400;
+}
+
+h1, h2, h3 {
+    font-family: inherit;
+    color: var(--secondary-color);
+    letter-spacing: 0.5px;
+    font-weight: 800; 
+}
+
+p {
+    color: var(--text-color-light);
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+ul {
+    padding-left: 20px;
+    list-style: disc;
+    line-height: 1.6;
+}
+
+.subtitle {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-top: -10px;
+    margin-bottom: 20px;
+    opacity: 0.8;
+}
+
+/* ======================================= */
+/* 2. Glass-Neumorphism (Tarjeta Clara - Estilo menu-item) */
+/* ======================================= */
+.glass-card {
+    background: linear-gradient(180deg, var(--glass-bg) 0%, rgba(240, 245, 255, 0.9) 100%); 
+    border-radius: 16px;
+    box-shadow: 
+        0 4px 16px var(--shadow-color-dark), 
+        inset 0 1px 2px var(--shadow-color-light); 
+    backdrop-filter: blur(15px); 
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border); 
+    padding: 30px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+    transform: scale(1.01); 
+    box-shadow: 
+        0 8px 20px rgba(64, 123, 255, 0.25), 
+        inset 0 1px 2px rgba(255, 255, 255, 0.95);
+}
+
+/* Botones de acción principal (estilo sidebar-tab) */
+.btn-action {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #2c57c7 100%); 
+    border: none;
+    padding: 12px 25px;
+    border-radius: 40px; /* Muy redondeado como el tab */
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 20px;
+    box-shadow: 0 4px 12px rgba(64, 123, 255, 0.4); 
+    transition: all 0.3s;
+}
+
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(64, 123, 255, 0.6);
+}
+
+/* ======================================= */
+/* 3. Línea de Tiempo Inmersiva (Scroll Snapping) */
+/* ======================================= */
+.timeline-container {
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory; 
+    position: relative;
+}
+
+/* Línea Central Fija (Elemento principal del timeline) */
+.timeline-container::after {
+    content: '';
+    position: fixed; 
+    width: 2px; 
+    background-color: var(--primary-color);
+    opacity: 0.6;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    margin-left: -1px;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.section-item {
+    height: 100vh; 
+    scroll-snap-align: start;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative; 
+    padding: 50px 0;
+}
+
+.section-content {
+    max-width: 1000px;
+    width: 80%;
+    display: flex; 
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-wrapper {
+    width: 45%;
+    position: relative;
+    z-index: 1;
+}
+
+/* Posicionamiento y alternancia de las tarjetas */
+#intro .card-wrapper {
+    width: 60%;
+    text-align: center;
+}
+
+.section-item:nth-child(even) .card-wrapper {
+    margin-left: 55%; 
+}
+
+.section-item:nth-child(odd):not(#intro) .card-wrapper {
+    margin-right: 55%; 
+    text-align: right;
+}
+
+/* Indicador Circular en la Línea */
+.timeline-indicator {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    background: white;
+    border: 4px solid var(--primary-color);
+    border-radius: 50%;
+    z-index: 2;
+    box-shadow: 0 0 10px rgba(64, 123, 255, 0.5);
+}
+
+/* ======================================= */
+/* 4. Navegación (Puntos Laterales - Estilo GIGA) */
+/* ======================================= */
+nav {
+    position: fixed;
+    top: 50%;
+    left: 40px; 
+    transform: translateY(-50%);
+    z-index: 2000;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+nav a {
+    display: block;
+    width: 8px;
+    height: 8px;
+    margin: 18px 0;
+    border-radius: 50%;
+    /* Estilo inactivo sutil */
+    background-color: rgba(64, 123, 255, 0.1); 
+    border: 2px solid var(--primary-color);
+    transition: all 0.3s;
+    text-indent: -9999px;
+    box-shadow: 0 0 5px rgba(64, 123, 255, 0.3);
+}
+
+nav a.active,
+nav a:hover {
+    background-color: var(--primary-color);
+    border-color: white; /* Borde blanco fuerte cuando está activo */
+    transform: scale(1.5);
+    box-shadow: 0 0 15px var(--primary-color);
+}
+
+/* ======================================= */
+/* 5. Estilos de Modales (Ventanas) */
+/* ======================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(240, 240, 240, 0.95); 
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 5000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s;
+}
+
+.modal-content-window {
+    width: 80%;
+    max-width: 900px;
+    max-height: 90%;
+    padding: 40px;
+    overflow-y: auto;
+    
+    /* Inversión de estilo: Tarjeta Oscura Neumorphic */
+    background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+    position: relative;
+}
+
+.modal-content-window h2 {
+    color: white;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+}
+
+.modal-content-window h3 {
+    color: var(--primary-color);
+    margin-top: 20px;
+}
+
+.modal-content-window p, .modal-content-window li {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 1.8em;
+    cursor: pointer;
+    color: var(--primary-color);
+    transition: transform 0.2s;
+}
+
+.modal-close:hover {
+    transform: rotate(90deg);
+}
+
+/* Responsive básico para evitar colapso en móviles */
+@media (max-width: 800px) {
+    .timeline-container::after, .timeline-indicator {
+        display: none; /* Ocultar línea central en móviles */
+    }
+
+    .section-item {
+        padding: 50px 20px;
+    }
+
+    .section-content {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .card-wrapper {
+        width: 95% !important;
+        margin: 20px auto !important;
+        text-align: left !important;
+    }
+
+    nav {
+        left: 10px;
+    }
+}

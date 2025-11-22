@@ -153,6 +153,12 @@ export const guardiasService = {
   getResumenMensual: (id, token = null) => createApiClient(token).get(`/guardias/resumen-mes/${id}/`),
   calcularPlusMensual: (data, token = null) => createApiClient(token).post('/guardias/resumen-mes/calcular_mensual/', data),
   aprobarLotePlus: (data, token = null) => createApiClient(token).patch('/guardias/resumen-mes/aprobar_lote/', data),
+  
+  // Reportes y Exportaciones
+  exportarReporteIndividual: (params = '', formato = 'pdf', token = null) => 
+    createApiClient(token).get(`/guardias/reportes/individual/?${params}&formato=${formato}`, { responseType: 'blob' }),
+  exportarReporteGeneral: (params = '', formato = 'pdf', token = null) => 
+    createApiClient(token).get(`/guardias/reportes/general/?${params}&formato=${formato}`, { responseType: 'blob' }),
 };
 
 // SERVICIOS PARA CONVENIO IA - Conectado a N8N
