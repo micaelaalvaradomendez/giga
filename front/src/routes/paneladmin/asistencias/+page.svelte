@@ -339,10 +339,17 @@
                                         class="btn-editar"
                                         on:click={() => {
                                             if (asistencia) {
-                                                asistenciasController.abrirModalCorreccion(asistencia);
+                                                asistenciasController.abrirModalCorreccion(
+                                                    asistencia,
+                                                );
                                             } else {
-                                                alert('Error: Datos de asistencia no disponibles');
-                                                console.error('❌ Asistencia es null:', asistencia);
+                                                alert(
+                                                    "Error: Datos de asistencia no disponibles",
+                                                );
+                                                console.error(
+                                                    "❌ Asistencia es null:",
+                                                    asistencia,
+                                                );
                                             }
                                         }}
                                     >
@@ -465,16 +472,25 @@
                             <span class="info-icon">ℹ️</span>
                             <strong>Corrección de Asistencia</strong>
                         </div>
-                        <p>Esta asistencia ya tiene marcaciones registradas. Puede corregir las horas especificando los nuevos valores.</p>
-                        <p><strong>Importante:</strong> La corrección quedará registrada en el historial de auditoría.</p>
+                        <p>
+                            Esta asistencia ya tiene marcaciones registradas.
+                            Puede corregir las horas especificando los nuevos
+                            valores.
+                        </p>
+                        <p>
+                            <strong>Importante:</strong> La corrección quedará registrada
+                            en el historial de auditoría.
+                        </p>
                     </div>
                 {/if}
 
                 <div class="form-group">
                     <label for="observacion_edit">
-                        Observación 
+                        Observación
                         {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
-                            <span class="requerido">*REQUERIDA para corrección</span>
+                            <span class="requerido"
+                                >*REQUERIDA para corrección</span
+                            >
                         {:else}
                             (opcional)
                         {/if}
@@ -482,14 +498,22 @@
                     <textarea
                         id="observacion_edit"
                         bind:value={$observacionEdit}
-                        placeholder={$asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida 
+                        placeholder={$asistenciaEditando.hora_entrada ||
+                        $asistenciaEditando.hora_salida
                             ? "REQUERIDO: Explique el motivo de la corrección (ej: 'Error en marcación original', 'Horario corregido por supervisor')"
                             : "Motivo de la corrección (ej: 'Agente olvidó marcar')"}
                         rows="3"
-                        class={($asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida) && !$observacionEdit.trim() ? "campo-requerido" : ""}
+                        class={($asistenciaEditando.hora_entrada ||
+                            $asistenciaEditando.hora_salida) &&
+                        !$observacionEdit.trim()
+                            ? "campo-requerido"
+                            : ""}
                     ></textarea>
                     {#if ($asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida) && !$observacionEdit.trim()}
-                        <small class="error-text">⚠️ La observación es obligatoria cuando se corrigen marcaciones existentes</small>
+                        <small class="error-text"
+                            >⚠️ La observación es obligatoria cuando se corrigen
+                            marcaciones existentes</small
+                        >
                     {/if}
                 </div>
 
@@ -508,7 +532,8 @@
                                 {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
                                     Permite corregir las horas existentes
                                 {:else}
-                                    Permite marcar con hora específica en lugar de la hora actual
+                                    Permite marcar con hora específica en lugar
+                                    de la hora actual
                                 {/if}
                             </small>
                         </label>
@@ -520,7 +545,11 @@
                                 <label for="hora_entrada_input">
                                     🕐 Hora de entrada
                                     {#if $asistenciaEditando.hora_entrada}
-                                        <span class="actual-time">(Actual: {asistenciasController.formatTime($asistenciaEditando.hora_entrada)})</span>
+                                        <span class="actual-time"
+                                            >(Actual: {asistenciasController.formatTime(
+                                                $asistenciaEditando.hora_entrada,
+                                            )})</span
+                                        >
                                     {/if}
                                 </label>
                                 <input
@@ -542,7 +571,11 @@
                                 <label for="hora_salida_input">
                                     🕔 Hora de salida
                                     {#if $asistenciaEditando.hora_salida}
-                                        <span class="actual-time">(Actual: {asistenciasController.formatTime($asistenciaEditando.hora_salida)})</span>
+                                        <span class="actual-time"
+                                            >(Actual: {asistenciasController.formatTime(
+                                                $asistenciaEditando.hora_salida,
+                                            )})</span
+                                        >
                                     {/if}
                                 </label>
                                 <input
@@ -571,19 +604,23 @@
                 >
                     Cancelar
                 </button>
-                
+
                 {#if $usarHoraEspecifica}
                     <!-- Modo corrección con horas específicas -->
                     <button
                         class="btn-corregir"
                         on:click={handleCorregirAsistencia}
                         disabled={(!$horaEntrada && !$horaSalida) ||
-                                 (($asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida) && !$observacionEdit.trim())}
-                        title={(!$horaEntrada && !$horaSalida) ? 
-                               "Debe especificar al menos una hora" : 
-                               (($asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida) && !$observacionEdit.trim()) ? 
-                               "Debe agregar una observación para corregir marcaciones existentes" : 
-                               "Aplicar corrección"}
+                            (($asistenciaEditando.hora_entrada ||
+                                $asistenciaEditando.hora_salida) &&
+                                !$observacionEdit.trim())}
+                        title={!$horaEntrada && !$horaSalida
+                            ? "Debe especificar al menos una hora"
+                            : ($asistenciaEditando.hora_entrada ||
+                                    $asistenciaEditando.hora_salida) &&
+                                !$observacionEdit.trim()
+                              ? "Debe agregar una observación para corregir marcaciones existentes"
+                              : "Aplicar corrección"}
                     >
                         ✏️ Aplicar Corrección
                     </button>
@@ -597,7 +634,7 @@
                             🕐 Marcar Entrada
                         </button>
                     {/if}
-                    
+
                     {#if !$asistenciaEditando.hora_salida}
                         <button
                             class="btn-marcar-salida"
@@ -607,7 +644,7 @@
                             🕐 Marcar Salida
                         </button>
                     {/if}
-                    
+
                     <!-- Botón para re-marcar si ya existe -->
                     {#if $asistenciaEditando.hora_entrada}
                         <button
@@ -618,7 +655,7 @@
                             🔄 Re-marcar Entrada
                         </button>
                     {/if}
-                    
+
                     {#if $asistenciaEditando.hora_salida}
                         <button
                             class="btn-remarcar-salida"
@@ -628,7 +665,7 @@
                             🔄 Re-marcar Salida
                         </button>
                     {/if}
-                    
+
                     <!-- Botón para marcar como ausente -->
                     {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
                         <button
@@ -800,31 +837,36 @@
 
     .resumen-card {
         background: white;
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 1.5rem;
         text-align: center;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        border-left: 4px solid #667eea;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+        border-top: 4px solid;
+    }
+
+    .resumen-card:hover {
+        transform: translateY(-5px);
     }
 
     .resumen-card.total {
-        border-left-color: #667eea;
+        border-top-color: #667eea;
     }
 
     .resumen-card.presentes {
-        border-left-color: #28a745;
+        border-top-color: #28a745;
     }
 
     .resumen-card.ausentes {
-        border-left-color: #dc3545;
+        border-top-color: #dc3545;
     }
 
     .resumen-card.sin-salida {
-        border-left-color: #ffc107;
+        border-top-color: #ffc107;
     }
 
     .resumen-card.automaticas {
-        border-left-color: #17a2b8;
+        border-top-color: #17a2b8;
     }
 
     .resumen-card .numero {
@@ -842,64 +884,139 @@
     /* Tabs */
     .tabs {
         display: flex;
-        gap: 0.5rem;
-        margin-bottom: 1.5rem;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
         flex-wrap: wrap;
+        font-weight: 700;
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 14px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
     }
 
     .tabs button {
-        padding: 0.75rem 1.5rem;
-        background: white;
-        border: 2px solid #e0e0e0;
-        border-radius: 8px;
+        padding: 0.875rem 1.75rem;
+        background: transparent;
+        border: none;
+        border-radius: 12px;
         cursor: pointer;
-        font-weight: 600;
-        color: #666;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #64748b;
         transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .tabs button::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #c6d3f8;
+        border-radius: 12px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: -1;
+    }
+
+    .tabs button:hover::before {
+        opacity: 1;
     }
 
     .tabs button:hover {
-        border-color: #667eea;
         color: #667eea;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.12);
     }
 
     .tabs button.active {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        border-color: transparent;
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.35);
+        transform: translateY(-1px);
+    }
+
+    .tabs button.active:hover {
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        color: #5771e4;
     }
 
     /* Tabla */
     .table-container {
+        overflow-x: auto;
+        max-height: 600px;
+        overflow-y: auto;
+        position: relative;
+        border-radius: 24px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
         background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
+    }
+
+    .table-container::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    .table-container::-webkit-scrollbar-track {
+        background: #f1f3f4;
+        border-radius: 10px;
+    }
+
+    .table-container::-webkit-scrollbar-thumb {
+        background: #c1c7cd;
+        border-radius: 10px;
+        transition: background 0.3s ease;
+    }
+
+    .table-container::-webkit-scrollbar-thumb:hover {
+        background: #a8aeb4;
     }
 
     table {
         width: 100%;
         border-collapse: collapse;
+        background: white;
     }
 
     thead {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
 
     th {
-        padding: 1rem;
+        padding: 15px 20px;
         text-align: left;
         font-weight: 600;
+        color: white;
+        border-bottom: none;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: transparent;
     }
 
     td {
-        padding: 1rem;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 15px 20px;
+        border-bottom: 1px solid #f1f3f4;
+        vertical-align: middle;
+        font-size: 0.95rem;
+    }
+
+    tbody tr {
+        transition: all 0.3s ease;
     }
 
     tbody tr:hover {
-        background: #f8f9fa;
+        background-color: #f8f9fa;
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
     .empty {
@@ -915,10 +1032,13 @@
     }
 
     .badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 12px;
-        font-size: 0.85rem;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
     }
 
     .badge-success {
@@ -995,6 +1115,7 @@
         max-height: 90vh;
         overflow-y: auto;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
 
     .modal-header {

@@ -1,7 +1,7 @@
 <script>
-  import { onMount } from 'svelte';
-  import { browser } from '$app/environment';
-  import { aprobacionesGuardiasController } from '$lib/paneladmin/controllers';
+  import { onMount } from "svelte";
+  import { browser } from "$app/environment";
+  import { aprobacionesGuardiasController } from "$lib/paneladmin/controllers";
 
   // Obtener stores del controller
   const {
@@ -25,32 +25,37 @@
     filtroEstado,
     busqueda,
     cronogramasPendientesFiltrados,
-    cronogramasAprobadasFiltradas
+    cronogramasAprobadasFiltradas,
   } = aprobacionesGuardiasController;
 
   onMount(async () => {
-    console.log('🔄 Componente de aprobaciones montado, iniciando controller...');
+    console.log(
+      "🔄 Componente de aprobaciones montado, iniciando controller...",
+    );
     await aprobacionesGuardiasController.init();
-    console.log('✅ Controller de aprobaciones inicializado');
-    
+    console.log("✅ Controller de aprobaciones inicializado");
+
     // Recargar cuando la página vuelve a ser visible
     if (browser) {
       const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
+        if (document.visibilityState === "visible") {
           aprobacionesGuardiasController.cargarDatos();
         }
       };
-      
+
       const handleFocus = () => {
         aprobacionesGuardiasController.cargarDatos();
       };
-      
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      window.addEventListener('focus', handleFocus);
-      
+
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      window.addEventListener("focus", handleFocus);
+
       return () => {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        window.removeEventListener('focus', handleFocus);
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange,
+        );
+        window.removeEventListener("focus", handleFocus);
       };
     }
   });
@@ -128,7 +133,7 @@
           {/each}
         </select>
       </div>
-      
+
       <div class="filtro-item">
         <label>Tipo:</label>
         <select bind:value={$filtroTipo}>
@@ -139,7 +144,7 @@
           <option value="emergencia">Emergencia</option>
         </select>
       </div>
-      
+
       <div class="filtro-item">
         <label>Estado:</label>
         <select bind:value={$filtroEstado}>
@@ -150,19 +155,19 @@
           <option value="rechazada">Rechazada</option>
         </select>
       </div>
-      
+
       <div class="filtro-item">
         <label>Buscar:</label>
-        <input 
-          type="text" 
-          placeholder="Nombre o área..." 
+        <input
+          type="text"
+          placeholder="Nombre o área..."
           bind:value={$busqueda}
         />
       </div>
-      
+
       <div class="filtro-item filtro-actions">
-        <button 
-          class="btn-limpiar" 
+        <button
+          class="btn-limpiar"
           on:click={() => aprobacionesGuardiasController.limpiarFiltros()}
         >
           🗑️ Limpiar
@@ -173,17 +178,17 @@
 
   <!-- Tabs -->
   <div class="tabs">
-    <button 
-      class="tab" 
-      class:active={$tabActiva === 'pendientes'}
-      on:click={() => handleCambiarTab('pendientes')}
+    <button
+      class="tab"
+      class:active={$tabActiva === "pendientes"}
+      on:click={() => handleCambiarTab("pendientes")}
     >
       Pendientes ({$cronogramasPendientesFiltrados.length})
     </button>
-    <button 
-      class="tab" 
-      class:active={$tabActiva === 'aprobadas'}
-      on:click={() => handleCambiarTab('aprobadas')}
+    <button
+      class="tab"
+      class:active={$tabActiva === "aprobadas"}
+      on:click={() => handleCambiarTab("aprobadas")}
     >
       Publicadas ({$cronogramasAprobadasFiltradas.length})
     </button>
@@ -198,7 +203,7 @@
       <div class="loading-spinner"></div>
       <p>Cargando...</p>
     </div>
-  {:else if $tabActiva === 'pendientes'}
+  {:else if $tabActiva === "pendientes"}
     <!-- Lista de pendientes -->
     <div class="cronogramas-lista">
       {#if $cronogramasPendientesFiltrados.length === 0}
@@ -216,67 +221,92 @@
           <div class="cronograma-card pendiente">
             <div class="cronograma-header">
               <div class="cronograma-info">
-                <h3>{cronograma.area_nombre || 'Sin área'}</h3>
+                <h3>{cronograma.area_nombre || "Sin área"}</h3>
                 <p class="tipo">{cronograma.tipo}</p>
               </div>
               <div class="cronograma-estado">
                 <span class="badge badge-pendiente">{cronograma.estado}</span>
               </div>
             </div>
-            
+
             <div class="cronograma-body">
               <div class="info-row">
                 <span class="label">Creado por:</span>
                 <span class="valor">
                   {#if cronograma.creado_por_nombre || cronograma.creado_por_apellido}
-                    {cronograma.creado_por_nombre || ''} {cronograma.creado_por_apellido || ''}
+                    {cronograma.creado_por_nombre || ""}
+                    {cronograma.creado_por_apellido || ""}
                     {#if cronograma.creado_por_rol}
-                      <span class="rol-mini">({cronograma.creado_por_rol})</span>
+                      <span class="rol-mini">({cronograma.creado_por_rol})</span
+                      >
                     {/if}
                   {:else}
                     <span class="sin-creador">Sistema (histórico)</span>
                   {/if}
                 </span>
               </div>
-              
+
               <div class="info-row">
                 <span class="label">Fecha creación:</span>
-                <span class="value">{aprobacionesGuardiasController.formatearFecha(cronograma.fecha_creacion)}</span>
+                <span class="value"
+                  >{aprobacionesGuardiasController.formatearFecha(
+                    cronograma.fecha_creacion,
+                  )}</span
+                >
               </div>
-              
+
               <div class="info-row">
                 <span class="label">Horario:</span>
                 <span class="value">
-                  {aprobacionesGuardiasController.formatearHora(cronograma.hora_inicio)} - {aprobacionesGuardiasController.formatearHora(cronograma.hora_fin)}
+                  {aprobacionesGuardiasController.formatearHora(
+                    cronograma.hora_inicio,
+                  )} - {aprobacionesGuardiasController.formatearHora(
+                    cronograma.hora_fin,
+                  )}
                 </span>
               </div>
-              
+
               <div class="info-row">
                 <span class="label">Guardias:</span>
                 <span class="value">{cronograma.total_guardias || 0}</span>
               </div>
-              
+
               {#if cronograma.puede_aprobar_rol && cronograma.puede_aprobar_rol.length > 0}
                 <div class="info-row">
                   <span class="label">Puede aprobar:</span>
                   <span class="value roles-permitidos">
-                    {cronograma.puede_aprobar_rol.join(', ')}
+                    {cronograma.puede_aprobar_rol.join(", ")}
                   </span>
                 </div>
               {/if}
             </div>
-            
+
             <div class="cronograma-actions">
-              <button class="btn btn-secondary" on:click={() => handleVerDetalles(cronograma)}>
+              <button
+                class="btn btn-secondary"
+                on:click={() => handleVerDetalles(cronograma)}
+              >
                 📋 Ver Detalles
               </button>
-              <button class="btn btn-info" on:click={() => handleEditarCronograma(cronograma)} disabled={$loading}>
+              <button
+                class="btn btn-info"
+                on:click={() => handleEditarCronograma(cronograma)}
+                disabled={$loading}
+              >
                 ✏️ Editar
               </button>
-              <button class="btn btn-success" on:click={() => handleAprobar(cronograma)} disabled={$loading}>
+              <button
+                class="btn btn-success"
+                on:click={() => handleAprobar(cronograma)}
+                disabled={$loading}
+              >
                 ✓ Aprobar y Publicar
               </button>
-              <button class="btn btn-danger" on:click={() => handleIniciarRechazo(cronograma)} disabled={$loading}>
+              <button
+                class="btn btn-danger"
+                on:click={() => handleIniciarRechazo(cronograma)}
+                disabled={$loading}
+              >
                 ✗ Rechazar
               </button>
             </div>
@@ -284,7 +314,6 @@
         {/each}
       {/if}
     </div>
-    
   {:else}
     <!-- Lista de aprobadas -->
     <div class="cronogramas-lista">
@@ -303,44 +332,63 @@
           <div class="cronograma-card aprobada">
             <div class="cronograma-header">
               <div class="cronograma-info">
-                <h3>{cronograma.area_nombre || 'Sin área'}</h3>
+                <h3>{cronograma.area_nombre || "Sin área"}</h3>
                 <p class="tipo">{cronograma.tipo}</p>
               </div>
               <div class="cronograma-estado">
-                <span class="badge badge-{cronograma.estado}">{cronograma.estado}</span>
+                <span class="badge badge-{cronograma.estado}"
+                  >{cronograma.estado}</span
+                >
               </div>
             </div>
-            
+
             <div class="cronograma-body">
               <div class="info-row">
                 <span class="label">Creado:</span>
-                <span class="value">{aprobacionesGuardiasController.formatearFecha(cronograma.fecha_creacion)}</span>
+                <span class="value"
+                  >{aprobacionesGuardiasController.formatearFecha(
+                    cronograma.fecha_creacion,
+                  )}</span
+                >
               </div>
-              
+
               {#if cronograma.fecha_aprobacion}
-              <div class="info-row">
-                <span class="label">Publicado:</span>
-                <span class="value">{aprobacionesGuardiasController.formatearFecha(cronograma.fecha_aprobacion)}</span>
-              </div>
+                <div class="info-row">
+                  <span class="label">Publicado:</span>
+                  <span class="value"
+                    >{aprobacionesGuardiasController.formatearFecha(
+                      cronograma.fecha_aprobacion,
+                    )}</span
+                  >
+                </div>
               {/if}
-              
+
               <div class="info-row">
                 <span class="label">Guardias:</span>
                 <span class="value">{cronograma.total_guardias || 0}</span>
               </div>
             </div>
-            
+
             <div class="cronograma-actions">
-              <button class="btn btn-secondary" on:click={() => handleVerDetalles(cronograma)}>
+              <button
+                class="btn btn-secondary"
+                on:click={() => handleVerDetalles(cronograma)}
+              >
                 📋 Ver Detalles
               </button>
-              {#if cronograma.estado === 'publicada'}
-                <button class="btn btn-warning" on:click={() => handleDespublicar(cronograma)}>
+              {#if cronograma.estado === "publicada"}
+                <button
+                  class="btn btn-warning"
+                  on:click={() => handleDespublicar(cronograma)}
+                >
                   📤 Despublicar
                 </button>
               {/if}
-              {#if cronograma.estado === 'pendiente'}
-                <button class="btn btn-danger" on:click={() => handleEliminar(cronograma)}>
+              {#if cronograma.estado === "pendiente"}
+                <button
+                  class="btn btn-danger"
+                  on:click={() => handleEliminar(cronograma)}
+                >
                   🗑️ Eliminar
                 </button>
               {/if}
@@ -354,13 +402,19 @@
 
 <!-- Modal de detalles -->
 {#if $mostrarModal && $cronogramaSeleccionado}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="modal-overlay" on:click={handleCerrarModal}>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="modal-content" on:click|stopPropagation>
       <div class="modal-header">
         <h3>Detalles del Cronograma</h3>
-        <button class="close-button" on:click={handleCerrarModal}>&times;</button>
+        <button class="close-button" on:click={handleCerrarModal}
+          >&times;</button
+        >
       </div>
-      
+
       <div class="modal-body">
         <div class="detalle-seccion">
           <h4>Información General</h4>
@@ -381,7 +435,7 @@
             </span>
           </div>
         </div>
-        
+
         <div class="detalle-seccion">
           <h4>Guardias Asignadas ({$guardiasDelCronograma.length})</h4>
           {#if $guardiasDelCronograma.length > 0}
@@ -400,14 +454,26 @@
                   {#each $guardiasDelCronograma as guardia}
                     <tr>
                       <td>{guardia.agente_nombre}</td>
-                      <td>{aprobacionesGuardiasController.formatearFecha(guardia.fecha)}</td>
-                      <td>{aprobacionesGuardiasController.formatearHora(guardia.hora_inicio)} - {aprobacionesGuardiasController.formatearHora(guardia.hora_fin)}</td>
+                      <td
+                        >{aprobacionesGuardiasController.formatearFecha(
+                          guardia.fecha,
+                        )}</td
+                      >
+                      <td
+                        >{aprobacionesGuardiasController.formatearHora(
+                          guardia.hora_inicio,
+                        )} - {aprobacionesGuardiasController.formatearHora(
+                          guardia.hora_fin,
+                        )}</td
+                      >
                       <td>
-                        <span class="badge-mini badge-{guardia.estado}">{guardia.estado}</span>
+                        <span class="badge-mini badge-{guardia.estado}"
+                          >{guardia.estado}</span
+                        >
                       </td>
                       <td>
-                        <button 
-                          class="btn-icon btn-danger-icon" 
+                        <button
+                          class="btn-icon btn-danger-icon"
                           on:click={() => handleEliminarGuardia(guardia)}
                           disabled={$loading}
                           title="Eliminar guardia"
@@ -424,12 +490,14 @@
             <p class="text-muted">No hay guardias asignadas</p>
           {/if}
         </div>
-        
+
         <div class="modal-footer">
-          <button class="btn btn-secondary" on:click={handleCerrarModal}>Cerrar</button>
-          {#if $cronogramaSeleccionado && ($cronogramaSeleccionado.estado === 'pendiente' || $cronogramaSeleccionado.estado === 'aprobada')}
-            <button 
-              class="btn btn-danger" 
+          <button class="btn btn-secondary" on:click={handleCerrarModal}
+            >Cerrar</button
+          >
+          {#if $cronogramaSeleccionado && ($cronogramaSeleccionado.estado === "pendiente" || $cronogramaSeleccionado.estado === "aprobada")}
+            <button
+              class="btn btn-danger"
               on:click={() => handleEliminarCronograma($cronogramaSeleccionado)}
               disabled={$loading}
             >
@@ -444,32 +512,53 @@
 
 <!-- Modal de rechazo -->
 {#if $mostrarModalRechazo && $cronogramaARechazar}
-  <div class="modal-overlay" on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}>
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div
+    class="modal-overlay"
+    on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}
+  >
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="modal-content modal-rechazo" on:click|stopPropagation>
       <div class="modal-header">
         <h3>Rechazar Cronograma</h3>
-        <button class="close-button" on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}>&times;</button>
+        <button
+          class="close-button"
+          on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}
+          >&times;</button
+        >
       </div>
-      
+
       <div class="modal-body">
-        <p><strong>Cronograma:</strong> {$cronogramaARechazar.area_nombre} - {$cronogramaARechazar.tipo}</p>
-        
+        <p>
+          <strong>Cronograma:</strong>
+          {$cronogramaARechazar.area_nombre} - {$cronogramaARechazar.tipo}
+        </p>
+
         <div class="form-group">
           <label for="motivo">Motivo del rechazo *</label>
-          <textarea 
-            id="motivo" 
-            bind:value={$motivoRechazo} 
+          <textarea
+            id="motivo"
+            bind:value={$motivoRechazo}
             placeholder="Ingrese el motivo del rechazo..."
             rows="4"
           ></textarea>
         </div>
       </div>
-      
+
       <div class="modal-footer">
-        <button class="btn btn-secondary" on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}>
+        <button
+          class="btn btn-secondary"
+          on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}
+        >
           Cancelar
         </button>
-        <button class="btn btn-danger" on:click={handleConfirmarRechazo} disabled={$loading || !$motivoRechazo.trim()}>
+        <button
+          class="btn btn-danger"
+          on:click={handleConfirmarRechazo}
+          disabled={$loading || !$motivoRechazo.trim()}
+        >
           Confirmar Rechazo
         </button>
       </div>
@@ -482,7 +571,7 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 1.5rem;
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .head {
@@ -502,10 +591,48 @@
     font-size: 1rem;
   }
 
+  .search-section {
+    margin-bottom: 1.5rem;
+    background-color: #fff;
+    padding: 1.5rem;
+    border: 1px solid #4950574b;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .search-label {
+    font-weight: 600;
+    color: #495057;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: #e79043;
+    box-shadow: 0 0 0 3px rgba(231, 144, 67, 0.3);
+  }
+
   .rol-badge {
     display: inline-block;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, rgba(142, 182, 228, 0.2) 0%, rgba(61, 151, 255, 0.2) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(142, 182, 228, 0.2) 0%,
+      rgba(61, 151, 255, 0.2) 100%
+    );
     border-radius: 8px;
     color: #1e40af;
     font-size: 0.9rem;
@@ -582,7 +709,7 @@
     margin: 0;
     color: #64748b;
     font-size: 0.9rem;
-    text-transform: capitalize;
+    text-transform: uppercase;
   }
 
   .badge {
@@ -624,7 +751,6 @@
 
   .info-row {
     display: flex;
-    justify-content: space-between;
     padding: 0.5rem 0;
     border-bottom: 1px solid #f3f4f6;
   }
@@ -636,6 +762,7 @@
   .info-row .label {
     color: #64748b;
     font-size: 0.9rem;
+    margin-right: 10px;
     font-weight: 600;
   }
 
@@ -727,7 +854,7 @@
   .btn-danger:hover:not(:disabled) {
     background: #dc2626;
   }
-  
+
   .btn-icon {
     padding: 0.4rem 0.6rem;
     font-size: 1rem;
@@ -737,19 +864,19 @@
     transition: all 0.2s ease;
     background: transparent;
   }
-  
+
   .btn-icon:hover:not(:disabled) {
     transform: scale(1.1);
   }
-  
+
   .btn-danger-icon {
     color: #ef4444;
   }
-  
+
   .btn-danger-icon:hover:not(:disabled) {
     background: #fee2e2;
   }
-  
+
   .btn-icon:disabled {
     opacity: 0.4;
     cursor: not-allowed;
@@ -782,8 +909,12 @@
   }
 
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   .alert {
@@ -806,6 +937,7 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -815,12 +947,14 @@
 
   .modal-content {
     background: white;
-    border-radius: 12px;
+    border-radius: 16px;
     max-width: 800px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    border: 2px solid #e5e7eb;
   }
 
   .modal-rechazo {
@@ -832,32 +966,36 @@
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 2px solid #e5e7eb;
   }
 
   .modal-header h3 {
     margin: 0;
     color: #1e40af;
     font-size: 1.3rem;
+    font-weight: 700;
   }
 
   .close-button {
-    background: none;
+    background: #f3f4f6;
     border: none;
     font-size: 1.5rem;
     color: #64748b;
     cursor: pointer;
     padding: 0;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
   }
 
   .close-button:hover {
-    background: #f3f4f6;
+    background: #e5e7eb;
+    color: #374151;
+    transform: scale(1.05);
   }
 
   .modal-body {
@@ -865,7 +1003,11 @@
   }
 
   .detalle-seccion {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 1.25rem;
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
   }
 
   .detalle-seccion:last-child {
@@ -876,12 +1018,16 @@
     margin: 0 0 1rem 0;
     color: #374151;
     font-size: 1rem;
+    font-weight: 700;
     border-bottom: 2px solid #e5e7eb;
     padding-bottom: 0.5rem;
   }
 
   .guardias-tabla {
     overflow-x: auto;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
   }
 
   table {
@@ -890,19 +1036,24 @@
   }
 
   thead {
-    background: #f9fafb;
+    background: linear-gradient(
+      135deg,
+      rgba(142, 182, 228, 0.15) 0%,
+      rgba(61, 151, 255, 0.1) 100%
+    );
   }
 
-  th, td {
+  th,
+  td {
     padding: 0.75rem;
     text-align: left;
     font-size: 0.9rem;
   }
 
   th {
-    font-weight: 600;
-    color: #374151;
-    border-bottom: 2px solid #e5e7eb;
+    font-weight: 700;
+    color: #1e40af;
+    border-bottom: 2px solid #3b82f6;
   }
 
   td {
@@ -912,13 +1063,14 @@
 
   tbody tr:hover {
     background: #f9fafb;
+    transition: background 0.2s ease;
   }
 
   .badge-mini {
-    padding: 0.15rem 0.5rem;
-    border-radius: 8px;
+    padding: 0.25rem 0.6rem;
+    border-radius: 10px;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: capitalize;
   }
 
@@ -930,6 +1082,7 @@
   .text-muted {
     color: #9ca3af;
     font-style: italic;
+    font-size: 0.95rem;
   }
 
   .form-group {
@@ -946,12 +1099,13 @@
 
   textarea {
     width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
+    padding: 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
     font-family: inherit;
     font-size: 0.9rem;
     resize: vertical;
+    transition: all 0.2s ease;
   }
 
   textarea:focus {
