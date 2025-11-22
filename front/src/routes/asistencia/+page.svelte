@@ -1,8 +1,8 @@
 <script>
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { onMount } from "svelte";
+	import { goto } from "$app/navigation";
 
-	let dni = '';
+	let dni = "";
 	let loading = false;
 	let mensaje = null;
 	let mensajeTipo = null; // 'success', 'error', 'info'
@@ -12,26 +12,29 @@
 		hora_entrada: null,
 		hora_salida: null,
 		puede_marcar_entrada: true,
-		puede_marcar_salida: false
+		puede_marcar_salida: false,
 	};
 	let agente = null;
 
 	onMount(async () => {
 		// Verificar sesión
 		try {
-			const sessionResponse = await fetch('/api/personas/auth/check-session/', {
-				credentials: 'include'
-			});
+			const sessionResponse = await fetch(
+				"/api/personas/auth/check-session/",
+				{
+					credentials: "include",
+				},
+			);
 
 			if (!sessionResponse.ok) {
-				goto('/');
+				goto("/");
 				return;
 			}
 
 			const sessionData = await sessionResponse.json();
-			
+
 			if (!sessionData.authenticated) {
-				goto('/');
+				goto("/");
 				return;
 			}
 
@@ -40,15 +43,15 @@
 			// Cargar estado de asistencia
 			await cargarEstado();
 		} catch (error) {
-			console.error('Error al verificar sesión:', error);
-			goto('/');
+			console.error("Error al verificar sesión:", error);
+			goto("/");
 		}
 	});
 
 	async function cargarEstado() {
 		try {
-			const response = await fetch('/api/asistencia/estado/', {
-				credentials: 'include'
+			const response = await fetch("/api/asistencia/estado/", {
+				credentials: "include",
 			});
 
 			if (response.ok) {
@@ -58,13 +61,13 @@
 				}
 			}
 		} catch (error) {
-			console.error('Error al cargar estado:', error);
+			console.error("Error al cargar estado:", error);
 		}
 	}
 
 	async function marcarAsistencia() {
 		if (!dni.trim()) {
-			mostrarMensaje('Por favor ingrese su DNI', 'error');
+			mostrarMensaje("Por favor ingrese su DNI", "error");
 			return;
 		}
 
@@ -72,36 +75,38 @@
 		mensaje = null;
 
 		try {
-			const response = await fetch('/api/asistencia/marcar/', {
-				method: 'POST',
+			const response = await fetch("/api/asistencia/marcar/", {
+				method: "POST",
 				headers: {
-					'Content-Type': 'application/json'
+					"Content-Type": "application/json",
 				},
-				credentials: 'include',
-				body: JSON.stringify({ dni: dni.trim() })
+				credentials: "include",
+				body: JSON.stringify({ dni: dni.trim() }),
 			});
 
 			const data = await response.json();
 
 			if (data.success) {
-				mostrarMensaje(data.message, 'success');
-				dni = '';
+				mostrarMensaje(data.message, "success");
+				dni = "";
 				await cargarEstado();
 			} else {
-				if (data.tipo === 'error_dni') {
+				if (data.tipo === "error_dni") {
 					mostrarMensaje(
-						'⚠️ ' + data.message + ' - Este intento ha sido registrado en auditoría',
-						'error'
+						"⚠️ " +
+							data.message +
+							" - Este intento ha sido registrado en auditoría",
+						"error",
 					);
-				} else if (data.tipo === 'ya_completo') {
-					mostrarMensaje(data.message, 'info');
+				} else if (data.tipo === "ya_completo") {
+					mostrarMensaje(data.message, "info");
 				} else {
-					mostrarMensaje(data.message, 'error');
+					mostrarMensaje(data.message, "error");
 				}
 			}
 		} catch (error) {
-			console.error('Error al marcar asistencia:', error);
-			mostrarMensaje('Error de conexión. Intente nuevamente.', 'error');
+			console.error("Error al marcar asistencia:", error);
+			mostrarMensaje("Error de conexión. Intente nuevamente.", "error");
 		} finally {
 			loading = false;
 		}
@@ -118,7 +123,7 @@
 	}
 
 	function formatTime(time) {
-		if (!time) return '--:--';
+		if (!time) return "--:--";
 		return time.substring(0, 5);
 	}
 </script>
@@ -139,7 +144,8 @@
 				<div class="horario-asignado">
 					<span class="horario-label">Tu horario:</span>
 					<span class="horario-value">
-						{agente.horario_entrada || '--:--'} - {agente.horario_salida || '--:--'}
+						{agente.horario_entrada || "--:--"} - {agente.horario_salida ||
+							"--:--"}
 					</span>
 				</div>
 			{/if}
@@ -148,9 +154,13 @@
 
 	<!-- Estado actual -->
 	<div class="estado-card">
-		<h2>Estado de Hoy</h2>
+		<h2>📊 Estado de Hoy</h2>
 		<div class="estado-grid">
-			<div class="estado-item {estado.tiene_entrada ? 'activo' : 'inactivo'}">
+			<div
+				class="estado-item {estado.tiene_entrada
+					? 'activo'
+					: 'inactivo'}"
+			>
 				<div class="icono">
 					{#if estado.tiene_entrada}
 						✅
@@ -164,7 +174,11 @@
 				</div>
 			</div>
 
-			<div class="estado-item {estado.tiene_salida ? 'activo' : 'inactivo'}">
+			<div
+				class="estado-item {estado.tiene_salida
+					? 'activo'
+					: 'inactivo'}"
+			>
 				<div class="icono">
 					{#if estado.tiene_salida}
 						✅
@@ -180,131 +194,209 @@
 		</div>
 	</div>
 
+	<div class="content-grid">
+		<!-- Formulario de marcación -->
+		{#if estado.puede_marcar_entrada || estado.puede_marcar_salida}
+			<div class="marcacion-card">
+				<h2>
+					{#if estado.puede_marcar_entrada}
+						🟢 Marcar Entrada
+					{:else if estado.puede_marcar_salida}
+						🟠 Marcar Salida
+					{/if}
+				</h2>
+
+				<form on:submit|preventDefault={marcarAsistencia}>
+					<div class="form-group">
+						<label for="dni">Ingrese su DNI</label>
+						<input
+							type="text"
+							id="dni"
+							bind:value={dni}
+							placeholder="Ej: 12345678"
+							disabled={loading}
+							maxlength="8"
+							pattern="[0-9]*"
+							inputmode="numeric"
+							autocomplete="off"
+						/>
+						<p class="hint">El DNI debe coincidir con su usuario</p>
+					</div>
+
+					<button
+						type="submit"
+						class="btn-marcar {estado.puede_marcar_entrada
+							? 'entrada'
+							: 'salida'}"
+						disabled={loading}
+					>
+						{#if loading}
+							Registrando...
+						{:else if estado.puede_marcar_entrada}
+							Marcar Entrada
+						{:else}
+							Marcar Salida
+						{/if}
+					</button>
+				</form>
+			</div>
+		{:else}
+			<div class="completado-card">
+				<div class="icono-grande">✅</div>
+				<h2>Asistencia Completa</h2>
+				<p>Ya has registrado tu entrada y salida de hoy.</p>
+				<div class="horarios">
+					<div>
+						<strong>Entrada:</strong>
+						{formatTime(estado.hora_entrada)}
+					</div>
+					<div>
+						<strong>Salida:</strong>
+						{formatTime(estado.hora_salida)}
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Información adicional -->
+		<div class="info-card">
+			<h3>ℹ Información Importante</h3>
+			<ul>
+				<li>Debe marcar su entrada al llegar al trabajo.</li>
+				<li>Debe marcar su salida antes de retirarse.</li>
+				<li>Solo puede realizar una entrada y una salida por día.</li>
+				<li>El DNI ingresado debe coincidir con su usuario.</li>
+				<li>
+					Si no marca salida, el sistema la registrará automáticamente
+					a las <strong>22:00</strong>.
+				</li>
+				<li>
+					Cualquier intento de marcación con DNI incorrecto quedará
+					registrado.
+				</li>
+			</ul>
+		</div>
+	</div>
+
 	<!-- Mensaje -->
 	{#if mensaje}
 		<div class="mensaje {mensajeTipo}">
 			{mensaje}
 		</div>
 	{/if}
-
-	<!-- Formulario de marcación -->
-	{#if estado.puede_marcar_entrada || estado.puede_marcar_salida}
-		<div class="marcacion-card">
-			<h2>
-				{#if estado.puede_marcar_entrada}
-					🟢 Marcar Entrada
-				{:else if estado.puede_marcar_salida}
-					🟠 Marcar Salida
-				{/if}
-			</h2>
-
-			<form on:submit|preventDefault={marcarAsistencia}>
-				<div class="form-group">
-					<label for="dni">Ingrese su DNI</label>
-					<input
-						type="text"
-						id="dni"
-						bind:value={dni}
-						placeholder="Ej: 12345678"
-						disabled={loading}
-						maxlength="8"
-						pattern="[0-9]*"
-						inputmode="numeric"
-						autocomplete="off"
-					/>
-					<p class="hint"> El DNI debe coincidir con su usuario</p>
-				</div>
-
-				<button
-					type="submit"
-					class="btn-marcar {estado.puede_marcar_entrada ? 'entrada' : 'salida'}"
-					disabled={loading}
-				>
-					{#if loading}
-						Registrando...
-					{:else if estado.puede_marcar_entrada}
-						Marcar Entrada
-					{:else}
-						Marcar Salida
-					{/if}
-				</button>
-			</form>
-		</div>
-	{:else}
-		<div class="completado-card">
-			<div class="icono-grande">✅</div>
-			<h2>Asistencia Completa</h2>
-			<p>Ya has registrado tu entrada y salida de hoy.</p>
-			<div class="horarios">
-				<div>
-					<strong>Entrada:</strong>
-					{formatTime(estado.hora_entrada)}
-				</div>
-				<div>
-					<strong>Salida:</strong>
-					{formatTime(estado.hora_salida)}
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Información adicional -->
-	<div class="info-card">
-		<h3>ℹInformación Importante</h3>
-		<ul>
-			<li>Debe marcar su entrada al llegar al trabajo.</li>
-			<li>Debe marcar su salida antes de retirarse.</li>
-			<li>Solo puede realizar una entrada y una salida por día.</li>
-			<li>El DNI ingresado debe coincidir con su usuario.</li>
-			<li>
-				Si no marca salida, el sistema la registrará automáticamente a las <strong>22:00</strong>.
-			</li>
-			<li>Cualquier intento de marcación con DNI incorrecto quedará registrado.</li>
-		</ul>
-	</div>
 </div>
 
 <style>
 	.asistencia-container {
-		max-width: 600px;
+		max-width: 1200px;
 		margin: 0 auto;
 		padding: 2rem 1rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.header {
+		position: relative;
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+		color: white;
+		padding: 30px 40px;
+		max-width: 1200px;
+		border-radius: 28px;
+		overflow: hidden;
 		text-align: center;
-		margin-bottom: 2rem;
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+			0 10px 30px rgba(30, 64, 175, 0.4);
+
+		text-align: center;
+		margin-bottom: 30px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+	}
+
+	.header::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: linear-gradient(
+				90deg,
+				rgba(255, 255, 255, 0.03) 1px,
+				transparent 1px
+			),
+			linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+		background-size: 50px 50px;
+		animation: moveLines 20s linear infinite;
 	}
 
 	.header h1 {
-		font-size: 2rem;
-		color: #1a1a1a;
-		margin-bottom: 0.5rem;
-	}
-
-	.agente-info {
-		color: #666;
-		font-size: 1.1rem;
-	}
-
-	.horario-asignado {
-		margin-top: 0.5rem;
-		padding: 0.5rem 1rem;
-		background: #e3f2fd;
-		border-radius: 8px;
+		margin: 10px;
+		font-weight: 800;
+		font-size: 35px;
+		letter-spacing: 0.2px;
+		position: relative;
+		padding-bottom: 12px;
+		overflow: hidden;
 		display: inline-block;
 	}
 
+	.header h1::after {
+		content: "";
+		position: absolute;
+		width: 40%;
+		height: 3px;
+		bottom: 0;
+		left: 0;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.9),
+			transparent
+		);
+		animation: moveLine 2s linear infinite;
+	}
+
+	@keyframes moveLine {
+		0% {
+			left: -40%;
+		}
+		100% {
+			left: 100%;
+		}
+	}
+
+	.agente-info {
+		color: #0d47a1;
+		font-weight: 600;
+		font-size: 20px;
+		margin-top: 0.5rem;
+		margin-bottom: 10px;
+		padding: 0.5rem 1rem;
+		background: #e3f2fd;
+		border-radius: 8px;
+		display: inline-flex;
+	}
+
+	.horario-asignado {
+		padding: 0.5rem 1rem;
+		background: #e3f2fd;
+		border-radius: 8px;
+		display: inline-flex;
+	}
+
 	.horario-label {
-		color: #1976d2;
-		font-weight: 500;
+		color: #014488;
+		font-weight: 600;
 		margin-right: 0.5rem;
 	}
 
 	.horario-value {
-		color: #0d47a1;
 		font-weight: 600;
 		font-size: 1.1rem;
+		color: #0d47a1;
 	}
 
 	/* Estado Card */
@@ -312,27 +404,30 @@
 		background: white;
 		border-radius: 12px;
 		padding: 1.5rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 		margin-bottom: 1.5rem;
 	}
 
 	.estado-card h2 {
-		font-size: 1.2rem;
+		font-size: 25px;
 		color: #1a1a1a;
 		margin-bottom: 1rem;
+		text-align: center;
 	}
 
 	.estado-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1rem;
+		max-width: 800px;
+		margin: 0 auto;
 	}
 
 	.estado-item {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
-		padding: 1rem;
+		padding: 1.5rem;
 		border-radius: 8px;
 		background: #f8f8f8;
 	}
@@ -348,31 +443,36 @@
 	}
 
 	.estado-item .icono {
-		font-size: 2rem;
+		font-size: 2.5rem;
 	}
 
 	.estado-item .info {
 		display: flex;
 		flex-direction: column;
+		flex: 1;
 	}
 
 	.estado-item .label {
 		font-size: 0.9rem;
 		color: #666;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
 	}
 
 	.estado-item .hora {
-		font-size: 1.5rem;
+		font-size: 2rem;
 		font-weight: bold;
 		color: #1a1a1a;
 	}
 
 	/* Mensajes */
 	.mensaje {
+		margin-top: 30px;
 		padding: 1rem;
 		border-radius: 8px;
 		margin-bottom: 1.5rem;
 		font-weight: 500;
+		text-align: center;
 	}
 
 	.mensaje.success {
@@ -393,19 +493,25 @@
 		border: 2px solid #2196f3;
 	}
 
+	.content-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.5rem;
+	}
+
 	/* Marcación Card */
 	.marcacion-card {
 		background: white;
 		border-radius: 12px;
 		padding: 2rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		margin-bottom: 1.5rem;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 	}
 
 	.marcacion-card h2 {
 		font-size: 1.3rem;
 		color: #1a1a1a;
 		margin-bottom: 1.5rem;
+		text-align: center;
 	}
 
 	.form-group {
@@ -458,6 +564,7 @@
 	.btn-marcar.entrada {
 		background: #4caf50;
 		color: white;
+		transform: translateY(-2px);
 	}
 
 	.btn-marcar.entrada:hover:not(:disabled) {
@@ -469,6 +576,7 @@
 	.btn-marcar.salida {
 		background: #ff9800;
 		color: white;
+		transform: translateY(-2px);
 	}
 
 	.btn-marcar.salida:hover:not(:disabled) {
@@ -489,8 +597,7 @@
 		border-radius: 12px;
 		padding: 2rem;
 		text-align: center;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		margin-bottom: 1.5rem;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 	}
 
 	.icono-grande {
@@ -518,10 +625,11 @@
 
 	/* Info Card */
 	.info-card {
-		background: #fff3e0;
+		background: white;
 		border-radius: 12px;
 		padding: 1.5rem;
 		border-left: 4px solid #ff9800;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 	}
 
 	.info-card h3 {
@@ -539,10 +647,11 @@
 		margin-bottom: 0.5rem;
 		padding-left: 1.5rem;
 		position: relative;
+		line-height: 1.5;
 	}
 
 	.info-card li::before {
-		content: '•';
+		content: "•";
 		position: absolute;
 		left: 0.5rem;
 		color: #ff9800;
@@ -550,7 +659,11 @@
 	}
 
 	/* Responsive */
-	@media (max-width: 600px) {
+	@media (max-width: 768px) {
+		.content-grid {
+			grid-template-columns: 1fr;
+		}
+
 		.estado-grid {
 			grid-template-columns: 1fr;
 		}

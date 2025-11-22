@@ -84,8 +84,8 @@
 		parametrosController.actualizarBusquedaAgrupaciones(event.target.value);
 	}
 
-	let mensajeExito = '';
-	let mensajeError = '';
+	let mensajeExito = "";
+	let mensajeError = "";
 
 	// Estado para modal de horario global
 	let modalHorarioGlobal = false;
@@ -94,14 +94,14 @@
 	function mostrarExito(mensaje) {
 		mensajeExito = mensaje;
 		setTimeout(() => {
-			mensajeExito = '';
+			mensajeExito = "";
 		}, 5000);
 	}
 
 	function mostrarError(mensaje) {
 		mensajeError = mensaje;
 		setTimeout(() => {
-			mensajeError = '';
+			mensajeError = "";
 		}, 5000);
 	}
 
@@ -116,18 +116,21 @@
 
 	async function guardarHorarioGlobal(event) {
 		const { horario_entrada, horario_salida } = event.detail;
-		
+
 		guardandoHorarioGlobal = true;
 		try {
-			const response = await fetch('/api/personas/parametros/horario-global/', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify({
-					horario_entrada,
-					horario_salida
-				})
-			});
+			const response = await fetch(
+				"/api/personas/parametros/horario-global/",
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify({
+						horario_entrada,
+						horario_salida,
+					}),
+				},
+			);
 
 			const data = await response.json();
 
@@ -136,11 +139,11 @@
 				cerrarModalHorarioGlobal();
 				await parametrosController.init(); // Recargar datos
 			} else {
-				mostrarError(data.message || 'Error al aplicar horario global');
+				mostrarError(data.message || "Error al aplicar horario global");
 			}
 		} catch (error) {
-			console.error('Error aplicando horario global:', error);
-			mostrarError('Error de conexión al aplicar horario global');
+			console.error("Error aplicando horario global:", error);
+			mostrarError("Error de conexión al aplicar horario global");
 		} finally {
 			guardandoHorarioGlobal = false;
 		}
@@ -157,13 +160,13 @@
 				modalData.tipo,
 				modalData.target,
 			);
-			
+
 			if (result.success) {
-				mostrarExito('✅ Horarios actualizados correctamente');
+				mostrarExito("✅ Horarios actualizados correctamente");
 			}
 		} catch (error) {
 			console.error("Error actualizando horarios:", error);
-			mostrarError(error.message || 'Error al actualizar horarios');
+			mostrarError(error.message || "Error al actualizar horarios");
 		}
 	}
 
@@ -215,10 +218,7 @@
 		<h1>Parámetros del Sistema</h1>
 	</div>
 	<div class="header-actions">
-		<button
-			class="btn-horario-global"
-			on:click={abrirModalHorarioGlobal}
-		>
+		<button class="btn-horario-global" on:click={abrirModalHorarioGlobal}>
 			🕐 Horario Global
 		</button>
 		<button
@@ -240,7 +240,8 @@
 {#if mensajeExito}
 	<div class="alert alert-success">
 		{mensajeExito}
-		<button class="btn-close" on:click={() => (mensajeExito = '')}>×</button>
+		<button class="btn-close" on:click={() => (mensajeExito = "")}>×</button
+		>
 	</div>
 {/if}
 
@@ -248,7 +249,8 @@
 {#if mensajeError}
 	<div class="alert alert-error">
 		❌ {mensajeError}
-		<button class="btn-close" on:click={() => (mensajeError = '')}>×</button>
+		<button class="btn-close" on:click={() => (mensajeError = "")}>×</button
+		>
 	</div>
 {/if}
 
@@ -742,6 +744,7 @@
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+		margin-left: 10px;
 	}
 
 	.btn-horario-global:hover {

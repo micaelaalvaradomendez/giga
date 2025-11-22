@@ -1,58 +1,66 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from "svelte";
 
 	export let isOpen = false;
 	export let isSaving = false;
 
-	let horarioEntrada = '';
-	let horarioSalida = '';
+	let horarioEntrada = "";
+	let horarioSalida = "";
 
 	const dispatch = createEventDispatcher();
 
 	function cerrar() {
-		horarioEntrada = '';
-		horarioSalida = '';
-		dispatch('cerrar');
+		horarioEntrada = "";
+		horarioSalida = "";
+		dispatch("cerrar");
 	}
 
 	function guardar() {
 		if (!horarioEntrada || !horarioSalida) {
-			alert('Debe completar ambos horarios');
+			alert("Debe completar ambos horarios");
 			return;
 		}
 
 		if (horarioEntrada >= horarioSalida) {
-			alert('La hora de entrada debe ser anterior a la hora de salida');
+			alert("La hora de entrada debe ser anterior a la hora de salida");
 			return;
 		}
 
-		dispatch('guardar', {
+		dispatch("guardar", {
 			horario_entrada: horarioEntrada,
-			horario_salida: horarioSalida
+			horario_salida: horarioSalida,
 		});
 	}
 
 	// Resetear valores cuando se abre el modal
 	$: if (isOpen) {
-		horarioEntrada = '';
-		horarioSalida = '';
+		horarioEntrada = "";
+		horarioSalida = "";
 	}
 </script>
 
 {#if isOpen}
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<div class="modal-overlay" on:click={cerrar}>
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<!-- svelte-ignore a11y-no-static-element-interactions -->
 		<div class="modal-content" on:click|stopPropagation>
 			<div class="modal-header">
 				<h2>🕐 Establecer Horario Global</h2>
-				<button class="btn-close" on:click={cerrar} disabled={isSaving}>×</button>
+				<button class="btn-close" on:click={cerrar} disabled={isSaving}
+					>×</button
+				>
 			</div>
 
 			<div class="modal-body">
 				<div class="info-section">
 					<p class="info-text">
-						<strong>ℹ️ Información:</strong><br>
-						Este horario se aplicará a <strong>todos los agentes activos</strong> del sistema.
-						Los horarios específicos por área o agrupación tienen prioridad sobre este horario global.
+						<strong>ℹ️ Información:</strong><br />
+						Este horario se aplicará a
+						<strong>todos los agentes activos</strong> del sistema. Los
+						horarios específicos por área o agrupación tienen prioridad
+						sobre este horario global.
 					</p>
 				</div>
 
@@ -88,14 +96,19 @@
 					<div class="preview-card">
 						<span class="preview-label">Vista Previa:</span>
 						<span class="preview-value">
-							{horarioEntrada || '--:--'} → {horarioSalida || '--:--'}
+							{horarioEntrada || "--:--"} → {horarioSalida ||
+								"--:--"}
 						</span>
 					</div>
 				</div>
 			</div>
 
 			<div class="modal-footer">
-				<button class="btn-cancel" on:click={cerrar} disabled={isSaving}>
+				<button
+					class="btn-cancel"
+					on:click={cerrar}
+					disabled={isSaving}
+				>
 					Cancelar
 				</button>
 				<button class="btn-save" on:click={guardar} disabled={isSaving}>
@@ -123,6 +136,7 @@
 		justify-content: center;
 		z-index: 2000;
 		animation: fadeIn 0.2s ease-out;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	@keyframes fadeIn {
@@ -174,29 +188,23 @@
 	}
 
 	.btn-close {
-		background: rgba(255, 255, 255, 0.2);
+		background: none;
 		border: none;
-		font-size: 2rem;
-		cursor: pointer;
 		color: white;
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
+		font-size: 24px;
+		cursor: pointer;
+		padding: 0;
+		width: 30px;
+		height: 30px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		border-radius: 50%;
 		transition: all 0.3s ease;
-		line-height: 1;
 	}
 
-	.btn-close:hover:not(:disabled) {
-		background: rgba(255, 255, 255, 0.3);
-		transform: rotate(90deg);
-	}
-
-	.btn-close:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
+	.btn-close:hover {
+		background: rgba(255, 255, 255, 0.2);
 	}
 
 	.modal-body {
@@ -236,8 +244,8 @@
 		font-size: 1.2rem;
 	}
 
-	input[type='time'] {
-		width: 100%;
+	input[type="time"] {
+		width: 93%;
 		padding: 12px 16px;
 		border: 2px solid #e0e0e0;
 		border-radius: 10px;
@@ -247,14 +255,14 @@
 		font-family: inherit;
 	}
 
-	input[type='time']:focus {
+	input[type="time"]:focus {
 		outline: none;
 		border-color: #667eea;
 		background: white;
 		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 	}
 
-	input[type='time']:disabled {
+	input[type="time"]:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
 		background: #f5f5f5;
@@ -306,6 +314,7 @@
 		cursor: pointer;
 		font-size: 1rem;
 		transition: all 0.3s ease;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.btn-cancel {

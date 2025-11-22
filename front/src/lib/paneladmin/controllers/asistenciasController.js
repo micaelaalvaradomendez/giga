@@ -360,6 +360,12 @@ class AsistenciasController {
 		}
 	}
 
+	limpiarFiltros() {
+		this.areaSeleccionada.set('');
+		this.cargarDatos();
+		console.log('🧹 Filtros limpiados');
+	}
+
 	// ========== GESTIÓN DE FILTROS ==========
 	setFecha(fecha) {
 		this.fechaSeleccionada.set(fecha);

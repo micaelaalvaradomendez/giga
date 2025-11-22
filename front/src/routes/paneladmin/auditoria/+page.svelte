@@ -385,6 +385,7 @@
 		position: relative;
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
+		text-align: center;
 		padding: 40px 20px;
 		margin: 0 0 40px 0;
 		border-radius: 28px;

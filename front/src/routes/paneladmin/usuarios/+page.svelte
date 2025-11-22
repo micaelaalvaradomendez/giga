@@ -519,7 +519,7 @@
 	}
 
 	.filtro-group label {
-		font-weight: 500;
+		font-weight: 600;
 		color: #495057;
 		font-size: 0.9rem;
 	}

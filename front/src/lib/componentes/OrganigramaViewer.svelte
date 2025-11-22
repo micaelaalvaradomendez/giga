@@ -1,6 +1,6 @@
 <script>
-	import { onMount } from 'svelte';
-	import NodeRenderer from './NodeRenderer.svelte';
+	import { onMount } from "svelte";
+	import NodeRenderer from "./NodeRenderer.svelte";
 
 	export let data = null;
 
@@ -10,7 +10,9 @@
 	onMount(() => {
 		if (data?.organigrama) {
 			if (Array.isArray(data.organigrama)) {
-				data.organigrama.forEach(rootNode => expandAllNodes(rootNode, 2));
+				data.organigrama.forEach((rootNode) =>
+					expandAllNodes(rootNode, 2),
+				);
 			} else {
 				expandAllNodes(data.organigrama, 2);
 			}
@@ -21,7 +23,9 @@
 		if (node.nivel < maxLevel) {
 			expandedNodes.add(node.id);
 			if (node.children) {
-				node.children.forEach(child => expandAllNodes(child, maxLevel));
+				node.children.forEach((child) =>
+					expandAllNodes(child, maxLevel),
+				);
 			}
 		}
 		expandedNodes = expandedNodes; // Trigger reactivity
@@ -38,28 +42,28 @@
 
 	function getNodeIcon(tipo) {
 		const icons = {
-			secretaria: '🏛️',
-			subsecretaria: '🏢',
-			direccion: '📁',
-			direccion_general: '📋',
-			subdireccion: '📄',
-			departamento: '📝',
-			division: '📌'
+			secretaria: "🏛️",
+			subsecretaria: "🏢",
+			direccion: "📁",
+			direccion_general: "📋",
+			subdireccion: "📄",
+			departamento: "📝",
+			division: "📌",
 		};
-		return icons[tipo] || '📋';
+		return icons[tipo] || "📋";
 	}
 
 	function getNodeColor(tipo) {
 		const colors = {
-			secretaria: 'border-blue-600 bg-blue-50',
-			subsecretaria: 'border-blue-500 bg-blue-40',
-			direccion: 'border-green-500 bg-green-40',
-			direccion_general: 'border-green-400 bg-green-30',
-			subdireccion: 'border-yellow-500 bg-yellow-40',
-			departamento: 'border-orange-500 bg-orange-40',
-			division: 'border-purple-500 bg-purple-40'
+			secretaria: "border-blue-600 bg-blue-50",
+			subsecretaria: "border-blue-500 bg-blue-40",
+			direccion: "border-green-500 bg-green-40",
+			direccion_general: "border-green-400 bg-green-30",
+			subdireccion: "border-yellow-500 bg-yellow-40",
+			departamento: "border-orange-500 bg-orange-40",
+			division: "border-purple-500 bg-purple-40",
 		};
-		return colors[tipo] || 'border-gray-500 bg-gray-40';
+		return colors[tipo] || "border-gray-500 bg-gray-40";
 	}
 </script>
 
@@ -67,12 +71,11 @@
 	<div class="container-organigrama">
 		<div class="header-organigrama">
 			<h1>Organigrama Institucional</h1>
-			<p class="descripcion">
-				Estructura organizacional de la Secretaría de Protección Civil
-			</p>
 			<div class="info-actualización">
 				<span class="fecha-actualizacion">
-					Última actualización: {new Date(data.lastUpdated).toLocaleDateString('es-AR')}
+					Última actualización: {new Date(
+						data.lastUpdated,
+					).toLocaleDateString("es-AR")}
 				</span>
 			</div>
 		</div>
@@ -81,21 +84,21 @@
 			<div class="organigrama-tree">
 				{#if Array.isArray(data.organigrama)}
 					{#each data.organigrama as rootNode}
-						<NodeRenderer 
-							node={rootNode} 
-							{expandedNodes} 
-							{toggleNode} 
-							{getNodeIcon} 
-							{getNodeColor} 
+						<NodeRenderer
+							node={rootNode}
+							{expandedNodes}
+							{toggleNode}
+							{getNodeIcon}
+							{getNodeColor}
 						/>
 					{/each}
 				{:else}
-					<NodeRenderer 
-						node={data.organigrama} 
-						{expandedNodes} 
-						{toggleNode} 
-						{getNodeIcon} 
-						{getNodeColor} 
+					<NodeRenderer
+						node={data.organigrama}
+						{expandedNodes}
+						{toggleNode}
+						{getNodeIcon}
+						{getNodeColor}
 					/>
 				{/if}
 			</div>
@@ -109,33 +112,82 @@
 
 <style>
 	.container-organigrama {
-		max-width: 1400px;
+		width: 100%;
+		max-width: 1600px;
 		margin: 0 auto;
-		padding: 2rem;
-		background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-		min-height: 100vh;
+		padding: 1rem 0;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.header-organigrama {
-		text-align: center;
-		margin-bottom: 3rem;
-		padding: 2rem;
-		background: white;
-		border-radius: 12px;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		position: relative;
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+		color: white;
+		padding: 30px 40px;
+		margin: 0;
+		border-radius: 28px;
+		overflow: hidden;
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+			0 20px 60px rgba(30, 64, 175, 0.4);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 2rem;
+	}
+
+	.header-organigrama::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: linear-gradient(
+				90deg,
+				rgba(255, 255, 255, 0.03) 1px,
+				transparent 1px
+			),
+			linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+		background-size: 50px 50px;
+		animation: moveLines 20s linear infinite;
 	}
 
 	.header-organigrama h1 {
-		font-size: 2.5rem;
-		font-weight: 700;
-		color: #1e40af;
-		margin-bottom: 0.5rem;
+		margin: 10px;
+		font-weight: 800;
+		font-size: 30px;
+		letter-spacing: 0.2px;
+		position: relative;
+		padding-bottom: 12px;
+		overflow: hidden;
+		display: inline-block;
 	}
 
-	.descripcion {
-		font-size: 1.2rem;
-		color: #64748b;
-		margin-bottom: 1rem;
+	.header-organigrama h1::after {
+		content: "";
+		position: absolute;
+		width: 40%;
+		height: 3px;
+		bottom: 0;
+		left: 0;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.9),
+			transparent
+		);
+		animation: moveLine 2s linear infinite;
+	}
+
+	@keyframes moveLine {
+		0% {
+			left: -40%;
+		}
+		100% {
+			left: 100%;
+		}
 	}
 
 	.info-actualización {
@@ -151,20 +203,15 @@
 		color: #1e40af;
 		padding: 0.5rem 1rem;
 		border-radius: 6px;
-		font-size: 0.9rem;
+		font-size: 17px;
 		font-weight: 500;
 	}
 
-	.actualizado-por {
-		font-size: 0.8rem;
-		color: #64748b;
-	}
-
 	.organigrama-container {
-		background: white;
 		border-radius: 12px;
 		padding: 2rem;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		border: none;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.organigrama-tree {

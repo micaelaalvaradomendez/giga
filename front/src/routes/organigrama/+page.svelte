@@ -1,7 +1,7 @@
 <script>
-	import { onMount } from 'svelte';
-	import { browser } from '$app/environment';
-	import OrganigramaViewer from '$lib/componentes/OrganigramaViewer.svelte';
+	import { onMount } from "svelte";
+	import { browser } from "$app/environment";
+	import OrganigramaViewer from "$lib/componentes/OrganigramaViewer.svelte";
 
 	let organigramaData = null;
 	let loading = true;
@@ -15,9 +15,9 @@
 	async function loadOrganigrama() {
 		try {
 			// CARGAR DESDE API DEL BACKEND
-			const response = await fetch('/api/personas/organigrama/', {
-				method: 'GET',
-				credentials: 'include'
+			const response = await fetch("/api/personas/organigrama/", {
+				method: "GET",
+				credentials: "include",
 			});
 
 			if (response.ok) {
@@ -28,35 +28,39 @@
 						version: result.data.version,
 						lastUpdated: result.data.actualizado_en,
 						updatedBy: result.data.creado_por,
-						organigrama: result.data.estructura
+						organigrama: result.data.estructura,
 					};
 				} else {
-					throw new Error(result.message || 'Error al cargar organigrama');
+					throw new Error(
+						result.message || "Error al cargar organigrama",
+					);
 				}
 			} else {
-				throw new Error('Error de conexión con el servidor');
+				throw new Error("Error de conexión con el servidor");
 			}
 		} catch (error) {
-			console.error('❌ Error cargando organigrama desde API:', error);
-			
+			console.error("❌ Error cargando organigrama desde API:", error);
+
 			// Datos de fallback básicos para mostrar algo en caso de error
 			organigramaData = {
-				version: '1.0.0',
+				version: "1.0.0",
 				lastUpdated: new Date().toISOString(),
-				updatedBy: 'Sistema',
-				organigrama: [{
-					id: 'root',
-					tipo: 'secretaria',
-					nombre: 'Secretaría de Protección Civil',
-					titular: 'No disponible',
-					email: '',
-					telefono: '',
-					descripcion: 'Organigrama no disponible temporalmente',
-					nivel: 0,
-					children: []
-				}]
+				updatedBy: "Sistema",
+				organigrama: [
+					{
+						id: "root",
+						tipo: "secretaria",
+						nombre: "Secretaría de Protección Civil",
+						titular: "No disponible",
+						email: "",
+						telefono: "",
+						descripcion: "Organigrama no disponible temporalmente",
+						nivel: 0,
+						children: [],
+					},
+				],
 			};
-			console.log('✅ Usando datos de fallback básicos');
+			console.log("✅ Usando datos de fallback básicos");
 		} finally {
 			loading = false;
 		}
@@ -65,7 +69,6 @@
 
 <svelte:head>
 	<title>Organigrama - GIGA</title>
-	<meta name="description" content="Organigrama institucional de la Secretaría de Protección Civil" />
 </svelte:head>
 
 {#if loading}
@@ -102,8 +105,12 @@
 	}
 
 	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
 	}
 
 	.error-container {
