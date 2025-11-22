@@ -53,6 +53,60 @@
 		return icons[tipo] || "📋";
 	}
 
+	// Nueva función para detectar tipo automáticamente basado en el nombre y nivel
+	function detectarTipoArea(nombre, nivel = 0) {
+		if (!nombre) return "area";
+		
+		const nombreLower = nombre.toLowerCase();
+		
+		// Secretarías (nivel 1 generalmente)
+		if (nombreLower.includes("secretaría")) {
+			return "secretaria";
+		}
+		
+		// Subsecretarías (nivel 2 generalmente)  
+		if (nombreLower.includes("subsecretaría")) {
+			return "subsecretaria";
+		}
+		
+		// Direcciones Generales (nivel 4 generalmente)
+		if (nombreLower.includes("dirección general")) {
+			return "direccion_general";
+		}
+		
+		// Direcciones (nivel 3-4 generalmente)
+		if (nombreLower.includes("dirección")) {
+			return "direccion";
+		}
+		
+		// Subdirecciones (nivel 5 generalmente)
+		if (nombreLower.includes("subdirección")) {
+			return "subdireccion";
+		}
+		
+		// Departamentos (nivel 5-6 generalmente)
+		if (nombreLower.includes("departamento")) {
+			return "departamento";
+		}
+		
+		// Divisiones (nivel 6-7 generalmente)
+		if (nombreLower.includes("división")) {
+			return "division";
+		}
+		
+		// Detección por nivel si no hay palabra clave específica
+		switch(nivel) {
+			case 1: return "secretaria";
+			case 2: return "subsecretaria"; 
+			case 3: 
+			case 4: return "direccion";
+			case 5: return "departamento";
+			case 6:
+			case 7: return "division";
+			default: return "area";
+		}
+	}
+
 	function getNodeColor(tipo) {
 		const colors = {
 			secretaria: "border-blue-600 bg-blue-50",
@@ -83,13 +137,14 @@
 		<div class="organigrama-container">
 			<div class="organigrama-tree">
 				{#if Array.isArray(data.organigrama)}
-					{#each data.organigrama as rootNode}
+					{#each data.organigrama as rootNode (rootNode.id)}
 						<NodeRenderer
 							node={rootNode}
 							{expandedNodes}
 							{toggleNode}
 							{getNodeIcon}
 							{getNodeColor}
+							{detectarTipoArea}
 						/>
 					{/each}
 				{:else}
@@ -99,6 +154,7 @@
 						{toggleNode}
 						{getNodeIcon}
 						{getNodeColor}
+						{detectarTipoArea}
 					/>
 				{/if}
 			</div>

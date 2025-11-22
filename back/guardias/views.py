@@ -262,6 +262,12 @@ class CronogramaViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         
+        # Optimizar consultas con select_related
+        queryset = queryset.select_related(
+            'id_area', 'id_jefe', 'id_director', 
+            'creado_por_id', 'aprobado_por_id'
+        )
+        
         # Filtros
         area_id = self.request.query_params.get('area')
         estado = self.request.query_params.get('estado')
@@ -281,6 +287,9 @@ class CronogramaViewSet(viewsets.ModelViewSet):
         """Crea un cronograma con múltiples guardias y registra en auditoría"""
         try:
             data = request.data
+            
+            # Debug: Log de datos recibidos
+            print(f"📋 Datos recibidos en crear_con_guardias: {data}")
             
             # Validar datos requeridos
             required_fields = ['nombre', 'tipo', 'id_area', 'fecha', 'hora_inicio', 'hora_fin', 'agentes']
@@ -302,14 +311,20 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             from .utils import get_agente_rol, requiere_aprobacion_rol
             
             agente_id = data.get('agente_id')  # Por ahora recibir del request
+            print(f"🔍 agente_id del request: {agente_id}")
+            
             if not agente_id and hasattr(request.user, 'agente'):
                 agente_id = request.user.agente.id_agente
+                print(f"🔍 agente_id de request.user: {agente_id}")
             
             if not agente_id:
+                print("❌ No se pudo determinar agente_id")
                 return Response(
                     {'error': 'No se pudo determinar el agente creador'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            
+            print(f"✅ Usando agente_id: {agente_id}")
             
             # Obtener agente completo
             try:

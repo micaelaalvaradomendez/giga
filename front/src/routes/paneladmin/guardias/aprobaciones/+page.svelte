@@ -150,10 +150,14 @@
             <div class="cronograma-body">
               <div class="info-row">
                 <span class="label">Creado por:</span>
-                <span class="value">
-                  {cronograma.creado_por_nombre || ''} {cronograma.creado_por_apellido || ''}
-                  {#if cronograma.creado_por_rol}
-                    <span class="rol-mini">({cronograma.creado_por_rol})</span>
+                <span class="valor">
+                  {#if cronograma.creado_por_nombre || cronograma.creado_por_apellido}
+                    {cronograma.creado_por_nombre || ''} {cronograma.creado_por_apellido || ''}
+                    {#if cronograma.creado_por_rol}
+                      <span class="rol-mini">({cronograma.creado_por_rol})</span>
+                    {/if}
+                  {:else}
+                    <span class="sin-creador">Sistema (histórico)</span>
                   {/if}
                 </span>
               </div>
@@ -551,6 +555,12 @@
     color: #64748b;
     font-size: 0.85rem;
     font-style: italic;
+  }
+
+  .sin-creador {
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 0.9rem;
   }
 
   .roles-permitidos {

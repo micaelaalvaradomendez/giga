@@ -22,6 +22,7 @@
 
 			if (response.ok) {
 				const result = await response.json();
+				console.log("🔍 Respuesta del API organigrama:", result);
 				if (result.success) {
 					// Convertir estructura de la API al formato esperado por el frontend
 					organigramaData = {
@@ -30,6 +31,7 @@
 						updatedBy: result.data.creado_por,
 						organigrama: result.data.estructura,
 					};
+					console.log("✅ Datos del organigrama procesados:", organigramaData);
 				} else {
 					throw new Error(
 						result.message || "Error al cargar organigrama",

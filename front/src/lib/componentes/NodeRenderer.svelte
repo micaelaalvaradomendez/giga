@@ -4,6 +4,7 @@
 	export let toggleNode;
 	export let getNodeIcon;
 	export let getNodeColor;
+	export let detectarTipoArea;
 </script>
 
 {#if node}
@@ -11,24 +12,26 @@
 		<!-- svelte-ignore a11y-click-events-have-key-events -->
 		<!-- svelte-ignore a11y-no-static-element-interactions -->
 		<div 
-			class="node {getNodeColor(node.tipo)} nivel-{node.nivel}"
+			class="node {getNodeColor(detectarTipoArea ? detectarTipoArea(node.nombre, node.nivel) : node.tipo)} nivel-{node.nivel}"
 			on:click={() => node.children?.length && toggleNode(node.id)}
 		>
 			<div class="node-header">
 				<div class="node-icon">
-					{getNodeIcon(node.tipo)}
+					{getNodeIcon(detectarTipoArea ? detectarTipoArea(node.nombre, node.nivel) : node.tipo)}
 				</div>
 				<div class="node-content">
 					<h3 class="node-title">{node.nombre}</h3>
-					<p class="node-description">{node.descripcion}</p>
-					{#if node.titular}
-						<p class="node-titular">Titular: {node.titular}</p>
+					{#if node.descripcion}
+						<p class="node-description">{node.descripcion}</p>
 					{/if}
-					{#if node.email}
-						<p class="node-contact">📧 {node.email}</p>
+					{#if node.jefe?.nombre}
+						<p class="node-titular">Jefe: {node.jefe.nombre}</p>
 					{/if}
-					{#if node.telefono}
-						<p class="node-contact">📞 {node.telefono}</p>
+					{#if node.jefe?.email}
+						<p class="node-contact">📧 {node.jefe.email}</p>
+					{/if}
+					{#if node.total_agentes !== undefined && node.total_agentes > 0}
+						<p class="node-agents">� {node.total_agentes} agentes</p>
 					{/if}
 				</div>
 				{#if node.children?.length}
@@ -48,6 +51,7 @@
 						{toggleNode} 
 						{getNodeIcon} 
 						{getNodeColor} 
+						{detectarTipoArea}
 					/>
 				{/each}
 			</div>
@@ -117,6 +121,13 @@
 	.node-contact {
 		font-size: 0.8rem;
 		color: #6366f1;
+		margin: 0 0 0.25rem 0;
+	}
+
+	.node-agents {
+		font-size: 0.8rem;
+		color: #7c3aed;
+		font-weight: 500;
 		margin: 0 0 0.25rem 0;
 	}
 
