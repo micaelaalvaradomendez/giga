@@ -4,6 +4,7 @@
 	export let toggleNode;
 	export let getNodeIcon;
 	export let getNodeColor;
+	export let detectarTipoArea = null;
 	export let openAddModal;
 	export let openEditModal;
 	export let openDeleteModal;
@@ -11,25 +12,34 @@
 
 {#if node}
 	<div class="admin-node-container">
-		<div class="admin-node {getNodeColor(node.tipo)} nivel-{node.nivel}">
+		<div class="admin-node {getNodeColor(detectarTipoArea ? detectarTipoArea(node.nombre, node.nivel) : node.tipo)} nivel-{node.nivel}">
 			<div class="node-header" role="button" tabindex="0">
 				<!-- svelte-ignore a11y-click-events-have-key-events -->
 				<!-- svelte-ignore a11y-no-static-element-interactions -->
 				<div class="node-main" on:click={() => node.children?.length && toggleNode(node.id)}>
 					<div class="node-icon">
-						{getNodeIcon(node.tipo)}
+						{getNodeIcon(detectarTipoArea ? detectarTipoArea(node.nombre, node.nivel) : node.tipo)}
 					</div>
 					<div class="node-content">
 						<h3 class="node-title">{node.nombre}</h3>
-						<p class="node-description">{node.descripcion}</p>
-						{#if node.titular}
+						{#if node.descripcion}
+							<p class="node-description">{node.descripcion}</p>
+						{/if}
+						{#if node.jefe?.nombre}
+							<p class="node-titular">Jefe: {node.jefe.nombre}</p>
+						{:else if node.titular}
 							<p class="node-titular">Titular: {node.titular}</p>
 						{/if}
-						{#if node.email}
+						{#if node.jefe?.email}
+							<p class="node-contact">📧 {node.jefe.email}</p>
+						{:else if node.email}
 							<p class="node-contact">📧 {node.email}</p>
 						{/if}
 						{#if node.telefono}
 							<p class="node-contact">📞 {node.telefono}</p>
+						{/if}
+						{#if node.total_agentes !== undefined && node.total_agentes > 0}
+							<p class="node-agents">👥 {node.total_agentes} agentes</p>
 						{/if}
 					</div>
 					{#if node.children?.length}
@@ -74,6 +84,7 @@
 						{toggleNode} 
 						{getNodeIcon} 
 						{getNodeColor}
+						{detectarTipoArea}
 						{openAddModal}
 						{openEditModal}
 						{openDeleteModal}
@@ -154,6 +165,13 @@
 	.node-contact {
 		font-size: 0.8rem;
 		color: #6366f1;
+		margin: 0 0 0.25rem 0;
+	}
+
+	.node-agents {
+		font-size: 0.8rem;
+		color: #7c3aed;
+		font-weight: 500;
 		margin: 0 0 0.25rem 0;
 	}
 

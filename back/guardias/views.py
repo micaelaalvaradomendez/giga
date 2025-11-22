@@ -1107,7 +1107,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
         
         try:
             from personas.models import Agente
-            from asistencia.models import RegistroAsistencia
+            from asistencia.models import Asistencia
             from datetime import datetime, timedelta
             import calendar
             
@@ -1139,10 +1139,9 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 registro_asistencia = None
                 if guardia:
                     try:
-                        registro_asistencia = RegistroAsistencia.objects.filter(
+                        registro_asistencia = Asistencia.objects.filter(
                             id_agente=agente_id,
-                            fecha=current_date,
-                            tipo_registro='guardia'
+                            fecha=current_date
                         ).first()
                     except:
                         pass
@@ -1250,7 +1249,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
             
             # Obtener todos los agentes del área
-            agentes = Agente.objects.filter(area_id=area_id, activo=True)
+            agentes = Agente.objects.filter(id_area=area_id, activo=True)
             
             # Obtener todas las guardias del área en el período
             guardias = self.get_queryset().filter(
@@ -1259,7 +1258,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 activa=True,
                 estado='planificada',
                 id_cronograma__estado__in=['aprobada', 'publicada']
-            ).select_related('agente').order_by('fecha', 'id_agente')
+            ).select_related('id_agente').order_by('fecha', 'id_agente')
             
             # Generar días del período para columnas
             dias_periodo = []
