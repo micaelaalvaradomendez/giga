@@ -88,8 +88,8 @@ class CronogramaExtendidoSerializer(serializers.ModelSerializer):
                           'requiere_aprobacion', 'puede_aprobar_rol']
     
     def get_total_guardias(self, obj):
-        """Cuenta el total de guardias del cronograma"""
-        return obj.guardia_set.count()
+        """Cuenta el total de guardias activas del cronograma"""
+        return obj.guardia_set.filter(activa=True).count()
     
     def get_requiere_aprobacion(self, obj):
         """Calcula si requiere aprobación de forma segura"""

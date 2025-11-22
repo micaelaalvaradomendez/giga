@@ -29,6 +29,10 @@ PyJWT==2.8.0
 Pillow==10.1.0
 requests==2.31.0
 
+# PDF & Excel Generation
+reportlab==4.0.6
+openpyxl==3.1.2
+
 # Linting & Code Quality (development)
 flake8==6.1.0
 black==23.10.1

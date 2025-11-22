@@ -130,7 +130,7 @@ export const guardiasService = {
   deleteGuardia: (id, token = null) => createApiClient(token).delete(`/guardias/guardias/${id}/`),
   getResumenGuardias: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?${params}`),
   getGuardiasAgente: (agenteId, token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?agente=${agenteId}`),
-  getGuardiasPorCronograma: (cronogramaId, token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?id_cronograma=${cronogramaId}`),
+  getGuardiasPorCronograma: (cronogramaId, token = null) => createApiClient(token).get(`/guardias/guardias/guardias_por_cronograma/?id_cronograma=${cronogramaId}`),
   
   // Notas de guardias
   getNotasGuardia: (guardiaId, token = null) => createApiClient(token).get(`/guardias/guardias/${guardiaId}/notas/`),
@@ -175,10 +175,10 @@ export const guardiasService = {
   
   // Nuevos reportes según especificaciones
   getReporteHorasTrabajadas: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_horas_trabajadas/?${params}`),
-  getReporteParteDiario: (params = '', token = null) => createApiClient(token).get(`/asistencia/reporte_parte_diario/?${params}`),
-  getReporteResumenLicencias: (params = '', token = null) => createApiClient(token).get(`/asistencia/reporte_licencias/?${params}`),
+  getReporteParteDiario: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_parte_diario/?${params}`),
+  getReporteResumenLicencias: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_resumen_licencias/?${params}`),
   getReporteCalculoPlus: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_calculo_plus/?${params}`),
-  getReporteIncumplimientoNormativo: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_incumplimiento/?${params}`),
+  getReporteIncumplimientoNormativo: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_incumplimiento_normativo/?${params}`),
 
   // Exportaciones (placeholder para futura implementación)
   exportarReporteIndividual: (params = '', formato = 'pdf', token = null) => 

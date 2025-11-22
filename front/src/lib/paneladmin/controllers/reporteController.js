@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import { personasService, guardiasService } from '$lib/services.js';
+import exportService from '$lib/services/exportService.js';
 
 /**
  * Controlador para la gestión de reportes de administrador
@@ -458,29 +459,36 @@ class ReporteController {
 	}
 	
 	async exportarExcel() {
-		return this._exportar('excel');
+		return this._exportar('xlsx');
 	}
 	
 	async _exportar(formato) {
 		const tipo = await this._obtenerTipoReporteActual();
 		const filtros = await this._obtenerFiltrosActuales();
-		const opciones = await this._obtenerOpcionesExport();
+		const datos = await this._obtenerDatosReporte();
 		
 		this.exportando.set(true);
 		this.error.set(null);
 		
 		try {
-			// Llamar al backend para generar el archivo
-			const blob = await this._exportarReporteReal(formato, tipo, filtros, opciones);
+			// Validar que hay datos para exportar
+			exportService.validarDatosExportacion(tipo, datos);
 			
-			// Descargar archivo
-			const nombreArchivo = this._generarNombreArchivo(tipo, formato);
-			this._descargarBlob(blob, nombreArchivo);
+			// Preparar información de filtros enriquecida
+			const filtrosEnriquecidos = await this._enrichFiltros(filtros);
 			
-			this.mensaje.set(`Reporte exportado exitosamente como ${formato.toUpperCase()}`);
+			// Usar el servicio de exportación según el formato
+			let resultado;
+			if (formato === 'pdf') {
+				resultado = await exportService.exportarPDF(tipo, datos, filtrosEnriquecidos);
+			} else {
+				resultado = await exportService.exportarExcel(tipo, datos, filtrosEnriquecidos);
+			}
 			
-			// Limpiar mensaje después de 3 segundos
-			setTimeout(() => this.mensaje.set(''), 3000);
+			this.mensaje.set(resultado.mensaje);
+			
+			// Limpiar mensaje después de 5 segundos
+			setTimeout(() => this.mensaje.set(''), 5000);
 			
 			return true;
 			
@@ -491,6 +499,31 @@ class ReporteController {
 		} finally {
 			this.exportando.set(false);
 		}
+	}
+	
+	/**
+	 * Enriquece los filtros con información adicional para exportación
+	 */
+	async _enrichFiltros(filtros) {
+		const filtrosDisponibles = await this._obtenerFiltrosDisponibles();
+		
+		// Agregar nombres descriptivos para usar en el PDF
+		const filtrosEnriquecidos = { ...filtros };
+		
+		// Obtener nombre del área
+		if (filtros.area_id && filtrosDisponibles.areas) {
+			const area = filtrosDisponibles.areas.find(a => a.id === filtros.area_id);
+			filtrosEnriquecidos.area_nombre = area?.nombre_completo || area?.nombre || 'Área no encontrada';
+		}
+		
+		// Obtener nombre del agente
+		if (filtros.agente_id && filtrosDisponibles.agentes) {
+			const agente = filtrosDisponibles.agentes.find(a => a.id === filtros.agente_id);
+			filtrosEnriquecidos.agente_nombre = agente?.nombre_completo || 'Agente no encontrado';
+			filtrosEnriquecidos.agente_legajo = agente?.legajo || '';
+		}
+		
+		return filtrosEnriquecidos;
 	}
 	
 	// ========================================
@@ -585,6 +618,18 @@ class ReporteController {
 	async _obtenerOpcionesExport() {
 		return new Promise(resolve => {
 			this.opcionesExport.subscribe(resolve)();
+		});
+	}
+	
+	async _obtenerDatosReporte() {
+		return new Promise(resolve => {
+			this.datosReporte.subscribe(resolve)();
+		});
+	}
+	
+	async _obtenerFiltrosDisponibles() {
+		return new Promise(resolve => {
+			this.filtrosDisponibles.subscribe(resolve)();
 		});
 	}
 	

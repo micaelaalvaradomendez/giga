@@ -172,22 +172,58 @@ class AprobacionesGuardiasController {
 	async verDetalles(cronograma) {
 		try {
 			this.loading.set(true);
+			this.error.set('');
 			
 			let token;
 			this.token.subscribe(t => token = t)();
 			
-			// Cargar solo las guardias de este cronograma específico
+			console.log('🔍 Cargando guardias del cronograma:', cronograma.id_cronograma);
+			console.log('📋 Cronograma seleccionado:', {
+				id: cronograma.id_cronograma,
+				estado: cronograma.estado,
+				total_guardias: cronograma.total_guardias,
+				area: cronograma.area_nombre
+			});
+			
+			// Cargar guardias usando el nuevo endpoint específico
 			const response = await guardiasService.getGuardiasPorCronograma(cronograma.id_cronograma, token);
-			const guardias = response.data || [];
+			
+			console.log('📦 Respuesta del servidor:', response);
+			
+			// Manejar diferentes formatos de respuesta
+			let guardias = [];
+			if (response.data) {
+				if (Array.isArray(response.data)) {
+					guardias = response.data;
+				} else if (response.data.guardias && Array.isArray(response.data.guardias)) {
+					guardias = response.data.guardias;
+				} else if (response.data.results && Array.isArray(response.data.results)) {
+					guardias = response.data.results;
+				}
+			}
+			
+			console.log('✅ Guardias procesadas:', guardias.length);
+			console.log('📊 Primeras 2 guardias:', guardias.slice(0, 2));
 			
 			this.cronogramaSeleccionado.set(cronograma);
 			this.guardiasDelCronograma.set(guardias);
 			this.mostrarModal.set(true);
 			
-			console.log('✅ Detalles del cronograma cargados:', guardias.length, 'guardias del cronograma', cronograma.id_cronograma);
+			if (guardias.length === 0) {
+				console.log('⚠️ No se encontraron guardias para el cronograma', cronograma.id_cronograma);
+				console.log('🔍 Posibles causas:');
+				console.log('  - Estado del cronograma:', cronograma.estado);
+				console.log('  - Guardias inactivas');
+				console.log('  - Error en el filtrado del backend');
+			}
+			
 		} catch (e) {
-			this.error.set('Error al cargar los detalles');
-			console.error('❌ Error cargando detalles:', e);
+			console.error('❌ Error completo cargando detalles:', e);
+			console.error('❌ Respuesta del servidor:', e.response?.data);
+			console.error('❌ Status:', e.response?.status);
+			
+			const mensaje = e.response?.data?.message || e.response?.data?.error || 'Error al cargar los detalles del cronograma';
+			this.error.set(mensaje);
 		} finally {
 			this.loading.set(false);
 		}
