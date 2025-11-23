@@ -180,6 +180,15 @@ export const guardiasService = {
   getReporteCalculoPlus: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_calculo_plus/?${params}`),
   getReporteIncumplimientoNormativo: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_incumplimiento_normativo/?${params}`),
 
+  // Compensaciones por Horas Extra (HoraCompensacion)
+  getCompensaciones: (params = '', token = null) => createApiClient(token).get(`/guardias/compensaciones/?${params}`),
+  getCompensacion: (id, token = null) => createApiClient(token).get(`/guardias/compensaciones/${id}/`),
+  createCompensacion: (data, token = null) => createApiClient(token).post('/guardias/compensaciones/', data),
+  updateCompensacion: (id, data, token = null) => createApiClient(token).put(`/guardias/compensaciones/${id}/`, data),
+  deleteCompensacion: (id, token = null) => createApiClient(token).delete(`/guardias/compensaciones/${id}/`),
+  aprobarCompensacion: (id, data, token = null) => createApiClient(token).patch(`/guardias/compensaciones/${id}/aprobar/`, data),
+  rechazarCompensacion: (id, data, token = null) => createApiClient(token).patch(`/guardias/compensaciones/${id}/rechazar/`, data),
+
   // Exportaciones (placeholder para futura implementación)
   exportarReporteIndividual: (params = '', formato = 'pdf', token = null) => 
     createApiClient(token).get(`/guardias/reportes/individual/?${params}&formato=${formato}`, { responseType: 'blob' }),

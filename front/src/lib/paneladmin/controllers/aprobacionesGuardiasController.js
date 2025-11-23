@@ -484,14 +484,38 @@ class AprobacionesGuardiasController {
 	 */
 	async cargarAreas() {
 		try {
+			console.log('🔄 Cargando áreas para filtros...');
 			let token;
 			this.token.subscribe(t => token = t)();
+			console.log('🔑 Token:', token ? 'Disponible' : 'No disponible');
 			
 			const response = await personasService.getAreas(token);
-			const areas = response.data?.results || response.data || [];
+			console.log('📦 Respuesta completa áreas:', response);
+			
+			// Axios devuelve la respuesta en response.data
+			let areas = [];
+			const responseData = response.data;
+			
+			if (responseData.success && responseData.data && responseData.data.results) {
+				areas = responseData.data.results;
+			} else if (responseData.data && responseData.data.results) {
+				areas = responseData.data.results;
+			} else if (responseData.results) {
+				areas = responseData.results;
+			} else if (Array.isArray(responseData)) {
+				areas = responseData;
+			} else {
+				console.log('📊 Estructura inesperada de respuesta:', responseData);
+			}
+			
+			console.log('✅ Áreas procesadas:', areas.length, 'áreas encontradas');
+			console.log('📋 Primeras 3 áreas:', areas.slice(0, 3));
+			
 			this.areas.set(areas);
 		} catch (e) {
 			console.error('❌ Error cargando áreas para filtros:', e);
+			console.error('❌ Respuesta del servidor:', e.response?.data);
+			console.error('❌ Status:', e.response?.status);
 		}
 	}
 

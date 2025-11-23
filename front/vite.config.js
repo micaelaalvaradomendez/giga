@@ -12,17 +12,17 @@ export default defineConfig({
 		},
 		proxy: {
 			'/api': {
-				target: 'http://giga-django:8000',
+				target: 'http://backend:8000',
 				changeOrigin: true,
 				secure: false
 			},
 			'/admin': {
-				target: 'http://giga-django:8000',
+				target: 'http://backend:8000',
 				changeOrigin: true,
 				secure: false
 			},
 			'/static': {
-				target: 'http://giga-django:8000',
+				target: 'http://backend:8000',
 				changeOrigin: true,
 				secure: false
 			}

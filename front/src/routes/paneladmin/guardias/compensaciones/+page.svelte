@@ -1,5 +1,5 @@
 <script>
-  import { API } from '$lib/api.js';
+  import { guardiasService, personasService } from '$lib/services.js';
   import { onMount } from 'svelte';
 
   // Estado del componente
@@ -7,6 +7,7 @@
   let cargando = false;
   let error = null;
   let mostrandoFormulario = false;
+  let token = null;
 
   // Debug: verificar que el script se esté ejecutando
   console.log('Script de compensaciones inicializado');
@@ -21,7 +22,7 @@
     solicitado_por: ''
   };
 
-  // Datos para los filtros
+  // Datos para los filtros del formulario
   let areas = [];
   let agentes = [];
   let guardias = [];
@@ -31,6 +32,14 @@
   let cargandoAreas = false;
   let cargandoAgentes = false;
   let cargandoGuardias = false;
+
+  // Filtros para la lista de compensaciones
+  let filtroAreaLista = '';
+  let filtroEstadoLista = '';
+
+  // Modal de detalles
+  let mostrandoDetalles = false;
+  let compensacionSeleccionada = null;
 
   // Opciones para el formulario
   const motivosCompensacion = [
@@ -43,6 +52,9 @@
 
   onMount(async () => {
     console.log('Componente compensaciones montado, iniciando carga...');
+    // Obtener token de sesión
+    token = localStorage.getItem('token');
+    
     try {
       await cargarCompensaciones();
       await cargarAreas();
@@ -56,12 +68,26 @@
     cargando = true;
     error = null;
     try {
-      const response = await API.get('/guardias/compensaciones/');
-      compensaciones = response.results || response || [];
+      const response = await guardiasService.getCompensaciones('', token);
+      console.log('Respuesta completa compensaciones:', response);
+      
+      // Manejar diferentes estructuras de respuesta
+      if (response.success && response.data && response.data.results) {
+        compensaciones = response.data.results;
+      } else if (response.data && response.data.results) {
+        compensaciones = response.data.results;
+      } else if (response.results) {
+        compensaciones = response.results;
+      } else if (Array.isArray(response)) {
+        compensaciones = response;
+      } else {
+        compensaciones = [];
+      }
+      
       console.log('Compensaciones cargadas:', compensaciones);
     } catch (err) {
       console.error('Error cargando compensaciones:', err);
-      error = 'Error al cargar compensaciones: ' + (err.message || 'Error desconocido');
+      error = 'Error al cargar compensaciones: ' + (err.response?.data?.message || err.message || 'Error desconocido');
       compensaciones = [];
     } finally {
       cargando = false;
@@ -71,16 +97,20 @@
   async function cargarAreas() {
     cargandoAreas = true;
     try {
-      const response = await API.get('/personas/catalogs/areas/');
+      const response = await personasService.getAreas(token);
       console.log('Respuesta completa de áreas:', response);
       
       // La API devuelve { success: true, data: { results: [...] } }
       if (response.success && response.data && response.data.results) {
         areas = response.data.results;
+      } else if (response.data && response.data.results) {
+        areas = response.data.results;
       } else if (response.results) {
         areas = response.results;
       } else if (Array.isArray(response)) {
         areas = response;
+      } else if (Array.isArray(response.data)) {
+        areas = response.data;
       } else {
         areas = [];
       }
@@ -102,11 +132,13 @@
     
     cargandoAgentes = true;
     try {
-      const response = await API.get(`/personas/agentes/?area=${areaSeleccionada}`);
+      const response = await personasService.getAgentesByArea(areaSeleccionada, token);
       console.log('Respuesta completa de agentes:', response);
       
       // Manejar diferentes estructuras de respuesta
       if (response.success && response.data && response.data.results) {
+        agentes = response.data.results;
+      } else if (response.data && response.data.results) {
         agentes = response.data.results;
       } else if (response.results) {
         agentes = response.results;
@@ -138,7 +170,7 @@
     cargandoGuardias = true;
     try {
       // Cargar guardias del agente - últimas guardias realizadas
-      const response = await API.get(`/guardias/guardias/resumen/?agente=${agenteSeleccionado}`);
+      const response = await guardiasService.getGuardiasAgente(agenteSeleccionado, token);
       console.log('Respuesta completa de guardias:', response);
       
       // El endpoint de guardias devuelve { estadisticas: {...}, guardias: [...] }
@@ -147,6 +179,10 @@
       } else if (response.success && response.data && response.data.guardias) {
         guardias = response.data.guardias;
       } else if (response.success && response.data && response.data.results) {
+        guardias = response.data.results;
+      } else if (response.data && response.data.guardias) {
+        guardias = response.data.guardias;
+      } else if (response.data && response.data.results) {
         guardias = response.data.results;
       } else if (response.results) {
         guardias = response.results;
@@ -172,6 +208,19 @@
   $: if (areaSeleccionada) cargarAgentes();
   $: if (agenteSeleccionado) cargarGuardias();
 
+  // Compensaciones filtradas
+  $: compensacionesFiltradas = compensaciones.filter(comp => {
+    // Filtro por área - necesitamos buscar el área de la guardia
+    if (filtroAreaLista && comp.id_area !== parseInt(filtroAreaLista)) {
+      return false;
+    }
+    // Filtro por estado
+    if (filtroEstadoLista && comp.estado !== filtroEstadoLista) {
+      return false;
+    }
+    return true;
+  });
+
   async function crearCompensacion() {
     if (!guardiaSeleccionada || !nuevaCompensacion.hora_fin_real || !nuevaCompensacion.descripcion_motivo) {
       alert('Por favor complete todos los campos obligatorios');
@@ -185,15 +234,18 @@
       const guardiaData = guardias.find(g => g.id_guardia == guardiaSeleccionada);
       
       const compensacionData = {
-        id_guardia: guardiaSeleccionada,
+        id_guardia: parseInt(guardiaSeleccionada),
         hora_fin_real: nuevaCompensacion.hora_fin_real,
         motivo: nuevaCompensacion.motivo,
         descripcion_motivo: nuevaCompensacion.descripcion_motivo,
-        numero_acta: nuevaCompensacion.numero_acta,
-        solicitado_por: nuevaCompensacion.solicitado_por || agenteSeleccionado
+        numero_acta: nuevaCompensacion.numero_acta || '',
+        solicitado_por: parseInt(nuevaCompensacion.solicitado_por || agenteSeleccionado)
       };
       
-      await API.post('/guardias/compensaciones/', compensacionData);
+      console.log('Enviando compensación:', compensacionData);
+      
+      const response = await guardiasService.createCompensacion(compensacionData, token);
+      console.log('Compensación creada:', response);
       
       // Limpiar formulario
       nuevaCompensacion = {
@@ -214,8 +266,13 @@
       await cargarCompensaciones();
       alert('Compensación creada exitosamente');
     } catch (err) {
-      console.error('Error creando compensación:', err);
-      error = 'Error al crear compensación: ' + (err.message || 'Error desconocido');
+      console.error('Error completo creando compensación:', err);
+      console.error('Respuesta del servidor:', err.response?.data);
+      console.error('Status:', err.response?.status);
+      
+      const mensaje = err.response?.data?.message || err.response?.data?.error || err.message || 'Error desconocido';
+      error = 'Error al crear compensación: ' + mensaje;
+      alert('Error: ' + mensaje);
     } finally {
       cargando = false;
     }
@@ -229,6 +286,97 @@
   function formatearHora(hora) {
     if (!hora) return '-';
     return hora.slice(0, 5); // HH:MM
+  }
+
+  function verDetalles(compensacion) {
+    compensacionSeleccionada = compensacion;
+    mostrandoDetalles = true;
+    console.log('Ver detalles de compensación:', compensacion);
+  }
+
+  function cerrarDetalles() {
+    mostrandoDetalles = false;
+    compensacionSeleccionada = null;
+  }
+
+  async function aprobarCompensacion(compensacion) {
+    if (!confirm('¿Está seguro de aprobar esta compensación?')) {
+      return;
+    }
+
+    try {
+      cargando = true;
+      error = null;
+      
+      console.log('Compensación a aprobar:', compensacion);
+      
+      // Identificar el ID correcto de la compensación
+      const compensacionId = compensacion.id_hora_compensacion || compensacion.id_compensacion || compensacion.id || compensacion.pk;
+      console.log('ID de compensación:', compensacionId);
+      
+      if (!compensacionId) {
+        throw new Error('No se pudo identificar el ID de la compensación');
+      }
+      
+      const response = await guardiasService.aprobarCompensacion(
+        compensacionId, 
+        { aprobado_por: 1 }, // TODO: Obtener del agente actual
+        token
+      );
+      
+      await cargarCompensaciones();
+      alert('Compensación aprobada exitosamente');
+      console.log('Compensación aprobada:', response);
+    } catch (err) {
+      console.error('Error aprobando compensación:', err);
+      const mensaje = err.response?.data?.message || err.message || 'Error desconocido';
+      error = 'Error al aprobar compensación: ' + mensaje;
+      alert('Error: ' + mensaje);
+    } finally {
+      cargando = false;
+    }
+  }
+
+  async function rechazarCompensacion(compensacion) {
+    const motivo = prompt('Ingrese el motivo del rechazo:');
+    if (!motivo || !motivo.trim()) {
+      return;
+    }
+
+    try {
+      cargando = true;
+      error = null;
+      
+      console.log('Compensación a rechazar:', compensacion);
+      
+      // Identificar el ID correcto de la compensación
+      const compensacionId = compensacion.id_hora_compensacion || compensacion.id_compensacion || compensacion.id || compensacion.pk;
+      console.log('ID de compensación:', compensacionId);
+      
+      if (!compensacionId) {
+        throw new Error('No se pudo identificar el ID de la compensación');
+      }
+      
+      const response = await guardiasService.rechazarCompensacion(
+        compensacionId,
+        { 
+          motivo_rechazo: motivo.trim(),
+          rechazado_por: 1 // TODO: Obtener del agente actual
+        },
+        token
+      );
+      
+      await cargarCompensaciones();
+      alert('Compensación rechazada');
+      console.log('Compensación rechazada:', response);
+    } catch (err) {
+      console.error('Error rechazando compensación:', err);
+      const mensaje = err.response?.data?.message || err.message || 'Error desconocido';
+      error = 'Error al rechazar compensación: ' + mensaje;
+      alert('Error: ' + mensaje);
+    } finally {
+      cargando = false;
+    }
   }
 </script>
 
@@ -390,13 +538,22 @@
               </div>
 
               <div class="campo">
-                <label for="solicitado_por">Solicitado por</label>
-                <input 
-                  type="number" 
-                  bind:value={nuevaCompensacion.solicitado_por} 
-                  placeholder="Por defecto será el agente seleccionado"
-                />
-                <small>Si no se especifica, se usará el agente seleccionado</small>
+                <label for="solicitado_por">Solicitado por *</label>
+                <select bind:value={nuevaCompensacion.solicitado_por} required>
+                  <option value="">Seleccione quién solicita la compensación</option>
+                  {#if agenteSeleccionado}
+                    <option value={agenteSeleccionado} selected>
+                      {agentes.find(a => a.id_agente == agenteSeleccionado)?.apellido}, 
+                      {agentes.find(a => a.id_agente == agenteSeleccionado)?.nombre} (El mismo agente)
+                    </option>
+                  {/if}
+                  {#each agentes.filter(a => a.id_agente != agenteSeleccionado) as agente}
+                    <option value={agente.id_agente}>
+                      {agente.apellido}, {agente.nombre} (Leg: {agente.legajo})
+                    </option>
+                  {/each}
+                </select>
+                <small>Agente que solicita la compensación (puede ser diferente al que realizó la guardia)</small>
               </div>
             </div>
           {/if}
@@ -416,18 +573,59 @@
 
   <!-- Lista de compensaciones -->
   <div class="lista-compensaciones">
-    <h2>Compensaciones Registradas ({compensaciones.length})</h2>
+    <div class="lista-header">
+      <h2>Compensaciones Registradas ({compensaciones.length})</h2>
+      
+      <!-- Filtros para la lista -->
+      <div class="filtros-lista">
+        <div class="filtro-grupo">
+          <label for="filtro-area-lista">Filtrar por Área:</label>
+          <select id="filtro-area-lista" bind:value={filtroAreaLista}>
+            <option value="">Todas las áreas</option>
+            {#each areas as area}
+              <option value={area.id_area}>{area.nombre}</option>
+            {/each}
+          </select>
+        </div>
+        
+        <div class="filtro-grupo">
+          <label for="filtro-estado-lista">Estado:</label>
+          <select id="filtro-estado-lista" bind:value={filtroEstadoLista}>
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="aprobada">Aprobada</option>
+            <option value="rechazada">Rechazada</option>
+          </select>
+        </div>
+        
+        <button class="btn-recargar" on:click={cargarCompensaciones} disabled={cargando}>
+          🔄 Recargar
+        </button>
+      </div>
+    </div>
 
     {#if cargando}
       <div class="loading">
         <div class="spinner"></div>
         Cargando compensaciones...
       </div>
-    {:else if compensaciones.length === 0}
+    {:else if compensacionesFiltradas.length === 0}
       <div class="empty-state">
         <div class="empty-icon">📋</div>
-        <h3>No hay compensaciones registradas</h3>
-        <p>Cuando se registre una compensación por horas extra aparecerá aquí</p>
+        <h3>
+          {#if compensaciones.length === 0}
+            No hay compensaciones registradas
+          {:else}
+            No hay compensaciones que coincidan con los filtros
+          {/if}
+        </h3>
+        <p>
+          {#if compensaciones.length === 0}
+            Cuando se registre una compensación por horas extra aparecerá aquí
+          {:else}
+            Intente cambiar los filtros para ver más resultados
+          {/if}
+        </p>
       </div>
     {:else}
       <div class="table-container">
@@ -443,7 +641,7 @@
             </tr>
           </thead>
           <tbody>
-            {#each compensaciones as compensacion}
+            {#each compensacionesFiltradas as compensacion}
               <tr>
                 <td>
                   <div class="agente-info">
@@ -474,7 +672,19 @@
                   </span>
                 </td>
                 <td>
-                  <button class="btn-small btn-ver">Ver</button>
+                  <div class="acciones-grupo">
+                    <button class="btn-small btn-ver" on:click={() => verDetalles(compensacion)}>
+                      👁️ Ver
+                    </button>
+                    {#if compensacion.estado === 'pendiente'}
+                      <button class="btn-small btn-aprobar" on:click={() => aprobarCompensacion(compensacion)}>
+                        ✅ Aprobar
+                      </button>
+                      <button class="btn-small btn-rechazar" on:click={() => rechazarCompensacion(compensacion)}>
+                        ❌ Rechazar
+                      </button>
+                    {/if}
+                  </div>
                 </td>
               </tr>
             {/each}
@@ -484,6 +694,173 @@
     {/if}
   </div>
 </div>
+
+<!-- Modal de detalles de compensación -->
+{#if mostrandoDetalles && compensacionSeleccionada}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div class="modal-overlay" on:click={cerrarDetalles}>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div class="modal-detalles" on:click|stopPropagation>
+      <div class="modal-header">
+        <h2>Detalles de Compensación</h2>
+        <button class="btn-close" on:click={cerrarDetalles}>×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="detalle-seccion">
+          <h3>Información General</h3>
+          <div class="detalle-grid">
+            <div class="detalle-item">
+              <label>ID Compensación:</label>
+              <span>{compensacionSeleccionada.id_hora_compensacion || compensacionSeleccionada.id_compensacion || compensacionSeleccionada.id || 'N/A'}</span>
+            </div>
+            <div class="detalle-item">
+              <label>Estado:</label>
+              <span class="estado-badge estado-{compensacionSeleccionada.estado || 'pendiente'}">
+                {compensacionSeleccionada.estado || 'Pendiente'}
+              </span>
+            </div>
+            <div class="detalle-item">
+              <label>Fecha de Solicitud:</label>
+              <span>{formatearFecha(compensacionSeleccionada.fecha_solicitud || compensacionSeleccionada.created_at)}</span>
+            </div>
+            <div class="detalle-item">
+              <label>Solicitado por:</label>
+              <span>ID: {compensacionSeleccionada.solicitado_por || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detalle-seccion">
+          <h3>Detalles de la Guardia</h3>
+          <div class="detalle-grid">
+            <div class="detalle-item">
+              <label>ID Guardia:</label>
+              <span>{compensacionSeleccionada.id_guardia || 'N/A'}</span>
+            </div>
+            <div class="detalle-item">
+              <label>Agente:</label>
+              <span>
+                {#if compensacionSeleccionada.agente_nombre}
+                  {compensacionSeleccionada.agente_apellido}, {compensacionSeleccionada.agente_nombre}
+                {:else}
+                  ID: {compensacionSeleccionada.id_agente || compensacionSeleccionada.agente_id || 'N/A'}
+                {/if}
+              </span>
+            </div>
+            <div class="detalle-item">
+              <label>Fecha de Servicio:</label>
+              <span>{formatearFecha(compensacionSeleccionada.fecha_servicio)}</span>
+            </div>
+            <div class="detalle-item">
+              <label>Hora Real de Fin:</label>
+              <span>{formatearHora(compensacionSeleccionada.hora_fin_real)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detalle-seccion">
+          <h3>Motivo y Justificación</h3>
+          <div class="detalle-grid">
+            <div class="detalle-item detalle-full">
+              <label>Tipo de Motivo:</label>
+              <span class="motivo-badge">{compensacionSeleccionada.motivo || 'N/A'}</span>
+            </div>
+            <div class="detalle-item detalle-full">
+              <label>Descripción del Motivo:</label>
+              <div class="descripcion-texto">
+                {compensacionSeleccionada.descripcion_motivo || 'Sin descripción'}
+              </div>
+            </div>
+            {#if compensacionSeleccionada.numero_acta}
+              <div class="detalle-item detalle-full">
+                <label>Número de Acta:</label>
+                <span>{compensacionSeleccionada.numero_acta}</span>
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <div class="detalle-seccion">
+          <h3>Cálculo de Horas</h3>
+          <div class="detalle-grid">
+            <div class="detalle-item">
+              <label>Horas Extra Calculadas:</label>
+              <span class="horas-badge">
+                {compensacionSeleccionada.horas_extra || 'Pendiente de cálculo'}h
+              </span>
+            </div>
+            {#if compensacionSeleccionada.monto_compensacion}
+              <div class="detalle-item">
+                <label>Monto de Compensación:</label>
+                <span class="monto-badge">
+                  ${compensacionSeleccionada.monto_compensacion}
+                </span>
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        {#if compensacionSeleccionada.estado !== 'pendiente'}
+          <div class="detalle-seccion">
+            <h3>Estado de Aprobación</h3>
+            <div class="detalle-grid">
+              {#if compensacionSeleccionada.aprobado_por}
+                <div class="detalle-item">
+                  <label>Aprobado por:</label>
+                  <span>ID: {compensacionSeleccionada.aprobado_por}</span>
+                </div>
+              {/if}
+              {#if compensacionSeleccionada.fecha_aprobacion}
+                <div class="detalle-item">
+                  <label>Fecha de Aprobación:</label>
+                  <span>{formatearFecha(compensacionSeleccionada.fecha_aprobacion)}</span>
+                </div>
+              {/if}
+              {#if compensacionSeleccionada.motivo_rechazo}
+                <div class="detalle-item detalle-full">
+                  <label>Motivo de Rechazo:</label>
+                  <div class="descripcion-texto rechazo">
+                    {compensacionSeleccionada.motivo_rechazo}
+                  </div>
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancelar" on:click={cerrarDetalles}>Cerrar</button>
+        
+        {#if compensacionSeleccionada.estado === 'pendiente'}
+          <button 
+            class="btn-guardar btn-aprobar" 
+            on:click={() => {
+              aprobarCompensacion(compensacionSeleccionada);
+              cerrarDetalles();
+            }}
+            disabled={cargando}
+          >
+            ✅ Aprobar Compensación
+          </button>
+          <button 
+            class="btn-cancelar btn-rechazar" 
+            on:click={() => {
+              rechazarCompensacion(compensacionSeleccionada);
+              cerrarDetalles();
+            }}
+            disabled={cargando}
+          >
+            ❌ Rechazar Compensación
+          </button>
+        {/if}
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .compensaciones-container {
@@ -742,10 +1119,68 @@
     margin-top: 40px;
   }
 
-  .lista-compensaciones h2 {
-    color: #374151;
+  .lista-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: 20px;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .lista-header h2 {
+    color: #374151;
+    margin: 0;
     font-size: 20px;
+  }
+
+  .filtros-lista {
+    display: flex;
+    gap: 15px;
+    align-items: end;
+    flex-wrap: wrap;
+  }
+
+  .filtro-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 150px;
+  }
+
+  .filtro-grupo label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #4b5563;
+  }
+
+  .filtro-grupo select {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+  }
+
+  .btn-recargar {
+    padding: 8px 16px;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    height: fit-content;
+  }
+
+  .btn-recargar:hover:not(:disabled) {
+    background: #e5e7eb;
+  }
+
+  .btn-recargar:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .loading {
@@ -892,6 +1327,112 @@
 
   .btn-ver:hover {
     background: #2563eb;
+  }
+
+  .acciones-grupo {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn-aprobar {
+    background: #10b981;
+    color: white;
+  }
+
+  .btn-aprobar:hover {
+    background: #059669;
+  }
+
+  .btn-rechazar {
+    background: #ef4444;
+    color: white;
+  }
+
+  .btn-rechazar:hover {
+    background: #dc2626;
+  }
+
+  /* Modal de detalles */
+  .modal-detalles {
+    background: white;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    border: 2px solid #e5e7eb;
+  }
+
+  .detalle-seccion {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+  }
+
+  .detalle-seccion h3 {
+    margin: 0 0 16px 0;
+    color: #1e40af;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .detalle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+  }
+
+  .detalle-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .detalle-item.detalle-full {
+    grid-column: 1 / -1;
+  }
+
+  .detalle-item label {
+    font-weight: 600;
+    color: #4b5563;
+    font-size: 14px;
+  }
+
+  .detalle-item span {
+    color: #111827;
+    font-size: 14px;
+  }
+
+  .descripcion-texto {
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  .descripcion-texto.rechazo {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+  }
+
+  .monto-badge {
+    display: inline-block;
+    background: #dcfce7;
+    color: #166534;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 14px;
   }
 
   @media (max-width: 768px) {
