@@ -84,7 +84,13 @@ export const asistenciaService = {
 
   // Licencias
   getLicencias: (params = {}) => {
-    const queryString = new URLSearchParams(params).toString();
+    // Filter out null, undefined, and empty string values
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([key, value]) => 
+        value !== null && value !== undefined && value !== ''
+      )
+    );
+    const queryString = new URLSearchParams(cleanParams).toString();
     return api.get(`/asistencia/licencias/${queryString ? '?' + queryString : ''}`);
   },
   getLicencia: (id) => api.get(`/asistencia/licencias/${id}/`),

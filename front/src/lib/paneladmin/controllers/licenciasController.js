@@ -35,7 +35,7 @@ export const licenciasFiltradas = derived(
         }
 
         if ($filtros.area_id) {
-            resultado = resultado.filter(l => l.id_agente_area === $filtros.area_id);
+            resultado = resultado.filter(l => l.id_agente_area === parseInt($filtros.area_id));
         }
 
         if ($filtros.estado && $filtros.estado !== 'todas') {
@@ -211,7 +211,7 @@ export async function crearLicencia(datosLicencia) {
 export async function aprobarLicencia(idLicencia, observaciones = '') {
     try {
         const response = await asistenciaService.aprobarLicencia(idLicencia, {
-            observaciones_aprobacion: observaciones
+            observaciones: observaciones
         });
         
         if (response?.data?.success) {
@@ -235,7 +235,7 @@ export async function aprobarLicencia(idLicencia, observaciones = '') {
 export async function rechazarLicencia(idLicencia, motivoRechazo) {
     try {
         const response = await asistenciaService.rechazarLicencia(idLicencia, {
-            motivo_rechazo: motivoRechazo
+            motivo: motivoRechazo
         });
         
         if (response?.data?.success) {
@@ -327,4 +327,40 @@ export function obtenerIconoEstado(estado) {
     };
     
     return iconos[estado] || '❓';
+}
+
+/**
+ * Asigna una nueva licencia a un agente específico
+ */
+export async function asignarLicencia(datosAsignacion) {
+    try {
+        loading.set(true);
+        error.set(null);
+
+        const response = await asistenciaService.createLicencia({
+            id_agente: datosAsignacion.agente_id,
+            id_tipo_licencia: datosAsignacion.tipo_licencia_id,
+            fecha_desde: datosAsignacion.fecha_desde,
+            fecha_hasta: datosAsignacion.fecha_hasta,
+            observaciones: datosAsignacion.observaciones || '',
+            estado: 'aprobada' // Asignaciones administrativas se aprueban automáticamente
+        });
+
+        if (response?.data?.success) {
+            // Actualizar el store de licencias
+            cargarLicencias();
+            return { success: true, data: response.data.data };
+        } else {
+            const errorMsg = response?.data?.message || 'Error al asignar la licencia';
+            error.set(errorMsg);
+            return { success: false, error: errorMsg };
+        }
+    } catch (err) {
+        console.error('Error asignando licencia:', err);
+        const errorMsg = err?.response?.data?.message || err.message || 'Error de conexión';
+        error.set(errorMsg);
+        return { success: false, error: errorMsg };
+    } finally {
+        loading.set(false);
+    }
 }

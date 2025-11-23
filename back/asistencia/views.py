@@ -860,6 +860,23 @@ def listar_licencias_impl(request):
         estado = request.GET.get('estado')
         tipo_licencia_id = request.GET.get('tipo_licencia_id')
         
+        # Convertir strings "null" a None
+        if area_id in ('null', '', 'None'):
+            area_id = None
+        elif area_id:
+            try:
+                area_id = int(area_id)
+            except (ValueError, TypeError):
+                area_id = None
+                
+        if tipo_licencia_id in ('null', '', 'None'):
+            tipo_licencia_id = None
+        elif tipo_licencia_id:
+            try:
+                tipo_licencia_id = int(tipo_licencia_id)
+            except (ValueError, TypeError):
+                tipo_licencia_id = None
+        
         # Base queryset con relaciones
         queryset = Licencia.objects.select_related(
             'id_agente__id_area', 'id_tipo_licencia'
@@ -1109,7 +1126,7 @@ def aprobar_licencia(request, licencia_id):
         
         # Actualizar licencia
         licencia.estado = 'aprobada'
-        licencia.aprobada_por = agente.id_agente
+        licencia.aprobada_por = agente
         licencia.fecha_aprobacion = timezone.now().date()
         licencia.observaciones_aprobacion = request.data.get('observaciones', '')
         licencia.save()
@@ -1197,7 +1214,7 @@ def rechazar_licencia(request, licencia_id):
         
         # Actualizar licencia
         licencia.estado = 'rechazada'
-        licencia.rechazada_por = agente.id_agente
+        licencia.rechazada_por = agente
         licencia.fecha_rechazo = timezone.now().date()
         licencia.motivo_rechazo = motivo_rechazo
         licencia.save()

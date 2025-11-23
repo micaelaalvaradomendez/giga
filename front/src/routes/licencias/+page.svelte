@@ -34,6 +34,11 @@
 		justificacion: ''
 	};
 	
+	// Variables para asignación de licencias
+	let areaSeleccionada = null;
+	let agentesDelArea = [];
+	let cargandoAgentes = false;
+	
 	let formAprobacion = {
 		observaciones: ''
 	};
@@ -73,19 +78,17 @@
 			// Cargar tipos de licencia
 			await cargarTiposLicencia();
 			
-			// Cargar áreas si tiene permisos
-			if (permisos.puedeVerTodasAreas || permisos.soloSuArea) {
-				const areasResponse = await personasService.getAreas();
-				if (areasResponse?.data?.success) {
-					areas = areasResponse.data.data || [];
-					// Si solo puede ver su área, filtrar
-					if (permisos.soloSuArea && !permisos.puedeVerTodasAreas) {
-						areas = areas.filter(a => a.id_area === userInfo.id_area);
-					}
+		// Cargar áreas si tiene permisos
+		if (permisos.puedeVerTodasAreas || permisos.soloSuArea || permisos.puedeAsignar) {
+			const areasResponse = await personasService.getAreas();
+			if (areasResponse?.data?.success) {
+				areas = areasResponse.data.data.results || [];
+				// Si solo puede ver su área (y no puede ver todas), filtrar
+				if (permisos.soloSuArea && !permisos.puedeVerTodasAreas && !permisos.puedeAsignar) {
+					areas = areas.filter(a => a.id_area === userInfo.id_area);
 				}
 			}
-			
-			// Cargar agentes de su área si puede asignar licencias
+		}			// Cargar agentes de su área si puede asignar licencias
 			if (permisos.puedeAsignar) {
 				await cargarAgentesArea();
 			}
@@ -115,6 +118,33 @@
 		}
 	}
 
+	async function cargarAgentesPorArea(areaId) {
+		try {
+			if (!areaId) {
+				agentesDelArea = [];
+				cargandoAgentes = false;
+				return;
+			}
+			
+			cargandoAgentes = true;
+			const response = await personasService.getAgentesByArea(areaId);
+			if (response?.data) {
+				// La API devuelve estructura paginada: { count, results: [...] }
+				agentesDelArea = response.data.results || [];
+			} else {
+				agentesDelArea = [];
+			}
+			
+			// Reset agente seleccionado cuando cambia el área
+			formLicencia.id_agente = null;
+		} catch (err) {
+			console.error('Error cargando agentes del área:', err);
+			agentesDelArea = [];
+		} finally {
+			cargandoAgentes = false;
+		}
+	}
+
 	function abrirModalCrear() {
 		formLicencia = {
 			id_agente: userInfo.id_agente, // Por defecto, el usuario actual
@@ -136,6 +166,9 @@
 			observaciones: '',
 			justificacion: 'Asignada por jefatura'
 		};
+		areaSeleccionada = null;
+		agentesDelArea = [];
+		cargandoAgentes = false;
 		showModalAsignar = true;
 	}
 
@@ -187,7 +220,7 @@
 	}
 
 	async function handleAsignarLicencia() {
-		if (!formLicencia.id_agente || !formLicencia.id_tipo_licencia || !formLicencia.fecha_desde || !formLicencia.fecha_hasta) {
+		if (!areaSeleccionada || !formLicencia.id_agente || !formLicencia.id_tipo_licencia || !formLicencia.fecha_desde || !formLicencia.fecha_hasta) {
 			alert('Por favor complete todos los campos obligatorios');
 			return;
 		}
@@ -243,7 +276,8 @@
 
 	// Funciones para filtros
 	function aplicarFiltros() {
-		actualizarFiltros($filtros);
+		// Los filtros se actualizan automáticamente por el binding con $filtros
+		// Solo necesitamos recargar las licencias con los filtros actuales
 		cargarLicencias($filtros);
 	}
 
@@ -320,11 +354,11 @@
 				<label>Hasta</label>
 				<input type="date" bind:value={$filtros.fecha_hasta} on:change={aplicarFiltros} />
 			</div>
-			{#if permisos.puedeVerTodasAreas}
+			{#if (permisos.puedeVerTodasAreas || permisos.puedeAsignar) || (permisos.soloSuArea && areas.length > 1)}
 				<div class="filtro-group">
 					<label>Área</label>
 					<select bind:value={$filtros.area_id} on:change={aplicarFiltros}>
-						<option value={null}>Todas las áreas</option>
+						<option value={null}>{permisos.puedeVerTodasAreas || permisos.puedeAsignar ? 'Todas las áreas' : 'Mi área'}</option>
 						{#each areas as area}
 							<option value={area.id_area}>{area.nombre}</option>
 						{/each}
@@ -553,15 +587,44 @@
 			</div>
 			<form on:submit|preventDefault={handleAsignarLicencia}>
 				<div class="modal-body">
+					<!-- Selección de Área -->
 					<div class="form-group">
-						<label>Agente *</label>
-						<select bind:value={formLicencia.id_agente} required>
-							<option value={null}>Seleccione un agente...</option>
-							{#each agentes as agente}
-								<option value={agente.id_agente}>{agente.nombre} {agente.apellido} - {agente.dni}</option>
+						<label>Área *</label>
+						<select bind:value={areaSeleccionada} on:change={() => cargarAgentesPorArea(areaSeleccionada)} required>
+							<option value={null}>Seleccione un área...</option>
+							{#each areas as area}
+								<option value={area.id_area}>{area.nombre}</option>
 							{/each}
 						</select>
 					</div>
+
+					<!-- Selección de Agente (solo se muestra si hay un área seleccionada) -->
+					{#if areaSeleccionada}
+						<div class="form-group">
+							<label>Agente *</label>
+							<select bind:value={formLicencia.id_agente} disabled={cargandoAgentes} required>
+								<option value={null}>
+									{cargandoAgentes ? 'Cargando agentes...' : 'Seleccione un agente...'}
+								</option>
+								{#each agentesDelArea as agente}
+									<option value={agente.id_agente}>{agente.nombre} {agente.apellido} - {agente.legajo}</option>
+								{/each}
+							</select>
+							{#if cargandoAgentes}
+								<small style="color: #3b82f6; font-style: italic;">
+									🔄 Cargando agentes del área seleccionada...
+								</small>
+							{:else if agentesDelArea.length === 0}
+								<small style="color: #6b7280; font-style: italic;">
+									No hay agentes disponibles en esta área
+								</small>
+							{:else}
+								<small style="color: #10b981; font-style: italic;">
+									{agentesDelArea.length} agente{agentesDelArea.length !== 1 ? 's' : ''} disponible{agentesDelArea.length !== 1 ? 's' : ''}
+								</small>
+							{/if}
+						</div>
+					{/if}
 
 					<div class="form-group">
 						<label>Tipo de Licencia *</label>
