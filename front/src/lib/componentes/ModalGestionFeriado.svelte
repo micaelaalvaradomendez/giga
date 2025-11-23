@@ -110,10 +110,39 @@
 		}
 
 		try {
-			await feriadosController.deleteFeriadoFromModal(feriado.id_feriado);
+			await ferladosController.deleteFeriadoFromModal(feriado.id_feriado);
 		} catch (error) {
 			// El error ya se maneja en el controlador
 			console.error("Error eliminando feriado:", error);
+		}
+	}
+
+	function editarFeriadoExistente(feriadoExistente) {
+		// Cambiar a modo edición con el feriado seleccionado
+		modoEdicion = true;
+		nombreFeriado = feriadoExistente.nombre || "";
+		descripcionFeriado = feriadoExistente.descripcion || "";
+		fechaInicio = feriadoExistente.fecha_inicio || selectedDate;
+		fechaFin = feriadoExistente.fecha_fin || selectedDate;
+		esNacional = feriadoExistente.es_nacional || false;
+		esProvincial = feriadoExistente.es_provincial || false;
+		esLocal = feriadoExistente.es_local || false;
+		esMultiplesDias = fechaInicio && fechaFin && fechaInicio !== fechaFin;
+		
+		// Establecer el feriado para edición
+		feriado = feriadoExistente;
+	}
+
+	async function eliminarFeriadoExistente(feriadoExistente) {
+		if (!confirm(`¿Estás seguro de que deseas eliminar el feriado "${feriadoExistente.nombre}"?`)) {
+			return;
+		}
+
+		try {
+			await feriadosController.deleteFeriadoFromModal(feriadoExistente.id_feriado);
+			// El modal se cerrará automáticamente después de la eliminación exitosa
+		} catch (error) {
+			console.error("Error eliminando feriado existente:", error);
 		}
 	}
 </script>
@@ -142,11 +171,29 @@
 						<div class="existing-list">
 							{#each existingFeriados as existingFeriado}
 								<div class="existing-item">
-									<span class="existing-name">{existingFeriado.nombre}</span>
-									<span class="existing-type">{existingFeriado.tipo_feriado}</span>
-									{#if existingFeriado.es_multiples_dias}
-										<span class="existing-duration">({existingFeriado.duracion_dias} días)</span>
-									{/if}
+									<div class="existing-info">
+										<span class="existing-name">{existingFeriado.nombre}</span>
+										<span class="existing-type">{existingFeriado.tipo_feriado}</span>
+										{#if existingFeriado.es_multiples_dias}
+											<span class="existing-duration">({existingFeriado.duracion_dias} días)</span>
+										{/if}
+									</div>
+									<div class="existing-actions">
+										<button 
+											class="btn-edit-existing" 
+											on:click={() => editarFeriadoExistente(existingFeriado)}
+											title="Editar este feriado"
+										>
+											✏️
+										</button>
+										<button 
+											class="btn-delete-existing" 
+											on:click={() => eliminarFeriadoExistente(existingFeriado)}
+											title="Eliminar este feriado"
+										>
+											🗑️
+										</button>
+									</div>
 								</div>
 							{/each}
 						</div>
@@ -406,11 +453,41 @@
 	.existing-item {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		justify-content: space-between;
 		padding: 0.5rem;
 		background-color: white;
 		border-radius: 4px;
 		border-left: 3px solid #007bff;
+	}
+
+	.existing-info {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex: 1;
+	}
+
+	.existing-actions {
+		display: flex;
+		gap: 0.25rem;
+	}
+
+	.btn-edit-existing, .btn-delete-existing {
+		background: none;
+		border: none;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 0.8rem;
+		transition: background-color 0.2s ease;
+	}
+
+	.btn-edit-existing:hover {
+		background-color: #e3f2fd;
+	}
+
+	.btn-delete-existing:hover {
+		background-color: #ffebee;
 	}
 
 	.existing-name {

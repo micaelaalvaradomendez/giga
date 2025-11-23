@@ -67,9 +67,12 @@ SCRIPTS=(
     "04-functions-triggers.sql"
     "05-seed-data.sql"
     "06-add-approval-tracking.sql"
-    "07-add-nota-guardia.sql"
+    "07-actualizar-funcion-plus-compensaciones.sql"
     "08-refactor-asistencia.sql"
     "09-django-tables.sql"
+    "10-guardias-historicas.sql"
+    "11-migrar-feriados-multiples.sql"
+    "12-actualizar-licencias.sql"
 )
 
 # Ejecutar cada script en orden

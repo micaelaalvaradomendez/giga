@@ -61,11 +61,12 @@
         const { date, isFeriado, feriados } = event.detail;
         const selectedDate = date.toISOString().split("T")[0];
         
-        // Si es un feriado y hay solo uno, editarlo directamente
+        // Obtener feriados existentes en la fecha
         const feriadosEnFecha = feriados || feriadosController.getFeriadosByDate(selectedDate);
-        const feriado = feriadosEnFecha.length === 1 ? feriadosEnFecha[0] : null;
-
-        feriadosController.openModal(selectedDate, feriado);
+        
+        // Siempre abrir modal en modo creación para permitir múltiples feriados
+        // El modal mostrará los feriados existentes como información
+        feriadosController.openModal(selectedDate, null);
     }
 
     function closeModal() {

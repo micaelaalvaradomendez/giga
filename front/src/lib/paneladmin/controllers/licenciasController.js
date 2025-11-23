@@ -210,8 +210,7 @@ export async function crearLicencia(datosLicencia) {
  */
 export async function aprobarLicencia(idLicencia, observaciones = '') {
     try {
-        const response = await asistenciaService.updateLicencia(idLicencia, {
-            estado: 'aprobada',
+        const response = await asistenciaService.aprobarLicencia(idLicencia, {
             observaciones_aprobacion: observaciones
         });
         
@@ -235,8 +234,7 @@ export async function aprobarLicencia(idLicencia, observaciones = '') {
  */
 export async function rechazarLicencia(idLicencia, motivoRechazo) {
     try {
-        const response = await asistenciaService.updateLicencia(idLicencia, {
-            estado: 'rechazada',
+        const response = await asistenciaService.rechazarLicencia(idLicencia, {
             motivo_rechazo: motivoRechazo
         });
         

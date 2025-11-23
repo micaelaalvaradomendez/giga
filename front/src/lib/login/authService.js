@@ -138,6 +138,52 @@ export class AuthService {
         }
     }
 
+    // Nuevo método para compatibilidad con el controlador de licencias
+    static async getCurrentUserData() {
+        if (!isBrowser) return { success: false, data: null };
+        
+        try {
+            // Intentar obtener de localStorage primero
+            const user = this.getCurrentUser();
+            if (user) {
+                return {
+                    success: true,
+                    data: {
+                        success: true,
+                        data: {
+                            ...user,
+                            id_agente: user.id,
+                            id_area: user.area?.id,
+                            rol_nombre: user.roles?.[0]?.nombre || 'Agente'
+                        }
+                    }
+                };
+            }
+            
+            // Si no hay usuario en localStorage, verificar sesión
+            const sessionCheck = await this.checkSession();
+            if (sessionCheck.authenticated && sessionCheck.user) {
+                return {
+                    success: true,
+                    data: {
+                        success: true,
+                        data: {
+                            ...sessionCheck.user,
+                            id_agente: sessionCheck.user.id,
+                            id_area: sessionCheck.user.area?.id,
+                            rol_nombre: sessionCheck.user.roles?.[0]?.nombre || 'Agente'
+                        }
+                    }
+                };
+            }
+            
+            return { success: false, data: null };
+        } catch (error) {
+            console.error('Error obteniendo datos del usuario:', error);
+            return { success: false, data: null };
+        }
+    }
+
     static isAuthenticated() {
         if (!isBrowser) return false;
         const isAuth = localStorage.getItem('isAuthenticated');

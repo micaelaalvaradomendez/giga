@@ -1,7 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { authService } from '$lib/login/authService.js';
+	import AuthService from '$lib/login/authService.js';
 	import { asistenciaService, personasService } from '$lib/services.js';
 	import {
 		licencias, tiposLicencia, filtros, loading, error, usuario,
@@ -51,8 +51,8 @@
 	async function inicializar() {
 		try {
 			// Obtener información del usuario actual
-			const userResponse = await authService.getCurrentUser();
-			if (userResponse?.data?.success) {
+			const userResponse = await AuthService.getCurrentUserData();
+			if (userResponse?.success && userResponse.data?.success) {
 				userInfo = userResponse.data.data;
 				usuario.set(userInfo);
 				permisos = obtenerPermisos(userInfo.rol_nombre, userInfo.id_area);
@@ -60,11 +60,11 @@
 				// Cargar datos iniciales
 				await cargarDatosIniciales();
 			} else {
-				goto('/login');
+				goto('/');
 			}
 		} catch (err) {
 			console.error('Error inicializando:', err);
-			goto('/login');
+			goto('/');
 		}
 	}
 
