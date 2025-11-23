@@ -163,11 +163,15 @@ class PlanificadorGuardiasController {
 	}
 
 	/**
-	 * Carga los agentes del área seleccionada
+	 * Carga los agentes del área seleccionada y filtra los disponibles
 	 */
 	async cargarAgentesDeArea() {
-		let areaId;
+		let areaId, fechaInicio, horaInicio, horaFin, token;
 		this.areaSeleccionada.subscribe(a => areaId = a)();
+		this.fechaInicio.subscribe(f => fechaInicio = f)();
+		this.horaInicio.subscribe(h => horaInicio = h)();
+		this.horaFin.subscribe(h => horaFin = h)();
+		this.token.subscribe(t => token = t)();
 		
 		if (!areaId) {
 			this.agentesDisponibles.set([]);
@@ -178,17 +182,38 @@ class PlanificadorGuardiasController {
 			this.loading.set(true);
 			this.error.set('');
 			
-			let token;
-			this.token.subscribe(t => token = t)();
-			
 			const response = await personasService.getAgentesByArea(areaId, token);
 			let agentes = response.data?.results || response.data || [];
 			
 			// Filtrar solo agentes activos
 			agentes = agentes.filter(a => a.activo === true);
 			
-			this.agentesDisponibles.set(agentes);
-			console.log('✅ Agentes del área cargados:', agentes.length);
+			// Si tenemos fecha y horario, filtrar agentes que NO tienen conflicto
+			if (fechaInicio && horaInicio && horaFin) {
+				const agentesDisponibles = [];
+				
+				for (const agente of agentes) {
+					try {
+						const disponibilidad = await guardiasService.verificarDisponibilidad(agente.id_agente, fechaInicio, token);
+						
+						// Si está disponible (sin guardias ese día), incluirlo
+						if (disponibilidad.data?.disponible) {
+							agentesDisponibles.push(agente);
+						}
+					} catch (e) {
+						console.warn(`⚠️ Error verificando disponibilidad del agente ${agente.id_agente}:`, e);
+						// En caso de error, incluir el agente (mejor que excluirlo)
+						agentesDisponibles.push(agente);
+					}
+				}
+				
+				this.agentesDisponibles.set(agentesDisponibles);
+				console.log(`✅ Agentes disponibles para ${fechaInicio}: ${agentesDisponibles.length}/${agentes.length}`);
+			} else {
+				// Sin fecha/horario, mostrar todos los agentes activos
+				this.agentesDisponibles.set(agentes);
+				console.log('✅ Agentes del área cargados:', agentes.length);
+			}
 		} catch (e) {
 			this.error.set('Error al cargar los agentes');
 			console.error('❌ Error cargando agentes:', e);
@@ -223,6 +248,23 @@ class PlanificadorGuardiasController {
 		this.agentesConConflicto.set(new Set());
 		
 		await this.cargarAgentesDeArea();
+	}
+
+	/**
+	 * Maneja el cambio de fecha u horario (requiere recargar agentes disponibles)
+	 */
+	async handleFechaHorarioChange() {
+		let paso;
+		this.paso.subscribe(p => paso = p)();
+		
+		// Si estamos en el paso 2, recargar agentes
+		if (paso === 2) {
+			// Limpiar selecciones ya que la disponibilidad puede haber cambiado
+			this.agentesSeleccionados.set(new Set());
+			this.agentesConConflicto.set(new Set());
+			
+			await this.cargarAgentesDeArea();
+		}
 	}
 
 	/**
@@ -346,12 +388,6 @@ class PlanificadorGuardiasController {
 			if (fechaInicioDate < hoy) {
 				errores.push('La fecha de inicio no puede ser en el pasado');
 			}
-			
-			// Validar que sea fin de semana (sábado=6, domingo=0)
-			const diaSemana = fechaInicioDate.getDay();
-			if (diaSemana !== 0 && diaSemana !== 6) {
-				errores.push('Las guardias solo pueden programarse en fines de semana (sábado y domingo)');
-			}
 		}
 		
 		return {
@@ -361,9 +397,61 @@ class PlanificadorGuardiasController {
 	}
 
 	/**
+	 * Valida que la fecha sea fin de semana o feriado
+	 * @returns {Promise<Object>} - { valido: boolean, errores: string[] }
+	 */
+	async validarDiaPermitido() {
+		const errores = [];
+		
+		let fechaInicio, token;
+		this.fechaInicio.subscribe(f => fechaInicio = f)();
+		this.token.subscribe(t => token = t)();
+		
+		if (!fechaInicio) {
+			return { valido: true, errores: [] };
+		}
+		
+		try {
+			const fechaDate = new Date(fechaInicio + 'T00:00:00');
+			const diaSemana = fechaDate.getDay();
+			
+			// Si es fin de semana (sábado=6, domingo=0), está permitido
+			if (diaSemana === 0 || diaSemana === 6) {
+				return { valido: true, errores: [] };
+			}
+			
+			// Si no es fin de semana, verificar si es feriado
+			const verificacionFeriado = await guardiasService.verificarFeriado({ fecha: fechaInicio }, token);
+			
+			if (verificacionFeriado.data?.es_feriado) {
+				// Es feriado, está permitido
+				return { valido: true, errores: [] };
+			} else {
+				// No es fin de semana ni feriado
+				errores.push('Las guardias solo pueden programarse en fines de semana (sábado y domingo) o feriados');
+				return { valido: false, errores };
+			}
+			
+		} catch (e) {
+			console.error('❌ Error verificando feriado:', e);
+			// En caso de error, mantener solo validación de fin de semana
+			const fechaDate = new Date(fechaInicio + 'T00:00:00');
+			const diaSemana = fechaDate.getDay();
+			
+			if (diaSemana !== 0 && diaSemana !== 6) {
+				errores.push('Las guardias solo pueden programarse en fines de semana (sábado y domingo). No se pudo verificar feriados');
+				return { valido: false, errores };
+			}
+			
+			return { valido: true, errores: [] };
+		}
+	}
+
+	/**
 	 * Avanza al paso 2 (selección de agentes)
 	 */
 	async avanzarPaso2() {
+		// Validación básica
 		const validacion = this.validarPaso1();
 		
 		if (!validacion.valido) {
@@ -371,8 +459,23 @@ class PlanificadorGuardiasController {
 			return;
 		}
 		
+		// Validación de día permitido (fin de semana o feriado)
+		const validacionDia = await this.validarDiaPermitido();
+		
+		if (!validacionDia.valido) {
+			this.error.set(validacionDia.errores.join('. '));
+			return;
+		}
+		
 		this.error.set('');
+		
+		// Cargar agentes disponibles considerando fecha y horario
 		await this.cargarAgentesDeArea();
+		
+		// Limpiar selecciones previas ya que los agentes pueden haber cambiado
+		this.agentesSeleccionados.set(new Set());
+		this.agentesConConflicto.set(new Set());
+		
 		this.paso.set(2);
 	}
 

@@ -7,11 +7,14 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.utils import timezone
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, F
+from django.db import transaction
 from datetime import datetime, date
 import logging
 
 from .models import Cronograma, Guardia, ResumenGuardiaMes, ReglaPlus, ParametrosArea, Feriado, HoraCompensacion
+# Importar funciones de validación de días laborables
+from asistencia.views import es_dia_laborable, get_motivo_no_laborable
 from auditoria.models import Auditoria
 from .serializers import (
     CronogramaExtendidoSerializer, GuardiaResumenSerializer, 
@@ -101,7 +104,7 @@ class ParametrosAreaViewSet(viewsets.ModelViewSet):
 
 
 class FeriadoViewSet(viewsets.ModelViewSet):
-    """ViewSet para gestión de feriados"""
+    """ViewSet para gestión de feriados con soporte multi-día"""
     
     queryset = Feriado.objects.all()
     serializer_class = FeriadoSerializer
@@ -110,10 +113,13 @@ class FeriadoViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         
-        # Filtros por año
+        # Filtros por año - ahora busca en rango de fechas
         anio = self.request.query_params.get('anio')
         if anio:
-            queryset = queryset.filter(fecha__year=anio)
+            queryset = queryset.filter(
+                Q(fecha_inicio__year=anio) | 
+                Q(fecha_fin__year=anio)
+            )
         
         # Filtros por tipo
         tipo = self.request.query_params.get('tipo')
@@ -124,8 +130,8 @@ class FeriadoViewSet(viewsets.ModelViewSet):
         elif tipo == 'local':
             queryset = queryset.filter(es_local=True)
         
-        return queryset.filter(activo=True).order_by('fecha')
-    
+        return queryset.filter(activo=True).order_by('fecha_inicio', 'fecha_fin')
+
     def create(self, request, *args, **kwargs):
         """Override del método create para manejar repetición anual"""
         repetir_anualmente = request.data.get('repetir_anualmente', False)
@@ -134,44 +140,50 @@ class FeriadoViewSet(viewsets.ModelViewSet):
             # Comportamiento normal
             return super().create(request, *args, **kwargs)
         
-        # Crear feriado con repetición anual (10 años hacia adelante)
-        fecha_original = request.data.get('fecha')
-        descripcion = request.data.get('descripcion')
-        es_nacional = request.data.get('es_nacional', False)
-        es_provincial = request.data.get('es_provincial', False)
-        es_local = request.data.get('es_local', False)
-        
+        # Crear feriado con repetición anual (5 años hacia adelante)
         try:
-            from datetime import datetime, timedelta
-            from django.db import transaction
             
-            fecha_base = datetime.strptime(fecha_original, '%Y-%m-%d').date()
+            fecha_inicio_str = request.data.get('fecha_inicio')
+            fecha_fin_str = request.data.get('fecha_fin', fecha_inicio_str)
+            
+            fecha_inicio_base = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+            fecha_fin_base = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+            
             feriados_creados = []
+            años_creados = []
             
             with transaction.atomic():
-                # Crear feriado para los próximos 10 años
-                for i in range(10):
-                    fecha_año = fecha_base.replace(year=fecha_base.year + i)
+                # Crear feriado para los próximos 5 años
+                for i in range(5):
+                    # Calcular las fechas para este año
+                    fecha_inicio_año = fecha_inicio_base.replace(year=fecha_inicio_base.year + i)
+                    fecha_fin_año = fecha_fin_base.replace(year=fecha_fin_base.year + i)
                     
-                    # Verificar si ya existe para evitar duplicados
-                    if not Feriado.objects.filter(fecha=fecha_año).exists():
-                        feriado = Feriado.objects.create(
-                            fecha=fecha_año,
-                            descripcion=descripcion,
-                            es_nacional=es_nacional,
-                            es_provincial=es_provincial,
-                            es_local=es_local,
-                            activo=True,
-                            creado_en=timezone.now()
-                        )
+                    # Verificar si ya existe un feriado con el mismo nombre en esas fechas
+                    existe = Feriado.objects.filter(
+                        nombre=request.data.get('nombre'),
+                        fecha_inicio=fecha_inicio_año,
+                        fecha_fin=fecha_fin_año
+                    ).exists()
+                    
+                    if not existe:
+                        feriado_data = request.data.copy()
+                        feriado_data['fecha_inicio'] = fecha_inicio_año
+                        feriado_data['fecha_fin'] = fecha_fin_año
+                        
+                        serializer = self.get_serializer(data=feriado_data)
+                        serializer.is_valid(raise_exception=True)
+                        feriado = serializer.save()
+                        
                         feriados_creados.append(FeriadoSerializer(feriado).data)
+                        años_creados.append(str(fecha_inicio_año.year))
             
             return Response({
                 'success': True,
-                'message': f'Se crearon {len(feriados_creados)} feriados para los próximos 10 años',
+                'message': f'Se crearon {len(feriados_creados)} feriados para los próximos 5 años',
                 'data': {
                     'feriados_creados': len(feriados_creados),
-                    'años': [f['fecha'][:4] for f in feriados_creados],
+                    'años': años_creados,
                     'feriados': feriados_creados
                 }
             }, status=status.HTTP_201_CREATED)
@@ -180,10 +192,10 @@ class FeriadoViewSet(viewsets.ModelViewSet):
             return Response({
                 'error': f'Error creando feriados anuales: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
-
+    
     @action(detail=False, methods=['post'])
     def verificar_fecha(self, request):
-        """Verifica si una fecha específica es feriado"""
+        """Verifica si una fecha específica es feriado - ahora soporta múltiples feriados por fecha"""
         fecha_str = request.data.get('fecha')
         if not fecha_str:
             return Response(
@@ -192,19 +204,100 @@ class FeriadoViewSet(viewsets.ModelViewSet):
             )
         
         try:
+            from datetime import datetime
             fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-            es_feriado = ValidadorHorarios.es_feriado(fecha)
             
-            feriado_info = None
+            # Obtener todos los feriados que incluyen esta fecha
+            feriados = Feriado.feriados_en_fecha(fecha)
+            es_feriado = feriados.exists()
+            
+            feriados_info = []
             if es_feriado:
-                feriado = Feriado.objects.filter(fecha=fecha, activo=True).first()
-                if feriado:
-                    feriado_info = FeriadoSerializer(feriado).data
+                feriados_info = FeriadoSerializer(feriados, many=True).data
             
             return Response({
                 'fecha': fecha_str,
                 'es_feriado': es_feriado,
-                'feriado': feriado_info
+                'cantidad_feriados': feriados.count(),
+                'feriados': feriados_info
+            })
+            
+        except ValueError:
+            return Response(
+                {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'])
+    def por_mes(self, request):
+        """Obtiene feriados para un mes específico (optimizado para calendario)"""
+        año = request.query_params.get('año')
+        mes = request.query_params.get('mes')
+        
+        if not año or not mes:
+            return Response(
+                {'error': 'Año y mes son requeridos'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Fechas del mes
+            from datetime import date, timedelta
+            primer_dia = date(int(año), int(mes), 1)
+            if int(mes) == 12:
+                ultimo_dia = date(int(año) + 1, 1, 1) - timedelta(days=1)
+            else:
+                ultimo_dia = date(int(año), int(mes) + 1, 1) - timedelta(days=1)
+            
+            # Feriados que intersectan con el mes
+            feriados = Feriado.feriados_en_rango(primer_dia, ultimo_dia)
+            
+            return Response({
+                'año': año,
+                'mes': mes,
+                'primer_dia': primer_dia,
+                'ultimo_dia': ultimo_dia,
+                'total_feriados': feriados.count(),
+                'feriados': FeriadoSerializer(feriados, many=True).data
+            })
+            
+        except ValueError as e:
+            return Response(
+                {'error': f'Año o mes inválidos: {str(e)}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['post'])
+    def verificar_rango(self, request):
+        """Verifica feriados en un rango de fechas"""
+        fecha_inicio = request.data.get('fecha_inicio')
+        fecha_fin = request.data.get('fecha_fin')
+        
+        if not fecha_inicio or not fecha_fin:
+            return Response(
+                {'error': 'Fecha inicio y fin requeridas'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from datetime import datetime
+            fecha_inicio_obj = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            
+            if fecha_fin_obj < fecha_inicio_obj:
+                return Response(
+                    {'error': 'La fecha fin debe ser mayor o igual a la fecha inicio'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            feriados = Feriado.feriados_en_rango(fecha_inicio_obj, fecha_fin_obj)
+            
+            return Response({
+                'fecha_inicio': fecha_inicio,
+                'fecha_fin': fecha_fin,
+                'dias_consultados': (fecha_fin_obj - fecha_inicio_obj).days + 1,
+                'total_feriados': feriados.count(),
+                'feriados': FeriadoSerializer(feriados, many=True).data
             })
             
         except ValueError:
@@ -235,6 +328,11 @@ class FeriadoViewSet(viewsets.ModelViewSet):
     def _crear_auditoria_feriado(self, accion, feriado_id, valor_previo=None, valor_nuevo=None):
         """Crear registro de auditoría para cambios en feriados"""
         try:
+            from auditoria.models import Auditoria
+            from django.utils import timezone
+            import logging
+            logger = logging.getLogger(__name__)
+            
             # Obtener el agente del usuario autenticado
             agente_id = None
             if hasattr(self.request.user, 'agente'):
@@ -250,6 +348,8 @@ class FeriadoViewSet(viewsets.ModelViewSet):
                 id_agente_id=agente_id
             )
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
             logger.error(f"Error al crear auditoría de feriado: {str(e)}")
 
 
@@ -306,6 +406,42 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 return Response(
                     {'error': 'Debe seleccionar al menos un agente'}, 
                     status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validar que la fecha sea fin de semana o feriado
+            try:
+                from datetime import datetime as dt
+                from asistencia.views import es_dia_laborable, get_motivo_no_laborable
+                
+                fecha_guardia = dt.strptime(data['fecha'], '%Y-%m-%d').date()
+                logger.info(f"Validando fecha para guardia: {fecha_guardia}")
+                
+                # Verificar si es día laborable (si es True, entonces NO es válido para guardias)
+                es_laborable = es_dia_laborable(fecha_guardia)
+                logger.info(f"¿Es día laborable {fecha_guardia}? {es_laborable}")
+                
+                if es_laborable:
+                    # Es día laborable (lunes a viernes normal), NO permitido para guardias
+                    logger.warning(f"Rechazando guardia en día laborable: {fecha_guardia}")
+                    return Response(
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                # Si llegamos aquí, es fin de semana o feriado (válido para guardias)
+                motivo = get_motivo_no_laborable(fecha_guardia)
+                logger.info(f"✅ Fecha válida para guardia {fecha_guardia}: {motivo}")
+                
+            except ValueError as e:
+                return Response(
+                    {'error': f'Formato de fecha inválido: {data.get("fecha")}'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            except Exception as e:
+                logger.error(f"Error validando día laborable: {str(e)}")
+                return Response(
+                    {'error': 'Error validando fecha de guardia'}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             
             # Obtener el agente del usuario autenticado
@@ -410,9 +546,9 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 )
             
             # Validar duración de la guardia  
-            from datetime import time
-            hora_inicio_obj = datetime.strptime(data['hora_inicio'], '%H:%M').time()
-            hora_fin_obj = datetime.strptime(data['hora_fin'], '%H:%M').time()
+            from datetime import time, datetime as dt
+            hora_inicio_obj = dt.strptime(data['hora_inicio'], '%H:%M').time()
+            hora_fin_obj = dt.strptime(data['hora_fin'], '%H:%M').time()
             
             duracion_valida, mensaje_duracion = ValidadorHorarios.validar_duracion_guardia(
                 hora_inicio_obj, hora_fin_obj
@@ -425,6 +561,13 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             
             print(f"✅ Validaciones pasadas - {mensaje_fecha}, {mensaje_duracion}")
             
+            # Debug: Mostrar datos antes de crear guardias
+            print(f"🔍 Datos para crear guardias:")
+            print(f"  - Cronograma creado: {cronograma.id_cronograma}")
+            print(f"  - Estado guardias: {estado_guardias}")
+            print(f"  - Guardias activas: {guardias_activas}")
+            print(f"  - Agentes a procesar: {data['agentes']}")
+            
             # Crear las guardias para cada agente
             guardias_creadas = []
             for agente_data in data['agentes']:
@@ -433,6 +576,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     agente_id_guardia = agente_data['id_agente']
                 else:
                     agente_id_guardia = agente_data
+                
+                print(f"🔍 Creando guardia para agente: {agente_id_guardia} (tipo: {type(agente_data)})")
                     
                 guardia = Guardia.objects.create(
                     id_cronograma=cronograma,
@@ -446,6 +591,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     observaciones=data.get('observaciones', '')
                 )
                 guardias_creadas.append(guardia)
+                print(f"✅ Guardia creada: {guardia.id_guardia} para agente {agente_id_guardia}")
                 
                 # Registrar auditoría de cada guardia
                 Auditoria.objects.create(
@@ -465,6 +611,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     accion='CREAR',
                     id_agente_id=agente_id
                 )
+            
+            print(f"✅ Todas las guardias creadas exitosamente. Total: {len(guardias_creadas)}")
             
             return Response({
                 'mensaje': 'Guardia creada exitosamente',
@@ -507,6 +655,38 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 return Response(
                     {'error': 'Debe seleccionar al menos un agente'}, 
                     status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validar que la fecha sea fin de semana o feriado
+            try:
+                from datetime import datetime as dt
+                fecha_guardia = dt.strptime(data['fecha'], '%Y-%m-%d').date()
+                
+                # Verificar si es día laborable (si es True, entonces NO es válido para guardias)
+                es_laborable = es_dia_laborable(fecha_guardia)
+                logger.info(f"¿Es día laborable {fecha_guardia}? {es_laborable}")
+                
+                if es_laborable:
+                    # Es día laborable (lunes a viernes normal), NO permitido para guardias
+                    logger.warning(f"Rechazando actualización de guardia en día laborable: {fecha_guardia}")
+                    return Response(
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                motivo = get_motivo_no_laborable(fecha_guardia)
+                logger.info(f"✅ Fecha válida para actualizar guardia {fecha_guardia}: {motivo}")
+                
+            except ValueError as e:
+                return Response(
+                    {'error': f'Formato de fecha inválido: {data.get("fecha")}'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            except Exception as e:
+                logger.error(f"Error validando día laborable: {str(e)}")
+                return Response(
+                    {'error': 'Error validando fecha de guardia'}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             
             # Obtener agente que realiza la actualización
@@ -1095,6 +1275,75 @@ class GuardiaViewSet(viewsets.ModelViewSet):
     serializer_class = GuardiaResumenSerializer
     permission_classes = [IsAuthenticated]
     
+    def create(self, request, *args, **kwargs):
+        """Override create para validar días permitidos"""
+        fecha_str = request.data.get('fecha')
+        if fecha_str:
+            try:
+                from datetime import datetime as dt
+                fecha_obj = dt.strptime(fecha_str, '%Y-%m-%d').date()
+                
+                # Validar que NO sea día laborable (solo permitir fines de semana y feriados)
+                if es_dia_laborable(fecha_obj):
+                    return Response(
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+            except ValueError:
+                return Response(
+                    {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        return super().create(request, *args, **kwargs)
+    
+    def update(self, request, *args, **kwargs):
+        """Override update para validar días permitidos"""
+        fecha_str = request.data.get('fecha')
+        if fecha_str:
+            try:
+                from datetime import datetime as dt
+                fecha_obj = dt.strptime(fecha_str, '%Y-%m-%d').date()
+                
+                # Validar que NO sea día laborable (solo permitir fines de semana y feriados)
+                if es_dia_laborable(fecha_obj):
+                    return Response(
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+            except ValueError:
+                return Response(
+                    {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        return super().update(request, *args, **kwargs)
+    
+    def partial_update(self, request, *args, **kwargs):
+        """Override partial_update para validar días permitidos"""
+        fecha_str = request.data.get('fecha')
+        if fecha_str:
+            try:
+                from datetime import datetime as dt
+                fecha_obj = dt.strptime(fecha_str, '%Y-%m-%d').date()
+                
+                # Validar que NO sea día laborable (solo permitir fines de semana y feriados)
+                if es_dia_laborable(fecha_obj):
+                    return Response(
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+            except ValueError:
+                return Response(
+                    {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        return super().partial_update(request, *args, **kwargs)
+    
     @action(detail=True, methods=['get', 'post'], url_path='notas')
     def notas_guardia(self, request, pk=None):
         """
@@ -1593,6 +1842,68 @@ class GuardiaViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {'error': f'Error generando reporte general: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'])
+    def por_mes(self, request):
+        """Obtiene guardias para un mes específico (optimizado para calendario)"""
+        año = request.query_params.get('año')
+        mes = request.query_params.get('mes')
+        
+        if not año or not mes:
+            return Response(
+                {'error': 'Año y mes son requeridos'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from datetime import date, timedelta
+            # Fechas del mes
+            primer_dia = date(int(año), int(mes), 1)
+            if int(mes) == 12:
+                ultimo_dia = date(int(año) + 1, 1, 1) - timedelta(days=1)
+            else:
+                ultimo_dia = date(int(año), int(mes) + 1, 1) - timedelta(days=1)
+            
+            # Guardias del mes (incluye las que se extienden desde el día anterior)
+            guardias = []
+            
+            # Guardias que inician en el mes
+            guardias_mes = Guardia.objects.filter(
+                fecha__gte=primer_dia,
+                fecha__lte=ultimo_dia,
+                activa=True
+            ).select_related('id_agente', 'id_cronograma')
+            
+            # Guardias del día anterior al mes que se extienden (multi-día)
+            fecha_anterior = primer_dia - timedelta(days=1)
+            guardias_extension = Guardia.objects.filter(
+                fecha=fecha_anterior,
+                hora_inicio__gt=F('hora_fin'),  # Indica que cruza días
+                activa=True
+            ).select_related('id_agente', 'id_cronograma')
+            
+            # Combinar ambos querysets
+            todas_guardias = guardias_mes.union(guardias_extension).order_by('fecha', 'hora_inicio')
+            
+            return Response({
+                'año': año,
+                'mes': mes,
+                'primer_dia': primer_dia,
+                'ultimo_dia': ultimo_dia,
+                'total_guardias': todas_guardias.count(),
+                'guardias': GuardiaResumenSerializer(todas_guardias, many=True).data
+            })
+            
+        except ValueError as e:
+            return Response(
+                {'error': f'Año o mes inválidos: {str(e)}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Error obteniendo guardias: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

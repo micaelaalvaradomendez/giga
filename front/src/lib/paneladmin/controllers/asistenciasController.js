@@ -403,9 +403,13 @@ class AsistenciasController {
 				return { success: true, message: '✅ Entrada marcada correctamente' };
 			} else {
 				console.error('❌ Error en marcación:', { status: response.status, data });
+				let mensaje = data.message || 'No se pudo marcar la entrada';
+				if (data.tipo === 'dia_no_laborable') {
+					mensaje = '📅 ' + mensaje;
+				}
 				return {
 					success: false,
-					message: '❌ Error: ' + (data.message || 'No se pudo marcar la entrada')
+					message: '❌ Error: ' + mensaje
 				};
 			}
 		} catch (error) {
@@ -494,9 +498,13 @@ class AsistenciasController {
 				return { success: true, message: '✅ Salida marcada correctamente' };
 			} else {
 				console.error('❌ Error en marcación salida:', { status: response.status, data });
+				let mensaje = data.message || 'No se pudo marcar la salida';
+				if (data.tipo === 'dia_no_laborable') {
+					mensaje = '📅 ' + mensaje;
+				}
 				return {
 					success: false,
-					message: '❌ Error: ' + (data.message || 'No se pudo marcar la salida')
+					message: '❌ Error: ' + mensaje
 				};
 			}
 		} catch (error) {

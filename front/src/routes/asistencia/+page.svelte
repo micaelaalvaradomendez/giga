@@ -100,6 +100,11 @@
 					);
 				} else if (data.tipo === "ya_completo") {
 					mostrarMensaje(data.message, "info");
+				} else if (data.tipo === "dia_no_laborable") {
+					mostrarMensaje(
+						"📅 " + data.message,
+						"info",
+					);
 				} else {
 					mostrarMensaje(data.message, "error");
 				}
@@ -153,50 +158,61 @@
 	</div>
 
 	<!-- Estado actual -->
-	<div class="estado-card">
-		<h2>📊 Estado de Hoy</h2>
-		<div class="estado-grid">
-			<div
-				class="estado-item {estado.tiene_entrada
-					? 'activo'
-					: 'inactivo'}"
-			>
-				<div class="icono">
-					{#if estado.tiene_entrada}
-						✅
-					{:else}
-						⏹️
-					{/if}
-				</div>
-				<div class="info">
-					<span class="label">Entrada</span>
-					<span class="hora">{formatTime(estado.hora_entrada)}</span>
-				</div>
+	{#if estado.es_dia_no_laborable}
+		<div class="estado-card no-laborable">
+			<h2>� Día No Laborable</h2>
+			<div class="mensaje-no-laborable">
+				<div class="icono-grande">🏖️</div>
+				<p>Hoy es <strong>{estado.motivo_no_laborable}</strong></p>
+				<p>No se registra asistencia en este día.</p>
 			</div>
-
-			<div
-				class="estado-item {estado.tiene_salida
-					? 'activo'
-					: 'inactivo'}"
-			>
-				<div class="icono">
-					{#if estado.tiene_salida}
-						✅
-					{:else}
-						⏹️
-					{/if}
+		</div>
+	{:else}
+		<div class="estado-card">
+			<h2>�📊 Estado de Hoy</h2>
+			<div class="estado-grid">
+				<div
+					class="estado-item {estado.tiene_entrada
+						? 'activo'
+						: 'inactivo'}"
+				>
+					<div class="icono">
+						{#if estado.tiene_entrada}
+							✅
+						{:else}
+							⏹️
+						{/if}
+					</div>
+					<div class="info">
+						<span class="label">Entrada</span>
+						<span class="hora">{formatTime(estado.hora_entrada)}</span>
+					</div>
 				</div>
-				<div class="info">
-					<span class="label">Salida</span>
-					<span class="hora">{formatTime(estado.hora_salida)}</span>
+
+				<div
+					class="estado-item {estado.tiene_salida
+						? 'activo'
+						: 'inactivo'}"
+				>
+					<div class="icono">
+						{#if estado.tiene_salida}
+							✅
+						{:else}
+							⏹️
+						{/if}
+					</div>
+					<div class="info">
+						<span class="label">Salida</span>
+						<span class="hora">{formatTime(estado.hora_salida)}</span>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
+	{/if}
 
 	<div class="content-grid">
 		<!-- Formulario de marcación -->
-		{#if estado.puede_marcar_entrada || estado.puede_marcar_salida}
+		{#if !estado.es_dia_no_laborable && (estado.puede_marcar_entrada || estado.puede_marcar_salida)}
 			<div class="marcacion-card">
 				<h2>
 					{#if estado.puede_marcar_entrada}
@@ -413,6 +429,32 @@
 		color: #1a1a1a;
 		margin-bottom: 1rem;
 		text-align: center;
+	}
+
+	.estado-card.no-laborable {
+		background: linear-gradient(135deg, #e3f2fd 0%, #f1f8e9 100%);
+		border: 2px solid #4caf50;
+	}
+
+	.mensaje-no-laborable {
+		text-align: center;
+		padding: 2rem;
+	}
+
+	.icono-grande {
+		font-size: 4rem;
+		margin-bottom: 1rem;
+	}
+
+	.mensaje-no-laborable p {
+		font-size: 1.2rem;
+		margin-bottom: 0.5rem;
+		color: #2e7d32;
+	}
+
+	.mensaje-no-laborable strong {
+		color: #1b5e20;
+		font-weight: 600;
 	}
 
 	.estado-grid {

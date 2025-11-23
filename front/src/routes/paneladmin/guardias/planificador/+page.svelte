@@ -42,7 +42,11 @@
 
   // Handlers delegados al controller
   async function handleAreaChange() {
-    await planificadorGuardiasController.cargarAgentesDeArea();
+    await planificadorGuardiasController.handleAreaChange();
+  }
+
+  async function handleFechaHorarioChange() {
+    await planificadorGuardiasController.handleFechaHorarioChange();
   }
 
   async function handleToggleAgente(agenteId) {
@@ -195,6 +199,7 @@
             id="fechaInicio"
             type="date"
             bind:value={$fechaInicio}
+            on:change={handleFechaHorarioChange}
             disabled={$loading}
           />
         </div>
@@ -206,6 +211,7 @@
             id="horaInicio"
             type="time"
             bind:value={$horaInicio}
+            on:change={handleFechaHorarioChange}
             disabled={$loading}
           />
         </div>
@@ -217,6 +223,7 @@
             id="fechaFin"
             type="date"
             bind:value={$fechaFin}
+            on:change={handleFechaHorarioChange}
             disabled={$loading}
             min={$fechaInicio}
           />
@@ -229,6 +236,7 @@
             id="horaFin"
             type="time"
             bind:value={$horaFin}
+            on:change={handleFechaHorarioChange}
             disabled={$loading}
           />
         </div>

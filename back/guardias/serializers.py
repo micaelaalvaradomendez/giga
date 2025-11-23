@@ -43,18 +43,40 @@ class ParametrosAreaSerializer(serializers.ModelSerializer):
 
 
 class FeriadoSerializer(serializers.ModelSerializer):
-    """Serializer para feriados"""
+    """Serializer para feriados con soporte multi-día"""
     
     tipo_feriado = serializers.ReadOnlyField()
+    duracion_dias = serializers.ReadOnlyField()
+    es_multiples_dias = serializers.ReadOnlyField()
+    fechas_incluidas = serializers.ReadOnlyField(source='get_fechas_incluidas')
     
     class Meta:
         model = Feriado
         fields = [
-            'id_feriado', 'fecha', 'descripcion',
+            'id_feriado', 'nombre', 'descripcion',
+            'fecha_inicio', 'fecha_fin',
             'es_nacional', 'es_provincial', 'es_local',
-            'activo', 'creado_en', 'tipo_feriado'
+            'activo', 'creado_en', 'actualizado_en',
+            'tipo_feriado', 'duracion_dias', 'es_multiples_dias',
+            'fechas_incluidas'
         ]
-        read_only_fields = ['id_feriado', 'creado_en']
+        read_only_fields = ['id_feriado', 'creado_en', 'actualizado_en']
+    
+    def validate(self, data):
+        """Validación de fechas"""
+        if data.get('fecha_fin') and data.get('fecha_inicio'):
+            if data['fecha_fin'] < data['fecha_inicio']:
+                raise serializers.ValidationError(
+                    "La fecha fin debe ser mayor o igual a la fecha inicio"
+                )
+        return data
+    
+    def create(self, validated_data):
+        """Override create para manejar el caso de fecha única"""
+        # Si no se proporciona fecha_fin, usar fecha_inicio
+        if 'fecha_fin' not in validated_data or validated_data['fecha_fin'] is None:
+            validated_data['fecha_fin'] = validated_data['fecha_inicio']
+        return super().create(validated_data)
 
 
 class CronogramaExtendidoSerializer(serializers.ModelSerializer):
@@ -135,6 +157,12 @@ class GuardiaResumenSerializer(serializers.ModelSerializer):
     notas = NotaGuardiaSerializer(many=True, read_only=True)
     tiene_nota = serializers.SerializerMethodField()
     
+    # Campos para guardias multi-día
+    es_multiples_dias = serializers.ReadOnlyField()
+    fecha_fin_real = serializers.ReadOnlyField()
+    duracion_dias = serializers.ReadOnlyField()
+    fechas_incluidas = serializers.ReadOnlyField(source='get_fechas_incluidas')
+    
     class Meta:
         model = Guardia
         fields = [
@@ -142,7 +170,8 @@ class GuardiaResumenSerializer(serializers.ModelSerializer):
             'tipo', 'estado', 'activa', 'horas_planificadas', 'horas_efectivas',
             'observaciones', 'agente_nombre', 'agente_apellido', 
             'agente_legajo', 'area_nombre', 'cronograma_tipo', 'cronograma_estado',
-            'notas', 'tiene_nota', 'id_cronograma', 'id_agente'
+            'notas', 'tiene_nota', 'id_cronograma', 'id_agente',
+            'es_multiples_dias', 'fecha_fin_real', 'duracion_dias', 'fechas_incluidas'
         ]
     
     def get_tiene_nota(self, obj):

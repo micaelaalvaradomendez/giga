@@ -70,23 +70,45 @@ class ParametrosArea(models.Model):
 
 
 class Feriado(models.Model):
-    """Gestión de feriados que afectan cronogramas"""
+    """Gestión de feriados con soporte para múltiples días y múltiples feriados por fecha"""
+    
     id_feriado = models.BigAutoField(primary_key=True)
-    fecha = models.DateField(unique=True)
-    descripcion = models.CharField(max_length=200)
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True, null=True)
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField()
     es_nacional = models.BooleanField(default=False)
     es_provincial = models.BooleanField(default=False)
     es_local = models.BooleanField(default=False)
     activo = models.BooleanField(default=True)
-    creado_en = models.DateTimeField(blank=True, null=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
     
     class Meta:
         managed = False
         db_table = 'feriado'
-        ordering = ['fecha']
+        ordering = ['fecha_inicio', 'fecha_fin', 'nombre']
         
+    def clean(self):
+        """Validación de fechas"""
+        from django.core.exceptions import ValidationError
+        if self.fecha_fin < self.fecha_inicio:
+            raise ValidationError('La fecha fin debe ser mayor o igual a la fecha inicio')
+    
     def __str__(self):
-        return f"{self.fecha} - {self.descripcion}"
+        if self.es_multiples_dias:
+            return f"{self.nombre} ({self.fecha_inicio} → {self.fecha_fin})"
+        return f"{self.nombre} ({self.fecha_inicio})"
+    
+    @property
+    def es_multiples_dias(self):
+        """True si el feriado abarca más de un día"""
+        return self.fecha_inicio != self.fecha_fin
+    
+    @property
+    def duracion_dias(self):
+        """Cantidad de días que dura el feriado"""
+        return (self.fecha_fin - self.fecha_inicio).days + 1
     
     @property
     def tipo_feriado(self):
@@ -99,10 +121,42 @@ class Feriado(models.Model):
             return "Local"
         return "Especial"
     
+    def incluye_fecha(self, fecha):
+        """Verifica si una fecha específica está dentro del rango del feriado"""
+        return self.fecha_inicio <= fecha <= self.fecha_fin
+    
+    @classmethod
+    def feriados_en_fecha(cls, fecha):
+        """Obtiene todos los feriados que incluyen una fecha específica"""
+        return cls.objects.filter(
+            fecha_inicio__lte=fecha,
+            fecha_fin__gte=fecha,
+            activo=True
+        )
+    
+    @classmethod
+    def feriados_en_rango(cls, fecha_inicio, fecha_fin):
+        """Obtiene feriados que intersectan con un rango de fechas"""
+        return cls.objects.filter(
+            fecha_inicio__lte=fecha_fin,
+            fecha_fin__gte=fecha_inicio,
+            activo=True
+        )
+    
     @classmethod
     def es_feriado(cls, fecha):
-        """Verifica si una fecha es feriado"""
-        return cls.objects.filter(fecha=fecha, activo=True).exists()
+        """Verifica si una fecha es feriado (compatibilidad con código existente)"""
+        return cls.feriados_en_fecha(fecha).exists()
+    
+    def get_fechas_incluidas(self):
+        """Retorna lista de todas las fechas incluidas en este feriado"""
+        from datetime import date, timedelta
+        fechas = []
+        fecha_actual = self.fecha_inicio
+        while fecha_actual <= self.fecha_fin:
+            fechas.append(fecha_actual)
+            fecha_actual += timedelta(days=1)
+        return fechas
 
 
 class Cronograma(models.Model):
@@ -176,6 +230,52 @@ class Guardia(models.Model):
         
     def __str__(self):
         return f"Guardia {self.fecha} - {self.id_agente}"
+    
+    @property
+    def es_multiples_dias(self):
+        """True si la guardia se extiende a múltiples días"""
+        return self.hora_inicio > self.hora_fin
+    
+    @property
+    def fecha_fin_real(self):
+        """Retorna la fecha de fin real de la guardia"""
+        from datetime import timedelta
+        if self.es_multiples_dias:
+            return self.fecha + timedelta(days=1)
+        return self.fecha
+    
+    @property
+    def duracion_dias(self):
+        """Cantidad de días que dura la guardia"""
+        if self.es_multiples_dias:
+            return 2  # Por ahora solo soportamos guardias de 2 días max
+        return 1
+    
+    def incluye_fecha(self, fecha):
+        """Verifica si una fecha específica está dentro del rango de la guardia"""
+        if self.es_multiples_dias:
+            return fecha in [self.fecha, self.fecha_fin_real]
+        return fecha == self.fecha
+    
+    def get_fechas_incluidas(self):
+        """Retorna lista de todas las fechas incluidas en esta guardia"""
+        if self.es_multiples_dias:
+            return [self.fecha, self.fecha_fin_real]
+        return [self.fecha]
+    
+    @classmethod
+    def guardias_en_fecha(cls, fecha):
+        """Obtiene todas las guardias que incluyen una fecha específica"""
+        from datetime import timedelta
+        # Guardias que inician en esa fecha
+        guardias_inicio = cls.objects.filter(fecha=fecha)
+        # Guardias que inician el día anterior y se extienden (hora_inicio > hora_fin)
+        fecha_anterior = fecha - timedelta(days=1)
+        guardias_extension = cls.objects.filter(
+            fecha=fecha_anterior,
+            hora_inicio__gt=models.F('hora_fin')
+        )
+        return guardias_inicio.union(guardias_extension)
 
 
 class NotaGuardia(models.Model):

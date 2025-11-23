@@ -354,16 +354,21 @@ class ValidadorHorarios:
     def validar_fecha_guardia(fecha):
         """
         Valida que la fecha sea apta para programar guardias.
-        Las guardias solo pueden ser en fines de semana (sábado y domingo).
+        Las guardias solo pueden ser en fines de semana (sábado y domingo) o feriados.
         """
         from datetime import datetime
+        from asistencia.views import es_dia_laborable, get_motivo_no_laborable
         
-        # Verificar si es fin de semana (sábado=5, domingo=6)
-        if fecha.weekday() >= 5:  # Sábado o Domingo
-            return True, "Fin de semana - válido para guardia"
+        # Usar la función de asistencia que ya considera feriados
+        es_laborable = es_dia_laborable(fecha)
         
-        # Día de semana regular - no permitido para guardias
-        return False, "Las guardias solo pueden programarse en fines de semana (sábado y domingo)"
+        if not es_laborable:
+            # No es día laborable (es fin de semana o feriado)
+            motivo = get_motivo_no_laborable(fecha)
+            return True, f"Fecha válida para guardia: {motivo}"
+        
+        # Es día laborable (lunes a viernes normal) - no permitido para guardias
+        return False, "Las guardias solo pueden programarse en fines de semana (sábado y domingo) o feriados"
     
     @staticmethod
     def validar_duracion_guardia(hora_inicio, hora_fin):

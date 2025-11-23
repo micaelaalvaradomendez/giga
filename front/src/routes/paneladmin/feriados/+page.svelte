@@ -58,9 +58,12 @@
     });
 
     function handleDayClick(event) {
-        const { date, isFeriado } = event.detail;
+        const { date, isFeriado, feriados } = event.detail;
         const selectedDate = date.toISOString().split("T")[0];
-        const feriado = feriadosController.getFeriadoByDate(selectedDate);
+        
+        // Si es un feriado y hay solo uno, editarlo directamente
+        const feriadosEnFecha = feriados || feriadosController.getFeriadosByDate(selectedDate);
+        const feriado = feriadosEnFecha.length === 1 ? feriadosEnFecha[0] : null;
 
         feriadosController.openModal(selectedDate, feriado);
     }
@@ -96,6 +99,7 @@
     selectedDate={$modalGestionFeriado.selectedDate}
     isSaving={$modalGestionFeriado.isSaving}
     isDeleting={$modalGestionFeriado.isDeleting}
+    existingFeriados={$modalGestionFeriado.existingFeriados || []}
     {feriadosController}
     on:close={closeModal}
 />

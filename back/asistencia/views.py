@@ -18,8 +18,42 @@ from .serializers import (
     LicenciaSerializer, TipoLicenciaSerializer, ResumenAsistenciaSerializer
 )
 from personas.models import Agente, Area
+from guardias.models import Feriado
 
 logger = logging.getLogger(__name__)
+
+
+def es_dia_laborable(fecha):
+    """
+    Verifica si una fecha es un día laborable.
+    Retorna False si es sábado, domingo o feriado.
+    """
+    # Verificar si es fin de semana (sábado=5, domingo=6)
+    if fecha.weekday() in [5, 6]:  # 0=Lunes, 6=Domingo
+        return False
+    
+    # Verificar si es feriado
+    if Feriado.es_feriado(fecha):
+        return False
+        
+    return True
+
+
+def get_motivo_no_laborable(fecha):
+    """
+    Retorna el motivo por el cual una fecha no es laborable.
+    """
+    if fecha.weekday() == 5:  # Sábado
+        return "sábado"
+    elif fecha.weekday() == 6:  # Domingo
+        return "domingo"
+    elif Feriado.es_feriado(fecha):
+        feriados = Feriado.feriados_en_fecha(fecha)
+        if feriados.exists():
+            nombres = [f.nombre for f in feriados]
+            return f"feriado ({', '.join(nombres)})"
+    
+    return None
 
 
 def get_client_ip(request):
@@ -109,6 +143,16 @@ def marcar_asistencia(request):
         
         # DNI correcto, proceder con marcación
         hoy = date.today()
+        
+        # Verificar si es un día laborable
+        if not es_dia_laborable(hoy):
+            motivo = get_motivo_no_laborable(hoy)
+            return Response({
+                'success': False,
+                'message': f'No se puede registrar asistencia en {motivo}',
+                'tipo': 'dia_no_laborable',
+                'motivo': motivo
+            }, status=status.HTTP_400_BAD_REQUEST)
         
         # Determinar la hora a usar (específica o actual)
         if hora_especifica_str and es_admin:
@@ -279,6 +323,23 @@ def obtener_estado_asistencia(request):
             }, status=status.HTTP_401_UNAUTHORIZED)
         
         hoy = date.today()
+        
+        # Verificar si es un día laborable
+        if not es_dia_laborable(hoy):
+            motivo = get_motivo_no_laborable(hoy)
+            return Response({
+                'success': True,
+                'data': {
+                    'tiene_entrada': False,
+                    'tiene_salida': False,
+                    'hora_entrada': None,
+                    'hora_salida': None,
+                    'puede_marcar_entrada': False,
+                    'puede_marcar_salida': False,
+                    'es_dia_no_laborable': True,
+                    'motivo_no_laborable': motivo
+                }
+            })
         
         try:
             asistencia = Asistencia.objects.get(
@@ -482,6 +543,17 @@ def listar_asistencias(request):
         
         # Caso especial: sin_entrada (ausentes) - buscar agentes sin registro de asistencia
         if estado_filtro == 'sin_entrada':
+            # Verificar si la fecha consultada es un día laborable
+            fecha_consulta = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+            if not es_dia_laborable(fecha_consulta):
+                # Si no es día laborable, no hay ausentes a mostrar
+                return Response({
+                    'success': True,
+                    'data': [],
+                    'total': 0,
+                    'message': f'No se registra asistencia en {get_motivo_no_laborable(fecha_consulta)}'
+                })
+            
             # Obtener agentes activos según permisos
             agentes_query = Agente.objects.filter(activo=True)
             

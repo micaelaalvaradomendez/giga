@@ -91,7 +91,7 @@ class FeriadosController {
 	}
 
 	/**
-	 * Crea un nuevo feriado (con opción de repetición anual)
+	 * Crea un nuevo feriado (con soporte multi-día)
 	 */
 	async createFeriado(feriadoData) {
 		try {
@@ -100,11 +100,16 @@ class FeriadosController {
 			this.success.set(null);
 
 			const requestData = {
-				fecha: feriadoData.fecha,
-				descripcion: feriadoData.descripcion
+				nombre: feriadoData.nombre,
+				descripcion: feriadoData.descripcion || '',
+				fecha_inicio: feriadoData.fecha_inicio,
+				fecha_fin: feriadoData.fecha_fin || feriadoData.fecha_inicio, // Default a mismo día
+				es_nacional: feriadoData.es_nacional || false,
+				es_provincial: feriadoData.es_provincial || false,
+				es_local: feriadoData.es_local || false
 			};
 
-			// Agregar repetición anual si está especificada
+			// Agregar repetición anual si está especificada (mantenemos compatibilidad)
 			if (feriadoData.repetir_anualmente) {
 				requestData.repetir_anualmente = true;
 			}
@@ -114,11 +119,14 @@ class FeriadosController {
 			// Actualizar la lista de feriados
 			await this.loadFeriados();
 			
-			// Mensaje personalizado para repetición anual
+			// Mensaje personalizado
 			if (feriadoData.repetir_anualmente && response.data?.feriados_creados) {
 				this.success.set(`Feriado creado para ${response.data.feriados_creados} años: ${response.data.años.join(', ')}`);
-			} else {
+			} else if (feriadoData.fecha_inicio === feriadoData.fecha_fin) {
 				this.success.set('Feriado creado exitosamente');
+			} else {
+				const duracion = this.calculateDaysDifference(feriadoData.fecha_inicio, feriadoData.fecha_fin) + 1;
+				this.success.set(`Feriado de ${duracion} días creado exitosamente`);
 			}
 			
 			return response.data;
@@ -142,10 +150,17 @@ class FeriadosController {
 			this.error.set(null);
 			this.success.set(null);
 
-			const response = await guardiasService.updateFeriado(id, {
-				fecha: feriadoData.fecha,
-				descripcion: feriadoData.descripcion
-			});
+			const requestData = {
+				nombre: feriadoData.nombre,
+				descripcion: feriadoData.descripcion || '',
+				fecha_inicio: feriadoData.fecha_inicio,
+				fecha_fin: feriadoData.fecha_fin || feriadoData.fecha_inicio,
+				es_nacional: feriadoData.es_nacional || false,
+				es_provincial: feriadoData.es_provincial || false,
+				es_local: feriadoData.es_local || false
+			};
+
+			const response = await guardiasService.updateFeriado(id, requestData);
 
 			// Actualizar la lista de feriados
 			await this.loadFeriados();
@@ -190,26 +205,51 @@ class FeriadosController {
 	}
 
 	/**
-	 * Obtiene un feriado por fecha
+	 * Obtiene todos los feriados que incluyen una fecha específica
 	 */
-	getFeriadoByDate(fecha) {
-		let feriado = null;
-		let feriadosMap = null;
+	getFeriadosByDate(fecha) {
+		let feriadosEnFecha = [];
 		
-		// Obtener el valor actual del store sin suscribirse
-		const unsubscribe = this.feriadosPorFecha.subscribe(value => {
-			feriadosMap = value;
+		const unsubscribe = this.feriados.subscribe(feriados => {
+			feriadosEnFecha = feriados.filter(feriado => {
+				return fecha >= feriado.fecha_inicio && fecha <= feriado.fecha_fin;
+			});
 		});
 		unsubscribe();
 		
-		return feriadosMap ? feriadosMap.get(fecha) || null : null;
+		return feriadosEnFecha;
 	}
 
 	/**
-	 * Verifica si una fecha es feriado
+	 * Obtiene un feriado por fecha (compatibilidad - devuelve el primero si hay múltiples)
+	 */
+	getFeriadoByDate(fecha) {
+		const feriados = this.getFeriadosByDate(fecha);
+		return feriados.length > 0 ? feriados[0] : null;
+	}
+
+	/**
+	 * Verifica si una fecha tiene feriados
 	 */
 	isFeriado(fecha) {
-		return this.getFeriadoByDate(fecha) !== null;
+		return this.getFeriadosByDate(fecha).length > 0;
+	}
+
+	/**
+	 * Verifica si una fecha tiene múltiples feriados
+	 */
+	hasMultipleFeriados(fecha) {
+		return this.getFeriadosByDate(fecha).length > 1;
+	}
+
+	/**
+	 * Calcula la diferencia en días entre dos fechas
+	 */
+	calculateDaysDifference(fecha1, fecha2) {
+		const date1 = new Date(fecha1);
+		const date2 = new Date(fecha2);
+		const diffTime = Math.abs(date2 - date1);
+		return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 	}
 
 	// Métodos para manejo de modales
@@ -218,20 +258,44 @@ class FeriadosController {
 	 * Abre el modal de gestión de feriados
 	 */
 	openModal(selectedDate, feriado = null) {
+		// Si se especifica un feriado, es modo edición; si no, buscar feriados existentes
+		const feriadosExistentes = feriado ? [] : this.getFeriadosByDate(selectedDate);
+		
 		this.modalGestionFeriado.set({
 			isOpen: true,
-			feriado,
+			feriado: feriado, // null para crear, objeto para editar
+			existingFeriados: feriadosExistentes, // Array de feriados existentes en la fecha
 			selectedDate,
 			isSaving: false,
 			isDeleting: false
 		});
 
 		// Inicializar formulario
-		this.feriadoForm.set({
-			id: feriado?.id || null,
-			fecha: selectedDate,
-			descripcion: feriado?.descripcion || ''
-		});
+		if (feriado) {
+			// Modo edición - usar el feriado pasado como parámetro
+			this.feriadoForm.set({
+				id: feriado.id_feriado,
+				nombre: feriado.nombre,
+				descripcion: feriado.descripcion || '',
+				fecha_inicio: feriado.fecha_inicio,
+				fecha_fin: feriado.fecha_fin,
+				es_nacional: feriado.es_nacional,
+				es_provincial: feriado.es_provincial,
+				es_local: feriado.es_local
+			});
+		} else {
+			// Modo creación
+			this.feriadoForm.set({
+				id: null,
+				nombre: '',
+				descripcion: '',
+				fecha_inicio: selectedDate,
+				fecha_fin: selectedDate,
+				es_nacional: false,
+				es_provincial: false,
+				es_local: true
+			});
+		}
 	}
 
 	/**
@@ -255,9 +319,9 @@ class FeriadosController {
 				isSaving: true
 			}));
 
-			if (feriadoData.id) {
+			if (feriadoData.id_feriado) {
 				// Actualizar feriado existente
-				await this.updateFeriado(feriadoData.id, feriadoData);
+				await this.updateFeriado(feriadoData.id_feriado, feriadoData);
 			} else {
 				// Crear nuevo feriado
 				await this.createFeriado(feriadoData);
