@@ -71,19 +71,25 @@
       const response = await guardiasService.getCompensaciones("", token);
       console.log("Respuesta completa compensaciones:", response);
 
-      // Manejar diferentes estructuras de respuesta
-      if (response.success && response.data && response.data.results) {
-        compensaciones = response.data.results;
-      } else if (response.data && response.data.results) {
-        compensaciones = response.data.results;
+      // Manejar diferentes estructuras de respuesta (incluyendo response.data.data.results)
+      let datos = [];
+      if (response.data?.data?.results) {
+        datos = response.data.data.results;
+      } else if (response.data?.results) {
+        datos = response.data.results;
+      } else if (response.success && response.data && response.data.results) {
+        datos = response.data.results;
       } else if (response.results) {
-        compensaciones = response.results;
+        datos = response.results;
+      } else if (Array.isArray(response.data)) {
+        datos = response.data;
       } else if (Array.isArray(response)) {
-        compensaciones = response;
+        datos = response;
       } else {
-        compensaciones = [];
+        datos = [];
       }
 
+      compensaciones = datos;
       console.log("Compensaciones cargadas:", compensaciones);
     } catch (err) {
       console.error("Error cargando compensaciones:", err);
@@ -100,30 +106,34 @@
     cargandoAreas = true;
     try {
       const response = await personasService.getAreas(token);
-      console.log("📦 Respuesta completa de áreas compensaciones:", response);
+      console.log("Respuesta completa de áreas:", response);
 
-      // Axios devuelve la respuesta en response.data
-      const responseData = response.data;
-      
-      if (responseData.success && responseData.data && responseData.data.results) {
-        areas = responseData.data.results;
-      } else if (responseData.data && responseData.data.results) {
-        areas = responseData.data.results;
-      } else if (responseData.results) {
-        areas = responseData.results;
-      } else if (Array.isArray(responseData)) {
-        areas = responseData;
-      } else if (Array.isArray(responseData.data)) {
-        areas = responseData.data;
+      // Manejar diferentes estructuras de respuesta (incluyendo response.data.data.results)
+      let datos = [];
+      if (response.data?.data?.results) {
+        datos = response.data.data.results;
+      } else if (response.data?.results) {
+        datos = response.data.results;
+      } else if (response.success && response.data && response.data.results) {
+        datos = response.data.results;
+      } else if (response.results) {
+        datos = response.results;
+      } else if (Array.isArray(response.data)) {
+        datos = response.data;
+      } else if (Array.isArray(response)) {
+        datos = response;
       } else {
-        console.log('📊 Estructura inesperada de respuesta áreas compensaciones:', responseData);
-        areas = [];
+        console.log('📊 Estructura inesperada de respuesta áreas compensaciones:', response);
+        datos = [];
       }
 
-      console.log("Áreas procesadas en compensaciones:', areas.length);
-      console.log('Primeras 3 áreas:", areas.slice(0, 3));
+      areas = datos;
+      console.log("✅ Áreas procesadas en compensaciones:", areas.length);
+      console.log("📋 Primeras 3 áreas:", areas.slice(0, 3));
+
+      console.log("Áreas procesadas:", areas);
     } catch (err) {
-      console.error("Error cargando áreas en compensaciones:", err);
+      console.error("Error cargando áreas:", err);
       areas = [];
     } finally {
       cargandoAreas = false;
@@ -144,19 +154,25 @@
       );
       console.log("Respuesta completa de agentes:", response);
 
-      // Manejar diferentes estructuras de respuesta
-      if (response.success && response.data && response.data.results) {
-        agentes = response.data.results;
-      } else if (response.data && response.data.results) {
-        agentes = response.data.results;
+      // Manejar diferentes estructuras de respuesta (incluyendo response.data.data.results)
+      let datos = [];
+      if (response.data?.data?.results) {
+        datos = response.data.data.results;
+      } else if (response.data?.results) {
+        datos = response.data.results;
+      } else if (response.success && response.data && response.data.results) {
+        datos = response.data.results;
       } else if (response.results) {
-        agentes = response.results;
+        datos = response.results;
+      } else if (Array.isArray(response.data)) {
+        datos = response.data;
       } else if (Array.isArray(response)) {
-        agentes = response;
+        datos = response;
       } else {
-        agentes = [];
+        datos = [];
       }
 
+      agentes = datos;
       console.log("Agentes procesados:", agentes);
       // Limpiar selección de agente cuando cambia el área
       agenteSeleccionado = "";
@@ -185,25 +201,33 @@
       );
       console.log("Respuesta completa de guardias:", response);
 
-      // El endpoint de guardias devuelve { estadisticas: {...}, guardias: [...] }
+      // Manejar diferentes estructuras de respuesta (incluyendo response.data.data.results)
+      let datos = [];
       if (response.guardias && Array.isArray(response.guardias)) {
-        guardias = response.guardias;
+        datos = response.guardias;
+      } else if (response.data?.data?.guardias) {
+        datos = response.data.data.guardias;
+      } else if (response.data?.data?.results) {
+        datos = response.data.data.results;
+      } else if (response.data?.guardias) {
+        datos = response.data.guardias;
+      } else if (response.data?.results) {
+        datos = response.data.results;
       } else if (response.success && response.data && response.data.guardias) {
-        guardias = response.data.guardias;
+        datos = response.data.guardias;
       } else if (response.success && response.data && response.data.results) {
-        guardias = response.data.results;
-      } else if (response.data && response.data.guardias) {
-        guardias = response.data.guardias;
-      } else if (response.data && response.data.results) {
-        guardias = response.data.results;
+        datos = response.data.results;
       } else if (response.results) {
-        guardias = response.results;
+        datos = response.results;
+      } else if (Array.isArray(response.data)) {
+        datos = response.data;
       } else if (Array.isArray(response)) {
-        guardias = response;
+        datos = response;
       } else {
-        guardias = [];
+        datos = [];
       }
 
+      guardias = datos;
       console.log("Guardias procesadas:", guardias);
       console.log("Total guardias encontradas:", guardias.length);
       
@@ -317,9 +341,10 @@
         ),
       };
 
-      console.log("Enviando compensación:", compensacionData);
+      console.log("Enviando compensación desde guardia:", guardiaSeleccionada, compensacionData);
 
-      const response = await guardiasService.createCompensacion(
+      const response = await guardiasService.createCompensacionFromGuardia(
+        guardiaSeleccionada,
         compensacionData,
         token,
       );

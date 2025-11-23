@@ -1112,10 +1112,10 @@ class GuardiaViewSet(viewsets.ModelViewSet):
         
         elif request.method == 'POST':
             # Crear o actualizar nota del agente actual
-            agente_id = request.data.get('agente_id')
+            agente_id = request.data.get('id_agente') or request.data.get('agente_id')
             if not agente_id:
                 return Response(
-                    {'error': 'Se requiere agente_id'},
+                    {'error': 'Se requiere id_agente o agente_id'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
