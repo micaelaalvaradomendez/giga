@@ -13,16 +13,26 @@ BEGIN
 END;
 $$;
 
--- Triggers para timestamps automáticos
-CREATE TRIGGER update_agente_timestamp
-    BEFORE UPDATE ON agente
-    FOR EACH ROW
-    EXECUTE FUNCTION update_timestamp();
+-- Triggers para timestamps automáticos (solo si no existen)
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_agente_timestamp') THEN
+        CREATE TRIGGER update_agente_timestamp
+            BEFORE UPDATE ON agente
+            FOR EACH ROW
+            EXECUTE FUNCTION update_timestamp();
+    END IF;
+END $$;
 
-CREATE TRIGGER update_cronograma_timestamp
-    BEFORE UPDATE ON cronograma
-    FOR EACH ROW
-    EXECUTE FUNCTION update_timestamp();
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_cronograma_timestamp') THEN
+        CREATE TRIGGER update_cronograma_timestamp
+            BEFORE UPDATE ON cronograma
+            FOR EACH ROW
+            EXECUTE FUNCTION update_timestamp();
+    END IF;
+END $$;
 
 -- Función simplificada para validar fechas de licencia
 CREATE OR REPLACE FUNCTION validar_fechas_licencia()
@@ -38,11 +48,16 @@ BEGIN
 END;
 $$;
 
--- Trigger para validación de licencias
-CREATE TRIGGER validate_licencia
-    BEFORE INSERT OR UPDATE ON licencia
-    FOR EACH ROW
-    EXECUTE FUNCTION validar_fechas_licencia();
+-- Trigger para validación de licencias (solo si no existe)
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'validate_licencia') THEN
+        CREATE TRIGGER validate_licencia
+            BEFORE INSERT OR UPDATE ON licencia
+            FOR EACH ROW
+            EXECUTE FUNCTION validar_fechas_licencia();
+    END IF;
+END $$;
 
 -- =====================================================
 -- FUNCIONES ADICIONALES PARA CRONOGRAMAS Y PLUS

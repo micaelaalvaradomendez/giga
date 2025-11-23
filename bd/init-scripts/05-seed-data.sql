@@ -28,119 +28,119 @@ DELETE FROM area WHERE nombre = 'General';
 -- Insertar estructura jerárquica completa de Protección Civil
 -- Nivel 1: Secretaría
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
-    ('Secretaría de Protección Civil', 'Secretaría principal de Protección Civil de Tierra del Fuego', NULL, 1, true);
+    ('Secretaría de Protección Civil', 'Secretaría principal de Protección Civil de Tierra del Fuego', NULL, 1, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
 
 -- Nivel 2: Subsecretaría
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
     ('Subsecretaría de Seguridad Vial', 'Subsecretaría encargada de la seguridad vial provincial', 
-     (SELECT id_area FROM area WHERE nombre = 'Secretaría de Protección Civil'), 2, true);
+     (SELECT id_area FROM area WHERE nombre = 'Secretaría de Protección Civil' LIMIT 1), 2, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
 
 -- Nivel 3: Direcciones Provinciales
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
     ('Dirección Provincial de Seguridad Vial', 'Dirección principal de seguridad vial provincial', 
-     (SELECT id_area FROM area WHERE nombre = 'Subsecretaría de Seguridad Vial'), 3, true);
+     (SELECT id_area FROM area WHERE nombre = 'Subsecretaría de Seguridad Vial' LIMIT 1), 3, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
 
 -- Nivel 4: Direcciones Generales y Operativas
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
     -- Dirección General de Planificación
     ('Dirección General de Planificación de Transporte y Seguridad Vial', 'Planificación estratégica del transporte y seguridad vial', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial' LIMIT 1), 4, true),
     
     -- Direcciones Operativas
     ('Dirección Operativa y Seguridad Vial Zona Norte', 'Operaciones de seguridad vial en zona norte', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial' LIMIT 1), 4, true),
     
     ('Dirección Operativa y Seguridad Vial Zona Sur', 'Operaciones de seguridad vial en zona sur', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial' LIMIT 1), 4, true),
     
     -- Direcciones de Habilitaciones
     ('Dirección Habilitaciones Zona Norte', 'Habilitaciones y permisos zona norte', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial' LIMIT 1), 4, true),
     
     ('Dirección Habilitaciones Zona Sur', 'Habilitaciones y permisos zona sur', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial' LIMIT 1), 4, true),
     
     -- Dirección Administrativa
     ('Dirección Administrativa y Contable', 'Administración y contabilidad general', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial' LIMIT 1), 4, true),
     
     -- Dirección Observatorio
     ('Dirección Observatorio Vial', 'Observatorio y estadísticas de seguridad vial', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial'), 4, true);
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial' LIMIT 1), 4, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
 
 -- Nivel 5: Subdirecciones y Departamentos principales
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
     -- Subdirección bajo Dirección General de Planificación
     ('Subdirección General de Planificación de Transporte y Seguridad Vial', 'Subdirección de planificación operativa', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección General de Planificación de Transporte y Seguridad Vial'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección General de Planificación de Transporte y Seguridad Vial' LIMIT 1), 5, true),
     
     -- Departamentos Operativos
     ('Departamento Operativo Zona Norte', 'Departamento de operaciones zona norte', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Operativa y Seguridad Vial Zona Norte'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Operativa y Seguridad Vial Zona Norte' LIMIT 1), 5, true),
     
     ('Departamento Operativo Zona Sur', 'Departamento de operaciones zona sur', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Operativa y Seguridad Vial Zona Sur'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Operativa y Seguridad Vial Zona Sur' LIMIT 1), 5, true),
     
     -- Departamentos de Habilitaciones Zona Norte
     ('Departamento Habilitaciones Zona Norte', 'Departamento de habilitaciones zona norte', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Norte'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Norte' LIMIT 1), 5, true),
     
     ('Departamento Inspección Zona Norte', 'Departamento de inspección zona norte', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Norte'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Norte' LIMIT 1), 5, true),
     
     -- Departamentos de Habilitaciones Zona Sur
     ('Departamento Habilitaciones Zona Sur', 'Departamento de habilitaciones zona sur', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur' LIMIT 1), 5, true),
     
     ('Departamento Habilitaciones Zona Centro', 'Departamento de habilitaciones zona centro', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur' LIMIT 1), 5, true),
     
     ('Departamento Inspección Zona Sur', 'Departamento de inspección zona sur', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur' LIMIT 1), 5, true),
     
     ('Departamento Inspección Zona Centro', 'Departamento de inspección zona centro', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Habilitaciones Zona Sur' LIMIT 1), 5, true),
     
     -- Departamentos Administrativos
     ('Departamento Administrativo y Contable', 'Departamento principal administrativo y contable', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Administrativa y Contable'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Administrativa y Contable' LIMIT 1), 5, true),
     
     ('Departamento Administración y Mesa de Entradas Zona Norte', 'Administración y mesa de entradas zona norte', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Administrativa y Contable'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Administrativa y Contable' LIMIT 1), 5, true),
     
     ('Departamento de Recursos Humanos', 'Gestión de recursos humanos', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Administrativa y Contable'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Administrativa y Contable' LIMIT 1), 5, true),
     
     -- Departamentos del Observatorio
     ('Departamento RePAT Zona Norte', 'Registro Provincial de Antecedentes de Tránsito zona norte', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial' LIMIT 1), 5, true),
     
     ('Departamento RePAT Zona Sur', 'Registro Provincial de Antecedentes de Tránsito zona sur', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial'), 5, true),
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial' LIMIT 1), 5, true),
     
     ('Departamento Promoción y Difusión', 'Promoción y difusión de seguridad vial', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial'), 5, true);
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial' LIMIT 1), 5, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
 
 -- Nivel 6: Departamentos bajo Subdirección y Divisiones
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
     -- Departamento bajo Subdirección General
     ('Departamento de Planificación', 'Departamento de planificación estratégica', 
-     (SELECT id_area FROM area WHERE nombre = 'Subdirección General de Planificación de Transporte y Seguridad Vial'), 6, true),
+     (SELECT id_area FROM area WHERE nombre = 'Subdirección General de Planificación de Transporte y Seguridad Vial' LIMIT 1), 6, true),
     
     -- División bajo Departamento RePAT Zona Norte
     ('División RePAT Zona Norte', 'División operativa del RePAT zona norte', 
-     (SELECT id_area FROM area WHERE nombre = 'Departamento RePAT Zona Norte'), 6, true);
+     (SELECT id_area FROM area WHERE nombre = 'Departamento RePAT Zona Norte' LIMIT 1), 6, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
 
 -- Nivel 7: Divisiones bajo Departamento de Planificación
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
     ('División de Planificación', 'División operativa de planificación', 
-     (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación'), 7, true),
+     (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación' LIMIT 1), 7, true),
     
     ('División de Choferes Zona Norte', 'División de gestión de choferes zona norte', 
-     (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación'), 7, true),
+     (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación' LIMIT 1), 7, true),
     
     ('División de Choferes Zona Sur', 'División de gestión de choferes zona sur', 
-     (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación'), 7, true);
+     (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación' LIMIT 1), 7, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
 
 -- Insertar datos usando DO block para manejar las referencias correctamente
 DO $$
@@ -207,32 +207,32 @@ BEGIN
         ('007', 'Roberto', 'Martinez', 'roberto.martinez@proteccioncivil.tdf.gov.ar', 
          '78901234', '27789012344', 'pbkdf2_sha256$1000000$8B2E7f9Q4R5T6U7V8W9X0Y$1ZaAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTu=', 
          '2964789012', '1987-04-12', 'Tierra del Fuego', 'Ushuaia', 'Prefectura Naval', '234', 
-         'EPU', true, (SELECT id_area FROM area WHERE nombre = 'Subsecretaría de Seguridad Vial')),
+         'EPU', true, (SELECT id_area FROM area WHERE nombre = 'Subsecretaría de Seguridad Vial' LIMIT 1)),
          
         ('008', 'Sandra', 'Lopez', 'sandra.lopez@proteccioncivil.tdf.gov.ar', 
          '89012345', '27890123454', 'pbkdf2_sha256$1000000$9C3F8g0R5S6T7U8V9W0X1Y$2AbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuVw=', 
          '2964890123', '1991-08-25', 'Tierra del Fuego', 'Ushuaia', 'Karukinka', '456', 
-         'POMYS', true, (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial')),
+         'POMYS', true, (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial' LIMIT 1)),
          
         ('009', 'Carlos', 'Rodriguez', 'carlos.rodriguez@proteccioncivil.tdf.gov.ar', 
          '90123456', '27901234564', 'pbkdf2_sha256$1000000$0D4G9h1S6T7U8V9W0X1Y2Z$3BcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuVwXy=', 
          '2964901234', '1984-06-18', 'Tierra del Fuego', 'Ushuaia', '25 de Mayo', '789', 
-         'PAYT', true, (SELECT id_area FROM area WHERE nombre = 'Departamento Operativo Zona Norte')),
+         'PAYT', true, (SELECT id_area FROM area WHERE nombre = 'Departamento Operativo Zona Norte' LIMIT 1)),
          
         ('010', 'María', 'Fernandez', 'maria.fernandez@proteccioncivil.tdf.gov.ar', 
          '01234567', '27012345674', 'pbkdf2_sha256$1000000$1E5H0i2T7U8V9W0X1Y2Z3A$4CdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuVwXyZa=', 
          '2964012345', '1989-12-03', 'Tierra del Fuego', 'Ushuaia', 'Almirante Brown', '123', 
-         'EPU', true, (SELECT id_area FROM area WHERE nombre = 'Departamento Habilitaciones Zona Norte')),
+         'EPU', true, (SELECT id_area FROM area WHERE nombre = 'Departamento Habilitaciones Zona Norte' LIMIT 1)),
          
         ('011', 'Jorge', 'Gutierrez', 'jorge.gutierrez@proteccioncivil.tdf.gov.ar', 
          '12345670', '27123456704', 'pbkdf2_sha256$1000000$2F6I1j3U8V9W0X1Y2Z3A4B$5DeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuVwXyZaBc=', 
          '2964123450', '1986-02-14', 'Tierra del Fuego', 'Ushuaia', 'Gobernador Paz', '567', 
-         'POMYS', true, (SELECT id_area FROM area WHERE nombre = 'Departamento Administrativo y Contable')),
+         'POMYS', true, (SELECT id_area FROM area WHERE nombre = 'Departamento Administrativo y Contable' LIMIT 1)),
          
         ('012', 'Ana', 'Torres', 'ana.torres@proteccioncivil.tdf.gov.ar', 
          '23456701', '27234567014', 'pbkdf2_sha256$1000000$3G7J2k4V9W0X1Y2Z3A4B5C$6EfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuVwXyZaBcDe=', 
          '2964234501', '1993-10-08', 'Tierra del Fuego', 'Ushuaia', 'Juana Fadul', '890', 
-         'PAYT', true, (SELECT id_area FROM area WHERE nombre = 'División de Planificación'))
+         'PAYT', true, (SELECT id_area FROM area WHERE nombre = 'División de Planificación' LIMIT 1))
     ON CONFLICT (legajo) DO NOTHING;
     
     -- Asignar roles usando la tabla agente_rol (estructura actual)

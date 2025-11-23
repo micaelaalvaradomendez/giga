@@ -82,9 +82,14 @@ CREATE TABLE IF NOT EXISTS agente (
     FOREIGN KEY (id_area) REFERENCES area(id_area) ON DELETE RESTRICT
 );
 
--- Agregar constraint de jefe de área después de crear la tabla agente
-ALTER TABLE area ADD CONSTRAINT fk_area_jefe 
-    FOREIGN KEY (jefe_area) REFERENCES agente(id_agente) ON DELETE SET NULL;
+-- Agregar constraint de jefe de área después de crear la tabla agente (solo si no existe)
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_area_jefe') THEN
+        ALTER TABLE area ADD CONSTRAINT fk_area_jefe 
+            FOREIGN KEY (jefe_area) REFERENCES agente(id_agente) ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- 5. Tabla cronograma (depende de area y agente)
 CREATE TABLE IF NOT EXISTS cronograma (
@@ -297,13 +302,15 @@ CREATE INDEX IF NOT EXISTS idx_guardia_agente ON guardia(id_agente);
 CREATE INDEX IF NOT EXISTS idx_guardia_cronograma ON guardia(id_cronograma);
 CREATE INDEX IF NOT EXISTS idx_guardia_activa ON guardia(activa);
 
-CREATE INDEX IF NOT EXISTS idx_parte_diario_fecha ON parte_diario(fecha_parte);
-CREATE INDEX IF NOT EXISTS idx_parte_diario_agente ON parte_diario(id_agente);
-CREATE INDEX IF NOT EXISTS idx_parte_diario_area ON parte_diario(id_area);
+-- Índices para parte_diario (tabla será deprecada en el refactor de asistencia)
+-- CREATE INDEX IF NOT EXISTS idx_parte_diario_fecha ON parte_diario(fecha_parte);
+-- CREATE INDEX IF NOT EXISTS idx_parte_diario_agente ON parte_diario(id_agente);
+-- CREATE INDEX IF NOT EXISTS idx_parte_diario_area ON parte_diario(id_area);
 
-CREATE INDEX IF NOT EXISTS idx_asistencia_agente ON asistencia(id_agente);
-CREATE INDEX IF NOT EXISTS idx_asistencia_parte ON asistencia(id_parte_diario);
-CREATE INDEX IF NOT EXISTS idx_asistencia_fecha ON asistencia(DATE(creado_en));
+-- Índices para asistencia (se crearán en 08-refactor-asistencia.sql después del refactor)
+-- CREATE INDEX IF NOT EXISTS idx_asistencia_agente ON asistencia(id_agente);
+-- CREATE INDEX IF NOT EXISTS idx_asistencia_parte ON asistencia(id_parte_diario);
+-- CREATE INDEX IF NOT EXISTS idx_asistencia_fecha ON asistencia(DATE(creado_en));
 
 CREATE INDEX IF NOT EXISTS idx_licencia_agente ON licencia(id_agente);
 CREATE INDEX IF NOT EXISTS idx_licencia_fechas ON licencia(fecha_desde, fecha_hasta);
