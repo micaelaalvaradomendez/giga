@@ -8,16 +8,26 @@ ALTER TABLE cronograma
     ADD COLUMN IF NOT EXISTS creado_por_id BIGINT,
     ADD COLUMN IF NOT EXISTS aprobado_por_id BIGINT;
 
--- Add foreign key constraints
-ALTER TABLE cronograma 
-    ADD CONSTRAINT fk_cronograma_creado_por 
-    FOREIGN KEY (creado_por_id) REFERENCES agente(id_agente) 
-    ON DELETE SET NULL;
+-- Add foreign key constraints (solo si no existen)
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_cronograma_creado_por') THEN
+        ALTER TABLE cronograma 
+            ADD CONSTRAINT fk_cronograma_creado_por 
+            FOREIGN KEY (creado_por_id) REFERENCES agente(id_agente) 
+            ON DELETE SET NULL;
+    END IF;
+END $$;
 
-ALTER TABLE cronograma 
-    ADD CONSTRAINT fk_cronograma_aprobado_por 
-    FOREIGN KEY (aprobado_por_id) REFERENCES agente(id_agente) 
-    ON DELETE SET NULL;
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_cronograma_aprobado_por') THEN
+        ALTER TABLE cronograma 
+            ADD CONSTRAINT fk_cronograma_aprobado_por 
+            FOREIGN KEY (aprobado_por_id) REFERENCES agente(id_agente) 
+            ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- Add indexes for performance
 CREATE INDEX IF NOT EXISTS idx_cronograma_estado ON cronograma(estado);
@@ -151,10 +161,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_actualizar_horas_compensacion
-    BEFORE INSERT OR UPDATE ON hora_compensacion
-    FOR EACH ROW
-    EXECUTE FUNCTION actualizar_horas_compensacion();
+-- Crear trigger solo si no existe
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trigger_actualizar_horas_compensacion') THEN
+        CREATE TRIGGER trigger_actualizar_horas_compensacion
+            BEFORE INSERT OR UPDATE ON hora_compensacion
+            FOR EACH ROW
+            EXECUTE FUNCTION actualizar_horas_compensacion();
+    END IF;
+END $$;
 
 -- Función para obtener resumen mensual de compensaciones de un agente
 CREATE OR REPLACE FUNCTION obtener_resumen_compensaciones_agente(

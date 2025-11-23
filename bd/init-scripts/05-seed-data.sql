@@ -28,17 +28,17 @@ DELETE FROM area WHERE nombre = 'General';
 -- Insertar estructura jerárquica completa de Protección Civil
 -- Nivel 1: Secretaría
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
-    ('Secretaría de Protección Civil', 'Secretaría principal de Protección Civil de Tierra del Fuego', NULL, 1, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
+    ('Secretaría de Protección Civil', 'Secretaría principal de Protección Civil de Tierra del Fuego', NULL, 1, true) ON CONFLICT (nombre, id_area_padre) DO NOTHING;
 
 -- Nivel 2: Subsecretaría
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
     ('Subsecretaría de Seguridad Vial', 'Subsecretaría encargada de la seguridad vial provincial', 
-     (SELECT id_area FROM area WHERE nombre = 'Secretaría de Protección Civil' LIMIT 1), 2, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
+     (SELECT id_area FROM area WHERE nombre = 'Secretaría de Protección Civil' LIMIT 1), 2, true) ON CONFLICT (nombre, id_area_padre) DO NOTHING;
 
 -- Nivel 3: Direcciones Provinciales
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
     ('Dirección Provincial de Seguridad Vial', 'Dirección principal de seguridad vial provincial', 
-     (SELECT id_area FROM area WHERE nombre = 'Subsecretaría de Seguridad Vial' LIMIT 1), 3, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
+     (SELECT id_area FROM area WHERE nombre = 'Subsecretaría de Seguridad Vial' LIMIT 1), 3, true) ON CONFLICT (nombre, id_area_padre) DO NOTHING;
 
 -- Nivel 4: Direcciones Generales y Operativas
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
@@ -66,7 +66,7 @@ INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES
     
     -- Dirección Observatorio
     ('Dirección Observatorio Vial', 'Observatorio y estadísticas de seguridad vial', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial' LIMIT 1), 4, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Provincial de Seguridad Vial' LIMIT 1), 4, true) ON CONFLICT (nombre, id_area_padre) DO NOTHING;
 
 -- Nivel 5: Subdirecciones y Departamentos principales
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
@@ -119,7 +119,7 @@ INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES
      (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial' LIMIT 1), 5, true),
     
     ('Departamento Promoción y Difusión', 'Promoción y difusión de seguridad vial', 
-     (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial' LIMIT 1), 5, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
+     (SELECT id_area FROM area WHERE nombre = 'Dirección Observatorio Vial' LIMIT 1), 5, true) ON CONFLICT (nombre, id_area_padre) DO NOTHING;
 
 -- Nivel 6: Departamentos bajo Subdirección y Divisiones
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
@@ -129,7 +129,7 @@ INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES
     
     -- División bajo Departamento RePAT Zona Norte
     ('División RePAT Zona Norte', 'División operativa del RePAT zona norte', 
-     (SELECT id_area FROM area WHERE nombre = 'Departamento RePAT Zona Norte' LIMIT 1), 6, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
+     (SELECT id_area FROM area WHERE nombre = 'Departamento RePAT Zona Norte' LIMIT 1), 6, true) ON CONFLICT (nombre, id_area_padre) DO NOTHING;
 
 -- Nivel 7: Divisiones bajo Departamento de Planificación
 INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES 
@@ -140,7 +140,7 @@ INSERT INTO area (nombre, descripcion, id_area_padre, nivel, activo) VALUES
      (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación' LIMIT 1), 7, true),
     
     ('División de Choferes Zona Sur', 'División de gestión de choferes zona sur', 
-     (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación' LIMIT 1), 7, true) ON CONFLICT (nombre, COALESCE(id_area_padre, 0)) DO NOTHING;
+     (SELECT id_area FROM area WHERE nombre = 'Departamento de Planificación' LIMIT 1), 7, true) ON CONFLICT (nombre, id_area_padre) DO NOTHING;
 
 -- Insertar datos usando DO block para manejar las referencias correctamente
 DO $$

@@ -6,6 +6,9 @@
 -- ============================================================================
 
 -- Actualizar la función calcular_plus_agente para incluir horas de compensación
+-- Primero eliminar versiones anteriores con diferentes parámetros
+DROP FUNCTION IF EXISTS calcular_plus_agente(BIGINT, INTEGER, INTEGER);
+
 CREATE OR REPLACE FUNCTION calcular_plus_agente(
     p_id_agente BIGINT,
     p_mes INT,
