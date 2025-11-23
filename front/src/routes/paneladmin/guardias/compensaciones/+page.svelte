@@ -98,26 +98,30 @@
     cargandoAreas = true;
     try {
       const response = await personasService.getAreas(token);
-      console.log('Respuesta completa de áreas:', response);
+      console.log('📦 Respuesta completa de áreas compensaciones:', response);
       
-      // La API devuelve { success: true, data: { results: [...] } }
-      if (response.success && response.data && response.data.results) {
-        areas = response.data.results;
-      } else if (response.data && response.data.results) {
-        areas = response.data.results;
-      } else if (response.results) {
-        areas = response.results;
-      } else if (Array.isArray(response)) {
-        areas = response;
-      } else if (Array.isArray(response.data)) {
-        areas = response.data;
+      // Axios devuelve la respuesta en response.data
+      const responseData = response.data;
+      
+      if (responseData.success && responseData.data && responseData.data.results) {
+        areas = responseData.data.results;
+      } else if (responseData.data && responseData.data.results) {
+        areas = responseData.data.results;
+      } else if (responseData.results) {
+        areas = responseData.results;
+      } else if (Array.isArray(responseData)) {
+        areas = responseData;
+      } else if (Array.isArray(responseData.data)) {
+        areas = responseData.data;
       } else {
+        console.log('📊 Estructura inesperada de respuesta áreas compensaciones:', responseData);
         areas = [];
       }
       
-      console.log('Áreas procesadas:', areas);
+      console.log('✅ Áreas procesadas en compensaciones:', areas.length);
+      console.log('📋 Primeras 3 áreas:', areas.slice(0, 3));
     } catch (err) {
-      console.error('Error cargando áreas:', err);
+      console.error('❌ Error cargando áreas en compensaciones:', err);
       areas = [];
     } finally {
       cargandoAreas = false;
@@ -194,6 +198,10 @@
       
       console.log('Guardias procesadas:', guardias);
       console.log('Total guardias encontradas:', guardias.length);
+      
+      // Filtrar guardias que ya tienen compensación
+      await filtrarGuardiasConCompensacion();
+      
       // Limpiar selección de guardia cuando cambia el agente
       guardiaSeleccionada = '';
     } catch (err) {
@@ -201,6 +209,58 @@
       guardias = [];
     } finally {
       cargandoGuardias = false;
+    }
+  }
+
+  async function filtrarGuardiasConCompensacion() {
+    if (guardias.length === 0) return;
+    
+    try {
+      // Verificar cuáles guardias ya tienen compensación
+      const guardiasIds = guardias.map(g => g.id_guardia);
+      console.log('🔍 Verificando compensaciones para guardias:', guardiasIds);
+      
+      // Cargar todas las compensaciones para verificar cuáles guardias ya las tienen
+      const compensacionesResponse = await guardiasService.getCompensaciones('', token);
+      console.log('📝 Respuesta completa compensaciones para filtro:', compensacionesResponse);
+      
+      // Extraer los datos correctamente según la estructura de respuesta
+      let todasCompensaciones = [];
+      if (compensacionesResponse.data?.data?.results) {
+        todasCompensaciones = compensacionesResponse.data.data.results;
+      } else if (compensacionesResponse.data?.results) {
+        todasCompensaciones = compensacionesResponse.data.results;
+      } else if (Array.isArray(compensacionesResponse.data)) {
+        todasCompensaciones = compensacionesResponse.data;
+      }
+      
+      console.log('📋 Compensaciones extraídas:', todasCompensaciones);
+      
+      // Verificar que sea un array antes de hacer map
+      if (!Array.isArray(todasCompensaciones)) {
+        console.warn('⚠️ todasCompensaciones no es un array:', typeof todasCompensaciones, todasCompensaciones);
+        return; // Salir si no es un array válido
+      }
+      
+      // Extraer IDs de guardias que ya tienen compensación
+      const guardiasConCompensacion = todasCompensaciones
+        .map(comp => comp.id_guardia?.id_guardia || comp.id_guardia)
+        .filter(Boolean);
+      
+      console.log('🚫 Guardias con compensación existente:', guardiasConCompensacion);
+      
+      // Filtrar guardias que NO tienen compensación
+      const guardiasSinCompensacion = guardias.filter(guardia => 
+        !guardiasConCompensacion.includes(guardia.id_guardia)
+      );
+      
+      console.log('✅ Guardias disponibles para compensación:', guardiasSinCompensacion.length, 'de', guardias.length);
+      
+      guardias = guardiasSinCompensacion;
+      
+    } catch (err) {
+      console.error('❌ Error verificando compensaciones existentes:', err);
+      // En caso de error, mantener todas las guardias
     }
   }
 
@@ -234,7 +294,6 @@
       const guardiaData = guardias.find(g => g.id_guardia == guardiaSeleccionada);
       
       const compensacionData = {
-        id_guardia: parseInt(guardiaSeleccionada),
         hora_fin_real: nuevaCompensacion.hora_fin_real,
         motivo: nuevaCompensacion.motivo,
         descripcion_motivo: nuevaCompensacion.descripcion_motivo,
@@ -242,9 +301,9 @@
         solicitado_por: parseInt(nuevaCompensacion.solicitado_por || agenteSeleccionado)
       };
       
-      console.log('Enviando compensación:', compensacionData);
+      console.log('Enviando compensación desde guardia:', guardiaSeleccionada, compensacionData);
       
-      const response = await guardiasService.createCompensacion(compensacionData, token);
+      const response = await guardiasService.createCompensacionFromGuardia(parseInt(guardiaSeleccionada), compensacionData, token);
       console.log('Compensación creada:', response);
       
       // Limpiar formulario

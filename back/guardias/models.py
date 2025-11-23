@@ -352,24 +352,41 @@ class HoraCompensacion(models.Model):
     
     def save(self, *args, **kwargs):
         """Cálculos automáticos antes de guardar"""
+        from datetime import datetime, time
+        
         if self.hora_inicio_programada and self.hora_fin_programada:
-            # Calcular horas programadas
+            # Asegurar que trabajamos con objetos time
             inicio = self.hora_inicio_programada
+            if isinstance(inicio, datetime):
+                inicio = inicio.time()
+            
             fin = self.hora_fin_programada
+            if isinstance(fin, datetime):
+                fin = fin.time()
+            
+            # Calcular horas programadas
             delta = (fin.hour * 60 + fin.minute) - (inicio.hour * 60 + inicio.minute)
             self.horas_programadas = Decimal(str(delta / 60))
         
         if self.hora_inicio_programada and self.hora_fin_real:
-            # Calcular horas efectivas
+            # Asegurar que trabajamos con objetos time
             inicio = self.hora_inicio_programada
+            if isinstance(inicio, datetime):
+                inicio = inicio.time()
+                
             fin = self.hora_fin_real
+            if isinstance(fin, datetime):
+                fin = fin.time()
+            
+            # Calcular horas efectivas
             delta = (fin.hour * 60 + fin.minute) - (inicio.hour * 60 + inicio.minute)
             if delta < 0:  # Cruzó medianoche
                 delta += 24 * 60
             self.horas_efectivas = Decimal(str(delta / 60))
             
-            # Calcular horas extra
-            self.horas_extra = self.horas_efectivas - self.horas_programadas
+            # Calcular horas extra si tenemos horas programadas
+            if self.horas_programadas:
+                self.horas_extra = self.horas_efectivas - self.horas_programadas
         
         super().save(*args, **kwargs)
     
@@ -381,8 +398,18 @@ class HoraCompensacion(models.Model):
     @property
     def esta_vencida(self):
         """Verifica si la solicitud está vencida (más de 30 días)"""
-        from datetime import datetime, timedelta
-        return (datetime.now() - self.fecha_solicitud).days > 30
+        from datetime import timedelta
+        
+        # Manejar fechas con y sin timezone
+        fecha_solicitud = self.fecha_solicitud
+        if timezone.is_aware(fecha_solicitud):
+            fecha_actual = timezone.now()
+        else:
+            # Si la fecha_solicitud no tiene timezone, usar datetime naive
+            from datetime import datetime
+            fecha_actual = datetime.now()
+            
+        return (fecha_actual - fecha_solicitud).days > 30
     
     def aprobar(self, aprobado_por_agente, observaciones=None):
         """Aprueba la compensación"""

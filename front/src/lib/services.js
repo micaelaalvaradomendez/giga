@@ -184,6 +184,7 @@ export const guardiasService = {
   getCompensaciones: (params = '', token = null) => createApiClient(token).get(`/guardias/compensaciones/?${params}`),
   getCompensacion: (id, token = null) => createApiClient(token).get(`/guardias/compensaciones/${id}/`),
   createCompensacion: (data, token = null) => createApiClient(token).post('/guardias/compensaciones/', data),
+  createCompensacionFromGuardia: (guardiaId, data, token = null) => createApiClient(token).post(`/guardias/compensaciones/${guardiaId}/crear_desde_guardia/`, data),
   updateCompensacion: (id, data, token = null) => createApiClient(token).put(`/guardias/compensaciones/${id}/`, data),
   deleteCompensacion: (id, token = null) => createApiClient(token).delete(`/guardias/compensaciones/${id}/`),
   aprobarCompensacion: (id, data, token = null) => createApiClient(token).patch(`/guardias/compensaciones/${id}/aprobar/`, data),

@@ -80,13 +80,29 @@ class PlanificadorGuardiasController {
 			this.token.subscribe(t => token = t)();
 			
 			const response = await personasService.getAreas(token);
-			const areasData = response.data?.results || response.data?.data?.results || [];
-			this.areas.set(areasData);
+			console.log('📦 Respuesta completa áreas planificador:', response);
 			
-			console.log('✅ Áreas cargadas:', areasData.length);
+			// Axios devuelve la respuesta en response.data
+			const responseData = response.data;
+			let areasData = [];
+			
+			if (responseData.success && responseData.data && responseData.data.results) {
+				areasData = responseData.data.results;
+			} else if (responseData.data && responseData.data.results) {
+				areasData = responseData.data.results;
+			} else if (responseData.results) {
+				areasData = responseData.results;
+			} else if (Array.isArray(responseData)) {
+				areasData = responseData;
+			} else {
+				console.log('📊 Estructura inesperada de respuesta áreas planificador:', responseData);
+			}
+			
+			this.areas.set(areasData);
+			console.log('✅ Áreas cargadas en planificador:', areasData.length);
 		} catch (e) {
 			this.error.set('Error al cargar las áreas');
-			console.error('❌ Error cargando áreas:', e);
+			console.error('❌ Error cargando áreas en planificador:', e);
 		} finally {
 			this.loading.set(false);
 		}

@@ -2182,12 +2182,20 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 )
             
             from personas.models import Agente
+            from datetime import datetime, time
             agente_solicitante = Agente.objects.get(id_agente=agente_solicitante_id)
+            
+            # Convertir hora_fin_real de string a objeto time
+            hora_fin_str = request.data['hora_fin_real']
+            if isinstance(hora_fin_str, str):
+                hora_fin_real = datetime.strptime(hora_fin_str, '%H:%M').time()
+            else:
+                hora_fin_real = hora_fin_str
             
             # Crear compensación usando el método del modelo
             compensacion = HoraCompensacion.crear_desde_guardia_extendida(
                 guardia=guardia,
-                hora_fin_real=request.data['hora_fin_real'],
+                hora_fin_real=hora_fin_real,
                 motivo=request.data['motivo'],
                 descripcion=request.data['descripcion_motivo'],
                 solicitado_por=agente_solicitante
@@ -3013,3 +3021,113 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             ]
         
         return rows
+
+    @action(detail=True, methods=['patch'])
+    def aprobar(self, request, pk=None):
+        """Aprueba una compensación individual"""
+        try:
+            from personas.models import Agente
+            
+            compensacion = self.get_object()
+            
+            if compensacion.estado != 'pendiente':
+                return Response(
+                    {'error': 'Solo se pueden aprobar compensaciones pendientes'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Obtener agente aprobador
+            agente_id = request.data.get('aprobado_por')
+            if not agente_id:
+                return Response(
+                    {'error': 'Se requiere aprobado_por'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            agente_aprobador = Agente.objects.get(id_agente=agente_id)
+            observaciones = request.data.get('observaciones', '')
+            
+            # Aprobar compensación
+            compensacion.aprobar(agente_aprobador, observaciones)
+            
+            # Registrar en auditoría
+            Auditoria.objects.create(
+                pk_afectada=compensacion.id_hora_compensacion,
+                nombre_tabla='hora_compensacion',
+                creado_en=timezone.now(),
+                valor_previo={'estado': 'pendiente'},
+                valor_nuevo={'estado': 'aprobada'},
+                accion='APROBAR_COMPENSACION',
+                id_agente_id=agente_aprobador.id_agente
+            )
+            
+            serializer = HoraCompensacionSerializer(compensacion)
+            return Response({
+                'mensaje': 'Compensación aprobada exitosamente',
+                'compensacion': serializer.data
+            })
+            
+        except Exception as e:
+            logger.error(f"Error aprobando compensación: {e}")
+            return Response(
+                {'error': f'Error aprobando compensación: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['patch'])
+    def rechazar(self, request, pk=None):
+        """Rechaza una compensación individual"""
+        try:
+            from personas.models import Agente
+            
+            compensacion = self.get_object()
+            
+            if compensacion.estado != 'pendiente':
+                return Response(
+                    {'error': 'Solo se pueden rechazar compensaciones pendientes'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Obtener agente que rechaza
+            agente_id = request.data.get('rechazado_por')
+            if not agente_id:
+                return Response(
+                    {'error': 'Se requiere rechazado_por'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            agente_rechazador = Agente.objects.get(id_agente=agente_id)
+            motivo_rechazo = request.data.get('motivo_rechazo', '')
+            
+            if not motivo_rechazo:
+                return Response(
+                    {'error': 'Se requiere motivo_rechazo'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Rechazar compensación
+            compensacion.rechazar(agente_rechazador, motivo_rechazo)
+            
+            # Registrar en auditoría
+            Auditoria.objects.create(
+                pk_afectada=compensacion.id_hora_compensacion,
+                nombre_tabla='hora_compensacion',
+                creado_en=timezone.now(),
+                valor_previo={'estado': 'pendiente'},
+                valor_nuevo={'estado': 'rechazada'},
+                accion='RECHAZAR_COMPENSACION',
+                id_agente_id=agente_rechazador.id_agente
+            )
+            
+            serializer = HoraCompensacionSerializer(compensacion)
+            return Response({
+                'mensaje': 'Compensación rechazada exitosamente',
+                'compensacion': serializer.data
+            })
+            
+        except Exception as e:
+            logger.error(f"Error rechazando compensación: {e}")
+            return Response(
+                {'error': f'Error rechazando compensación: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
