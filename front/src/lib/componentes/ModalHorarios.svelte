@@ -5,7 +5,7 @@
 	export let isSaving = false;
 	export let tipoHorarios = "areas"; // 'areas' o 'agrupaciones'
 	export let selectedItem = null;
-	export let formData = { hora_inicio: "08:00", hora_fin: "17:00" };
+	export let formData = { horario_entrada: "08:00", horario_salida: "17:00" };
 
 	const dispatch = createEventDispatcher();
 
@@ -16,10 +16,10 @@
 	}
 
 	function guardarHorarios() {
-		if (!isSaving && formData.hora_inicio && formData.hora_fin) {
+		if (!isSaving && formData.horario_entrada && formData.horario_salida) {
 			dispatch("guardar", {
-				horario_entrada: formData.hora_inicio,
-				horario_salida: formData.hora_fin,
+				horario_entrada: formData.horario_entrada,
+				horario_salida: formData.horario_salida,
 				tipo: tipoHorarios,
 				target: selectedItem,
 			});
@@ -58,7 +58,7 @@
 						<input
 							type="time"
 							id="horarioEntrada"
-							bind:value={formData.hora_inicio}
+							bind:value={formData.horario_entrada}
 							required
 							disabled={isSaving}
 							class="hora-input"
@@ -69,7 +69,7 @@
 						<input
 							type="time"
 							id="horarioSalida"
-							bind:value={formData.hora_fin}
+							bind:value={formData.horario_salida}
 							required
 							disabled={isSaving}
 							class="hora-input"

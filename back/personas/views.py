@@ -1218,6 +1218,8 @@ def update_global_schedule(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def update_area_schedule(request, area_id):
     """
     Actualizar horarios de todos los agentes de un área.
