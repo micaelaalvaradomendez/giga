@@ -24,6 +24,7 @@ show_help() {
     echo -e "${CYAN}Comandos principales:${NC}"
     echo "  build          - Construir todas las imágenes"
     echo "  start          - Iniciar todos los servicios"
+    echo "  up             - Construir e iniciar (equivale a docker-compose up -d --build)"
     echo "  stop           - Detener todos los servicios"
     echo "  restart        - Reiniciar todos los servicios"
     echo "  status         - Estado de todos los servicios"
@@ -115,13 +116,87 @@ build_all() {
     echo -e "${GREEN}✅ Todas las imágenes construidas${NC}"
 }
 
+# Función para construir e iniciar (equivalente a docker-compose up -d --build)
+up_all() {
+    echo -e "${BLUE}🚀 Construyendo e iniciando GIGA completo...${NC}"
+    echo -e "${PURPLE}Equivale a: docker-compose up -d --build${NC}"
+    
+    # Detener servicios existentes
+    echo -e "${BLUE}🛑 Deteniendo servicios existentes...${NC}"
+    docker-compose down --remove-orphans >/dev/null 2>&1 || true
+    
+    # Construir imágenes
+    build_all
+    
+    # Iniciar servicios paso a paso
+    start_all
+    
+    echo -e "${GREEN}✅ GIGA está listo para usar!${NC}"
+}
+
 # Función para iniciar todos los servicios
 start_all() {
     echo -e "${BLUE}🚀 Iniciando todos los servicios...${NC}"
-    docker-compose up -d
     
-    echo -e "${YELLOW}⏳ Esperando a que los servicios estén listos...${NC}"
-    sleep 15
+    # Iniciar solo los servicios esenciales primero
+    echo -e "${BLUE}📊 Iniciando base de datos...${NC}"
+    docker-compose up -d postgres
+    
+    # Esperar a que PostgreSQL esté listo
+    echo -e "${YELLOW}⏳ Esperando PostgreSQL...${NC}"
+    timeout=60
+    counter=0
+    while ! docker exec giga-postgres pg_isready -U giga_user -d giga >/dev/null 2>&1; do
+        if [ $counter -ge $timeout ]; then
+            echo -e "${RED}❌ Timeout esperando PostgreSQL${NC}"
+            exit 1
+        fi
+        sleep 2
+        counter=$((counter + 2))
+        echo -n "."
+    done
+    echo -e "${GREEN} ✅ PostgreSQL listo!${NC}"
+    
+    # Iniciar backend
+    echo -e "${BLUE}🐍 Iniciando backend Django...${NC}"
+    docker-compose up -d backend
+    
+    # Esperar a que Django esté listo
+    echo -e "${YELLOW}⏳ Esperando Django...${NC}"
+    timeout=90
+    counter=0
+    while ! curl -sf http://localhost:8000/api/personas/auth/check-session/ >/dev/null 2>&1; do
+        if [ $counter -ge $timeout ]; then
+            echo -e "${YELLOW}⚠️ Django tardó más de lo esperado, continuando...${NC}"
+            break
+        fi
+        sleep 3
+        counter=$((counter + 3))
+        echo -n "."
+    done
+    echo -e "${GREEN} ✅ Backend Django listo!${NC}"
+    
+    # Iniciar frontend
+    echo -e "${BLUE}⚛️ Iniciando frontend Svelte...${NC}"
+    docker-compose up -d frontend
+    
+    # Iniciar nginx
+    echo -e "${BLUE}🌐 Iniciando proxy Nginx...${NC}"
+    docker-compose up -d nginx
+    
+    # Configurar datos iniciales si es necesario
+    echo -e "${BLUE}🔧 Configurando datos iniciales...${NC}"
+    docker exec giga-postgres psql -U giga_user -d giga -c "
+    INSERT INTO tipo_licencia (codigo, descripcion) 
+    VALUES 
+        ('ANUAL', 'Licencia anual'),
+        ('MEDICA', 'Licencia médica'),
+        ('ESTUDIO', 'Licencia por estudio')
+    ON CONFLICT (codigo) DO NOTHING;
+    " >/dev/null 2>&1 || echo -e "${YELLOW}⚠️ Los tipos de licencia ya existen o hubo un problema menor${NC}"
+    
+    echo -e "${YELLOW}⏳ Esperando servicios adicionales...${NC}"
+    sleep 10
     
     check_health
     echo ""
@@ -235,6 +310,10 @@ case "$1" in
     start)
         check_docker
         start_all
+        ;;
+    up)
+        check_docker
+        up_all
         ;;
     stop)
         check_docker

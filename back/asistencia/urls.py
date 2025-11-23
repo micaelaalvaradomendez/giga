@@ -14,7 +14,11 @@ urlpatterns = [
     path('admin/resumen/', views.resumen_asistencias, name='resumen_asistencias'),
     path('admin/corregir/<int:asistencia_id>/', views.corregir_asistencia, name='corregir_asistencia'),
     path('admin/marcar-ausente/<int:asistencia_id>/', views.marcar_como_ausente, name='marcar_como_ausente'),
-    path('admin/licencias/', views.listar_licencias, name='listar_licencias'),
+    
+    # Endpoints de licencias
+    path('licencias/', views.gestionar_licencias, name='gestionar_licencias'),  # GET y POST
+    path('licencias/<int:licencia_id>/aprobar/', views.aprobar_licencia, name='aprobar_licencia'),
+    path('licencias/<int:licencia_id>/rechazar/', views.rechazar_licencia, name='rechazar_licencia'),
 
     # Endpoints para ABM de Tipos de Licencia
     path('admin/tipos-licencia/', views.listar_tipos_licencia, name='listar_tipos_licencia'),

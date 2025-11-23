@@ -83,10 +83,25 @@ export const asistenciaService = {
   createMarca: (data) => api.post('/asistencia/marcas/', data),
 
   // Licencias
-  getLicencias: () => api.get('/asistencia/licencias/'),
+  getLicencias: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/asistencia/licencias/${queryString ? '?' + queryString : ''}`);
+  },
   getLicencia: (id) => api.get(`/asistencia/licencias/${id}/`),
   createLicencia: (data) => api.post('/asistencia/licencias/', data),
   updateLicencia: (id, data) => api.put(`/asistencia/licencias/${id}/`, data),
+  deleteLicencia: (id) => api.delete(`/asistencia/licencias/${id}/`),
+  aprobarLicencia: (id, data = {}) => api.patch(`/asistencia/licencias/${id}/aprobar/`, data),
+  rechazarLicencia: (id, data) => api.patch(`/asistencia/licencias/${id}/rechazar/`, data),
+  asignarLicencia: (data) => api.post('/asistencia/licencias/asignar/', data),
+  getLicenciasArea: (areaId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/asistencia/licencias/area/${areaId}/${queryString ? '?' + queryString : ''}`);
+  },
+  getLicenciasPendientes: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/asistencia/licencias/pendientes/${queryString ? '?' + queryString : ''}`);
+  },
   // Tipos de licencia (ABM - nomenclador)
   getTiposLicencia: (token = null) => createApiClient(token).get('/asistencia/admin/tipos-licencia/'),
   createTipoLicencia: (data, token = null) => createApiClient(token).post('/asistencia/admin/tipos-licencia/crear/', data),

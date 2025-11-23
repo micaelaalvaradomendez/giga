@@ -56,9 +56,9 @@ services:
     healthcheck:
       test: [ "CMD", "python", "manage.py", "check", "--database", "default" ]
       interval: 30s
-      timeout: 10s
+      timeout: 15s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
   # Frontend Svelte
   frontend:
@@ -81,7 +81,14 @@ services:
     networks:
       - giga-network
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000", "||", "exit", "1" ]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 45s
 
   # Nginx Reverse Proxy
   nginx:
@@ -104,11 +111,11 @@ services:
       - backend
       - frontend
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:80/health", "||", "exit", "1" ]
+      test: [ "CMD", "/usr/local/bin/healthcheck.sh" ]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
 
   # MinIO Object Storage
   minio:

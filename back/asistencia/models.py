@@ -31,18 +31,45 @@ class ParteDiario(models.Model):
 
 class Licencia(models.Model):
     id_licencia = models.BigAutoField(primary_key=True)
-    estado = models.CharField(max_length=50, blank=True, null=True)
+    estado = models.CharField(max_length=50, default='pendiente')  # 'pendiente', 'aprobada', 'rechazada'
     id_tipo_licencia = models.ForeignKey(TipoLicencia, models.DO_NOTHING, db_column='id_tipo_licencia')
     fecha_desde = models.DateField()
     fecha_hasta = models.DateField()
-    id_agente = models.ForeignKey('personas.Agente', models.DO_NOTHING, db_column='id_agente')
+    id_agente = models.ForeignKey('personas.Agente', models.DO_NOTHING, db_column='id_agente', related_name='licencias')
+    
+    # Campos de gestión y aprobación
+    observaciones = models.TextField(blank=True, null=True)
+    justificacion = models.TextField(blank=True, null=True)
+    
+    # Campos de aprobación
+    aprobada_por = models.ForeignKey('personas.Agente', models.DO_NOTHING, db_column='aprobada_por', blank=True, null=True, related_name='licencias_aprobadas')
+    fecha_aprobacion = models.DateField(blank=True, null=True)
+    observaciones_aprobacion = models.TextField(blank=True, null=True)
+    
+    # Campos de rechazo
+    rechazada_por = models.ForeignKey('personas.Agente', models.DO_NOTHING, db_column='rechazada_por', blank=True, null=True, related_name='licencias_rechazadas')
+    fecha_rechazo = models.DateField(blank=True, null=True)
+    motivo_rechazo = models.TextField(blank=True, null=True)
+    
+    # Campos de auditoría
+    solicitada_por = models.ForeignKey('personas.Agente', models.DO_NOTHING, db_column='solicitada_por', blank=True, null=True, related_name='licencias_solicitadas')
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
 
     class Meta:
         managed = False
         db_table = 'licencia'
+        ordering = ['-creado_en']
         
     def __str__(self):
-        return f"Licencia {self.id_tipo_licencia} - {self.id_agente}"
+        return f"Licencia {self.id_tipo_licencia} - {self.id_agente} ({self.estado})"
+    
+    @property
+    def dias_licencia(self):
+        """Calcula la cantidad de días de la licencia"""
+        if self.fecha_desde and self.fecha_hasta:
+            return (self.fecha_hasta - self.fecha_desde).days + 1
+        return 0
 
 
 class Asistencia(models.Model):

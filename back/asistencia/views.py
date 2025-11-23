@@ -819,11 +819,22 @@ def corregir_asistencia(request, asistencia_id):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @permission_classes([AllowAny])
-def listar_licencias(request):
+def gestionar_licencias(request):
     """
-    Listar licencias activas para una fecha.
+    GET: Listar licencias con filtros y permisos jerárquicos.
+    POST: Crear nueva licencia (solicitud o asignación).
+    """
+    if request.method == 'GET':
+        return listar_licencias_impl(request)
+    elif request.method == 'POST':
+        return crear_licencia_impl(request)
+
+
+def listar_licencias_impl(request):
+    """
+    Listar licencias con filtros y permisos jerárquicos.
     """
     try:
         agente_id = request.session.get('user_id')
@@ -833,19 +844,58 @@ def listar_licencias(request):
                 'message': 'No hay sesión activa'
             }, status=status.HTTP_401_UNAUTHORIZED)
         
-        fecha = request.GET.get('fecha', date.today().isoformat())
-        area_id = request.GET.get('area_id')
+        agente = Agente.objects.get(id_agente=agente_id)
+        rol = agente.agenterol_set.first()
         
+        if not rol:
+            return Response({
+                'success': False,
+                'message': 'Usuario sin rol asignado'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Filtros de la URL
+        fecha_desde = request.GET.get('fecha_desde')
+        fecha_hasta = request.GET.get('fecha_hasta')
+        area_id = request.GET.get('area_id')
+        estado = request.GET.get('estado')
+        tipo_licencia_id = request.GET.get('tipo_licencia_id')
+        
+        # Base queryset con relaciones
         queryset = Licencia.objects.select_related(
-            'id_agente', 'id_tipo_licencia'
-        ).filter(
-            fecha_desde__lte=fecha,
-            fecha_hasta__gte=fecha,
-            estado='aprobada'
+            'id_agente__id_area', 'id_tipo_licencia'
+        ).prefetch_related(
+            'id_agente__agenterol_set__id_rol'
         )
         
-        if area_id:
+        # Aplicar filtros según permisos del usuario
+        if rol.id_rol.nombre == 'Administrador':
+            # Administrador ve todo
+            pass
+        elif rol.id_rol.nombre in ['Director', 'Jefatura']:
+            # Director y Jefatura solo ven su área
+            queryset = queryset.filter(id_agente__id_area=agente.id_area)
+        else:
+            # Agente/Agente Avanzado solo ven sus propias licencias
+            queryset = queryset.filter(id_agente=agente)
+        
+        # Aplicar filtros adicionales
+        if fecha_desde:
+            queryset = queryset.filter(fecha_desde__gte=fecha_desde)
+        
+        if fecha_hasta:
+            queryset = queryset.filter(fecha_hasta__lte=fecha_hasta)
+        
+        if area_id and rol.id_rol.nombre == 'Administrador':
             queryset = queryset.filter(id_agente__id_area_id=area_id)
+        
+        if estado and estado != 'todas':
+            queryset = queryset.filter(estado=estado)
+        
+        if tipo_licencia_id:
+            queryset = queryset.filter(id_tipo_licencia_id=tipo_licencia_id)
+        
+        # Ordenar por fecha de creación descendente
+        queryset = queryset.order_by('-id_licencia')
         
         serializer = LicenciaSerializer(queryset, many=True)
         
@@ -854,8 +904,319 @@ def listar_licencias(request):
             'data': serializer.data
         })
     
+    except Agente.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': 'Usuario no encontrado'
+        }, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         logger.error(f'Error en listar_licencias: {str(e)}')
+        return Response({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def crear_licencia_impl(request):
+    """
+    Crear nueva licencia (solicitud o asignación).
+    """
+    try:
+        agente_id = request.session.get('user_id')
+        if not agente_id:
+            return Response({
+                'success': False,
+                'message': 'No hay sesión activa'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        agente_solicitante = Agente.objects.get(id_agente=agente_id)
+        rol_solicitante = agente_solicitante.agenterol_set.first()
+        
+        if not rol_solicitante:
+            return Response({
+                'success': False,
+                'message': 'Usuario sin rol asignado'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Validar que el agente de la licencia exista
+        id_agente_licencia = request.data.get('id_agente')
+        if not id_agente_licencia:
+            return Response({
+                'success': False,
+                'message': 'Debe especificar el agente para la licencia'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        agente_licencia = Agente.objects.get(id_agente=id_agente_licencia)
+        
+        # Validar permisos según jerarquía
+        if rol_solicitante.id_rol.nombre == 'Administrador':
+            # Administrador puede crear licencias para cualquiera
+            pass
+        elif rol_solicitante.id_rol.nombre in ['Director', 'Jefatura']:
+            # Director y Jefatura solo en su área
+            if agente_licencia.id_area != agente_solicitante.id_area:
+                return Response({
+                    'success': False,
+                    'message': 'No tiene permisos para crear licencias en esta área'
+                }, status=status.HTTP_403_FORBIDDEN)
+        else:
+            # Agente/Agente Avanzado solo para sí mismos
+            if agente_licencia.id_agente != agente_solicitante.id_agente:
+                return Response({
+                    'success': False,
+                    'message': 'Solo puede crear licencias para usted mismo'
+                }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Validar fechas
+        fecha_desde = request.data.get('fecha_desde')
+        fecha_hasta = request.data.get('fecha_hasta')
+        
+        if not fecha_desde or not fecha_hasta:
+            return Response({
+                'success': False,
+                'message': 'Debe especificar fechas de inicio y fin'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        fecha_desde_obj = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+        fecha_hasta_obj = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+        
+        if fecha_desde_obj > fecha_hasta_obj:
+            return Response({
+                'success': False,
+                'message': 'La fecha de inicio no puede ser posterior a la fecha de fin'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verificar solapamientos
+        licencias_existentes = Licencia.objects.filter(
+            id_agente=agente_licencia,
+            estado__in=['pendiente', 'aprobada']
+        ).filter(
+            Q(fecha_desde__lte=fecha_hasta_obj, fecha_hasta__gte=fecha_desde_obj)
+        )
+        
+        if licencias_existentes.exists():
+            return Response({
+                'success': False,
+                'message': 'Ya existe una licencia en ese período'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Determinar estado inicial
+        estado_inicial = request.data.get('estado', 'pendiente')
+        
+        # Solo jefatura superior puede crear licencias aprobadas directamente
+        if estado_inicial == 'aprobada' and rol_solicitante.id_rol.nombre not in ['Administrador', 'Director', 'Jefatura']:
+            estado_inicial = 'pendiente'
+        
+        # Crear la licencia
+        licencia_data = {
+            'id_agente': agente_licencia.id_agente,
+            'id_tipo_licencia': request.data.get('id_tipo_licencia'),
+            'fecha_desde': fecha_desde_obj,
+            'fecha_hasta': fecha_hasta_obj,
+            'estado': estado_inicial,
+            'observaciones': request.data.get('observaciones', ''),
+            'justificacion': request.data.get('justificacion', ''),
+            'solicitada_por': agente_solicitante.id_agente
+        }
+        
+        if estado_inicial == 'aprobada':
+            licencia_data['aprobada_por'] = agente_solicitante.id_agente
+            licencia_data['fecha_aprobacion'] = timezone.now().date()
+        
+        serializer = LicenciaSerializer(data=licencia_data)
+        if serializer.is_valid():
+            licencia = serializer.save()
+            
+            return Response({
+                'success': True,
+                'message': f'Licencia {"asignada" if estado_inicial == "aprobada" else "solicitada"} correctamente',
+                'data': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response({
+            'success': False,
+            'message': 'Datos inválidos',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    except Agente.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': 'Agente no encontrado'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f'Error en crear_licencia: {str(e)}')
+        return Response({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PATCH'])
+@permission_classes([AllowAny])
+def aprobar_licencia(request, licencia_id):
+    """
+    Aprobar una licencia pendiente.
+    """
+    try:
+        agente_id = request.session.get('user_id')
+        if not agente_id:
+            return Response({
+                'success': False,
+                'message': 'No hay sesión activa'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        agente = Agente.objects.get(id_agente=agente_id)
+        rol = agente.agenterol_set.first()
+        
+        if not rol:
+            return Response({
+                'success': False,
+                'message': 'Usuario sin rol asignado'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        licencia = Licencia.objects.select_related('id_agente').get(id_licencia=licencia_id)
+        
+        # Validar que esté pendiente
+        if licencia.estado != 'pendiente':
+            return Response({
+                'success': False,
+                'message': 'Solo se pueden aprobar licencias pendientes'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validar permisos de aprobación según jerarquía
+        puede_aprobar = False
+        
+        if rol.id_rol.nombre == 'Administrador':
+            puede_aprobar = True
+        elif rol.id_rol.nombre == 'Director':
+            # Director puede aprobar todo en su área
+            puede_aprobar = (licencia.id_agente.id_area == agente.id_area)
+        elif rol.id_rol.nombre == 'Jefatura':
+            # Jefatura puede aprobar agentes y agentes avanzados de su área
+            agente_licencia_rol = licencia.id_agente.agenterol_set.first()
+            puede_aprobar = (
+                licencia.id_agente.id_area == agente.id_area and
+                agente_licencia_rol and
+                agente_licencia_rol.id_rol.nombre in ['Agente', 'Agente Avanzado']
+            )
+        
+        if not puede_aprobar:
+            return Response({
+                'success': False,
+                'message': 'No tiene permisos para aprobar esta licencia'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Actualizar licencia
+        licencia.estado = 'aprobada'
+        licencia.aprobada_por = agente.id_agente
+        licencia.fecha_aprobacion = timezone.now().date()
+        licencia.observaciones_aprobacion = request.data.get('observaciones', '')
+        licencia.save()
+        
+        serializer = LicenciaSerializer(licencia)
+        
+        return Response({
+            'success': True,
+            'message': 'Licencia aprobada correctamente',
+            'data': serializer.data
+        })
+    
+    except Licencia.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': 'Licencia no encontrada'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f'Error en aprobar_licencia: {str(e)}')
+        return Response({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PATCH'])
+@permission_classes([AllowAny])
+def rechazar_licencia(request, licencia_id):
+    """
+    Rechazar una licencia pendiente.
+    """
+    try:
+        agente_id = request.session.get('user_id')
+        if not agente_id:
+            return Response({
+                'success': False,
+                'message': 'No hay sesión activa'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        agente = Agente.objects.get(id_agente=agente_id)
+        rol = agente.agenterol_set.first()
+        
+        if not rol:
+            return Response({
+                'success': False,
+                'message': 'Usuario sin rol asignado'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        licencia = Licencia.objects.select_related('id_agente').get(id_licencia=licencia_id)
+        
+        # Validar que esté pendiente
+        if licencia.estado != 'pendiente':
+            return Response({
+                'success': False,
+                'message': 'Solo se pueden rechazar licencias pendientes'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validar permisos (misma lógica que aprobar)
+        puede_rechazar = False
+        
+        if rol.id_rol.nombre == 'Administrador':
+            puede_rechazar = True
+        elif rol.id_rol.nombre == 'Director':
+            puede_rechazar = (licencia.id_agente.id_area == agente.id_area)
+        elif rol.id_rol.nombre == 'Jefatura':
+            agente_licencia_rol = licencia.id_agente.agenterol_set.first()
+            puede_rechazar = (
+                licencia.id_agente.id_area == agente.id_area and
+                agente_licencia_rol and
+                agente_licencia_rol.id_rol.nombre in ['Agente', 'Agente Avanzado']
+            )
+        
+        if not puede_rechazar:
+            return Response({
+                'success': False,
+                'message': 'No tiene permisos para rechazar esta licencia'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        motivo_rechazo = request.data.get('motivo')
+        if not motivo_rechazo:
+            return Response({
+                'success': False,
+                'message': 'Debe especificar el motivo del rechazo'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Actualizar licencia
+        licencia.estado = 'rechazada'
+        licencia.rechazada_por = agente.id_agente
+        licencia.fecha_rechazo = timezone.now().date()
+        licencia.motivo_rechazo = motivo_rechazo
+        licencia.save()
+        
+        serializer = LicenciaSerializer(licencia)
+        
+        return Response({
+            'success': True,
+            'message': 'Licencia rechazada',
+            'data': serializer.data
+        })
+    
+    except Licencia.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': 'Licencia no encontrada'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f'Error en rechazar_licencia: {str(e)}')
         return Response({
             'success': False,
             'message': f'Error: {str(e)}'

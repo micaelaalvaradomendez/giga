@@ -95,13 +95,25 @@ class LicenciaSerializer(serializers.ModelSerializer):
     agente_nombre = serializers.SerializerMethodField()
     tipo_licencia_descripcion = serializers.SerializerMethodField()
     area_nombre = serializers.SerializerMethodField()
+    dias_licencia = serializers.ReadOnlyField()
+    aprobada_por_nombre = serializers.SerializerMethodField()
+    rechazada_por_nombre = serializers.SerializerMethodField()
+    solicitada_por_nombre = serializers.SerializerMethodField()
+    agente_rol = serializers.SerializerMethodField()
+    id_agente_area = serializers.SerializerMethodField()
     
     class Meta:
         model = Licencia
         fields = [
             'id_licencia', 'estado', 'id_tipo_licencia', 'tipo_licencia_descripcion',
-            'fecha_desde', 'fecha_hasta', 'id_agente', 'agente_nombre', 'area_nombre'
+            'fecha_desde', 'fecha_hasta', 'id_agente', 'agente_nombre', 'area_nombre',
+            'observaciones', 'justificacion', 'dias_licencia',
+            'aprobada_por', 'aprobada_por_nombre', 'fecha_aprobacion', 'observaciones_aprobacion',
+            'rechazada_por', 'rechazada_por_nombre', 'fecha_rechazo', 'motivo_rechazo',
+            'solicitada_por', 'solicitada_por_nombre', 'creado_en', 'actualizado_en',
+            'agente_rol', 'id_agente_area'
         ]
+        read_only_fields = ['id_licencia', 'creado_en', 'actualizado_en', 'dias_licencia']
     
     def get_agente_nombre(self, obj):
         if obj.id_agente:
@@ -110,12 +122,39 @@ class LicenciaSerializer(serializers.ModelSerializer):
     
     def get_tipo_licencia_descripcion(self, obj):
         if obj.id_tipo_licencia:
-            return obj.id_tipo_licencia.descripcion
+            return f"{obj.id_tipo_licencia.codigo} - {obj.id_tipo_licencia.descripcion}"
         return None
     
     def get_area_nombre(self, obj):
         if obj.id_agente and obj.id_agente.id_area:
             return obj.id_agente.id_area.nombre
+        return None
+    
+    def get_aprobada_por_nombre(self, obj):
+        if obj.aprobada_por:
+            return f"{obj.aprobada_por.nombre} {obj.aprobada_por.apellido}"
+        return None
+    
+    def get_rechazada_por_nombre(self, obj):
+        if obj.rechazada_por:
+            return f"{obj.rechazada_por.nombre} {obj.rechazada_por.apellido}"
+        return None
+    
+    def get_solicitada_por_nombre(self, obj):
+        if obj.solicitada_por:
+            return f"{obj.solicitada_por.nombre} {obj.solicitada_por.apellido}"
+        return None
+    
+    def get_agente_rol(self, obj):
+        if obj.id_agente:
+            agente_rol = obj.id_agente.agenterol_set.first()
+            if agente_rol:
+                return agente_rol.id_rol.nombre
+        return None
+    
+    def get_id_agente_area(self, obj):
+        if obj.id_agente and obj.id_agente.id_area:
+            return obj.id_agente.id_area.id_area
         return None
 
 

@@ -479,9 +479,9 @@ CREATE INDEX IF NOT EXISTS idx_organigrama_activo ON organigrama(activo);
 CREATE INDEX IF NOT EXISTS idx_organigrama_actualizado ON organigrama(actualizado_en);
 
 -- Insertar área por defecto
-INSERT INTO area (nombre) VALUES 
-    ('General')
-ON CONFLICT (nombre) DO NOTHING;
+INSERT INTO area (nombre, id_area_padre) VALUES 
+    ('General', NULL)
+ON CONFLICT (nombre, id_area_padre) DO NOTHING;
 
 -- Insertar algunos feriados nacionales por defecto
 INSERT INTO feriado (fecha, descripcion, es_nacional) VALUES

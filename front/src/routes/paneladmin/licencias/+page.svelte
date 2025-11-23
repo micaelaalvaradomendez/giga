@@ -110,31 +110,35 @@
 </svelte:head>
 
 <div class="page-container">
-	<div class="page-header">
-		<div class="header-title">
-			<h1>Gestion de Licencia</h1>
-			<p> Ya empeze con toda la logica para el manejo de licencias en relacion a los usuarios, lo voy a incluir en esta pagina</p>
-			<p> atte. Micaela </p>
-		</div>
-		<div class="header-actions">
-			<button
-				class="btn-header"
-				style="background: #8b5cf6; color: white"
-				on:click={cargarTipos}
-				disabled={loading}
-			>
-				{#if loading}
-					<span class="spinner"></span>
-				{:else}
-					🔄
-				{/if}
-				Actualizar
-			</button>
-			<button class="btn-header" on:click={abrirAlta} style="background:#22c55e;color:white">➕ Nuevo</button>
-		</div>
-	</div>
-
-	<div class="page-content">
+		<div class="page-header">
+			<div class="header-title">
+				<h1>📋 Administración de Licencias</h1>
+				<p>Gestión completa de tipos de licencia y supervisión del sistema</p>
+			</div>
+			<div class="header-actions">
+				<button
+					class="btn-header"
+					style="background: #3b82f6; color: white"
+					on:click={() => goto('/licencias')}
+				>
+					👥 Ver Licencias de Usuarios
+				</button>
+				<button
+					class="btn-header"
+					style="background: #8b5cf6; color: white"
+					on:click={cargarTipos}
+					disabled={loading}
+				>
+					{#if loading}
+						<span class="spinner"></span>
+					{:else}
+						🔄
+					{/if}
+					Actualizar
+				</button>
+				<button class="btn-header" on:click={abrirAlta} style="background:#22c55e;color:white">➕ Nuevo Tipo</button>
+			</div>
+		</div>	<div class="page-content">
 		{#if error}
 			<div class="alert alert-error">
 				<strong>❌ Error:</strong>

@@ -27,13 +27,18 @@ COPY . /app/
 # Crear directorio para archivos estáticos
 RUN mkdir -p /app/staticfiles /app/media
 
+# Asegurar permisos correctos para migraciones
+RUN find /app -type d -name "migrations" -exec chmod -R 777 {} \; || true
+RUN chmod -R 755 /app
+
 # Exponer puerto
 EXPOSE 8000
 
 # Crear usuario no-root para seguridad
 RUN groupadd -r django && useradd -r -g django django
+
 RUN chown -R django:django /app
 USER django
 
-# Script de entrada con migraciones automáticas
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput --clear && python manage.py runserver 0.0.0.0:8000"]
+# Script de entrada 
+CMD ["sh", "-c", "python manage.py makemigrations --noinput; python manage.py migrate --noinput; python manage.py collectstatic --noinput --clear; exec python manage.py runserver 0.0.0.0:8000"]

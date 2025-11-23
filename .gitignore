@@ -443,10 +443,6 @@ temp/
 /test-data/
 /sample-data/
 
-# Configuraciones específicas de desarrollo local
-django-utils.local.sh
-db-utils.local.sh
-
 # Archivos de configuración de producción
 production.yml
 prod.env
