@@ -98,12 +98,15 @@
 					};
 
 					console.log("✅ Organigrama cargado:", organigramaData);
+					console.log("✅ Estructura length:", result.data.estructura?.length);
 				} else {
+					console.error("❌ API success=false, message:", result.message);
 					throw new Error(
 						result.message || "Error al cargar organigrama",
 					);
 				}
 			} else {
+				console.error("❌ Response not ok:", response.status, response.statusText);
 				throw new Error("Error de conexión con el servidor");
 			}
 
