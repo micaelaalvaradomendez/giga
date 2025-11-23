@@ -36,10 +36,17 @@
   // Filtros para la lista de compensaciones
   let filtroAreaLista = "";
   let filtroEstadoLista = "";
+  let busqueda = "";
 
   // Modal de detalles
   let mostrandoDetalles = false;
   let compensacionSeleccionada = null;
+
+  // Variables para modal de confirmación
+  let mostrandoConfirmacion = false;
+  let tituloConfirmacion = "";
+  let mensajeConfirmacion = "";
+  let tipoConfirmacion = "success"; // 'success', 'error', 'warning'
 
   // Opciones para el formulario
   const motivosCompensacion = [
@@ -123,7 +130,10 @@
       } else if (Array.isArray(response)) {
         datos = response;
       } else {
-        console.log('📊 Estructura inesperada de respuesta áreas compensaciones:', response);
+        console.log(
+          "📊 Estructura inesperada de respuesta áreas compensaciones:",
+          response,
+        );
         datos = [];
       }
 
@@ -230,10 +240,10 @@
       guardias = datos;
       console.log("Guardias procesadas:", guardias);
       console.log("Total guardias encontradas:", guardias.length);
-      
+
       // Filtrar guardias que ya tienen compensación
       await filtrarGuardiasConCompensacion();
-      
+
       // Limpiar selección de guardia cuando cambia el agente
       guardiaSeleccionada = "";
     } catch (err) {
@@ -246,16 +256,22 @@
 
   async function filtrarGuardiasConCompensacion() {
     if (guardias.length === 0) return;
-    
+
     try {
       // Verificar cuáles guardias ya tienen compensación
-      const guardiasIds = guardias.map(g => g.id_guardia);
-      console.log('🔍 Verificando compensaciones para guardias:', guardiasIds);
-      
+      const guardiasIds = guardias.map((g) => g.id_guardia);
+      console.log("🔍 Verificando compensaciones para guardias:", guardiasIds);
+
       // Cargar todas las compensaciones para verificar cuáles guardias ya las tienen
-      const compensacionesResponse = await guardiasService.getCompensaciones('', token);
-      console.log('📝 Respuesta completa compensaciones para filtro:', compensacionesResponse);
-      
+      const compensacionesResponse = await guardiasService.getCompensaciones(
+        "",
+        token,
+      );
+      console.log(
+        "📝 Respuesta completa compensaciones para filtro:",
+        compensacionesResponse,
+      );
+
       // Extraer los datos correctamente según la estructura de respuesta
       let todasCompensaciones = [];
       if (compensacionesResponse.data?.data?.results) {
@@ -265,33 +281,44 @@
       } else if (Array.isArray(compensacionesResponse.data)) {
         todasCompensaciones = compensacionesResponse.data;
       }
-      
-      console.log('📋 Compensaciones extraídas:', todasCompensaciones);
-      
+
+      console.log("📋 Compensaciones extraídas:", todasCompensaciones);
+
       // Verificar que sea un array antes de hacer map
       if (!Array.isArray(todasCompensaciones)) {
-        console.warn('⚠️ todasCompensaciones no es un array:', typeof todasCompensaciones, todasCompensaciones);
+        console.warn(
+          "⚠️ todasCompensaciones no es un array:",
+          typeof todasCompensaciones,
+          todasCompensaciones,
+        );
         return; // Salir si no es un array válido
       }
-      
+
       // Extraer IDs de guardias que ya tienen compensación
       const guardiasConCompensacion = todasCompensaciones
-        .map(comp => comp.id_guardia?.id_guardia || comp.id_guardia)
+        .map((comp) => comp.id_guardia?.id_guardia || comp.id_guardia)
         .filter(Boolean);
-      
-      console.log('🚫 Guardias con compensación existente:', guardiasConCompensacion);
-      
-      // Filtrar guardias que NO tienen compensación
-      const guardiasSinCompensacion = guardias.filter(guardia => 
-        !guardiasConCompensacion.includes(guardia.id_guardia)
+
+      console.log(
+        "🚫 Guardias con compensación existente:",
+        guardiasConCompensacion,
       );
-      
-      console.log('✅ Guardias disponibles para compensación:', guardiasSinCompensacion.length, 'de', guardias.length);
-      
+
+      // Filtrar guardias que NO tienen compensación
+      const guardiasSinCompensacion = guardias.filter(
+        (guardia) => !guardiasConCompensacion.includes(guardia.id_guardia),
+      );
+
+      console.log(
+        "✅ Guardias disponibles para compensación:",
+        guardiasSinCompensacion.length,
+        "de",
+        guardias.length,
+      );
+
       guardias = guardiasSinCompensacion;
-      
     } catch (err) {
-      console.error('❌ Error verificando compensaciones existentes:', err);
+      console.error("❌ Error verificando compensaciones existentes:", err);
       // En caso de error, mantener todas las guardias
     }
   }
@@ -302,6 +329,21 @@
 
   // Compensaciones filtradas
   $: compensacionesFiltradas = compensaciones.filter((comp) => {
+    // Filtro por búsqueda
+    if (busqueda.trim()) {
+      const searchTerm = busqueda.toLowerCase();
+      const matchesSearch =
+        comp.agente_nombre?.toLowerCase().includes(searchTerm) ||
+        comp.agente_apellido?.toLowerCase().includes(searchTerm) ||
+        comp.id_agente?.toString().includes(searchTerm) ||
+        comp.agente_dni?.toString().includes(searchTerm) ||
+        comp.agente_email?.toLowerCase().includes(searchTerm) ||
+        comp.agente_legajo?.toString().includes(searchTerm) ||
+        comp.descripcion_motivo?.toLowerCase().includes(searchTerm);
+
+      if (!matchesSearch) return false;
+    }
+
     // Filtro por área - necesitamos buscar el área de la guardia
     if (filtroAreaLista && comp.id_area !== parseInt(filtroAreaLista)) {
       return false;
@@ -319,7 +361,11 @@
       !nuevaCompensacion.hora_fin_real ||
       !nuevaCompensacion.descripcion_motivo
     ) {
-      alert("Por favor complete todos los campos obligatorios");
+      mostrarConfirmacion(
+        "Campos incompletos",
+        "Por favor complete todos los campos obligatorios",
+        "warning",
+      );
       return;
     }
 
@@ -341,7 +387,11 @@
         ),
       };
 
-      console.log("Enviando compensación desde guardia:", guardiaSeleccionada, compensacionData);
+      console.log(
+        "Enviando compensación desde guardia:",
+        guardiaSeleccionada,
+        compensacionData,
+      );
 
       const response = await guardiasService.createCompensacionFromGuardia(
         guardiaSeleccionada,
@@ -367,7 +417,11 @@
 
       mostrandoFormulario = false;
       await cargarCompensaciones();
-      alert("Compensación creada exitosamente");
+      mostrarConfirmacion(
+        "¡Éxito!",
+        "Compensación creada exitosamente",
+        "success",
+      );
     } catch (err) {
       console.error("Error completo creando compensación:", err);
       console.error("Respuesta del servidor:", err.response?.data);
@@ -378,8 +432,7 @@
         err.response?.data?.error ||
         err.message ||
         "Error desconocido";
-      error = "Error al crear compensación: " + mensaje;
-      alert("Error: " + mensaje);
+      mostrarConfirmacion("Error", mensaje, "error");
     } finally {
       cargando = false;
     }
@@ -394,6 +447,13 @@
     if (!hora) return "-";
     return hora.slice(0, 5); // HH:MM
   }
+
+  function limpiarFiltros() {
+    busqueda = "";
+    filtroAreaLista = "";
+    filtroEstadoLista = "";
+  }
+  2;
 
   function verDetalles(compensacion) {
     compensacionSeleccionada = compensacion;
@@ -436,14 +496,23 @@
       );
 
       await cargarCompensaciones();
-      alert("Compensación aprobada exitosamente");
+      mostrarConfirmacion(
+        "¡Aprobada!",
+        "Compensación aprobada exitosamente",
+        "success",
+      );
       console.log("Compensación aprobada:", response);
     } catch (err) {
       console.error("Error aprobando compensación:", err);
       const mensaje =
         err.response?.data?.message || err.message || "Error desconocido";
       error = "Error al aprobar compensación: " + mensaje;
-      alert("Error: " + mensaje);
+      // ✅ USA ESTO:
+      mostrarConfirmacion(
+        "Error",
+        "Error al aprobar compensación: " + mensaje,
+        "error",
+      );
     } finally {
       cargando = false;
     }
@@ -483,17 +552,41 @@
       );
 
       await cargarCompensaciones();
-      alert("Compensación rechazada");
+      mostrarConfirmacion(
+        "Rechazada",
+        "Compensación rechazada correctamente",
+        "success",
+      );
       console.log("Compensación rechazada:", response);
     } catch (err) {
       console.error("Error rechazando compensación:", err);
       const mensaje =
         err.response?.data?.message || err.message || "Error desconocido";
       error = "Error al rechazar compensación: " + mensaje;
-      alert("Error: " + mensaje);
+      mostrarConfirmacion(
+        "Error",
+        "Error al rechazar compensación: " + mensaje,
+        "error",
+      );
     } finally {
       cargando = false;
     }
+  }
+
+  function mostrarConfirmacion(titulo, mensaje, tipo = "success") {
+    tituloConfirmacion = titulo;
+    mensajeConfirmacion = mensaje;
+    tipoConfirmacion =
+      tipo === "error"
+        ? "modal-confirmacion-error"
+        : tipo === "warning"
+          ? "modal-confirmacion-warning"
+          : "";
+    mostrandoConfirmacion = true;
+  }
+
+  function cerrarConfirmacion() {
+    mostrandoConfirmacion = false;
   }
 </script>
 
@@ -503,43 +596,12 @@
 
 <div class="compensaciones-container">
   <div class="header">
-    <h1>⏱️ Compensaciones por Horas Extra</h1>
-    <p class="descripcion">
-      Gestión de horas de compensación por emergencias que exceden el límite de
-      10 horas por guardia
-    </p>
+    <div class="header-title">
+      <h1>⏱️ Compensaciones por Horas Extra</h1>
+    </div>
     <button class="btn-nuevo" on:click={() => (mostrandoFormulario = true)}>
       ➕ Nueva Compensación
     </button>
-  </div>
-
-  <!-- Información explicativa -->
-  <div class="info-explicativa">
-    <h3>💡 ¿Qué son las Compensaciones?</h3>
-    <div class="explicacion-grid">
-      <div class="explicacion-item">
-        <h4>🚨 Situaciones de Emergencia</h4>
-        <p>
-          Cuando una guardia se extiende más allá de las 10 horas reglamentarias
-          debido a emergencias, accidentes, operativos especiales o situaciones
-          imprevistas.
-        </p>
-      </div>
-      <div class="explicacion-item">
-        <h4>⏰ Registro de Horas Extra</h4>
-        <p>
-          Se documentan las horas adicionales trabajadas, el motivo de la
-          extensión y se solicita la compensación correspondiente.
-        </p>
-      </div>
-      <div class="explicacion-item">
-        <h4>✅ Proceso de Aprobación</h4>
-        <p>
-          Las compensaciones deben ser aprobadas por superiores jerárquicos
-          antes de ser incluidas en el cálculo de plus salarial.
-        </p>
-      </div>
-    </div>
   </div>
 
   <!-- Errores -->
@@ -735,43 +797,56 @@
     </div>
   {/if}
 
-  <!-- Lista de compensaciones -->
-  <div class="lista-compensaciones">
+  <!-- Filtros para la lista -->
+  <div class="filtros-lista">
+    <div class="filtro-row">
+      <div class="filtro-group">
+        <label for="busqueda">🔍 Buscar agente</label>
+        <input
+          type="text"
+          id="busqueda"
+          bind:value={busqueda}
+          placeholder="Buscar por nombre, apellido, DNI, email o legajo..."
+          class="input-busqueda"
+        />
+      </div>
+      <div class="filtro-group">
+        <label for="filtro-area-lista">📍 Filtrar por Área:</label>
+        <select id="filtro-area-lista" bind:value={filtroAreaLista}>
+          <option value="">Todas las áreas</option>
+          {#each areas as area}
+            <option value={area.id_area}>{area.nombre}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="filtro-group">
+        <label for="filtro-estado-lista">🚦Estado:</label>
+        <select id="filtro-estado-lista" bind:value={filtroEstadoLista}>
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="aprobada">Aprobada</option>
+          <option value="rechazada">Rechazada</option>
+        </select>
+      </div>
+
+      <button
+        class="btn-limpiar"
+        on:click={limpiarFiltros}
+        title="Limpiar Filtros"
+      >
+        🗑️ Limpiar filtros
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Lista de compensaciones -->
+<div class="lista-compensaciones">
+  <div class="lista-container">
     <div class="lista-header">
       <h2>Compensaciones Registradas ({compensaciones.length})</h2>
-
-      <!-- Filtros para la lista -->
-      <div class="filtros-lista">
-        <div class="filtro-grupo">
-          <label for="filtro-area-lista">Filtrar por Área:</label>
-          <select id="filtro-area-lista" bind:value={filtroAreaLista}>
-            <option value="">Todas las áreas</option>
-            {#each areas as area}
-              <option value={area.id_area}>{area.nombre}</option>
-            {/each}
-          </select>
-        </div>
-
-        <div class="filtro-grupo">
-          <label for="filtro-estado-lista">Estado:</label>
-          <select id="filtro-estado-lista" bind:value={filtroEstadoLista}>
-            <option value="">Todos los estados</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="aprobada">Aprobada</option>
-            <option value="rechazada">Rechazada</option>
-          </select>
-        </div>
-
-        <button
-          class="btn-recargar"
-          on:click={cargarCompensaciones}
-          disabled={cargando}
-        >
-          🔄 Recargar
-        </button>
-      </div>
     </div>
-
     {#if cargando}
       <div class="loading">
         <div class="spinner"></div>
@@ -905,7 +980,7 @@
           <h3>Información General</h3>
           <div class="detalle-grid">
             <div class="detalle-item">
-              <label>ID Compensación:</label>
+              <label for="ID-compensacion">ID Compensación:</label>
               <span
                 >{compensacionSeleccionada.id_hora_compensacion ||
                   compensacionSeleccionada.id_compensacion ||
@@ -914,7 +989,7 @@
               >
             </div>
             <div class="detalle-item">
-              <label>Estado:</label>
+              <label for="estado">Estado:</label>
               <span
                 class="estado-badge estado-{compensacionSeleccionada.estado ||
                   'pendiente'}"
@@ -923,7 +998,7 @@
               </span>
             </div>
             <div class="detalle-item">
-              <label>Fecha de Solicitud:</label>
+              <label for="fecha">Fecha de Solicitud:</label>
               <span
                 >{formatearFecha(
                   compensacionSeleccionada.fecha_solicitud ||
@@ -932,7 +1007,7 @@
               >
             </div>
             <div class="detalle-item">
-              <label>Solicitado por:</label>
+              <label for="solicita">Solicitado por:</label>
               <span>ID: {compensacionSeleccionada.solicitado_por || "N/A"}</span
               >
             </div>
@@ -943,11 +1018,11 @@
           <h3>Detalles de la Guardia</h3>
           <div class="detalle-grid">
             <div class="detalle-item">
-              <label>ID Guardia:</label>
+              <label for="guardia">ID Guardia:</label>
               <span>{compensacionSeleccionada.id_guardia || "N/A"}</span>
             </div>
             <div class="detalle-item">
-              <label>Agente:</label>
+              <label for="agente">Agente:</label>
               <span>
                 {#if compensacionSeleccionada.agente_nombre}
                   {compensacionSeleccionada.agente_apellido}, {compensacionSeleccionada.agente_nombre}
@@ -959,13 +1034,13 @@
               </span>
             </div>
             <div class="detalle-item">
-              <label>Fecha de Servicio:</label>
+              <label for="fechaser">Fecha de Servicio:</label>
               <span
                 >{formatearFecha(compensacionSeleccionada.fecha_servicio)}</span
               >
             </div>
             <div class="detalle-item">
-              <label>Hora Real de Fin:</label>
+              <label for="hora">Hora Real de Fin:</label>
               <span
                 >{formatearHora(compensacionSeleccionada.hora_fin_real)}</span
               >
@@ -977,13 +1052,13 @@
           <h3>Motivo y Justificación</h3>
           <div class="detalle-grid">
             <div class="detalle-item detalle-full">
-              <label>Tipo de Motivo:</label>
+              <label for="tipo">Tipo de Motivo:</label>
               <span class="motivo-badge"
                 >{compensacionSeleccionada.motivo || "N/A"}</span
               >
             </div>
             <div class="detalle-item detalle-full">
-              <label>Descripción del Motivo:</label>
+              <label for="descr">Descripción del Motivo:</label>
               <div class="descripcion-texto">
                 {compensacionSeleccionada.descripcion_motivo ||
                   "Sin descripción"}
@@ -991,7 +1066,7 @@
             </div>
             {#if compensacionSeleccionada.numero_acta}
               <div class="detalle-item detalle-full">
-                <label>Número de Acta:</label>
+                <label for="numacta">Número de Acta:</label>
                 <span>{compensacionSeleccionada.numero_acta}</span>
               </div>
             {/if}
@@ -1002,7 +1077,7 @@
           <h3>Cálculo de Horas</h3>
           <div class="detalle-grid">
             <div class="detalle-item">
-              <label>Horas Extra Calculadas:</label>
+              <label for="horasextra">Horas Extra Calculadas:</label>
               <span class="horas-badge">
                 {compensacionSeleccionada.horas_extra ||
                   "Pendiente de cálculo"}h
@@ -1010,7 +1085,7 @@
             </div>
             {#if compensacionSeleccionada.monto_compensacion}
               <div class="detalle-item">
-                <label>Monto de Compensación:</label>
+                <label for="monto">Monto de Compensación:</label>
                 <span class="monto-badge">
                   ${compensacionSeleccionada.monto_compensacion}
                 </span>
@@ -1025,13 +1100,13 @@
             <div class="detalle-grid">
               {#if compensacionSeleccionada.aprobado_por}
                 <div class="detalle-item">
-                  <label>Aprobado por:</label>
+                  <label for="aprobado">Aprobado por:</label>
                   <span>ID: {compensacionSeleccionada.aprobado_por}</span>
                 </div>
               {/if}
               {#if compensacionSeleccionada.fecha_aprobacion}
                 <div class="detalle-item">
-                  <label>Fecha de Aprobación:</label>
+                  <label for="date-aprobacion">Fecha de Aprobación:</label>
                   <span
                     >{formatearFecha(
                       compensacionSeleccionada.fecha_aprobacion,
@@ -1041,7 +1116,7 @@
               {/if}
               {#if compensacionSeleccionada.motivo_rechazo}
                 <div class="detalle-item detalle-full">
-                  <label>Motivo de Rechazo:</label>
+                  <label for="rechazo">Motivo de Rechazo:</label>
                   <div class="descripcion-texto rechazo">
                     {compensacionSeleccionada.motivo_rechazo}
                   </div>
@@ -1082,9 +1157,31 @@
   </div>
 {/if}
 
+<!-- Modal de confirmación -->
+{#if mostrandoConfirmacion}
+  <div class="modal-confirmacion">
+    <div class="modal-confirmacion-contenido {tipoConfirmacion}">
+      <div class="modal-confirmacion-icono">
+        {#if tipoConfirmacion === ""}
+          ✓
+        {:else if tipoConfirmacion === "modal-confirmacion-error"}
+          ✕
+        {:else}
+          ⚠
+        {/if}
+      </div>
+      <h3 class="modal-confirmacion-titulo">{tituloConfirmacion}</h3>
+      <p class="modal-confirmacion-mensaje">{mensajeConfirmacion}</p>
+      <button class="modal-confirmacion-boton" on:click={cerrarConfirmacion}>
+        Aceptar
+      </button>
+    </div>
+  </div>
+{/if}
+
 <style>
   .compensaciones-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -1093,82 +1190,96 @@
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #e2e8f0;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
   }
 
-  .header h1 {
-    color: #2d3748;
-    margin: 0 0 10px 0;
-    font-size: 28px;
-  }
-
-  .descripcion {
-    color: #718096;
-    font-size: 14px;
+  .header-title {
+    position: relative;
+    background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+    color: white;
+    padding: 30px 20px;
     margin: 0;
-    max-width: 600px;
+    max-width: 1000px;
+    border-radius: 28px;
+    overflow: hidden;
+    text-align: center;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+      0 20px 60px rgba(30, 64, 175, 0.4);
   }
 
-  /* Información explicativa */
-  .info-explicativa {
-    background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%);
-    border: 1px solid #d4edda;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
+  .header-title::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 1px
+      ),
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: moveLines 20s linear infinite;
   }
 
-  .info-explicativa h3 {
-    color: #155724;
-    margin-bottom: 15px;
-    font-size: 1.2rem;
+  .header-title h1 {
+    margin: 10px;
+    font-weight: 800;
+    font-size: 30px;
+    letter-spacing: 0.2px;
+    position: relative;
+    padding-bottom: 12px;
+    overflow: hidden;
+    display: inline-block;
   }
 
-  .explicacion-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 15px;
+  .header-title h1::after {
+    content: "";
+    position: absolute;
+    width: 40%;
+    height: 3px;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.9),
+      transparent
+    );
+    animation: moveLine 2s linear infinite;
   }
 
-  .explicacion-item {
-    background: white;
-    padding: 15px;
-    border-radius: 6px;
-    border-left: 4px solid #28a745;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  .explicacion-item h4 {
-    color: #155724;
-    margin-bottom: 8px;
-    font-size: 1rem;
-  }
-
-  .explicacion-item p {
-    color: #333;
-    font-size: 0.9rem;
-    line-height: 1.4;
-    margin: 0;
+  @keyframes moveLine {
+    0% {
+      left: -40%;
+    }
+    100% {
+      left: 100%;
+    }
   }
 
   .btn-nuevo {
-    background: #3b82f6;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: #f68f3b;
     color: white;
     border: none;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
+    padding: 15px 25px;
+    border-radius: 10px;
+    font-size: 17px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #e79043, #f39c12);
+    box-shadow: 0 2px 4px rgba(237, 160, 93, 0.756);
   }
 
   .btn-nuevo:hover {
-    background: #2563eb;
+    box-shadow: 0 4px 8px rgba(237, 160, 93, 0.756);
     transform: translateY(-1px);
   }
 
@@ -1276,6 +1387,29 @@
     border-radius: 8px;
     font-size: 14px;
     transition: border-color 0.2s;
+    box-sizing: border-box;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+
+  .campo select {
+    height: 48px;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 20px;
+    padding-right: 40px;
+  }
+
+  .campo input[type="text"],
+  .campo input[type="time"] {
+    height: 48px;
+  }
+
+  .campo textarea {
+    min-height: 100px;
+    resize: vertical;
   }
 
   .campo input:focus,
@@ -1302,129 +1436,194 @@
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding: 24px;
-    border-top: 1px solid #e5e7eb;
+    padding: 24px 32px;
+    border-top: 2px solid #e5e7eb;
+    background: #f8f9fa;
   }
 
   .btn-cancelar,
-  .btn-guardar,
-  .btn-small,
-  .btn-ver {
-    padding: 10px 20px;
+  .btn-guardar {
+    padding: 12px 28px;
     border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    text-transform: none;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .btn-cancelar {
-    background: #6b7280;
+    background: linear-gradient(135deg, #6b7280, #4b5563);
     color: white;
   }
 
   .btn-cancelar:hover {
-    background: #4b5563;
+    background: linear-gradient(135deg, #4b5563, #374151);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
   }
 
   .btn-guardar {
-    background: #10b981;
+    background: linear-gradient(135deg, #10b981, #059669);
     color: white;
   }
 
   .btn-guardar:hover:not(:disabled) {
-    background: #059669;
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
   }
 
   .btn-guardar:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-small,
+  .btn-ver {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .lista-compensaciones {
-    margin-top: 40px;
+    margin-top: 0;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 20px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .lista-container {
+    background: transparent;
+    padding: 0;
   }
 
   .lista-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-    gap: 20px;
-    flex-wrap: wrap;
+    margin-bottom: 24px;
   }
 
   .lista-header h2 {
-    color: #374151;
+    color: #1e293b;
     margin: 0;
-    font-size: 20px;
+    font-size: 22px;
+    font-weight: 700;
+    position: relative;
+    display: inline-block;
+    padding-bottom: 12px;
+    overflow: hidden;
+  }
+
+  .lista-header h2::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 3px;
+    bottom: 0;
+    left: -100%;
+    background: linear-gradient(90deg, transparent, #000000, transparent);
+    animation: moveLine 2s linear infinite;
   }
 
   .filtros-lista {
-    display: flex;
-    gap: 15px;
-    align-items: end;
-    flex-wrap: wrap;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
-  .filtro-grupo {
+  .filtro-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 1rem;
+    align-items: end;
+  }
+
+  .filtro-group {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    min-width: 150px;
+    gap: 0.5rem;
   }
 
-  .filtro-grupo label {
-    font-size: 12px;
+  .filtro-group label {
+    font-size: 16px;
     font-weight: 600;
     color: #4b5563;
   }
 
-  .filtro-grupo select {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
+  .filtro-group select,
+  .filtro-group input,
+  .input-busqueda {
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
     border-radius: 6px;
-    font-size: 14px;
-    background: white;
+    font-size: 0.9rem;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+    width: 95%;
   }
 
-  .btn-recargar {
-    padding: 8px 16px;
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
+  .filtro-group select:focus,
+  .filtro-group input:focus,
+  .input-busqueda:focus {
+    outline: none;
+    border-color: #407bff;
+    box-shadow: 0 0 0 3px rgba(64, 123, 255, 0.15);
+  }
+  .input-busqueda::placeholder {
+    color: #9ca3af;
+    font-size: 0.85rem;
+  }
+
+  .btn-limpiar {
+    padding: 10px 25px;
+    background: #6c757d;
+    color: white;
+    border: none;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s;
-    height: fit-content;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    height: 42px;
   }
 
-  .btn-recargar:hover:not(:disabled) {
-    background: #e5e7eb;
-  }
-
-  .btn-recargar:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  .btn-limpiar:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
   }
 
   .loading {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 60px 20px;
+    padding: 80px 20px;
     color: #6b7280;
     font-size: 16px;
     gap: 12px;
+    background: white;
+    border-radius: 12px;
   }
 
   .spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid #e5e7eb;
-    border-top: 3px solid #3b82f6;
+    width: 32px;
+    height: 32px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #3b82f6;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -1438,25 +1637,156 @@
     }
   }
 
+  /* Modal de confirmación/alerta */
+  .modal-confirmacion {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .modal-confirmacion-contenido {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    text-align: center;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .modal-confirmacion-icono {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+  }
+
+  .modal-confirmacion-titulo {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+  }
+
+  .modal-confirmacion-mensaje {
+    font-size: 15px;
+    color: #64748b;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+  }
+
+  .modal-confirmacion-boton {
+    padding: 12px 32px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  }
+
+  .modal-confirmacion-boton:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+  }
+
+  /* Variante de error */
+  .modal-confirmacion-error .modal-confirmacion-icono {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+  }
+
+  .modal-confirmacion-error .modal-confirmacion-boton {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  }
+
+  .modal-confirmacion-error .modal-confirmacion-boton:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+  }
+
+  /* Variante de advertencia */
+  .modal-confirmacion-warning .modal-confirmacion-icono {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
+  }
+
+  .modal-confirmacion-warning .modal-confirmacion-boton {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+  }
+
+  .modal-confirmacion-warning .modal-confirmacion-boton:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.4);
+  }
+
   .empty-state {
     text-align: center;
-    padding: 60px 20px;
+    padding: 80px 40px;
     color: #6b7280;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 
   .empty-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
+    font-size: 64px;
+    margin-bottom: 20px;
   }
 
   .empty-state h3 {
-    margin: 0 0 8px 0;
+    margin: 0 0 12px 0;
     color: #374151;
+    font-size: 20px;
+    font-weight: 600;
   }
 
   .empty-state p {
     margin: 0;
-    font-size: 14px;
+    font-size: 15px;
+    color: #6b7280;
   }
 
   .table-container {
@@ -1464,6 +1794,24 @@
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .table-container::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  .table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+
+  .table-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 
   .compensaciones-table {
@@ -1472,129 +1820,182 @@
   }
 
   .compensaciones-table th {
-    background: #f9fafb;
-    padding: 16px;
+    padding: 18px 20px;
     text-align: left;
-    font-weight: 600;
-    color: #374151;
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 3px solid #3b82f6;
+  }
+
+  .compensaciones-table tbody tr {
     border-bottom: 1px solid #e5e7eb;
-    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .compensaciones-table tbody tr:hover {
+    background: linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 100%);
+    transform: scale(1.005);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
   }
 
   .compensaciones-table td {
-    padding: 16px;
-    border-bottom: 1px solid #e5e7eb;
+    padding: 18px 20px;
     font-size: 14px;
+    color: #374151;
+    vertical-align: middle;
   }
 
   .compensaciones-table tbody tr:hover {
     background: #f9fafb;
   }
 
+  .agente-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
   .agente-info strong {
     display: block;
-    color: #374151;
+    color: #1e293b;
+    font-size: 14px;
+    font-weight: 600;
   }
 
   .agente-info small {
-    color: #6b7280;
-    font-size: 12px;
+    color: #64748b;
+    font-size: 13px;
   }
 
   .horas-badge {
     display: inline-block;
-    background: #dbeafe;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
     color: #1e40af;
-    padding: 6px 12px;
+    padding: 8px 14px;
     border-radius: 20px;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 13px;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
   }
 
   .motivo-badge {
     display: inline-block;
-    background: #f3f4f6;
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
     color: #374151;
-    padding: 4px 12px;
+    padding: 6px 14px;
     border-radius: 16px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: capitalize;
+    border: 1px solid #d1d5db;
   }
 
   .estado-badge {
     display: inline-block;
-    padding: 6px 12px;
+    padding: 8px 16px;
     border-radius: 20px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: capitalize;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.3px;
   }
 
   .estado-pendiente {
-    background: #fef3c7;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
     color: #92400e;
+    border: 1px solid #fcd34d;
+    animation: pulse 2s infinite;
   }
 
   .estado-aprobada {
-    background: #d1fae5;
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
     color: #065f46;
+    border: 1px solid #6ee7b7;
   }
 
   .estado-rechazada {
-    background: #fee2e2;
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
     color: #991b1b;
+    border: 1px solid #fca5a5;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
   }
 
   .btn-small {
-    padding: 6px 12px;
-    font-size: 12px;
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
   }
 
   .btn-ver {
-    background: #3b82f6;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
   }
 
   .btn-ver:hover {
-    background: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+  }
+
+  .btn-aprobar {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  }
+
+  .btn-aprobar:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+  }
+
+  .btn-rechazar {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  }
+
+  .btn-rechazar:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
   }
 
   .acciones-grupo {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
   }
-
-  .btn-aprobar {
-    background: #10b981;
-    color: white;
-  }
-
-  .btn-aprobar:hover {
-    background: #059669;
-  }
-
-  .btn-rechazar {
-    background: #ef4444;
-    color: white;
-  }
-
-  .btn-rechazar:hover {
-    background: #dc2626;
-  }
-
   /* Modal de detalles */
   .modal-detalles {
     background: white;
-    border-radius: 12px;
-    max-width: 800px;
+    border-radius: 16px;
+    max-width: 900px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    border: 2px solid #e5e7eb;
+    border: none;
   }
 
   .detalle-seccion {
@@ -1666,29 +2067,41 @@
     font-size: 14px;
   }
 
+  @media (max-width: 1024px) {
+    .lista-header h2 {
+      font-size: 24px;
+    }
+
+    .compensaciones-table th,
+    .compensaciones-table td {
+      padding: 14px 16px;
+      font-size: 13px;
+    }
+  }
+
   @media (max-width: 768px) {
-    .header {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 16px;
+    .lista-compensaciones {
+      padding: 0 10px;
     }
 
-    .btn-nuevo {
-      align-self: flex-start;
-    }
-
-    .modal {
-      width: 95%;
-      margin: 10px;
-    }
-
-    .compensaciones-table {
-      font-size: 12px;
+    .lista-header h2 {
+      font-size: 20px;
     }
 
     .compensaciones-table th,
     .compensaciones-table td {
       padding: 12px;
+      font-size: 12px;
+    }
+
+    .btn-small {
+      padding: 6px 10px;
+      font-size: 11px;
+    }
+
+    .acciones-grupo {
+      flex-direction: column;
+      gap: 6px;
     }
   }
 </style>
