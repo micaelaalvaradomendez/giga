@@ -23,8 +23,8 @@
   let tipoFiltro = "todos"; // 'todos', 'mes', 'año', 'dia'
   let añoSeleccionado = new Date().getFullYear();
   let mesSeleccionado = new Date().getMonth() + 1; // 1-12
-  let fechaSeleccionada = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  
+  let fechaSeleccionada = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
   // Variables para guardias filtradas
   let guardiasPorHacerFiltradas = [];
   let guardiasRealizadasFiltradas = [];
@@ -91,11 +91,11 @@
         .filter((g) => new Date(g.fecha) < hoy)
         .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
-      console.log('📊 Guardias cargadas:', {
+      console.log("📊 Guardias cargadas:", {
         porHacer: guardiasPorHacer.length,
         realizadas: guardiasRealizadas.length,
-        fechasporHacer: guardiasPorHacer.map(g => g.fecha),
-        fechasRealizadas: guardiasRealizadas.map(g => g.fecha)
+        fechasporHacer: guardiasPorHacer.map((g) => g.fecha),
+        fechasRealizadas: guardiasRealizadas.map((g) => g.fecha),
       });
     } catch (err) {
       console.error("Error cargando guardias:", err);
@@ -219,55 +219,82 @@
 
   // Función para filtrar guardias por fecha
   function filtrarPorFecha(guardias) {
-    console.log('🔍 Filtrando guardias:', {
+    console.log("🔍 Filtrando guardias:", {
       total: guardias.length,
       tipoFiltro,
       añoSeleccionado,
       mesSeleccionado,
-      fechaSeleccionada
+      fechaSeleccionada,
     });
-    
+
     if (tipoFiltro === "todos") {
-      console.log('✅ Filtro "todos" - devolviendo todas las guardias:', guardias.length);
+      console.log(
+        '✅ Filtro "todos" - devolviendo todas las guardias:',
+        guardias.length,
+      );
       return guardias;
     }
 
-    const resultado = guardias.filter(guardia => {
+    const resultado = guardias.filter((guardia) => {
       const fechaGuardia = new Date(guardia.fecha);
-      console.log('📅 Evaluando guardia:', guardia.fecha, '-> Objeto Date:', fechaGuardia);
-      
+      console.log(
+        "📅 Evaluando guardia:",
+        guardia.fecha,
+        "-> Objeto Date:",
+        fechaGuardia,
+      );
+
       switch (tipoFiltro) {
         case "año":
           const añoGuardia = fechaGuardia.getFullYear();
           const coincideAño = añoGuardia === añoSeleccionado;
-          console.log(`📊 Año guardia: ${añoGuardia} === ${añoSeleccionado}? ${coincideAño}`);
+          console.log(
+            `📊 Año guardia: ${añoGuardia} === ${añoSeleccionado}? ${coincideAño}`,
+          );
           return coincideAño;
-        
+
         case "mes":
           const añoGuardiaM = fechaGuardia.getFullYear();
           const mesGuardia = fechaGuardia.getMonth() + 1;
-          const coincideMes = añoGuardiaM === añoSeleccionado && mesGuardia === mesSeleccionado;
-          console.log(`📊 Mes guardia: ${añoGuardiaM}/${mesGuardia} === ${añoSeleccionado}/${mesSeleccionado}? ${coincideMes}`);
+          const coincideMes =
+            añoGuardiaM === añoSeleccionado && mesGuardia === mesSeleccionado;
+          console.log(
+            `📊 Mes guardia: ${añoGuardiaM}/${mesGuardia} === ${añoSeleccionado}/${mesSeleccionado}? ${coincideMes}`,
+          );
           return coincideMes;
-        
+
         case "dia":
           const fechaSeleccionadaObj = new Date(fechaSeleccionada);
-          const coincideDia = fechaGuardia.toDateString() === fechaSeleccionadaObj.toDateString();
-          console.log(`📊 Día guardia: ${fechaGuardia.toDateString()} === ${fechaSeleccionadaObj.toDateString()}? ${coincideDia}`);
+          const coincideDia =
+            fechaGuardia.toDateString() === fechaSeleccionadaObj.toDateString();
+          console.log(
+            `📊 Día guardia: ${fechaGuardia.toDateString()} === ${fechaSeleccionadaObj.toDateString()}? ${coincideDia}`,
+          );
           return coincideDia;
-        
+
         default:
           return true;
       }
     });
-    
-    console.log('🎯 Resultado filtro:', resultado.length, 'guardias de', guardias.length, 'totales');
+
+    console.log(
+      "🎯 Resultado filtro:",
+      resultado.length,
+      "guardias de",
+      guardias.length,
+      "totales",
+    );
     return resultado;
   }
 
   // Guardias filtradas reactivas
   $: {
-    console.log('🔄 Variables de filtro cambiaron:', { tipoFiltro, añoSeleccionado, mesSeleccionado, fechaSeleccionada });
+    console.log("🔄 Variables de filtro cambiaron:", {
+      tipoFiltro,
+      añoSeleccionado,
+      mesSeleccionado,
+      fechaSeleccionada,
+    });
     guardiasPorHacerFiltradas = filtrarPorFecha(guardiasPorHacer);
     guardiasRealizadasFiltradas = filtrarPorFecha(guardiasRealizadas);
   }
@@ -284,8 +311,18 @@
 
   // Nombres de los meses
   const nombresMeses = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
   ];
 
   // Función para limpiar filtros
@@ -293,7 +330,7 @@
     tipoFiltro = "todos";
     añoSeleccionado = new Date().getFullYear();
     mesSeleccionado = new Date().getMonth() + 1;
-    fechaSeleccionada = new Date().toISOString().split('T')[0];
+    fechaSeleccionada = new Date().toISOString().split("T")[0];
   }
 </script>
 
@@ -373,7 +410,11 @@
         {#if tipoFiltro === "dia"}
           <div class="filtro-campo">
             <label for="filtro-fecha-input">Fecha:</label>
-            <input id="filtro-fecha-input" type="date" bind:value={fechaSeleccionada} />
+            <input
+              id="filtro-fecha-input"
+              type="date"
+              bind:value={fechaSeleccionada}
+            />
           </div>
         {/if}
 
@@ -408,7 +449,11 @@
     {#if tabActual === "porHacer"}
       {#if guardiasPorHacerFiltradas.length === 0}
         <div class="empty-glass">
-          <p>📭 {tipoFiltro === "todos" ? "No tienes guardias pendientes" : "No hay guardias en el período seleccionado"}</p>
+          <p>
+            📭 {tipoFiltro === "todos"
+              ? "No tienes guardias pendientes"
+              : "No hay guardias en el período seleccionado"}
+          </p>
         </div>
       {:else}
         <div class="guardias-grid">
@@ -459,7 +504,11 @@
       {/if}
     {:else if guardiasRealizadasFiltradas.length === 0}
       <div class="empty-glass">
-        <p>📭 {tipoFiltro === "todos" ? "No tienes guardias realizadas" : "No hay guardias realizadas en el período seleccionado"}</p>
+        <p>
+          📭 {tipoFiltro === "todos"
+            ? "No tienes guardias realizadas"
+            : "No hay guardias realizadas en el período seleccionado"}
+        </p>
       </div>
     {:else}
       <div class="guardias-grid">
@@ -704,7 +753,7 @@
   .guardia-card {
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(10px);
-    border: 2px solid rgba(90, 144, 206, 0.15);
+    border: 2px solid rgba(98, 172, 192, 0.479);
     border-radius: 15px;
     padding: 1.5rem;
     transition: all 0.3s ease;
@@ -1057,17 +1106,15 @@
 
   /* Estilos para filtros */
   .filtros-container {
+    background: #f1f4f8;
+    border: 1px solid #e5e9eeb2;
+    border-radius: 12px;
+    padding: 1.5rem;
     margin-bottom: 2rem;
   }
 
   .filtros-glass {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 1.5rem;
     display: flex;
-    flex-wrap: wrap;
     gap: 1rem;
     align-items: end;
   }
@@ -1077,14 +1124,15 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    flex: 1;
     min-width: 160px;
   }
 
   .filtros-glass label {
     color: #1a1a1a;
-    font-size: 0.9rem;
     font-weight: 600;
-    margin: 0;
+    color: #374151;
+    font-size: 0.9rem;
   }
 
   .filtros-glass select,
@@ -1123,7 +1171,9 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    margin-top: 1.65rem; /* Align with other controls */
+    flex-shrink: 0;
+    white-space: nowrap;
+    margin-bottom: 0;
   }
 
   .btn-limpiar:hover {
@@ -1142,7 +1192,7 @@
       flex-direction: column;
       align-items: stretch;
     }
-    
+
     .filtro-tipo,
     .filtro-campo {
       min-width: auto;
