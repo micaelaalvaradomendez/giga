@@ -600,7 +600,6 @@
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     display: flex;
-    align-items: center;
     gap: 1rem;
   }
 
@@ -1099,7 +1098,7 @@
   }
 
   textarea {
-    width: 100%;
+    width: 93%;
     padding: 1rem;
     border: 2px solid #e5e7eb;
     border-radius: 12px;
@@ -1125,8 +1124,8 @@
 
   /* Estilos para filtros */
   .filtros-section {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: #f1f4f8;
+    border: 1px solid #e5e9eeb2;
     border-radius: 12px;
     padding: 1.5rem;
     margin-bottom: 2rem;
@@ -1134,15 +1133,16 @@
 
   .filtros-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: 1fr auto auto;
     gap: 1rem;
     align-items: end;
+    margin-bottom: 1rem;
   }
 
   .filtro-item {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 5px;
   }
 
   .filtro-item label {
@@ -1167,24 +1167,22 @@
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   }
 
-  .filtro-actions {
-    align-items: end;
-  }
-
   .btn-limpiar {
-    padding: 0.5rem 1rem;
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
+    padding: 10px 25px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    height: 42px;
   }
 
   .btn-limpiar:hover {
-    background: #e5e7eb;
-    color: #1f2937;
+    background: #5a6268;
+    transform: translateY(-1px);
   }
 
   .btn-warning {
