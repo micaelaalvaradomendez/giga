@@ -202,9 +202,21 @@
 </script>
 
 <div class="container">
-  <div class="header-glass">
-    <h1>🛡️ Mis Guardias</h1>
-    <p class="subtitle">Administra tus guardias y agrega notas personales</p>
+  <div class="header">
+    <div class="header-glass">
+      <h1>🛡️ Mis Guardias</h1>
+    </div>
+    <!-- Botón de gestión (solo para jefatura, director, admin) -->
+    {#if isJefatura || isDirector || isAdmin}
+      <div class="admin-actions">
+        <button
+          class="btn btn-gestionar"
+          on:click={() => goto("/paneladmin/guardias")}
+        >
+          🛡️ Gestionar Guardias
+        </button>
+      </div>
+    {/if}
   </div>
 
   {#if cargando}
@@ -234,18 +246,6 @@
         ✅ Realizadas ({guardiasRealizadas.length})
       </button>
     </div>
-
-    <!-- Botón de gestión (solo para jefatura, director, admin) -->
-    {#if isJefatura || isDirector || isAdmin}
-      <div class="admin-actions">
-        <button
-          class="btn btn-gestionar"
-          on:click={() => goto("/paneladmin/guardias")}
-        >
-          🛡️ Gestionar Guardias
-        </button>
-      </div>
-    {/if}
 
     <!-- Contenido según tab -->
     {#if tabActual === "porHacer"}
@@ -419,32 +419,87 @@
 
 <style>
   .container {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 2rem 1rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
-  .header-glass {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
-    padding: 2rem;
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 2rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .header-glass {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+    min-width: fit-content;
+    background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+    color: white;
+    padding: 25px 140px;
+    margin: 0;
+    border-radius: 28px;
+    overflow: hidden;
+    text-align: center;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+      0 20px 60px rgba(30, 64, 175, 0.4);
+  }
+
+  .header-glass::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 1px
+      ),
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: moveLines 20s linear infinite;
   }
 
   .header-glass h1 {
-    margin: 0 0 0.5rem 0;
-    color: #00c6ff;
-    font-size: 2rem;
+    font-weight: 800;
+    font-size: 28px;
+    letter-spacing: 0.2px;
+    position: relative;
+    padding-bottom: 12px;
+    overflow: hidden;
+    text-align: left;
+    display: inline-block;
+    white-space: nowrap;
   }
 
-  .subtitle {
-    margin: 0;
-    color: #1a1a1a;
-    font-size: 1rem;
+  .header-glass h1::after {
+    content: "";
+    position: absolute;
+    width: 40%;
+    height: 3px;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.9),
+      transparent
+    );
+    animation: moveLine 2s linear infinite;
+  }
+
+  @keyframes moveLine {
+    0% {
+      left: -40%;
+    }
+    100% {
+      left: 100%;
+    }
   }
 
   .tabs-glass {
@@ -455,29 +510,30 @@
     padding: 0.5rem;
     display: flex;
     gap: 0.5rem;
-    margin-bottom: 2rem;
   }
 
   .tab {
     flex: 1;
     padding: 1rem 2rem;
     background: transparent;
-    border: none;
+    border: 1px solid rgba(142, 165, 180, 0.199);
     border-radius: 10px;
     color: #1a1a1a;
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
+    margin-bottom: 30px;
   }
 
   .tab:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #000;
+    transform: translateY(-3%);
   }
 
   .tab.active {
-    background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+    background: linear-gradient(135deg, #379bddaf 0%, #2c81e9 100%);
     color: #fff;
     box-shadow: 0 4px 15px rgba(0, 198, 255, 0.3);
   }
@@ -491,17 +547,17 @@
   .guardia-card {
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(90, 144, 206, 0.15);
     border-radius: 15px;
     padding: 1.5rem;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 20px rgba(89, 151, 175, 0.1);
   }
 
   .guardia-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 25px rgba(0, 198, 255, 0.2);
-    border-color: rgba(0, 198, 255, 0.4);
+    border-color: rgba(98, 172, 192, 0.479);
   }
 
   .guardia-card.realizada {
@@ -560,13 +616,14 @@
 
   .info-row {
     display: flex;
-    justify-content: space-between;
+    justify-content: left;
     margin-bottom: 0.5rem;
   }
 
   .info-row .label {
     color: #666;
     font-size: 0.9rem;
+    margin-right: 5px;
   }
 
   .info-row .value {
@@ -659,15 +716,16 @@
   }
 
   .modal-glass {
-    background: rgba(30, 30, 30, 0.95);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 20px;
     max-width: 600px;
     width: 100%;
     max-height: 90vh;
     overflow: auto;
     box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .modal-header {
@@ -675,27 +733,28 @@
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem 2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   }
 
   .modal-header h2 {
     margin: 0;
-    color: #00c6ff;
+    color: #173263;
     font-size: 1.5rem;
   }
 
   .btn-close {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(0, 0, 0, 0.6);
     font-size: 1.5rem;
+    font-weight: 600;
     cursor: pointer;
     padding: 0.25rem 0.5rem;
     transition: color 0.3s ease;
   }
 
   .btn-close:hover {
-    color: #fff;
+    color: #000000;
   }
 
   .modal-body {
@@ -703,44 +762,47 @@
   }
 
   .guardia-info {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(23, 50, 99, 0.08);
     padding: 1rem;
     border-radius: 10px;
     margin-bottom: 1.5rem;
+    border: 1px solid rgba(23, 50, 99, 0.15);
   }
 
   .guardia-info p {
     margin: 0.5rem 0;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(0, 0, 0, 0.85);
   }
 
   .guardia-info strong {
-    color: #00c6ff;
+    color: #173263;
+    font-weight: 600;
   }
 
   label {
     display: block;
     margin-bottom: 0.5rem;
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 500;
+    color: rgba(0, 0, 0, 0.8);
+    font-weight: 600;
   }
 
   textarea {
     width: 100%;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgb(255, 255, 255);
+    border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 10px;
-    color: #fff;
+    color: #000000;
     font-family: inherit;
     font-size: 1rem;
     resize: vertical;
+    box-sizing: border-box;
   }
 
   textarea:focus {
     outline: none;
-    border-color: #00c6ff;
-    box-shadow: 0 0 0 3px rgba(0, 198, 255, 0.1);
+    border-color: #407bff;
+    box-shadow: 0 0 0 3px rgba(64, 123, 255, 0.15);
   }
 
   textarea:disabled {
@@ -753,7 +815,7 @@
     justify-content: flex-end;
     gap: 1rem;
     padding: 1.5rem 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
   }
 
   .btn-primary,
@@ -769,13 +831,13 @@
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+    background: linear-gradient(135deg, #407bff 0%, #0052cc 100%);
     color: #fff;
   }
 
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 5px 20px rgba(0, 198, 255, 0.4);
+    box-shadow: 0 5px 20px rgba(64, 123, 255, 0.4);
   }
 
   .btn-primary:disabled {
@@ -809,13 +871,7 @@
   .admin-actions {
     margin: 2rem 0;
     padding: 1.5rem;
-    background: linear-gradient(
-      135deg,
-      rgba(64, 123, 255, 0.1),
-      rgba(64, 123, 255, 0.05)
-    );
     border-radius: 16px;
-    border: 1px solid rgba(64, 123, 255, 0.2);
     text-align: center;
     backdrop-filter: blur(10px);
   }
