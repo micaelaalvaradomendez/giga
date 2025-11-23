@@ -112,7 +112,9 @@
 <div class="page-container">
 	<div class="page-header">
 		<div class="header-title">
-			<h1>Tipos de Licencia (Nomenclador)</h1>
+			<h1>Gestion de Licencia</h1>
+			<p> Ya empeze con toda la logica para el manejo de licencias en relacion a los usuarios, lo voy a incluir en esta pagina</p>
+			<p> atte. Micaela </p>
 		</div>
 		<div class="header-actions">
 			<button

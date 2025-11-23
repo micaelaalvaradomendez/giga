@@ -148,9 +148,9 @@
 
                     {#if isAgenteAvanzado}
                         <a
-                            href="/novedades"
+                            href="/licencias"
                             class="menu-item"
-                            class:active={currentPath === "/novedades"}
+                            class:active={currentPath === "/licencias"}
                             on:click={closeMenu}
                         >
                             <span class="menu-item-icon">🏥</span>

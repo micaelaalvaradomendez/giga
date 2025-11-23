@@ -105,6 +105,8 @@
 		<div class="titulo-section">
 			<h1>📊 Gestión de Reportes</h1>
 			<p>Genere y exporte reportes de guardias individuales y generales</p>
+			<p> No funcionan algunos reportes, algunos traban la pagina</p>
+			<p> REvisar el tema de los pdf , lo intente pero me dan error</p>
 		</div>
 		
 		{#if $mensaje}

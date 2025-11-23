@@ -37,7 +37,7 @@
 			description: "Gestionar días no laborables",
 		},
 		{
-			name: "Reportes (proceso)",
+			name: "Reportes (en pausa)",
 			path: "/paneladmin/reportes",
 			description: "Generar informes del sistema",
 		},
