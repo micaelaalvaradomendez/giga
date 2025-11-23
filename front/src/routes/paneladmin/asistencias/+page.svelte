@@ -1268,15 +1268,6 @@
         margin-top: 1rem;
     }
 
-    .observaciones-previas strong {
-        color: #856404;
-    }
-
-    .observaciones-previas p {
-        margin: 0.5rem 0 0 0;
-        color: #333;
-    }
-
     .info-correccion {
         background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
         border: 1px solid #90caf9;
