@@ -1,6 +1,6 @@
 <script>
-  import { guardiasService, personasService } from '$lib/services.js';
-  import { onMount } from 'svelte';
+  import { guardiasService, personasService } from "$lib/services.js";
+  import { onMount } from "svelte";
 
   // Estado del componente
   let compensaciones = [];
@@ -10,32 +10,32 @@
   let token = null;
 
   // Debug: verificar que el script se esté ejecutando
-  console.log('Script de compensaciones inicializado');
+  console.log("Script de compensaciones inicializado");
 
   // Datos para nueva compensación
   let nuevaCompensacion = {
-    id_guardia: '',
-    hora_fin_real: '',
-    motivo: 'emergencia',
-    descripcion_motivo: '',
-    numero_acta: '',
-    solicitado_por: ''
+    id_guardia: "",
+    hora_fin_real: "",
+    motivo: "emergencia",
+    descripcion_motivo: "",
+    numero_acta: "",
+    solicitado_por: "",
   };
 
   // Datos para los filtros del formulario
   let areas = [];
   let agentes = [];
   let guardias = [];
-  let areaSeleccionada = '';
-  let agenteSeleccionado = '';
-  let guardiaSeleccionada = '';
+  let areaSeleccionada = "";
+  let agenteSeleccionado = "";
+  let guardiaSeleccionada = "";
   let cargandoAreas = false;
   let cargandoAgentes = false;
   let cargandoGuardias = false;
 
   // Filtros para la lista de compensaciones
-  let filtroAreaLista = '';
-  let filtroEstadoLista = '';
+  let filtroAreaLista = "";
+  let filtroEstadoLista = "";
 
   // Modal de detalles
   let mostrandoDetalles = false;
@@ -43,24 +43,24 @@
 
   // Opciones para el formulario
   const motivosCompensacion = [
-    { value: 'siniestro', label: 'Siniestro/Accidente' },
-    { value: 'emergencia', label: 'Emergencia Operativa' },
-    { value: 'operativo', label: 'Operativo Especial' },
-    { value: 'refuerzo', label: 'Refuerzo de Seguridad' },
-    { value: 'otro', label: 'Otro Motivo' }
+    { value: "siniestro", label: "Siniestro/Accidente" },
+    { value: "emergencia", label: "Emergencia Operativa" },
+    { value: "operativo", label: "Operativo Especial" },
+    { value: "refuerzo", label: "Refuerzo de Seguridad" },
+    { value: "otro", label: "Otro Motivo" },
   ];
 
   onMount(async () => {
-    console.log('Componente compensaciones montado, iniciando carga...');
+    console.log("Componente compensaciones montado, iniciando carga...");
     // Obtener token de sesión
-    token = localStorage.getItem('token');
-    
+    token = localStorage.getItem("token");
+
     try {
       await cargarCompensaciones();
       await cargarAreas();
-      console.log('Carga inicial completada');
+      console.log("Carga inicial completada");
     } catch (err) {
-      console.error('Error en carga inicial:', err);
+      console.error("Error en carga inicial:", err);
     }
   });
 
@@ -68,9 +68,9 @@
     cargando = true;
     error = null;
     try {
-      const response = await guardiasService.getCompensaciones('', token);
-      console.log('Respuesta completa compensaciones:', response);
-      
+      const response = await guardiasService.getCompensaciones("", token);
+      console.log("Respuesta completa compensaciones:", response);
+
       // Manejar diferentes estructuras de respuesta
       if (response.success && response.data && response.data.results) {
         compensaciones = response.data.results;
@@ -83,11 +83,13 @@
       } else {
         compensaciones = [];
       }
-      
-      console.log('Compensaciones cargadas:', compensaciones);
+
+      console.log("Compensaciones cargadas:", compensaciones);
     } catch (err) {
-      console.error('Error cargando compensaciones:', err);
-      error = 'Error al cargar compensaciones: ' + (err.response?.data?.message || err.message || 'Error desconocido');
+      console.error("Error cargando compensaciones:", err);
+      error =
+        "Error al cargar compensaciones: " +
+        (err.response?.data?.message || err.message || "Error desconocido");
       compensaciones = [];
     } finally {
       cargando = false;
@@ -98,8 +100,8 @@
     cargandoAreas = true;
     try {
       const response = await personasService.getAreas(token);
-      console.log('Respuesta completa de áreas:', response);
-      
+      console.log("Respuesta completa de áreas:", response);
+
       // La API devuelve { success: true, data: { results: [...] } }
       if (response.success && response.data && response.data.results) {
         areas = response.data.results;
@@ -114,10 +116,10 @@
       } else {
         areas = [];
       }
-      
-      console.log('Áreas procesadas:', areas);
+
+      console.log("Áreas procesadas:", areas);
     } catch (err) {
-      console.error('Error cargando áreas:', err);
+      console.error("Error cargando áreas:", err);
       areas = [];
     } finally {
       cargandoAreas = false;
@@ -129,12 +131,15 @@
       agentes = [];
       return;
     }
-    
+
     cargandoAgentes = true;
     try {
-      const response = await personasService.getAgentesByArea(areaSeleccionada, token);
-      console.log('Respuesta completa de agentes:', response);
-      
+      const response = await personasService.getAgentesByArea(
+        areaSeleccionada,
+        token,
+      );
+      console.log("Respuesta completa de agentes:", response);
+
       // Manejar diferentes estructuras de respuesta
       if (response.success && response.data && response.data.results) {
         agentes = response.data.results;
@@ -147,14 +152,14 @@
       } else {
         agentes = [];
       }
-      
-      console.log('Agentes procesados:', agentes);
+
+      console.log("Agentes procesados:", agentes);
       // Limpiar selección de agente cuando cambia el área
-      agenteSeleccionado = '';
+      agenteSeleccionado = "";
       guardias = [];
-      guardiaSeleccionada = '';
+      guardiaSeleccionada = "";
     } catch (err) {
-      console.error('Error cargando agentes:', err);
+      console.error("Error cargando agentes:", err);
       agentes = [];
     } finally {
       cargandoAgentes = false;
@@ -166,13 +171,16 @@
       guardias = [];
       return;
     }
-    
+
     cargandoGuardias = true;
     try {
       // Cargar guardias del agente - últimas guardias realizadas
-      const response = await guardiasService.getGuardiasAgente(agenteSeleccionado, token);
-      console.log('Respuesta completa de guardias:', response);
-      
+      const response = await guardiasService.getGuardiasAgente(
+        agenteSeleccionado,
+        token,
+      );
+      console.log("Respuesta completa de guardias:", response);
+
       // El endpoint de guardias devuelve { estadisticas: {...}, guardias: [...] }
       if (response.guardias && Array.isArray(response.guardias)) {
         guardias = response.guardias;
@@ -191,13 +199,13 @@
       } else {
         guardias = [];
       }
-      
-      console.log('Guardias procesadas:', guardias);
-      console.log('Total guardias encontradas:', guardias.length);
+
+      console.log("Guardias procesadas:", guardias);
+      console.log("Total guardias encontradas:", guardias.length);
       // Limpiar selección de guardia cuando cambia el agente
-      guardiaSeleccionada = '';
+      guardiaSeleccionada = "";
     } catch (err) {
-      console.error('Error cargando guardias:', err);
+      console.error("Error cargando guardias:", err);
       guardias = [];
     } finally {
       cargandoGuardias = false;
@@ -209,7 +217,7 @@
   $: if (agenteSeleccionado) cargarGuardias();
 
   // Compensaciones filtradas
-  $: compensacionesFiltradas = compensaciones.filter(comp => {
+  $: compensacionesFiltradas = compensaciones.filter((comp) => {
     // Filtro por área - necesitamos buscar el área de la guardia
     if (filtroAreaLista && comp.id_area !== parseInt(filtroAreaLista)) {
       return false;
@@ -222,76 +230,91 @@
   });
 
   async function crearCompensacion() {
-    if (!guardiaSeleccionada || !nuevaCompensacion.hora_fin_real || !nuevaCompensacion.descripcion_motivo) {
-      alert('Por favor complete todos los campos obligatorios');
+    if (
+      !guardiaSeleccionada ||
+      !nuevaCompensacion.hora_fin_real ||
+      !nuevaCompensacion.descripcion_motivo
+    ) {
+      alert("Por favor complete todos los campos obligatorios");
       return;
     }
 
     cargando = true;
     error = null;
-    
+
     try {
-      const guardiaData = guardias.find(g => g.id_guardia == guardiaSeleccionada);
-      
+      const guardiaData = guardias.find(
+        (g) => g.id_guardia == guardiaSeleccionada,
+      );
+
       const compensacionData = {
         id_guardia: parseInt(guardiaSeleccionada),
         hora_fin_real: nuevaCompensacion.hora_fin_real,
         motivo: nuevaCompensacion.motivo,
         descripcion_motivo: nuevaCompensacion.descripcion_motivo,
-        numero_acta: nuevaCompensacion.numero_acta || '',
-        solicitado_por: parseInt(nuevaCompensacion.solicitado_por || agenteSeleccionado)
+        numero_acta: nuevaCompensacion.numero_acta || "",
+        solicitado_por: parseInt(
+          nuevaCompensacion.solicitado_por || agenteSeleccionado,
+        ),
       };
-      
-      console.log('Enviando compensación:', compensacionData);
-      
-      const response = await guardiasService.createCompensacion(compensacionData, token);
-      console.log('Compensación creada:', response);
-      
+
+      console.log("Enviando compensación:", compensacionData);
+
+      const response = await guardiasService.createCompensacion(
+        compensacionData,
+        token,
+      );
+      console.log("Compensación creada:", response);
+
       // Limpiar formulario
       nuevaCompensacion = {
-        id_guardia: '',
-        hora_fin_real: '',
-        motivo: 'emergencia',
-        descripcion_motivo: '',
-        numero_acta: '',
-        solicitado_por: ''
+        id_guardia: "",
+        hora_fin_real: "",
+        motivo: "emergencia",
+        descripcion_motivo: "",
+        numero_acta: "",
+        solicitado_por: "",
       };
-      areaSeleccionada = '';
-      agenteSeleccionado = '';
-      guardiaSeleccionada = '';
+      areaSeleccionada = "";
+      agenteSeleccionado = "";
+      guardiaSeleccionada = "";
       agentes = [];
       guardias = [];
-      
+
       mostrandoFormulario = false;
       await cargarCompensaciones();
-      alert('Compensación creada exitosamente');
+      alert("Compensación creada exitosamente");
     } catch (err) {
-      console.error('Error completo creando compensación:', err);
-      console.error('Respuesta del servidor:', err.response?.data);
-      console.error('Status:', err.response?.status);
-      
-      const mensaje = err.response?.data?.message || err.response?.data?.error || err.message || 'Error desconocido';
-      error = 'Error al crear compensación: ' + mensaje;
-      alert('Error: ' + mensaje);
+      console.error("Error completo creando compensación:", err);
+      console.error("Respuesta del servidor:", err.response?.data);
+      console.error("Status:", err.response?.status);
+
+      const mensaje =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Error desconocido";
+      error = "Error al crear compensación: " + mensaje;
+      alert("Error: " + mensaje);
     } finally {
       cargando = false;
     }
   }
 
   function formatearFecha(fecha) {
-    if (!fecha) return '-';
-    return new Date(fecha).toLocaleDateString('es-AR');
+    if (!fecha) return "-";
+    return new Date(fecha).toLocaleDateString("es-AR");
   }
 
   function formatearHora(hora) {
-    if (!hora) return '-';
+    if (!hora) return "-";
     return hora.slice(0, 5); // HH:MM
   }
 
   function verDetalles(compensacion) {
     compensacionSeleccionada = compensacion;
     mostrandoDetalles = true;
-    console.log('Ver detalles de compensación:', compensacion);
+    console.log("Ver detalles de compensación:", compensacion);
   }
 
   function cerrarDetalles() {
@@ -300,45 +323,50 @@
   }
 
   async function aprobarCompensacion(compensacion) {
-    if (!confirm('¿Está seguro de aprobar esta compensación?')) {
+    if (!confirm("¿Está seguro de aprobar esta compensación?")) {
       return;
     }
 
     try {
       cargando = true;
       error = null;
-      
-      console.log('Compensación a aprobar:', compensacion);
-      
+
+      console.log("Compensación a aprobar:", compensacion);
+
       // Identificar el ID correcto de la compensación
-      const compensacionId = compensacion.id_hora_compensacion || compensacion.id_compensacion || compensacion.id || compensacion.pk;
-      console.log('ID de compensación:', compensacionId);
-      
+      const compensacionId =
+        compensacion.id_hora_compensacion ||
+        compensacion.id_compensacion ||
+        compensacion.id ||
+        compensacion.pk;
+      console.log("ID de compensación:", compensacionId);
+
       if (!compensacionId) {
-        throw new Error('No se pudo identificar el ID de la compensación');
+        throw new Error("No se pudo identificar el ID de la compensación");
       }
-      
+
       const response = await guardiasService.aprobarCompensacion(
-        compensacionId, 
+        compensacionId,
         { aprobado_por: 1 }, // TODO: Obtener del agente actual
-        token
+        token,
       );
-      
+
       await cargarCompensaciones();
-      alert('Compensación aprobada exitosamente');
-      console.log('Compensación aprobada:', response);
+      alert("Compensación aprobada exitosamente");
+      console.log("Compensación aprobada:", response);
     } catch (err) {
-      console.error('Error aprobando compensación:', err);
-      const mensaje = err.response?.data?.message || err.message || 'Error desconocido';
-      error = 'Error al aprobar compensación: ' + mensaje;
-      alert('Error: ' + mensaje);
+      console.error("Error aprobando compensación:", err);
+      const mensaje =
+        err.response?.data?.message || err.message || "Error desconocido";
+      error = "Error al aprobar compensación: " + mensaje;
+      alert("Error: " + mensaje);
     } finally {
       cargando = false;
     }
   }
 
   async function rechazarCompensacion(compensacion) {
-    const motivo = prompt('Ingrese el motivo del rechazo:');
+    const motivo = prompt("Ingrese el motivo del rechazo:");
     if (!motivo || !motivo.trim()) {
       return;
     }
@@ -346,34 +374,39 @@
     try {
       cargando = true;
       error = null;
-      
-      console.log('Compensación a rechazar:', compensacion);
-      
+
+      console.log("Compensación a rechazar:", compensacion);
+
       // Identificar el ID correcto de la compensación
-      const compensacionId = compensacion.id_hora_compensacion || compensacion.id_compensacion || compensacion.id || compensacion.pk;
-      console.log('ID de compensación:', compensacionId);
-      
+      const compensacionId =
+        compensacion.id_hora_compensacion ||
+        compensacion.id_compensacion ||
+        compensacion.id ||
+        compensacion.pk;
+      console.log("ID de compensación:", compensacionId);
+
       if (!compensacionId) {
-        throw new Error('No se pudo identificar el ID de la compensación');
+        throw new Error("No se pudo identificar el ID de la compensación");
       }
-      
+
       const response = await guardiasService.rechazarCompensacion(
         compensacionId,
-        { 
+        {
           motivo_rechazo: motivo.trim(),
-          rechazado_por: 1 // TODO: Obtener del agente actual
+          rechazado_por: 1, // TODO: Obtener del agente actual
         },
-        token
+        token,
       );
-      
+
       await cargarCompensaciones();
-      alert('Compensación rechazada');
-      console.log('Compensación rechazada:', response);
+      alert("Compensación rechazada");
+      console.log("Compensación rechazada:", response);
     } catch (err) {
-      console.error('Error rechazando compensación:', err);
-      const mensaje = err.response?.data?.message || err.message || 'Error desconocido';
-      error = 'Error al rechazar compensación: ' + mensaje;
-      alert('Error: ' + mensaje);
+      console.error("Error rechazando compensación:", err);
+      const mensaje =
+        err.response?.data?.message || err.message || "Error desconocido";
+      error = "Error al rechazar compensación: " + mensaje;
+      alert("Error: " + mensaje);
     } finally {
       cargando = false;
     }
@@ -388,9 +421,10 @@
   <div class="header">
     <h1>⏱️ Compensaciones por Horas Extra</h1>
     <p class="descripcion">
-      Gestión de horas de compensación por emergencias que exceden el límite de 10 horas por guardia
+      Gestión de horas de compensación por emergencias que exceden el límite de
+      10 horas por guardia
     </p>
-    <button class="btn-nuevo" on:click={() => mostrandoFormulario = true}>
+    <button class="btn-nuevo" on:click={() => (mostrandoFormulario = true)}>
       ➕ Nueva Compensación
     </button>
   </div>
@@ -401,15 +435,25 @@
     <div class="explicacion-grid">
       <div class="explicacion-item">
         <h4>🚨 Situaciones de Emergencia</h4>
-        <p>Cuando una guardia se extiende más allá de las 10 horas reglamentarias debido a emergencias, accidentes, operativos especiales o situaciones imprevistas.</p>
+        <p>
+          Cuando una guardia se extiende más allá de las 10 horas reglamentarias
+          debido a emergencias, accidentes, operativos especiales o situaciones
+          imprevistas.
+        </p>
       </div>
       <div class="explicacion-item">
         <h4>⏰ Registro de Horas Extra</h4>
-        <p>Se documentan las horas adicionales trabajadas, el motivo de la extensión y se solicita la compensación correspondiente.</p>
+        <p>
+          Se documentan las horas adicionales trabajadas, el motivo de la
+          extensión y se solicita la compensación correspondiente.
+        </p>
       </div>
       <div class="explicacion-item">
         <h4>✅ Proceso de Aprobación</h4>
-        <p>Las compensaciones deben ser aprobadas por superiores jerárquicos antes de ser incluidas en el cálculo de plus salarial.</p>
+        <p>
+          Las compensaciones deben ser aprobadas por superiores jerárquicos
+          antes de ser incluidas en el cálculo de plus salarial.
+        </p>
       </div>
     </div>
   </div>
@@ -427,7 +471,10 @@
       <div class="modal">
         <div class="modal-header">
           <h2>Nueva Compensación por Horas Extra</h2>
-          <button class="btn-close" on:click={() => mostrandoFormulario = false}>×</button>
+          <button
+            class="btn-close"
+            on:click={() => (mostrandoFormulario = false)}>×</button
+          >
         </div>
 
         <form on:submit|preventDefault={crearCompensacion} class="modal-body">
@@ -435,9 +482,13 @@
             <h3>Paso 1: Seleccionar Área</h3>
             <div class="campo">
               <label for="area">Área *</label>
-              <select bind:value={areaSeleccionada} required disabled={cargandoAreas}>
+              <select
+                bind:value={areaSeleccionada}
+                required
+                disabled={cargandoAreas}
+              >
                 <option value="">
-                  {cargandoAreas ? 'Cargando áreas...' : 'Seleccione un área'}
+                  {cargandoAreas ? "Cargando áreas..." : "Seleccione un área"}
                 </option>
                 {#each areas as area}
                   <option value={area.id_area}>{area.nombre}</option>
@@ -455,9 +506,15 @@
               <h3>Paso 2: Seleccionar Agente</h3>
               <div class="campo">
                 <label for="agente">Agente *</label>
-                <select bind:value={agenteSeleccionado} required disabled={cargandoAgentes}>
+                <select
+                  bind:value={agenteSeleccionado}
+                  required
+                  disabled={cargandoAgentes}
+                >
                   <option value="">
-                    {cargandoAgentes ? 'Cargando agentes...' : 'Seleccione un agente'}
+                    {cargandoAgentes
+                      ? "Cargando agentes..."
+                      : "Seleccione un agente"}
                   </option>
                   {#each agentes as agente}
                     <option value={agente.id_agente}>
@@ -474,13 +531,21 @@
               <h3>Paso 3: Seleccionar Guardia</h3>
               <div class="campo">
                 <label for="guardia">Guardia que Necesita Compensación *</label>
-                <select bind:value={guardiaSeleccionada} required disabled={cargandoGuardias}>
+                <select
+                  bind:value={guardiaSeleccionada}
+                  required
+                  disabled={cargandoGuardias}
+                >
                   <option value="">
-                    {cargandoGuardias ? 'Cargando guardias...' : 'Seleccione una guardia'}
+                    {cargandoGuardias
+                      ? "Cargando guardias..."
+                      : "Seleccione una guardia"}
                   </option>
                   {#each guardias as guardia}
                     <option value={guardia.id_guardia}>
-                      {formatearFecha(guardia.fecha)} - {formatearHora(guardia.hora_inicio)} a {formatearHora(guardia.hora_fin)}
+                      {formatearFecha(guardia.fecha)} - {formatearHora(
+                        guardia.hora_inicio,
+                      )} a {formatearHora(guardia.hora_fin)}
                       {#if guardia.cronograma_nombre}
                         ({guardia.cronograma_nombre})
                       {/if}
@@ -488,25 +553,29 @@
                   {/each}
                 </select>
                 {#if guardias.length === 0 && !cargandoGuardias && agenteSeleccionado}
-                  <small class="text-warning">Este agente no tiene guardias registradas recientes</small>
+                  <small class="text-warning"
+                    >Este agente no tiene guardias registradas recientes</small
+                  >
                 {/if}
               </div>
             </div>
           {/if}
 
           {#if guardiaSeleccionada}
-
             <div class="paso-selector">
               <h3>Paso 4: Detalles de la Compensación</h3>
-              
+
               <div class="campo">
                 <label for="hora_fin_real">Hora Real de Finalización *</label>
-                <input 
-                  type="time" 
-                  bind:value={nuevaCompensacion.hora_fin_real} 
-                  required 
+                <input
+                  type="time"
+                  bind:value={nuevaCompensacion.hora_fin_real}
+                  required
                 />
-                <small>Hora en que realmente terminó el servicio (debe exceder las 10 horas)</small>
+                <small
+                  >Hora en que realmente terminó el servicio (debe exceder las
+                  10 horas)</small
+                >
               </div>
 
               <div class="campo">
@@ -520,9 +589,9 @@
 
               <div class="campo">
                 <label for="descripcion_motivo">Descripción del Motivo *</label>
-                <textarea 
-                  bind:value={nuevaCompensacion.descripcion_motivo} 
-                  required 
+                <textarea
+                  bind:value={nuevaCompensacion.descripcion_motivo}
+                  required
                   rows="3"
                   placeholder="Describa detalladamente qué situación causó que se extendiera el horario..."
                 ></textarea>
@@ -530,9 +599,9 @@
 
               <div class="campo">
                 <label for="numero_acta">Número de Acta (Opcional)</label>
-                <input 
-                  type="text" 
-                  bind:value={nuevaCompensacion.numero_acta} 
+                <input
+                  type="text"
+                  bind:value={nuevaCompensacion.numero_acta}
                   placeholder="Si existe un expediente o acta relacionada"
                 />
               </div>
@@ -540,30 +609,41 @@
               <div class="campo">
                 <label for="solicitado_por">Solicitado por *</label>
                 <select bind:value={nuevaCompensacion.solicitado_por} required>
-                  <option value="">Seleccione quién solicita la compensación</option>
+                  <option value=""
+                    >Seleccione quién solicita la compensación</option
+                  >
                   {#if agenteSeleccionado}
                     <option value={agenteSeleccionado} selected>
-                      {agentes.find(a => a.id_agente == agenteSeleccionado)?.apellido}, 
-                      {agentes.find(a => a.id_agente == agenteSeleccionado)?.nombre} (El mismo agente)
+                      {agentes.find((a) => a.id_agente == agenteSeleccionado)
+                        ?.apellido},
+                      {agentes.find((a) => a.id_agente == agenteSeleccionado)
+                        ?.nombre} (El mismo agente)
                     </option>
                   {/if}
-                  {#each agentes.filter(a => a.id_agente != agenteSeleccionado) as agente}
+                  {#each agentes.filter((a) => a.id_agente != agenteSeleccionado) as agente}
                     <option value={agente.id_agente}>
                       {agente.apellido}, {agente.nombre} (Leg: {agente.legajo})
                     </option>
                   {/each}
                 </select>
-                <small>Agente que solicita la compensación (puede ser diferente al que realizó la guardia)</small>
+                <small
+                  >Agente que solicita la compensación (puede ser diferente al
+                  que realizó la guardia)</small
+                >
               </div>
             </div>
           {/if}
 
           <div class="modal-footer">
-            <button type="button" class="btn-cancelar" on:click={() => mostrandoFormulario = false}>
+            <button
+              type="button"
+              class="btn-cancelar"
+              on:click={() => (mostrandoFormulario = false)}
+            >
               Cancelar
             </button>
             <button type="submit" class="btn-guardar" disabled={cargando}>
-              {cargando ? 'Guardando...' : 'Crear Compensación'}
+              {cargando ? "Guardando..." : "Crear Compensación"}
             </button>
           </div>
         </form>
@@ -575,7 +655,7 @@
   <div class="lista-compensaciones">
     <div class="lista-header">
       <h2>Compensaciones Registradas ({compensaciones.length})</h2>
-      
+
       <!-- Filtros para la lista -->
       <div class="filtros-lista">
         <div class="filtro-grupo">
@@ -587,7 +667,7 @@
             {/each}
           </select>
         </div>
-        
+
         <div class="filtro-grupo">
           <label for="filtro-estado-lista">Estado:</label>
           <select id="filtro-estado-lista" bind:value={filtroEstadoLista}>
@@ -597,8 +677,12 @@
             <option value="rechazada">Rechazada</option>
           </select>
         </div>
-        
-        <button class="btn-recargar" on:click={cargarCompensaciones} disabled={cargando}>
+
+        <button
+          class="btn-recargar"
+          on:click={cargarCompensaciones}
+          disabled={cargando}
+        >
           🔄 Recargar
         </button>
       </div>
@@ -645,42 +729,66 @@
               <tr>
                 <td>
                   <div class="agente-info">
-                    <strong>ID: {compensacion.id_agente || compensacion.agente_id || 'N/A'}</strong>
+                    <strong
+                      >ID: {compensacion.id_agente ||
+                        compensacion.agente_id ||
+                        "N/A"}</strong
+                    >
                     {#if compensacion.agente_nombre}
-                      <br><small>{compensacion.agente_apellido}, {compensacion.agente_nombre}</small>
+                      <br /><small
+                        >{compensacion.agente_apellido}, {compensacion.agente_nombre}</small
+                      >
                     {/if}
                   </div>
                 </td>
                 <td>{formatearFecha(compensacion.fecha_servicio)}</td>
                 <td>
                   <span class="horas-badge">
-                    {compensacion.horas_extra || 'N/A'}h
+                    {compensacion.horas_extra || "N/A"}h
                   </span>
                   {#if compensacion.hora_fin_real}
-                    <br><small>Finalizó: {formatearHora(compensacion.hora_fin_real)}</small>
+                    <br /><small
+                      >Finalizó: {formatearHora(
+                        compensacion.hora_fin_real,
+                      )}</small
+                    >
                   {/if}
                 </td>
                 <td>
-                  <span class="motivo-badge">{compensacion.motivo || 'N/A'}</span>
+                  <span class="motivo-badge"
+                    >{compensacion.motivo || "N/A"}</span
+                  >
                   {#if compensacion.numero_acta}
-                    <br><small>Acta: {compensacion.numero_acta}</small>
+                    <br /><small>Acta: {compensacion.numero_acta}</small>
                   {/if}
                 </td>
                 <td>
-                  <span class="estado-badge estado-{compensacion.estado || 'pendiente'}">
-                    {compensacion.estado || 'Pendiente'}
+                  <span
+                    class="estado-badge estado-{compensacion.estado ||
+                      'pendiente'}"
+                  >
+                    {compensacion.estado || "Pendiente"}
                   </span>
                 </td>
                 <td>
                   <div class="acciones-grupo">
-                    <button class="btn-small btn-ver" on:click={() => verDetalles(compensacion)}>
+                    <button
+                      class="btn-small btn-ver"
+                      on:click={() => verDetalles(compensacion)}
+                    >
                       👁️ Ver
                     </button>
-                    {#if compensacion.estado === 'pendiente'}
-                      <button class="btn-small btn-aprobar" on:click={() => aprobarCompensacion(compensacion)}>
+                    {#if compensacion.estado === "pendiente"}
+                      <button
+                        class="btn-small btn-aprobar"
+                        on:click={() => aprobarCompensacion(compensacion)}
+                      >
                         ✅ Aprobar
                       </button>
-                      <button class="btn-small btn-rechazar" on:click={() => rechazarCompensacion(compensacion)}>
+                      <button
+                        class="btn-small btn-rechazar"
+                        on:click={() => rechazarCompensacion(compensacion)}
+                      >
                         ❌ Rechazar
                       </button>
                     {/if}
@@ -714,21 +822,35 @@
           <div class="detalle-grid">
             <div class="detalle-item">
               <label>ID Compensación:</label>
-              <span>{compensacionSeleccionada.id_hora_compensacion || compensacionSeleccionada.id_compensacion || compensacionSeleccionada.id || 'N/A'}</span>
+              <span
+                >{compensacionSeleccionada.id_hora_compensacion ||
+                  compensacionSeleccionada.id_compensacion ||
+                  compensacionSeleccionada.id ||
+                  "N/A"}</span
+              >
             </div>
             <div class="detalle-item">
               <label>Estado:</label>
-              <span class="estado-badge estado-{compensacionSeleccionada.estado || 'pendiente'}">
-                {compensacionSeleccionada.estado || 'Pendiente'}
+              <span
+                class="estado-badge estado-{compensacionSeleccionada.estado ||
+                  'pendiente'}"
+              >
+                {compensacionSeleccionada.estado || "Pendiente"}
               </span>
             </div>
             <div class="detalle-item">
               <label>Fecha de Solicitud:</label>
-              <span>{formatearFecha(compensacionSeleccionada.fecha_solicitud || compensacionSeleccionada.created_at)}</span>
+              <span
+                >{formatearFecha(
+                  compensacionSeleccionada.fecha_solicitud ||
+                    compensacionSeleccionada.created_at,
+                )}</span
+              >
             </div>
             <div class="detalle-item">
               <label>Solicitado por:</label>
-              <span>ID: {compensacionSeleccionada.solicitado_por || 'N/A'}</span>
+              <span>ID: {compensacionSeleccionada.solicitado_por || "N/A"}</span
+              >
             </div>
           </div>
         </div>
@@ -738,7 +860,7 @@
           <div class="detalle-grid">
             <div class="detalle-item">
               <label>ID Guardia:</label>
-              <span>{compensacionSeleccionada.id_guardia || 'N/A'}</span>
+              <span>{compensacionSeleccionada.id_guardia || "N/A"}</span>
             </div>
             <div class="detalle-item">
               <label>Agente:</label>
@@ -746,17 +868,23 @@
                 {#if compensacionSeleccionada.agente_nombre}
                   {compensacionSeleccionada.agente_apellido}, {compensacionSeleccionada.agente_nombre}
                 {:else}
-                  ID: {compensacionSeleccionada.id_agente || compensacionSeleccionada.agente_id || 'N/A'}
+                  ID: {compensacionSeleccionada.id_agente ||
+                    compensacionSeleccionada.agente_id ||
+                    "N/A"}
                 {/if}
               </span>
             </div>
             <div class="detalle-item">
               <label>Fecha de Servicio:</label>
-              <span>{formatearFecha(compensacionSeleccionada.fecha_servicio)}</span>
+              <span
+                >{formatearFecha(compensacionSeleccionada.fecha_servicio)}</span
+              >
             </div>
             <div class="detalle-item">
               <label>Hora Real de Fin:</label>
-              <span>{formatearHora(compensacionSeleccionada.hora_fin_real)}</span>
+              <span
+                >{formatearHora(compensacionSeleccionada.hora_fin_real)}</span
+              >
             </div>
           </div>
         </div>
@@ -766,12 +894,15 @@
           <div class="detalle-grid">
             <div class="detalle-item detalle-full">
               <label>Tipo de Motivo:</label>
-              <span class="motivo-badge">{compensacionSeleccionada.motivo || 'N/A'}</span>
+              <span class="motivo-badge"
+                >{compensacionSeleccionada.motivo || "N/A"}</span
+              >
             </div>
             <div class="detalle-item detalle-full">
               <label>Descripción del Motivo:</label>
               <div class="descripcion-texto">
-                {compensacionSeleccionada.descripcion_motivo || 'Sin descripción'}
+                {compensacionSeleccionada.descripcion_motivo ||
+                  "Sin descripción"}
               </div>
             </div>
             {#if compensacionSeleccionada.numero_acta}
@@ -789,7 +920,8 @@
             <div class="detalle-item">
               <label>Horas Extra Calculadas:</label>
               <span class="horas-badge">
-                {compensacionSeleccionada.horas_extra || 'Pendiente de cálculo'}h
+                {compensacionSeleccionada.horas_extra ||
+                  "Pendiente de cálculo"}h
               </span>
             </div>
             {#if compensacionSeleccionada.monto_compensacion}
@@ -803,7 +935,7 @@
           </div>
         </div>
 
-        {#if compensacionSeleccionada.estado !== 'pendiente'}
+        {#if compensacionSeleccionada.estado !== "pendiente"}
           <div class="detalle-seccion">
             <h3>Estado de Aprobación</h3>
             <div class="detalle-grid">
@@ -816,7 +948,11 @@
               {#if compensacionSeleccionada.fecha_aprobacion}
                 <div class="detalle-item">
                   <label>Fecha de Aprobación:</label>
-                  <span>{formatearFecha(compensacionSeleccionada.fecha_aprobacion)}</span>
+                  <span
+                    >{formatearFecha(
+                      compensacionSeleccionada.fecha_aprobacion,
+                    )}</span
+                  >
                 </div>
               {/if}
               {#if compensacionSeleccionada.motivo_rechazo}
@@ -834,10 +970,10 @@
 
       <div class="modal-footer">
         <button class="btn-cancelar" on:click={cerrarDetalles}>Cerrar</button>
-        
-        {#if compensacionSeleccionada.estado === 'pendiente'}
-          <button 
-            class="btn-guardar btn-aprobar" 
+
+        {#if compensacionSeleccionada.estado === "pendiente"}
+          <button
+            class="btn-guardar btn-aprobar"
             on:click={() => {
               aprobarCompensacion(compensacionSeleccionada);
               cerrarDetalles();
@@ -846,8 +982,8 @@
           >
             ✅ Aprobar Compensación
           </button>
-          <button 
-            class="btn-cancelar btn-rechazar" 
+          <button
+            class="btn-cancelar btn-rechazar"
             on:click={() => {
               rechazarCompensacion(compensacionSeleccionada);
               cerrarDetalles();
@@ -867,7 +1003,7 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .header {
@@ -918,7 +1054,7 @@
     padding: 15px;
     border-radius: 6px;
     border-left: 4px solid #28a745;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
   .explicacion-item h4 {
@@ -1047,7 +1183,9 @@
     font-size: 14px;
   }
 
-  .campo input, .campo select, .campo textarea {
+  .campo input,
+  .campo select,
+  .campo textarea {
     width: 100%;
     padding: 12px 16px;
     border: 2px solid #d1d5db;
@@ -1056,7 +1194,9 @@
     transition: border-color 0.2s;
   }
 
-  .campo input:focus, .campo select:focus, .campo textarea:focus {
+  .campo input:focus,
+  .campo select:focus,
+  .campo textarea:focus {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -1082,7 +1222,10 @@
     border-top: 1px solid #e5e7eb;
   }
 
-  .btn-cancelar, .btn-guardar, .btn-small, .btn-ver {
+  .btn-cancelar,
+  .btn-guardar,
+  .btn-small,
+  .btn-ver {
     padding: 10px 20px;
     border: none;
     border-radius: 6px;
@@ -1203,8 +1346,12 @@
   }
 
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   .empty-state {
