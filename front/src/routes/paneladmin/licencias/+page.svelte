@@ -1,8 +1,8 @@
 <script>
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { asistenciaService, personasService } from '$lib/services.js';
 	import AuthService from '$lib/login/authService.js';
+	import { asistenciaService, personasService } from '$lib/services.js';
 	import {
 		licencias, tiposLicencia, filtros, loading, error, usuario,
 		licenciasFiltradas, estadisticas,
@@ -14,18 +14,23 @@
 
 	// Estado principal - alternar entre gestión de licencias y tipos
 	let vistaActual = 'licencias'; // 'licencias' o 'tipos'
-	
-	// Variables para gestión de licencias de usuarios
+
+	// Variables principales para gestión de licencias
 	let userInfo = null;
+	let permisos = {};
 	let areas = [];
-	let agentes = [];
 	
 	// Modal states para licencias
-	let mostrarModalCrear = false;
-	let mostrarModalAprobar = false;
-	let mostrarModalRechazar = false;
-	let mostrarModalAsignar = false;
+	let showModalCrear = false;
+	let showModalAprobar = false;
+	let showModalRechazar = false;
+	let showModalAsignar = false;
 	let licenciaSeleccionada = null;
+	
+	// Variables para asignación de licencias
+	let areaSeleccionada = null;
+	let agentesDelArea = [];
+	let cargandoAgentes = false;
 	
 	// Form data para licencias
 	let formLicencia = {
@@ -36,43 +41,6 @@
 		observaciones: '',
 		justificacion: ''
 	};
-
-	// Variables para modales y datos de formularios
-	let nuevaLicencia = {
-		fecha_desde: '',
-		fecha_hasta: '',
-		tipo_licencia_id: '',
-		observaciones: ''
-	};
-
-	let asignacionLicencia = {
-		area_id: '',
-		agente_id: '',
-		tipo_licencia_id: '',
-		fecha_desde: '',
-		fecha_hasta: '',
-		observaciones: ''
-	};
-
-	let aprobacion = {
-		observaciones_aprobacion: ''
-	};
-
-	let rechazo = {
-		motivo_rechazo: ''
-	};
-
-	// Loading states
-	let cargandoCrear = false;
-	let cargandoAsignar = false;
-	let cargandoAprobacion = false;
-	let cargandoRechazo = false;
-	let agentesArea = [];
-	
-	// Variables para asignación de licencias
-	let areaSeleccionada = null;
-	let agentesDelArea = [];
-	let cargandoAgentes = false;
 	
 	let formAprobacion = {
 		observaciones: ''
@@ -84,11 +52,11 @@
 
 	let saving = false;
 
-	// Variables para gestión de tipos de licencia
+	// Variables para gestión de tipos de licencia (conservando la funcionalidad existente)
 	let tipos = [];
 	let loadingTipos = false;
+	let errorTipos = null;
 	let searchTerm = '';
-	let errorTipos = null; // Error local para la gestión de tipos
 
 	// Modal / form para tipos
 	let showForm = false;
@@ -100,80 +68,100 @@
 	};
 
 	onMount(async () => {
+		console.log('Iniciando página de licencias...');
 		await inicializar();
 	});
 
 	async function inicializar() {
+		console.log('Inicializando datos...');
+		
+		// Primero cargar datos básicos
+		await cargarDatosIniciales();
+		
+		// Luego intentar autenticación (no bloquear la página si falla)
 		try {
-			// Obtener información del usuario actual
 			const userResponse = await AuthService.getCurrentUserData();
+			console.log('Respuesta de usuario:', userResponse);
+			
 			if (userResponse?.success && userResponse.data?.success) {
 				userInfo = userResponse.data.data;
 				usuario.set(userInfo);
+				console.log('Usuario cargado:', userInfo);
 				
-				// Cargar datos iniciales
-				await cargarDatosIniciales();
+				// Solo mostrar advertencia si no es administrador, pero permitir acceso
+				if (userInfo.rol !== 'Administrador') {
+					console.warn('Usuario sin rol de administrador accediendo al panel:', userInfo.rol);
+				}
 			} else {
-				goto('/');
+				console.warn('No se pudo obtener información del usuario, continuando sin autenticación');
 			}
 		} catch (err) {
-			console.error('Error inicializando:', err);
-			goto('/');
+			console.error('Error en autenticación, continuando:', err);
 		}
 	}
 
 	async function cargarDatosIniciales() {
+		console.log('Cargando datos iniciales...');
+		
+		// Cargar tipos de licencia para los selectores
 		try {
-			// Cargar tipos de licencia
+			console.log('Cargando tipos de licencia...');
 			await cargarTiposLicencia();
-			
-			// Cargar todas las áreas (solo administradores acceden a esta página)
+			console.log('Tipos de licencia cargados');
+		} catch (err) {
+			console.error('Error cargando tipos de licencia:', err);
+		}
+		
+		// Cargar todas las áreas para filtros
+		try {
+			console.log('Cargando áreas...');
 			const areasResponse = await personasService.getAreas();
 			if (areasResponse?.data?.success) {
-				areas = areasResponse.data.data.results || [];
+				areas = areasResponse.data.data || [];
+				console.log('Áreas cargadas:', areas.length);
 			}
-			
-			// Cargar todos los agentes
-			await cargarAgentesArea();
-			
-			// Cargar todas las licencias sin filtros
+		} catch (err) {
+			console.error('Error cargando áreas:', err);
+			areas = [];
+		}
+		
+		// Cargar licencias inicialmente
+		try {
+			console.log('Cargando licencias...');
 			await cargarLicencias();
+			console.log('Licencias cargadas');
 		} catch (err) {
-			console.error('Error cargando datos iniciales:', err);
-			error.set('Error al cargar datos iniciales');
+			console.error('Error cargando licencias:', err);
 		}
-	}
-
-	async function cargarAgentesArea() {
+		
+		// Cargar tipos para gestión (vista de tipos)
 		try {
-			const response = await personasService.getAgentes();
-			if (response?.data) {
-				agentes = response.data.results || [];
-			}
+			console.log('Cargando tipos para gestión...');
+			await cargarTipos();
+			console.log('Tipos para gestión cargados');
 		} catch (err) {
-			console.error('Error cargando agentes:', err);
+			console.error('Error cargando tipos para gestión:', err);
 		}
+		
+		console.log('Carga de datos iniciales completada');
 	}
 
+	// Funciones para carga de agentes por área
 	async function cargarAgentesPorArea(areaId) {
+		if (!areaId) {
+			agentesDelArea = [];
+			return;
+		}
+
 		try {
-			if (!areaId) {
-				agentesDelArea = [];
-				cargandoAgentes = false;
-				return;
-			}
-			
 			cargandoAgentes = true;
-			const response = await personasService.getAgentesByArea(areaId);
-			if (response?.data) {
-				// La API devuelve estructura paginada: { count, results: [...] }
-				agentesDelArea = response.data.results || [];
+			const response = await personasService.getAgentesPorArea(areaId);
+			if (response?.data?.success) {
+				agentesDelArea = response.data.data || [];
 			} else {
+				console.error('Error cargando agentes:', response?.data?.message);
 				agentesDelArea = [];
 			}
-			
-			// Reset agente seleccionado cuando cambia el área
-			formLicencia.id_agente = null;
 		} catch (err) {
 			console.error('Error cargando agentes del área:', err);
 			agentesDelArea = [];
@@ -182,9 +170,11 @@
 		}
 	}
 
+	// Funciones para modales de licencias
 	function abrirModalCrear() {
+		licenciaSeleccionada = null;
 		formLicencia = {
-			id_agente: userInfo.id_agente, // Por defecto, el usuario actual
+			id_agente: null,
 			id_tipo_licencia: null,
 			fecha_desde: '',
 			fecha_hasta: '',
@@ -195,18 +185,17 @@
 	}
 
 	function abrirModalAsignar() {
+		areaSeleccionada = null;
+		agentesDelArea = [];
 		formLicencia = {
 			id_agente: null,
 			id_tipo_licencia: null,
 			fecha_desde: '',
 			fecha_hasta: '',
 			observaciones: '',
-			justificacion: 'Asignada por administrador'
+			justificacion: ''
 		};
-		areaSeleccionada = null;
-		agentesDelArea = [];
-		cargandoAgentes = false;
-		mostrarModalAsignar = true;
+		showModalAsignar = true;
 	}
 
 	function abrirModalAprobar(licencia) {
@@ -223,49 +212,71 @@
 
 	function cerrarModales() {
 		showModalCrear = false;
+		showModalAsignar = false;
 		showModalAprobar = false;
 		showModalRechazar = false;
-		mostrarModalAsignar = false;
 		licenciaSeleccionada = null;
-		saving = false;
+		areaSeleccionada = null;
+		agentesDelArea = [];
 	}
 
+	// Funciones para manejar las acciones de licencias
 	async function handleCrearLicencia() {
-		if (!nuevaLicencia.tipo_licencia_id || !nuevaLicencia.fecha_desde || !nuevaLicencia.fecha_hasta) {
+		if (!formLicencia.id_tipo_licencia || !formLicencia.fecha_desde || !formLicencia.fecha_hasta) {
 			alert('Por favor complete todos los campos obligatorios');
 			return;
 		}
 
-		if (new Date(nuevaLicencia.fecha_desde) > new Date(nuevaLicencia.fecha_hasta)) {
+		if (new Date(formLicencia.fecha_desde) > new Date(formLicencia.fecha_hasta)) {
 			alert('La fecha de inicio no puede ser posterior a la fecha de fin');
 			return;
 		}
 
-		try {
-			cargandoCrear = true;
-			const resultado = await crearLicencia({
-				id_tipo_licencia: nuevaLicencia.tipo_licencia_id,
-				fecha_desde: nuevaLicencia.fecha_desde,
-				fecha_hasta: nuevaLicencia.fecha_hasta,
-				observaciones: nuevaLicencia.observaciones || '',
-				estado: 'pendiente'
-			});
-
-			if (resultado.success) {
-				mostrarModalCrear = false;
-				await cargarLicencias();
-				alert('Licencia solicitada correctamente. Aguarde aprobación.');
-			} else {
-				alert(resultado.error || 'Error al crear la licencia');
-			}
-		} catch (err) {
-			console.error('Error creando licencia:', err);
-			alert('Error al crear la licencia');
-		} finally {
-			cargandoCrear = false;
+		// Verificar que tenemos el ID del agente (usuario actual)
+		if (!userInfo?.id_agente) {
+			alert('No se puede crear la licencia: información de usuario no disponible');
+			return;
 		}
+
+		saving = true;
+		const resultado = await crearLicencia({
+			...formLicencia,
+			id_agente: userInfo.id_agente, // Usar el ID del usuario actual
+			estado: 'pendiente'
+		});
+
+		if (resultado.success) {
+			cerrarModales();
+			alert('Licencia solicitada correctamente. Aguarde aprobación.');
+		} else {
+			alert(resultado.error);
+		}
+		saving = false;
 	}
 
+	async function handleAsignarLicencia() {
+		if (!areaSeleccionada || !formLicencia.id_agente || !formLicencia.id_tipo_licencia || !formLicencia.fecha_desde || !formLicencia.fecha_hasta) {
+			alert('Por favor complete todos los campos obligatorios');
+			return;
+		}
+
+		saving = true;
+		const resultado = await asignarLicencia({
+			id_agente: formLicencia.id_agente,
+			id_tipo_licencia: formLicencia.id_tipo_licencia,
+			fecha_desde: formLicencia.fecha_desde,
+			fecha_hasta: formLicencia.fecha_hasta,
+			observaciones: formLicencia.observaciones || ''
+		});
+
+		if (resultado.success) {
+			cerrarModales();
+			alert('Licencia asignada correctamente.');
+		} else {
+			alert(resultado.error);
+		}
+		saving = false;
+	}
 
 	async function handleAprobarLicencia() {
 		if (!licenciaSeleccionada) return;
@@ -300,84 +311,8 @@
 		saving = false;
 	}
 
-	async function handleAsignarLicencia() {
-		if (!asignacionLicencia.area_id || !asignacionLicencia.agente_id || !asignacionLicencia.tipo_licencia_id ||
-			!asignacionLicencia.fecha_desde || !asignacionLicencia.fecha_hasta) {
-			return;
-		}
-
-		try {
-			cargandoAsignar = true;
-			const response = await asignarLicencia(asignacionLicencia);
-			if (response.success) {
-				mostrarModalAsignar = false;
-				await cargarLicencias();
-				alert('Licencia asignada exitosamente');
-			} else {
-				alert(response.error || 'Error al asignar la licencia');
-			}
-		} catch (err) {
-			console.error('Error asignando licencia:', err);
-			alert('Error al asignar la licencia');
-		} finally {
-			cargandoAsignar = false;
-		}
-	}
-
-	async function confirmarAprobacion() {
-		if (!licenciaSeleccionada) return;
-
-		try {
-			cargandoAprobacion = true;
-			const response = await aprobarLicencia(
-				licenciaSeleccionada.id_licencia,
-				aprobacion.observaciones_aprobacion
-			);
-			
-			if (response.success) {
-				mostrarModalAprobar = false;
-				await cargarLicencias();
-				alert('Licencia aprobada exitosamente');
-			} else {
-				alert(response.error || 'Error al aprobar la licencia');
-			}
-		} catch (err) {
-			console.error('Error aprobando licencia:', err);
-			alert('Error al aprobar la licencia');
-		} finally {
-			cargandoAprobacion = false;
-		}
-	}
-
-	async function confirmarRechazo() {
-		if (!licenciaSeleccionada || !rechazo.motivo_rechazo.trim()) return;
-
-		try {
-			cargandoRechazo = true;
-			const response = await rechazarLicencia(
-				licenciaSeleccionada.id_licencia,
-				rechazo.motivo_rechazo
-			);
-			
-			if (response.success) {
-				mostrarModalRechazar = false;
-				await cargarLicencias();
-				alert('Licencia rechazada exitosamente');
-			} else {
-				alert(response.error || 'Error al rechazar la licencia');
-			}
-		} catch (err) {
-			console.error('Error rechazando licencia:', err);
-			alert('Error al rechazar la licencia');
-		} finally {
-			cargandoRechazo = false;
-		}
-	}
-
 	// Funciones para filtros
 	function aplicarFiltros() {
-		// Los filtros se actualizan automáticamente por el binding con $filtros
-		// Solo necesitamos recargar las licencias con los filtros actuales
 		cargarLicencias($filtros);
 	}
 
@@ -389,11 +324,18 @@
 	// Funciones de utilidad
 	function puedeAprobar(licencia) {
 		// Como es administrador, siempre puede aprobar
-		return true;
+		return licencia.estado === 'pendiente';
 	}
 
-	$: diasLicencia = calcularDiasLicencia(formLicencia.fecha_desde, formLicencia.fecha_hasta);
+	// Función para cambiar entre vistas
+	function cambiarVista(vista) {
+		vistaActual = vista;
+		if (vista === 'tipos') {
+			cargarTipos();
+		}
+	}
 
+	// Funciones para gestión de tipos de licencia (conservando la funcionalidad existente)
 	async function cargarTipos() {
 		loadingTipos = true;
 		errorTipos = null;
@@ -403,6 +345,7 @@
 				tipos = resp.data.data || [];
 			} else {
 				tipos = [];
+				errorTipos = resp?.data?.message || 'Error al cargar tipos';
 			}
 		} catch (err) {
 			console.error(err);
@@ -427,6 +370,11 @@
 	}
 
 	async function guardar() {
+		if (!form.codigo.trim()) {
+			alert('El código es obligatorio');
+			return;
+		}
+
 		saving = true;
 		errorTipos = null;
 		try {
@@ -470,19 +418,10 @@
 		}
 	}
 
-	// Funciones para cambiar vista
-	function mostrarLicencias() {
-		vistaActual = 'licencias';
-	}
-
-	function mostrarTipos() {
-		vistaActual = 'tipos';
-		if (tipos.length === 0) {
-			cargarTipos();
-		}
-	}
-
-	$: filtered = tipos.filter(t => {
+	// Variables reactivas
+	$: diasLicencia = calcularDiasLicencia(formLicencia.fecha_desde, formLicencia.fecha_hasta);
+	
+	$: tiposFiltrados = tipos.filter(t => {
 		if (!searchTerm) return true;
 		const s = searchTerm.toLowerCase();
 		return (t.codigo || t.nombre || '').toLowerCase().includes(s) || (t.descripcion || '').toLowerCase().includes(s);
@@ -490,33 +429,31 @@
 </script>
 
 <svelte:head>
-	<title>Administración de Licencias - GIGA</title>
+	<title>Tipos de Licencia - GIGA</title>
 </svelte:head>
 
 <div class="page-container">
 	<div class="page-header">
 		<div class="header-title">
-			<h1>📋 Administración de Licencias</h1>
-			<p>Gestión completa de licencias de usuarios y tipos de licencia</p>
+			<h1>Gestión de Licencias</h1>
 		</div>
-		<div class="header-actions">
-			<!-- Toggle entre vistas -->
-			<div class="toggle-buttons">
-				<button
-					class="btn-toggle {vistaActual === 'licencias' ? 'active' : ''}"
-					on:click={mostrarLicencias}
-				>
-					👥 Gestión de Licencias
-				</button>
-				<button
-					class="btn-toggle {vistaActual === 'tipos' ? 'active' : ''}"
-					on:click={mostrarTipos}
-				>
-					📋 Tipos de Licencia
-				</button>
-			</div>
-			
-			{#if vistaActual === 'licencias'}
+		<div class="toggle-buttons">
+			<button 
+				class="btn-toggle {vistaActual === 'licencias' ? 'active' : ''}"
+				on:click={() => cambiarVista('licencias')}
+			>
+				📋 Gestión de Licencias
+			</button>
+			<button 
+				class="btn-toggle {vistaActual === 'tipos' ? 'active' : ''}"
+				on:click={() => cambiarVista('tipos')}
+			>
+				⚙️ Tipos de Licencia
+			</button>
+		</div>
+		
+		{#if vistaActual === 'licencias'}
+			<div class="header-actions">
 				<button class="btn-primary" on:click={abrirModalCrear}>
 					➕ Solicitar Licencia
 				</button>
@@ -526,7 +463,9 @@
 				<button class="btn-refresh" on:click={() => cargarLicencias()}>
 					🔄 Actualizar
 				</button>
-			{:else}
+			</div>
+		{:else}
+			<div class="header-actions">
 				<button
 					class="btn-header"
 					style="background: #8b5cf6; color: white"
@@ -541,9 +480,11 @@
 					Actualizar
 				</button>
 				<button class="btn-header" on:click={abrirAlta} style="background:#22c55e;color:white">➕ Nuevo Tipo</button>
-			{/if}
-		</div>
-	</div>	<!-- Contenido principal con vista condicional -->
+			</div>
+		{/if}
+	</div>
+
+	<!-- Contenido principal con vista condicional -->
 	<div class="page-content">
 		{#if vistaActual === 'licencias'}
 			<!-- Estadísticas -->
@@ -572,16 +513,16 @@
 			<div class="filtros-container">
 				<div class="filtros-row">
 					<div class="filtro-group">
-						<label>Desde</label>
-						<input type="date" bind:value={$filtros.fecha_desde} on:change={aplicarFiltros} />
+						<label for="fecha_desde">Desde</label>
+						<input type="date" id="fecha_desde" bind:value={$filtros.fecha_desde} on:change={aplicarFiltros} />
 					</div>
 					<div class="filtro-group">
-						<label>Hasta</label>
-						<input type="date" bind:value={$filtros.fecha_hasta} on:change={aplicarFiltros} />
+						<label for="fecha_hasta">Hasta</label>
+						<input type="date" id="fecha_hasta" bind:value={$filtros.fecha_hasta} on:change={aplicarFiltros} />
 					</div>
 					<div class="filtro-group">
-						<label>Área</label>
-						<select bind:value={$filtros.area_id} on:change={aplicarFiltros}>
+						<label for="area_filter">Área</label>
+						<select id="area_filter" bind:value={$filtros.area_id} on:change={aplicarFiltros}>
 							<option value={null}>Todas las áreas</option>
 							{#each areas as area}
 								<option value={area.id_area}>{area.nombre}</option>
@@ -589,65 +530,58 @@
 						</select>
 					</div>
 					<div class="filtro-group">
-						<label>Estado</label>
-						<select bind:value={$filtros.estado} on:change={aplicarFiltros}>
-							<option value="todas">Todos</option>
-							<option value="pendiente">Pendientes</option>
-							<option value="aprobada">Aprobadas</option>
-							<option value="rechazada">Rechazadas</option>
+						<label for="estado_filter">Estado</label>
+						<select id="estado_filter" bind:value={$filtros.estado} on:change={aplicarFiltros}>
+							<option value="todas">Todos los estados</option>
+							<option value="pendiente">Pendiente</option>
+							<option value="aprobada">Aprobada</option>
+							<option value="rechazada">Rechazada</option>
 						</select>
 					</div>
 					<div class="filtro-group">
-						<label>Tipo</label>
-						<select bind:value={$filtros.tipo_licencia_id} on:change={aplicarFiltros}>
+						<label for="tipo_filter">Tipo</label>
+						<select id="tipo_filter" bind:value={$filtros.tipo_licencia_id} on:change={aplicarFiltros}>
 							<option value={null}>Todos los tipos</option>
 							{#each $tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}>{tipo.codigo}</option>
+								<option value={tipo.id_tipo_licencia}>{tipo.nombre}</option>
 							{/each}
 						</select>
 					</div>
-					<div class="filtro-actions">
-						<button class="btn-clear" on:click={limpiarTodosFiltros}>
-							🗑️ Limpiar
-						</button>
+					<div class="filtro-group">
+						<button class="btn-clear" on:click={limpiarTodosFiltros}>Limpiar Filtros</button>
 					</div>
 				</div>
 			</div>
 
-			<!-- Contenido principal -->
+			<!-- Tabla de licencias -->
 			{#if $error}
 				<div class="alert alert-error">
 					<strong>❌ Error:</strong> {$error}
-					<button class="btn-retry" on:click={() => cargarLicencias()}>Reintentar</button>
+					<button class="btn-primary" on:click={() => cargarLicencias()}>Reintentar</button>
 				</div>
 			{/if}
 
 			{#if $loading}
-				<div class="loading-container">
+				<div class="loading-state">
 					<div class="spinner-large"></div>
 					<p>Cargando licencias...</p>
 				</div>
 			{:else if $licenciasFiltradas.length === 0}
-				<div class="empty-state">
-					<div class="empty-icon">📋</div>
-					<h3>No se encontraron licencias</h3>
-					<p>
-						{#if Object.values($filtros).some(v => v)}
-							No hay licencias que coincidan con los filtros aplicados.
-						{:else}
-							No hay licencias registradas aún.
-						{/if}
-					</p>
-					<button class="btn-primary" on:click={abrirModalCrear}>
-						➕ Solicitar Primera Licencia
-					</button>
+				<div class="no-data">
+					{#if Object.values($filtros).some(v => v)}
+						<p>No hay licencias que coincidan con los filtros aplicados.</p>
+						<button class="btn-secondary" on:click={limpiarTodosFiltros}>Limpiar Filtros</button>
+					{:else}
+						<p>No hay licencias registradas.</p>
+					{/if}
 				</div>
 			{:else}
 				<div class="table-container">
-					<table class="licencias-table">
+					<table class="table">
 						<thead>
 							<tr>
 								<th>Agente</th>
+								<th>Área</th>
 								<th>Tipo</th>
 								<th>Período</th>
 								<th>Días</th>
@@ -658,206 +592,61 @@
 						</thead>
 						<tbody>
 							{#each $licenciasFiltradas as licencia (licencia.id_licencia)}
-								<tr class="licencia-row" class:pending={licencia.estado === 'pendiente'}>
+								<tr>
 									<td>
 										<div class="agente-info">
-											<strong>{licencia.agente_nombre}</strong>
-											<small>{licencia.area_nombre}</small>
+											<strong>{licencia.agente?.nombre} {licencia.agente?.apellido}</strong>
+											<small>{licencia.agente?.numero_agente}</small>
 										</div>
 									</td>
+									<td>{licencia.agente?.area?.nombre || 'N/A'}</td>
 									<td>
-										<span class="tipo-badge">
-											{licencia.tipo_licencia_descripcion}
+										<span class="tipo-badge">{licencia.tipo_licencia?.nombre}</span>
+									</td>
+									<td>
+										{formatearFecha(licencia.fecha_desde)} - {formatearFecha(licencia.fecha_hasta)}
+									</td>
+									<td class="text-center">{licencia.dias_solicitados}</td>
+									<td>
+										<span class="estado-badge estado-{licencia.estado}">
+											{obtenerIconoEstado(licencia.estado)} {licencia.estado}
 										</span>
 									</td>
-									<td>
-										<div class="periodo">
-											{formatearFecha(licencia.fecha_desde)} - {formatearFecha(licencia.fecha_hasta)}
-										</div>
-									</td>
-									<td>
-										<span class="dias-count">
-											{calcularDiasLicencia(licencia.fecha_desde, licencia.fecha_hasta)} días
-										</span>
-									</td>
-									<td>
-										<span 
-											class="estado-badge" 
-											style="background-color: {obtenerColorEstado(licencia.estado)}20; color: {obtenerColorEstado(licencia.estado)}; border: 1px solid {obtenerColorEstado(licencia.estado)}40"
-										>
-											{obtenerIconoEstado(licencia.estado)} {licencia.estado.toUpperCase()}
-										</span>
-									</td>
-									<td>
-										{formatearFecha(licencia.creado_en)}
-									</td>
+									<td>{formatearFecha(licencia.fecha_creacion)}</td>
 									<td>
 										<div class="acciones">
-											{#if licencia.estado === 'pendiente' && puedeAprobar(licencia)}
+											{#if puedeAprobar(licencia)}
 												<button 
-													class="btn-small btn-success" 
+													class="btn-sm btn-success"
 													on:click={() => abrirModalAprobar(licencia)}
-													title="Aprobar licencia"
+													title="Aprobar"
 												>
-													✅ Aprobar
+													✅
 												</button>
 												<button 
-													class="btn-small btn-danger" 
+													class="btn-sm btn-danger"
 													on:click={() => abrirModalRechazar(licencia)}
-													title="Rechazar licencia"
+													title="Rechazar"
 												>
-													❌ Rechazar
-												</button>
-											{/if}
-											{#if licencia.observaciones}
-												<button 
-													class="btn-small btn-info" 
-													title="Observaciones: {licencia.observaciones}"
-												>
-													💬 Info
+													❌
 												</button>
 											{/if}
 										</div>
 									</td>
 								</tr>
+								{#if licencia.observaciones}
+									<tr class="observaciones-row">
+										<td colspan="8">
+											<small><strong>Observaciones:</strong> {licencia.observaciones}</small>
+										</td>
+									</tr>
+								{/if}
 							{/each}
 						</tbody>
 					</table>
 				</div>
 			{/if}
 		{:else}
-					<!-- Filtros para licencias -->
-					<div class="filtros-container">
-						<div class="filtros-row">
-							<div class="filtro-group">
-								<label>📅 Estado</label>
-								<select bind:value={$filtros.estado} on:change={() => actualizarFiltros()}>
-									<option value="">Todos los estados</option>
-									<option value="pendiente">Pendiente</option>
-									<option value="aprobada">Aprobada</option>
-									<option value="rechazada">Rechazada</option>
-								</select>
-							</div>
-							
-							{#if permisos.puedeVerTodasAreas || areas.length > 1}
-								<div class="filtro-group">
-									<label>🏢 Área</label>
-									<select bind:value={$filtros.area_id} on:change={() => actualizarFiltros()}>
-										<option value="">Todas las áreas</option>
-										{#each areas as area}
-											<option value={area.id_area}>{area.nombre}</option>
-										{/each}
-									</select>
-								</div>
-							{/if}
-							
-							<div class="filtro-group">
-								<label>📋 Tipo de Licencia</label>
-								<select bind:value={$filtros.tipo_id} on:change={() => actualizarFiltros()}>
-									<option value="">Todos los tipos</option>
-									{#each $tiposLicencia as tipo}
-										<option value={tipo.id_tipo_licencia}>{tipo.nombre}</option>
-									{/each}
-								</select>
-							</div>
-							
-							<button class="btn-secondary" on:click={limpiarFiltros}>🧹 Limpiar</button>
-						</div>
-					</div>
-
-					<!-- Estadísticas -->
-					{#if $estadisticas}
-						<div class="stats-container">
-							<div class="stat-card">
-								<div class="stat-number">{$estadisticas.total || 0}</div>
-								<div class="stat-label">Total Licencias</div>
-							</div>
-							<div class="stat-card">
-								<div class="stat-number">{$estadisticas.pendientes || 0}</div>
-								<div class="stat-label">Pendientes</div>
-							</div>
-							<div class="stat-card">
-								<div class="stat-number">{$estadisticas.aprobadas || 0}</div>
-								<div class="stat-label">Aprobadas</div>
-							</div>
-							<div class="stat-card">
-								<div class="stat-number">{$estadisticas.rechazadas || 0}</div>
-								<div class="stat-label">Rechazadas</div>
-							</div>
-						</div>
-					{/if}
-
-					<!-- Tabla de licencias -->
-					<div class="table-container">
-						<table>
-							<thead>
-								<tr>
-									<th>Agente</th>
-									<th>Área</th>
-									<th>Tipo</th>
-									<th>Fecha Inicio</th>
-									<th>Fecha Fin</th>
-									<th>Días</th>
-									<th>Estado</th>
-									<th>Solicitada</th>
-									{#if permisos.puedeAprobar}
-										<th>Acciones</th>
-									{/if}
-								</tr>
-							</thead>
-							<tbody>
-								{#each $licenciasFiltradas as licencia}
-									<tr>
-										<td>{licencia.agente_nombre} {licencia.agente_apellido}</td>
-										<td>{licencia.area_nombre}</td>
-										<td>{licencia.tipo_nombre}</td>
-										<td>{formatearFecha(licencia.fecha_inicio)}</td>
-										<td>{formatearFecha(licencia.fecha_fin)}</td>
-										<td>{calcularDiasLicencia(licencia.fecha_inicio, licencia.fecha_fin)}</td>
-										<td>
-											<span class="badge badge-{obtenerColorEstado(licencia.estado)}">
-												{obtenerIconoEstado(licencia.estado)} {licencia.estado}
-											</span>
-										</td>
-										<td>{formatearFecha(licencia.creado_en)}</td>
-										{#if permisos.puedeAprobar && puedeAprobarLicencia(licencia)}
-											<td>
-												{#if licencia.estado === 'pendiente'}
-													<div class="action-buttons">
-														<button 
-															class="btn-success btn-sm"
-															on:click={() => aprobarLicencia(licencia.id_licencia)}
-															title="Aprobar licencia"
-														>
-															✅
-														</button>
-														<button 
-															class="btn-danger btn-sm"
-															on:click={() => rechazarLicencia(licencia.id_licencia)}
-															title="Rechazar licencia"
-														>
-															❌
-														</button>
-													</div>
-												{:else}
-													<span class="text-muted">—</span>
-												{/if}
-											</td>
-										{/if}
-									</tr>
-								{:else}
-									<tr>
-										<td colspan="8" style="text-align: center; padding: 2rem; color: #6c757d;">
-											No hay licencias para mostrar con los filtros actuales
-										</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
-		{/if}
-		
-		{#if vistaActual === 'tipos'}
 			<!-- Vista de Tipos de Licencia -->
 			{#if errorTipos}
 				<div class="alert alert-error">
@@ -867,142 +656,117 @@
 				</div>
 			{/if}
 
-		<div class="filtros-container">
-			<div class="filtros-row">
-				<div class="filtro-group">
-					<label for="busqueda">🔍 Buscar tipo</label>
-					<input
-						type="text"
-						id="busqueda"
-						bind:value={searchTerm}
-						placeholder="Buscar por código o descripción..."
-						class="input-busqueda"
-					/>
-				</div>
-				<div class="filtro-actions">
-					<button class="btn-limpiar" on:click={() => (searchTerm = '')} title="Limpiar filtros">🗑️ Limpiar</button>
+			<div class="filtros-container">
+				<div class="filtros-row">
+					<div class="filtro-group">
+						<label for="busqueda">🔍 Buscar tipo</label>
+						<input
+							type="text"
+							id="busqueda"
+							bind:value={searchTerm}
+							placeholder="Buscar por código o descripción..."
+							class="input-busqueda"
+						/>
+					</div>
+					<div class="filtro-actions">
+						<button class="btn-limpiar" on:click={() => (searchTerm = '')} title="Limpiar filtros">🗑️ Limpiar</button>
+					</div>
 				</div>
 			</div>
-			
-			<!-- Nota informativa sobre la funcionalidad -->
-			<div style="margin-top: 1rem; padding: 1rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
-				<p style="margin: 0; color: #1565c0; font-size: 0.9rem;">
-					<strong>📋 Gestión de Licencias:</strong> Esta sección administra los tipos de licencia del sistema. 
-					Para gestionar licencias de usuarios (asignar, aprobar, rechazar), utiliza el botón 
-					<strong>"👥 Ver Licencias de Usuarios"</strong> arriba.
-				</p>
-			</div>
-		</div>
 
-		{#if loadingTipos}
-			<div class="loading-container">
-				<div class="spinner-large"></div>
-				<p>Cargando información...</p>
-			</div>
-		{:else if filtered.length === 0 && !loadingTipos}
-			<div class="empty-state">
-				<div class="empty-icon">📄</div>
-				<h3>No se encontraron tipos</h3>
-				<p>
+			{#if loadingTipos}
+				<div class="loading-container">
+					<div class="spinner-large"></div>
+					<p>Cargando tipos de licencia...</p>
+				</div>
+			{:else if tiposFiltrados.length === 0 && !loadingTipos}
+				<div class="empty-state">
+					<div class="empty-icon">📄</div>
+					<h3>No se encontraron tipos</h3>
+					<p>
+						{#if searchTerm}
+							No hay tipos que coincidan con "{searchTerm}".
+						{:else}
+							No hay tipos de licencia registrados.
+						{/if}
+					</p>
 					{#if searchTerm}
-						No hay tipos que coincidan con "{searchTerm}".
-					{:else}
-						No hay tipos de licencia registrados.
+						<button class="btn-primary" on:click={() => (searchTerm = '')}>Limpiar búsqueda</button>
 					{/if}
-				</p>
-				{#if searchTerm}
-					<button class="btn-primary" on:click={() => (searchTerm = '')}>Limpiar búsqueda</button>
-				{/if}
-			</div>
-		{:else}
-			<div class="table-container">
-				<table class="roles-table">
-					<thead>
-						<tr>
-							<th>Código</th>
-							<th>Descripción</th>
-							<th>Acciones</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each filtered as tipo (tipo.id_tipo_licencia || tipo.id)}
-							<tr>
-								<td>
-									<strong>{tipo.codigo || tipo.nombre || '—'}</strong>
-								</td>
-								<td>{tipo.descripcion || '—'}</td>
-								<td>
-									<button class="btn-primary" on:click={() => abrirEdicion(tipo)}>✏️ Editar</button>
-									<button class="btn-secondary" on:click={() => eliminar(tipo)} style="margin-left:6px">🗑️ Eliminar</button>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		{/if}
-
-		{#if showForm}
-			<div class="modal-overlay">
-				<div class="modal">
-					<h3>{isEditing ? 'Editar tipo de licencia' : 'Nuevo tipo de licencia'}</h3>
-					{#if errorTipos}
-						<div class="alert alert-error">{errorTipos}</div>
-					{/if}
-					<div class="form-row">
-						<label>Código</label>
-						<input bind:value={form.codigo} />
-					</div>
-					<div class="form-row">
-						<label>Descripción</label>
-						<textarea rows="3" bind:value={form.descripcion}></textarea>
-					</div>
-					<div class="form-actions">
-						<button class="btn-primary" on:click={guardar} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
-						<button class="btn-limpiar" on:click={() => (showForm = false)} disabled={saving}>Cancelar</button>
-					</div>
 				</div>
-			</div>
-		{/if}
+			{:else}
+				<div class="table-container">
+					<table class="roles-table">
+						<thead>
+							<tr>
+								<th>Código</th>
+								<th>Descripción</th>
+								<th>Acciones</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each tiposFiltrados as tipo (tipo.id_tipo_licencia || tipo.id)}
+								<tr>
+									<td>
+										<strong>{tipo.codigo || tipo.nombre || '—'}</strong>
+									</td>
+									<td>{tipo.descripcion || '—'}</td>
+									<td>
+										<button class="btn-primary" on:click={() => abrirEdicion(tipo)}>✏️ Editar</button>
+										<button class="btn-secondary" on:click={() => eliminar(tipo)} style="margin-left:6px">🗑️ Eliminar</button>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>
 
+<!-- Modales para gestión de licencias -->
+
 <!-- Modal de Crear Licencia -->
-{#if mostrarModalCrear}
+{#if showModalCrear}
 	<div class="modal-backdrop">
 		<div class="modal-contenido">
 			<div class="modal-header">
 				<h5>Nueva Solicitud de Licencia</h5>
-				<button type="button" class="btn-close" on:click={() => mostrarModalCrear = false}>&times;</button>
+				<button type="button" class="btn-close" on:click={cerrarModales}>&times;</button>
 			</div>
 			<div class="modal-body">
 				<form on:submit|preventDefault={handleCrearLicencia}>
 					<div class="form-group">
-						<label for="fecha_desde">Fecha de Inicio:</label>
-						<input type="date" id="fecha_desde" bind:value={nuevaLicencia.fecha_desde} required />
-					</div>
-					<div class="form-group">
-						<label for="fecha_hasta">Fecha de Fin:</label>
-						<input type="date" id="fecha_hasta" bind:value={nuevaLicencia.fecha_hasta} required />
-					</div>
-					<div class="form-group">
-						<label for="tipo_licencia">Tipo de Licencia:</label>
-						<select id="tipo_licencia" bind:value={nuevaLicencia.tipo_licencia_id} required>
+						<label for="tipo_licencia">Tipo de Licencia *</label>
+						<select id="tipo_licencia" bind:value={formLicencia.id_tipo_licencia} required>
 							<option value="">Seleccione un tipo...</option>
-							{#each tiposLicencia as tipo}
+							{#each $tiposLicencia as tipo}
 								<option value={tipo.id_tipo_licencia}>{tipo.nombre}</option>
 							{/each}
 						</select>
 					</div>
 					<div class="form-group">
-						<label for="observaciones">Observaciones:</label>
-						<textarea id="observaciones" bind:value={nuevaLicencia.observaciones} rows="3"></textarea>
+						<label for="fecha_desde">Fecha de Inicio *</label>
+						<input type="date" id="fecha_desde" bind:value={formLicencia.fecha_desde} required />
+					</div>
+					<div class="form-group">
+						<label for="fecha_hasta">Fecha de Fin *</label>
+						<input type="date" id="fecha_hasta" bind:value={formLicencia.fecha_hasta} required />
+					</div>
+					{#if diasLicencia > 0}
+						<div class="info-dias">
+							<small>📅 Días solicitados: <strong>{diasLicencia}</strong></small>
+						</div>
+					{/if}
+					<div class="form-group">
+						<label for="observaciones">Observaciones</label>
+						<textarea id="observaciones" bind:value={formLicencia.observaciones} rows="3" placeholder="Motivo o comentarios adicionales..."></textarea>
 					</div>
 					<div class="modal-actions">
-						<button type="button" class="btn btn-secondary" on:click={() => mostrarModalCrear = false}>Cancelar</button>
-						<button type="submit" class="btn btn-primary" disabled={cargandoCrear}>
-							{cargandoCrear ? 'Creando...' : 'Crear Licencia'}
+						<button type="button" class="btn btn-secondary" on:click={cerrarModales}>Cancelar</button>
+						<button type="submit" class="btn btn-primary" disabled={saving}>
+							{saving ? 'Creando...' : 'Crear Licencia'}
 						</button>
 					</div>
 				</form>
@@ -1012,60 +776,69 @@
 {/if}
 
 <!-- Modal de Asignar Licencia -->
-{#if mostrarModalAsignar}
+{#if showModalAsignar}
 	<div class="modal-backdrop">
 		<div class="modal-contenido">
 			<div class="modal-header">
 				<h5>Asignar Nueva Licencia</h5>
-				<button type="button" class="btn-close" on:click={() => mostrarModalAsignar = false}>&times;</button>
+				<button type="button" class="btn-close" on:click={cerrarModales}>&times;</button>
 			</div>
 			<div class="modal-body">
 				<form on:submit|preventDefault={handleAsignarLicencia}>
 					<div class="form-group">
-						<label for="area_asignar">Área:</label>
-						<select id="area_asignar" bind:value={asignacionLicencia.area_id} on:change={cargarAgentesPorArea} required>
+						<label for="area_asignar">Área *</label>
+						<select id="area_asignar" bind:value={areaSeleccionada} on:change={() => cargarAgentesPorArea(areaSeleccionada)} required>
 							<option value="">Seleccione un área...</option>
 							{#each areas as area}
 								<option value={area.id_area}>{area.nombre}</option>
 							{/each}
 						</select>
 					</div>
-					{#if asignacionLicencia.area_id}
+					{#if areaSeleccionada}
 						<div class="form-group">
-							<label for="agente_asignar">Agente:</label>
-							<select id="agente_asignar" bind:value={asignacionLicencia.agente_id} required>
-								<option value="">Seleccione un agente...</option>
-								{#each agentesArea as agente}
-									<option value={agente.id_agente}>{agente.nombre} {agente.apellido}</option>
-								{/each}
-							</select>
+							<label for="agente_asignar">Agente *</label>
+							{#if cargandoAgentes}
+								<div class="loading-small">Cargando agentes...</div>
+							{:else}
+								<select id="agente_asignar" bind:value={formLicencia.id_agente} required>
+									<option value="">Seleccione un agente...</option>
+									{#each agentesDelArea as agente}
+										<option value={agente.id_agente}>{agente.nombre} {agente.apellido}</option>
+									{/each}
+								</select>
+							{/if}
 						</div>
 					{/if}
 					<div class="form-group">
-						<label for="tipo_licencia_asignar">Tipo de Licencia:</label>
-						<select id="tipo_licencia_asignar" bind:value={asignacionLicencia.tipo_licencia_id} required>
+						<label for="tipo_licencia_asignar">Tipo de Licencia *</label>
+						<select id="tipo_licencia_asignar" bind:value={formLicencia.id_tipo_licencia} required>
 							<option value="">Seleccione un tipo...</option>
-							{#each tiposLicencia as tipo}
+							{#each $tiposLicencia as tipo}
 								<option value={tipo.id_tipo_licencia}>{tipo.nombre}</option>
 							{/each}
 						</select>
 					</div>
 					<div class="form-group">
-						<label for="fecha_desde_asignar">Fecha de Inicio:</label>
-						<input type="date" id="fecha_desde_asignar" bind:value={asignacionLicencia.fecha_desde} required />
+						<label for="fecha_desde_asignar">Fecha de Inicio *</label>
+						<input type="date" id="fecha_desde_asignar" bind:value={formLicencia.fecha_desde} required />
 					</div>
 					<div class="form-group">
-						<label for="fecha_hasta_asignar">Fecha de Fin:</label>
-						<input type="date" id="fecha_hasta_asignar" bind:value={asignacionLicencia.fecha_hasta} required />
+						<label for="fecha_hasta_asignar">Fecha de Fin *</label>
+						<input type="date" id="fecha_hasta_asignar" bind:value={formLicencia.fecha_hasta} required />
 					</div>
+					{#if diasLicencia > 0}
+						<div class="info-dias">
+							<small>📅 Días a asignar: <strong>{diasLicencia}</strong></small>
+						</div>
+					{/if}
 					<div class="form-group">
-						<label for="observaciones_asignar">Observaciones:</label>
-						<textarea id="observaciones_asignar" bind:value={asignacionLicencia.observaciones} rows="3"></textarea>
+						<label for="observaciones_asignar">Observaciones</label>
+						<textarea id="observaciones_asignar" bind:value={formLicencia.observaciones} rows="3" placeholder="Motivo o comentarios adicionales..."></textarea>
 					</div>
 					<div class="modal-actions">
-						<button type="button" class="btn btn-secondary" on:click={() => mostrarModalAsignar = false}>Cancelar</button>
-						<button type="submit" class="btn btn-primary" disabled={cargandoAsignar || !asignacionLicencia.area_id}>
-							{cargandoAsignar ? 'Asignando...' : 'Asignar Licencia'}
+						<button type="button" class="btn btn-secondary" on:click={cerrarModales}>Cancelar</button>
+						<button type="submit" class="btn btn-primary" disabled={saving || !areaSeleccionada}>
+							{saving ? 'Asignando...' : 'Asignar Licencia'}
 						</button>
 					</div>
 				</form>
@@ -1075,33 +848,34 @@
 {/if}
 
 <!-- Modal de Aprobar Licencia -->
-{#if mostrarModalAprobar}
+{#if showModalAprobar}
 	<div class="modal-backdrop">
 		<div class="modal-contenido">
 			<div class="modal-header">
 				<h5>Aprobar Licencia</h5>
-				<button type="button" class="btn-close" on:click={() => mostrarModalAprobar = false}>&times;</button>
+				<button type="button" class="btn-close" on:click={cerrarModales}>&times;</button>
 			</div>
 			<div class="modal-body">
 				<div class="licencia-info">
 					<h6>Información de la Licencia</h6>
 					<p><strong>Agente:</strong> {licenciaSeleccionada?.agente?.nombre} {licenciaSeleccionada?.agente?.apellido}</p>
+					<p><strong>Área:</strong> {licenciaSeleccionada?.agente?.area?.nombre}</p>
 					<p><strong>Tipo:</strong> {licenciaSeleccionada?.tipo_licencia?.nombre}</p>
-					<p><strong>Período:</strong> {licenciaSeleccionada?.fecha_desde} al {licenciaSeleccionada?.fecha_hasta}</p>
+					<p><strong>Período:</strong> {formatearFecha(licenciaSeleccionada?.fecha_desde)} al {formatearFecha(licenciaSeleccionada?.fecha_hasta)}</p>
 					<p><strong>Días:</strong> {licenciaSeleccionada?.dias_solicitados}</p>
 					{#if licenciaSeleccionada?.observaciones}
 						<p><strong>Observaciones:</strong> {licenciaSeleccionada.observaciones}</p>
 					{/if}
 				</div>
-				<form on:submit|preventDefault={confirmarAprobacion}>
+				<form on:submit|preventDefault={handleAprobarLicencia}>
 					<div class="form-group">
-						<label for="observaciones_aprobacion">Observaciones de Aprobación:</label>
-						<textarea id="observaciones_aprobacion" bind:value={aprobacion.observaciones_aprobacion} rows="3" placeholder="Comentarios adicionales (opcional)"></textarea>
+						<label for="observaciones_aprobacion">Observaciones de Aprobación</label>
+						<textarea id="observaciones_aprobacion" bind:value={formAprobacion.observaciones} rows="3" placeholder="Comentarios adicionales (opcional)"></textarea>
 					</div>
 					<div class="modal-actions">
-						<button type="button" class="btn btn-secondary" on:click={() => mostrarModalAprobar = false}>Cancelar</button>
-						<button type="submit" class="btn btn-success" disabled={cargandoAprobacion}>
-							{cargandoAprobacion ? 'Aprobando...' : 'Aprobar Licencia'}
+						<button type="button" class="btn btn-secondary" on:click={cerrarModales}>Cancelar</button>
+						<button type="submit" class="btn btn-success" disabled={saving}>
+							{saving ? 'Aprobando...' : 'Aprobar Licencia'}
 						</button>
 					</div>
 				</form>
@@ -1111,33 +885,34 @@
 {/if}
 
 <!-- Modal de Rechazar Licencia -->
-{#if mostrarModalRechazar}
+{#if showModalRechazar}
 	<div class="modal-backdrop">
 		<div class="modal-contenido">
 			<div class="modal-header">
 				<h5>Rechazar Licencia</h5>
-				<button type="button" class="btn-close" on:click={() => mostrarModalRechazar = false}>&times;</button>
+				<button type="button" class="btn-close" on:click={cerrarModales}>&times;</button>
 			</div>
 			<div class="modal-body">
 				<div class="licencia-info">
 					<h6>Información de la Licencia</h6>
 					<p><strong>Agente:</strong> {licenciaSeleccionada?.agente?.nombre} {licenciaSeleccionada?.agente?.apellido}</p>
+					<p><strong>Área:</strong> {licenciaSeleccionada?.agente?.area?.nombre}</p>
 					<p><strong>Tipo:</strong> {licenciaSeleccionada?.tipo_licencia?.nombre}</p>
-					<p><strong>Período:</strong> {licenciaSeleccionada?.fecha_desde} al {licenciaSeleccionada?.fecha_hasta}</p>
+					<p><strong>Período:</strong> {formatearFecha(licenciaSeleccionada?.fecha_desde)} al {formatearFecha(licenciaSeleccionada?.fecha_hasta)}</p>
 					<p><strong>Días:</strong> {licenciaSeleccionada?.dias_solicitados}</p>
 					{#if licenciaSeleccionada?.observaciones}
 						<p><strong>Observaciones:</strong> {licenciaSeleccionada.observaciones}</p>
 					{/if}
 				</div>
-				<form on:submit|preventDefault={confirmarRechazo}>
+				<form on:submit|preventDefault={handleRechazarLicencia}>
 					<div class="form-group">
-						<label for="motivo_rechazo">Motivo del Rechazo: *</label>
-						<textarea id="motivo_rechazo" bind:value={rechazo.motivo_rechazo} rows="3" placeholder="Indique el motivo del rechazo..." required></textarea>
+						<label for="motivo_rechazo">Motivo del Rechazo *</label>
+						<textarea id="motivo_rechazo" bind:value={formRechazo.motivo} rows="3" placeholder="Indique el motivo del rechazo..." required></textarea>
 					</div>
 					<div class="modal-actions">
-						<button type="button" class="btn btn-secondary" on:click={() => mostrarModalRechazar = false}>Cancelar</button>
-						<button type="submit" class="btn btn-danger" disabled={cargandoRechazo || !rechazo.motivo_rechazo.trim()}>
-							{cargandoRechazo ? 'Rechazando...' : 'Rechazar Licencia'}
+						<button type="button" class="btn btn-secondary" on:click={cerrarModales}>Cancelar</button>
+						<button type="submit" class="btn btn-danger" disabled={saving || !formRechazo.motivo.trim()}>
+							{saving ? 'Rechazando...' : 'Rechazar Licencia'}
 						</button>
 					</div>
 				</form>
@@ -1146,247 +921,671 @@
 	</div>
 {/if}
 
+<!-- Modal para gestión de tipos de licencia -->
+{#if showForm}
+	<div class="modal-overlay">
+		<div class="modal">
+			<h3>{isEditing ? 'Editar tipo de licencia' : 'Nuevo tipo de licencia'}</h3>
+			{#if errorTipos}
+				<div class="alert alert-error">{errorTipos}</div>
+			{/if}
+			<div class="form-row">
+				<label>Código / Nombre *</label>
+				<input bind:value={form.codigo} placeholder="Ej: VAC, ENF, etc." required />
+			</div>
+			<div class="form-row">
+				<label>Descripción</label>
+				<textarea rows="3" bind:value={form.descripcion} placeholder="Descripción del tipo de licencia"></textarea>
+			</div>
+			<div class="form-actions">
+				<button class="btn-primary" on:click={guardar} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
+				<button class="btn-limpiar" on:click={() => (showForm = false)} disabled={saving}>Cancelar</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
-	/* Reuse page styles found in other paneladmin pages (kept minimal here) */
-	.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:1rem }
-	.header-title h1 { margin:0; font-size:22px }
-	.header-actions { display:flex; gap:0.5rem }
-	.filtros-container { background: white; border:1px solid #e9ecef; border-radius:8px; padding:1rem; margin-bottom:1rem }
-	.filtros-row { display:flex; gap:1rem; align-items:end }
-	.filtro-group label { font-weight:500 }
-	.input-busqueda { padding:0.6rem; border:1px solid #ced4da; border-radius:6px }
-	.table-container { overflow-x:auto; border-radius:12px; background:white }
-	table { width:100%; border-collapse:collapse }
-	th, td { padding:12px 16px; text-align:left }
-	thead { background:linear-gradient(135deg,#4865e9 0%,#527ab6d0 100%); color:white }
-	tbody tr:hover { background:#f8f9fa }
-	.btn-header, .btn-primary, .btn-limpiar, .btn-secondary { border:none; padding:8px 12px; border-radius:6px; cursor:pointer }
-	.btn-primary { background:linear-gradient(135deg,#e79043,#f39c12); color:white }
-	.btn-limpiar { background:#6c757d; color:white }
-	.btn-secondary { background:#6b7280; color:white }
+	/* Estilos del contenedor principal */
+	.page-container {
+		max-width: 1400px;
+		margin: 0 auto;
+		padding: 2rem;
+		background: #f8fafc;
+		min-height: 100vh;
+	}
 
-	/* Modal simple */
-	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:2000 }
-	.modal { background:white; padding:1.25rem; border-radius:10px; width:520px; max-width:92%; box-shadow:0 10px 30px rgba(0,0,0,0.2) }
-	.form-row { margin-bottom:0.75rem; display:flex; flex-direction:column }
-	.form-row label { font-weight:600; margin-bottom:6px }
-	.form-row input, .form-row textarea { padding:8px; border:1px solid #d1d5db; border-radius:6px }
-	.form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:8px }
-	.modal h3 { margin-top:0 }
-	
-	/* Toggle buttons */
-	.toggle-buttons { display: flex; gap: 0.5rem; margin-right: 1rem; }
-	.btn-toggle { 
-		border: none; 
-		padding: 10px 16px; 
-		border-radius: 6px; 
-		cursor: pointer; 
-		background: #f8f9fa; 
-		color: #495057; 
+	/* Header */
+	.page-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+		padding-bottom: 1rem;
+		border-bottom: 2px solid #e2e8f0;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+
+	.header-title h1 {
+		margin: 0;
+		font-size: 2rem;
+		color: #1a202c;
+		font-weight: 700;
+	}
+
+	.toggle-buttons {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.btn-toggle {
+		padding: 0.75rem 1.5rem;
+		border: 2px solid #e2e8f0;
+		background: white;
+		color: #4a5568;
+		border-radius: 8px;
+		cursor: pointer;
 		font-weight: 500;
-		transition: all 0.2s ease;
+		transition: all 0.2s;
 	}
-	.btn-toggle:hover { background: #e9ecef; }
-	.btn-toggle.active { 
-		background: linear-gradient(135deg, #4865e9 0%, #527ab6d0 100%); 
-		color: white; 
+
+	.btn-toggle.active {
+		background: #4c51bf;
+		color: white;
+		border-color: #4c51bf;
 	}
-	
-	/* Licencias management styles */
-	.loading-state { text-align: center; padding: 3rem; color: #6c757d; }
-	.loading-state .spinner { margin: 0 auto 1rem; width: 2rem; height: 2rem; }
-	.stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-	.stat-card { background: white; border-radius: 8px; padding: 1.5rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-	.stat-number { font-size: 2rem; font-weight: bold; color: #4865e9; }
-	.stat-label { font-size: 0.875rem; color: #6c757d; margin-top: 0.5rem; }
-	.badge { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
-	.badge-pendiente { background: #fef3c7; color: #d97706; }
-	.badge-aprobada { background: #dcfce7; color: #16a34a; }
-	.badge-rechazada { background: #fee2e2; color: #dc2626; }
-	.action-buttons { display: flex; gap: 0.5rem; }
-	.btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
-	.btn-success { background: #22c55e; color: white; border: none; border-radius: 4px; cursor: pointer; }
-	.btn-danger { background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .text-muted { color: #6c757d; }
-        select { padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; background: white; }
 
-        /* Modal styles */
-        .modal-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.6);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
+	.btn-toggle:hover:not(.active) {
+		background: #f7fafc;
+		border-color: #cbd5e0;
+	}
 
-        .modal-contenido {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            max-width: 500px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
+	.header-actions {
+		display: flex;
+		gap: 0.75rem;
+	}
 
-        .modal-header {
-            padding: 1.5rem 1.5rem 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #e5e7eb;
-            margin-bottom: 1rem;
-        }
+	/* Botones */
+	.btn-primary, .btn-secondary, .btn-refresh, .btn-header {
+		padding: 0.75rem 1.25rem;
+		border: none;
+		border-radius: 8px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
 
-        .modal-header h5 {
-            margin: 0;
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #111827;
-        }
+	.btn-primary {
+		background: #4c51bf;
+		color: white;
+	}
 
-        .btn-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #6b7280;
-            padding: 0.25rem;
-            border-radius: 4px;
-        }
+	.btn-primary:hover:not(:disabled) {
+		background: #434190;
+	}
 
-        .btn-close:hover {
-            background-color: #f3f4f6;
-            color: #374151;
-        }
+	.btn-secondary {
+		background: #718096;
+		color: white;
+	}
 
-        .modal-body {
-            padding: 0 1.5rem 1.5rem;
-        }
+	.btn-secondary:hover {
+		background: #4a5568;
+	}
 
-        .form-group {
-            margin-bottom: 1rem;
-        }
+	.btn-refresh, .btn-header {
+		background: #ed8936;
+		color: white;
+	}
 
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #374151;
-        }
+	.btn-refresh:hover, .btn-header:hover:not(:disabled) {
+		background: #dd6b20;
+	}
 
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-        }
+	.btn-clear {
+		padding: 0.5rem 1rem;
+		background: #e53e3e;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		font-weight: 500;
+	}
 
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
+	.btn-clear:hover {
+		background: #c53030;
+	}
 
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
+	.btn-limpiar {
+		background: #6c757d;
+		color: white;
+		border: none;
+		padding: 8px 12px;
+		border-radius: 6px;
+		cursor: pointer;
+	}
 
-        .modal-actions {
-            display: flex;
-            gap: 0.75rem;
-            justify-content: flex-end;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e5e7eb;
-        }
+	/* Estadísticas */
+	.stats-container {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 1rem;
+		margin-bottom: 2rem;
+	}
 
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s ease-in-out;
-            border: none;
-            font-size: 0.875rem;
-        }
+	.stat-card {
+		background: white;
+		border-radius: 12px;
+		padding: 1.5rem;
+		text-align: center;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+		border: 1px solid #e2e8f0;
+	}
 
-        .btn-primary {
-            background-color: #3b82f6;
-            color: white;
-        }
+	.stat-number {
+		font-size: 2.5rem;
+		font-weight: bold;
+		color: #4c51bf;
+	}
 
-        .btn-primary:hover:not(:disabled) {
-            background-color: #2563eb;
-        }
+	.stat-card.pending .stat-number { color: #ed8936; }
+	.stat-card.approved .stat-number { color: #38a169; }
+	.stat-card.rejected .stat-number { color: #e53e3e; }
 
-        .btn-secondary {
-            background-color: #6b7280;
-            color: white;
-        }
+	.stat-label {
+		font-size: 0.875rem;
+		color: #718096;
+		margin-top: 0.5rem;
+		font-weight: 500;
+	}
 
-        .btn-secondary:hover {
-            background-color: #4b5563;
-        }
+	/* Filtros */
+	.filtros-container {
+		background: white;
+		border: 1px solid #e2e8f0;
+		border-radius: 12px;
+		padding: 1.5rem;
+		margin-bottom: 2rem;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+	}
 
-        .btn-success {
-            background-color: #10b981;
-            color: white;
-        }
+	.filtros-row {
+		display: flex;
+		gap: 1rem;
+		align-items: end;
+		flex-wrap: wrap;
+	}
 
-        .btn-success:hover:not(:disabled) {
-            background-color: #059669;
-        }
+	.filtro-group {
+		flex: 1;
+		min-width: 150px;
+	}
 
-        .btn-danger {
-            background-color: #ef4444;
-            color: white;
-        }
+	.filtro-group label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-weight: 500;
+		color: #4a5568;
+	}
 
-        .btn-danger:hover:not(:disabled) {
-            background-color: #dc2626;
-        }
+	.filtro-group input,
+	.filtro-group select {
+		width: 100%;
+		padding: 0.75rem;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		font-size: 0.875rem;
+		background: white;
+	}
 
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
+	.filtro-group input:focus,
+	.filtro-group select:focus {
+		outline: none;
+		border-color: #4c51bf;
+		box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
+	}
 
-        .licencia-info {
-            background-color: #f9fafb;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            border: 1px solid #e5e7eb;
-        }
+	.input-busqueda {
+		padding: 0.75rem;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		font-size: 0.875rem;
+		width: 100%;
+	}
 
-        .licencia-info h6 {
-            margin: 0 0 0.75rem 0;
-            font-weight: 600;
-            color: #374151;
-            font-size: 1rem;
-        }
+	.input-busqueda:focus {
+		outline: none;
+		border-color: #4c51bf;
+		box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
+	}
 
-        .licencia-info p {
-            margin: 0.25rem 0;
-            font-size: 0.875rem;
-            color: #4b5563;
-        }
+	/* Tabla */
+	.table-container {
+		overflow-x: auto;
+		border-radius: 12px;
+		background: white;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+		border: 1px solid #e2e8f0;
+	}
 
-        .licencia-info strong {
-            color: #111827;
-        }
+	.table, .roles-table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+
+	.table th, .roles-table th {
+		background: #f7fafc;
+		padding: 1rem;
+		text-align: left;
+		font-weight: 600;
+		color: #2d3748;
+		border-bottom: 2px solid #e2e8f0;
+	}
+
+	.table td, .roles-table td {
+		padding: 1rem;
+		border-bottom: 1px solid #f1f5f9;
+		vertical-align: top;
+	}
+
+	.table tr:hover, .roles-table tr:hover {
+		background: #f9fafb;
+	}
+
+	.agente-info strong {
+		display: block;
+		color: #2d3748;
+	}
+
+	.agente-info small {
+		color: #718096;
+	}
+
+	.tipo-badge {
+		background: #edf2f7;
+		color: #4a5568;
+		padding: 0.25rem 0.75rem;
+		border-radius: 20px;
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+
+	.estado-badge {
+		padding: 0.25rem 0.75rem;
+		border-radius: 20px;
+		font-size: 0.75rem;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.estado-pendiente {
+		background: #fef3c7;
+		color: #92400e;
+	}
+
+	.estado-aprobada {
+		background: #dcfce7;
+		color: #166534;
+	}
+
+	.estado-rechazada {
+		background: #fee2e2;
+		color: #991b1b;
+	}
+
+	.acciones {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.btn-sm {
+		padding: 0.375rem 0.75rem;
+		font-size: 0.75rem;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		font-weight: 500;
+		transition: all 0.2s;
+	}
+
+	.btn-success {
+		background: #38a169;
+		color: white;
+	}
+
+	.btn-success:hover {
+		background: #2f855a;
+	}
+
+	.btn-danger {
+		background: #e53e3e;
+		color: white;
+	}
+
+	.btn-danger:hover {
+		background: #c53030;
+	}
+
+	.observaciones-row {
+		background: #f7fafc;
+	}
+
+	.observaciones-row td {
+		padding: 0.75rem 1rem;
+		border-bottom: none;
+	}
+
+	/* Estados de carga y vacío */
+	.loading-state, .loading-container {
+		text-align: center;
+		padding: 3rem;
+		color: #718096;
+	}
+
+	.loading-state .spinner-large, .loading-container .spinner-large {
+		margin: 0 auto 1rem;
+		width: 2rem;
+		height: 2rem;
+		border: 2px solid #e2e8f0;
+		border-top: 2px solid #4c51bf;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+
+	.loading-small {
+		text-align: center;
+		color: #718096;
+		font-style: italic;
+		padding: 0.5rem;
+	}
+
+	.no-data, .empty-state {
+		text-align: center;
+		padding: 3rem;
+		color: #718096;
+	}
+
+	.no-data p, .empty-state p {
+		margin-bottom: 1rem;
+	}
+
+	.empty-icon {
+		font-size: 3rem;
+		margin-bottom: 1rem;
+	}
+
+	/* Alertas */
+	.alert {
+		padding: 1rem;
+		border-radius: 8px;
+		margin-bottom: 1rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.alert-error {
+		background: #fed7d7;
+		color: #742a2a;
+		border: 1px solid #feb2b2;
+	}
+
+	/* Modales principales */
+	.modal-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.6);
+		z-index: 1000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+	}
+
+	.modal-contenido {
+		background: white;
+		border-radius: 12px;
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+		max-width: 500px;
+		width: 100%;
+		max-height: 90vh;
+		overflow-y: auto;
+	}
+
+	.modal-header {
+		padding: 1.5rem 1.5rem 0;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		border-bottom: 1px solid #e2e8f0;
+		margin-bottom: 1rem;
+	}
+
+	.modal-header h5 {
+		margin: 0;
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: #2d3748;
+	}
+
+	.btn-close {
+		background: none;
+		border: none;
+		font-size: 1.5rem;
+		cursor: pointer;
+		color: #718096;
+		padding: 0.25rem;
+		border-radius: 4px;
+	}
+
+	.btn-close:hover {
+		background-color: #f7fafc;
+		color: #4a5568;
+	}
+
+	.modal-body {
+		padding: 0 1.5rem 1.5rem;
+	}
+
+	.form-group {
+		margin-bottom: 1rem;
+	}
+
+	.form-group label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-weight: 500;
+		color: #4a5568;
+	}
+
+	.form-group input,
+	.form-group select,
+	.form-group textarea {
+		width: 100%;
+		padding: 0.75rem;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		font-size: 0.875rem;
+		transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+	}
+
+	.form-group input:focus,
+	.form-group select:focus,
+	.form-group textarea:focus {
+		outline: none;
+		border-color: #4c51bf;
+		box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
+	}
+
+	.form-group textarea {
+		resize: vertical;
+		min-height: 80px;
+	}
+
+	.info-dias {
+		margin-bottom: 1rem;
+		padding: 0.75rem;
+		background: #f0fff4;
+		border: 1px solid #c6f6d5;
+		border-radius: 8px;
+		text-align: center;
+	}
+
+	.licencia-info {
+		background: #f7fafc;
+		padding: 1rem;
+		border-radius: 8px;
+		margin-bottom: 1rem;
+		border: 1px solid #e2e8f0;
+	}
+
+	.licencia-info h6 {
+		margin: 0 0 0.75rem 0;
+		font-weight: 600;
+		color: #2d3748;
+		font-size: 1rem;
+	}
+
+	.licencia-info p {
+		margin: 0.25rem 0;
+		font-size: 0.875rem;
+		color: #4a5568;
+	}
+
+	.licencia-info strong {
+		color: #2d3748;
+	}
+
+	.modal-actions {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: flex-end;
+		margin-top: 1.5rem;
+		padding-top: 1rem;
+		border-top: 1px solid #e2e8f0;
+	}
+
+	.btn {
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease-in-out;
+		border: none;
+		font-size: 0.875rem;
+	}
+
+	.btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	/* Modal simple para tipos */
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0,0,0,0.4);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 2000;
+	}
+
+	.modal {
+		background: white;
+		padding: 1.25rem;
+		border-radius: 10px;
+		width: 520px;
+		max-width: 92%;
+		box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+	}
+
+	.form-row {
+		margin-bottom: 0.75rem;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.form-row label {
+		font-weight: 600;
+		margin-bottom: 6px;
+	}
+
+	.form-row input, .form-row textarea {
+		padding: 8px;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+	}
+
+	.form-actions {
+		display: flex;
+		gap: 8px;
+		justify-content: flex-end;
+		margin-top: 8px;
+	}
+
+	.modal h3 {
+		margin-top: 0;
+	}
+
+	/* Spinner */
+	.spinner {
+		width: 1rem;
+		height: 1rem;
+		border: 2px solid #e2e8f0;
+		border-top: 2px solid #4c51bf;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
+	}
+
+	/* Utilidades */
+	.text-center {
+		text-align: center;
+	}
+
+	/* Responsive */
+	@media (max-width: 768px) {
+		.page-container {
+			padding: 1rem;
+		}
+
+		.page-header {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.toggle-buttons,
+		.header-actions {
+			justify-content: center;
+		}
+
+		.filtros-row {
+			flex-direction: column;
+		}
+
+		.filtro-group {
+			min-width: auto;
+		}
+
+		.table-container {
+			font-size: 0.875rem;
+		}
+
+		.modal-contenido {
+			margin: 1rem;
+			max-width: calc(100vw - 2rem);
+		}
+	}
 </style>
