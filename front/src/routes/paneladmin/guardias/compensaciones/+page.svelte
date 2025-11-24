@@ -47,6 +47,9 @@
   let tituloConfirmacion = "";
   let mensajeConfirmacion = "";
   let tipoConfirmacion = "success"; // 'success', 'error', 'warning'
+  let resolverConfirmacion = null;
+  let pedirInput = false;
+  let valorInput = "";
 
   // Opciones para el formulario
   const motivosCompensacion = [
@@ -467,7 +470,7 @@
   }
 
   async function aprobarCompensacion(compensacion) {
-    if (!confirm("¿Está seguro de aprobar esta compensación?")) {
+    if (!(await confirmar("¿Está seguro de aprobar esta compensación?"))) {
       return;
     }
 
@@ -507,7 +510,6 @@
       const mensaje =
         err.response?.data?.message || err.message || "Error desconocido";
       error = "Error al aprobar compensación: " + mensaje;
-      // ✅ USA ESTO:
       mostrarConfirmacion(
         "Error",
         "Error al aprobar compensación: " + mensaje,
@@ -519,7 +521,12 @@
   }
 
   async function rechazarCompensacion(compensacion) {
-    const motivo = prompt("Ingrese el motivo del rechazo:");
+    const motivo = await confirmar(
+      "¿Seguro de rechazar?",
+      "Debe indicar un motivo",
+      "warning",
+      true,
+    );
     if (!motivo || !motivo.trim()) {
       return;
     }
@@ -576,17 +583,60 @@
   function mostrarConfirmacion(titulo, mensaje, tipo = "success") {
     tituloConfirmacion = titulo;
     mensajeConfirmacion = mensaje;
-    tipoConfirmacion =
-      tipo === "error"
-        ? "modal-confirmacion-error"
-        : tipo === "warning"
-          ? "modal-confirmacion-warning"
-          : "";
+    const tiposValidos = ["success", "error", "warning"];
+    tipoConfirmacion = tiposValidos.includes(tipo) ? tipo : "success";
     mostrandoConfirmacion = true;
   }
 
   function cerrarConfirmacion() {
     mostrandoConfirmacion = false;
+  }
+
+  function confirmar(titulo, mensaje = "", tipo = "success", conInput = false) {
+    tituloConfirmacion = titulo;
+    mensajeConfirmacion = mensaje;
+
+    const tiposValidos = ["success", "error", "warning"];
+    tipoConfirmacion = tiposValidos.includes(tipo) ? tipo : "success";
+
+    pedirInput = conInput;
+    valorInput = "";
+
+    mostrandoConfirmacion = true;
+
+    return new Promise((resolve) => {
+      resolverConfirmacion = resolve;
+    });
+  }
+
+  function aceptarConfirmacion() {
+    mostrandoConfirmacion = false;
+
+    if (resolverConfirmacion) {
+      if (pedirInput) {
+        resolverConfirmacion(valorInput.trim());
+      } else {
+        resolverConfirmacion(true);
+      }
+    }
+
+    // Reset state
+    pedirInput = false;
+    valorInput = "";
+    resolverConfirmacion = null;
+  }
+
+  function cancelarConfirmacion() {
+    mostrandoConfirmacion = false;
+
+    if (resolverConfirmacion) {
+      resolverConfirmacion(null);
+    }
+
+    // Reset state
+    pedirInput = false;
+    valorInput = "";
+    resolverConfirmacion = null;
   }
 </script>
 
@@ -1157,24 +1207,38 @@
   </div>
 {/if}
 
-<!-- Modal de confirmación -->
 {#if mostrandoConfirmacion}
   <div class="modal-confirmacion">
     <div class="modal-confirmacion-contenido {tipoConfirmacion}">
       <div class="modal-confirmacion-icono">
-        {#if tipoConfirmacion === ""}
+        {#if tipoConfirmacion === "success"}
           ✓
-        {:else if tipoConfirmacion === "modal-confirmacion-error"}
+        {:else if tipoConfirmacion === "error"}
           ✕
-        {:else}
+        {:else if tipoConfirmacion === "warning"}
           ⚠
+        {:else}
+          ✓
         {/if}
       </div>
       <h3 class="modal-confirmacion-titulo">{tituloConfirmacion}</h3>
       <p class="modal-confirmacion-mensaje">{mensajeConfirmacion}</p>
-      <button class="modal-confirmacion-boton" on:click={cerrarConfirmacion}>
-        Aceptar
-      </button>
+      {#if pedirInput && tipoConfirmacion !== "success"}
+        <textarea
+          class="modal-input"
+          bind:value={valorInput}
+          placeholder="Ingrese el motivo del rechazo..."
+          rows="4"
+        ></textarea>
+      {/if}
+      <div class="modal-confirmacion-botones">
+        <button class="btn-cancelar" on:click={cancelarConfirmacion}>
+          Cancelar
+        </button>
+        <button class="modal-confirmacion-boton" on:click={aceptarConfirmacion}>
+          Aceptar
+        </button>
+      </div>
     </div>
   </div>
 {/if}
@@ -1201,6 +1265,7 @@
     color: white;
     padding: 30px 20px;
     margin: 0;
+    margin-right: 10px;
     max-width: 1000px;
     border-radius: 28px;
     overflow: hidden;
@@ -1453,7 +1518,7 @@
     text-transform: none;
     letter-spacing: 0.3px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serifgio;
   }
 
   .btn-cancelar {
@@ -1547,9 +1612,10 @@
 
   .filtro-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr auto;
-    gap: 1rem;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 1.2rem;
     align-items: end;
+    width: 100%;
   }
 
   .filtro-group {
@@ -1567,14 +1633,12 @@
   .filtro-group select,
   .filtro-group input,
   .input-busqueda {
+    width: 100%;
     padding: 0.75rem;
     border: 1px solid #ced4da;
     border-radius: 6px;
     font-size: 0.9rem;
-    transition:
-      border-color 0.2s,
-      box-shadow 0.2s;
-    width: 95%;
+    box-sizing: border-box;
   }
 
   .filtro-group select:focus,
@@ -1584,6 +1648,7 @@
     border-color: #407bff;
     box-shadow: 0 0 0 3px rgba(64, 123, 255, 0.15);
   }
+
   .input-busqueda::placeholder {
     color: #9ca3af;
     font-size: 0.85rem;
@@ -1600,6 +1665,7 @@
     transition: all 0.3s ease;
     white-space: nowrap;
     height: 42px;
+    width: fit-content;
   }
 
   .btn-limpiar:hover {
@@ -1642,124 +1708,119 @@
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
-    animation: fadeIn 0.2s ease;
+    z-index: 99999;
+    backdrop-filter: blur(4px);
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
   .modal-confirmacion-contenido {
-    background: white;
-    border-radius: 16px;
+    background: #ffffff;
     padding: 32px;
-    max-width: 450px;
-    width: 90%;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
-    animation: slideUp 0.3s ease;
+    width: 380px;
+    border-radius: 16px;
     text-align: center;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
   }
 
-  @keyframes slideUp {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
+  .modal-confirmacion-contenido.success {
+    background: #d4edda;
+    border: 4px solid #28a745;
+  }
+
+  .modal-confirmacion-contenido.error {
+    background: #f8d7da;
+    border: 4px solid #dc3545;
+  }
+
+  .modal-confirmacion-contenido.warning {
+    background: #fff3cd;
+    border: 4px solid #ffc107;
   }
 
   .modal-confirmacion-icono {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 20px;
-    background: linear-gradient(135deg, #10b981, #059669);
-    border-radius: 50%;
+    font-size: 3rem;
+    font-weight: bold;
+    color: inherit;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
-    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
   }
 
   .modal-confirmacion-titulo {
     font-size: 20px;
     font-weight: 700;
     color: #1e293b;
-    margin: 0 0 12px 0;
+    margin-bottom: 8px;
   }
 
   .modal-confirmacion-mensaje {
     font-size: 15px;
-    color: #64748b;
-    margin: 0 0 24px 0;
-    line-height: 1.5;
+    color: #475569;
+    margin-bottom: 20px;
+  }
+
+  .modal-input {
+    width: 93%;
+    padding: 10px 14px;
+    min-height: 80px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    font-size: 14px;
+    resize: vertical;
+    margin-bottom: 20px;
+    outline: none;
+    transition: border 0.2s ease;
+  }
+
+  .modal-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 4px rgba(59, 130, 246, 0.35);
+  }
+
+  .modal-confirmacion-botones {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .btn-cancelar {
+    padding: 10px 22px;
+    background: #e2e8f0;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-cancelar:hover {
+    background: #cbd5e1;
+    transform: translateY(-2px);
   }
 
   .modal-confirmacion-boton {
-    padding: 12px 32px;
-    background: linear-gradient(135deg, #10b981, #059669);
+    padding: 10px 28px;
+    background: #3b82f6;
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+    transition: all 0.2s;
+    box-shadow: 0 3px 6px rgba(59, 130, 246, 0.3);
   }
 
   .modal-confirmacion-boton:hover {
-    background: linear-gradient(135deg, #059669, #047857);
+    background: #2563eb;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
-  }
-
-  /* Variante de error */
-  .modal-confirmacion-error .modal-confirmacion-icono {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
-  }
-
-  .modal-confirmacion-error .modal-confirmacion-boton {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
-  }
-
-  .modal-confirmacion-error .modal-confirmacion-boton:hover {
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
-    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
-  }
-
-  /* Variante de advertencia */
-  .modal-confirmacion-warning .modal-confirmacion-icono {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
-  }
-
-  .modal-confirmacion-warning .modal-confirmacion-boton {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
-  }
-
-  .modal-confirmacion-warning .modal-confirmacion-boton:hover {
-    background: linear-gradient(135deg, #d97706, #b45309);
-    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.4);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
   }
 
   .empty-state {
@@ -2077,6 +2138,17 @@
       padding: 14px 16px;
       font-size: 13px;
     }
+
+    .filtro-row {
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .btn-limpiar {
+      grid-column: 1 / -1;
+      justify-self: center;
+      max-width: 200px;
+    }
   }
 
   @media (max-width: 768px) {
@@ -2102,6 +2174,21 @@
     .acciones-grupo {
       flex-direction: column;
       gap: 6px;
+    }
+
+    .filtro-row {
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .filtro-group:first-child {
+      grid-column: 1 / -1;
+    }
+
+    .btn-limpiar {
+      grid-column: 1 / -1;
+      justify-self: center;
+      max-width: 200px;
     }
   }
 </style>
