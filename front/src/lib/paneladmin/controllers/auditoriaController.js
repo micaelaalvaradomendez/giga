@@ -13,44 +13,129 @@ class AuditoriaController {
 		this.loading = writable(false);
 		this.error = writable(null);
 
-		// Store para búsqueda
+		// Stores para filtros
 		this.terminoBusqueda = writable('');
+		this.filtros = writable({
+			modulo: '', // filtro por tabla/módulo
+			accion: '', // filtro por tipo de acción
+			usuario: '', // filtro por usuario que realiza la acción
+			fechaDesde: '', // filtro por fecha desde
+			fechaHasta: '', // filtro por fecha hasta
+			categoria: '' // filtro por categoría de acción
+		});
 
-		// Store derivado para registros filtrados
+		// Store derivado para registros filtrados con filtros avanzados
 		this.registrosFiltrados = derived(
-			[this.registros, this.terminoBusqueda],
-			([$registros, $terminoBusqueda]) => {
+			[this.registros, this.terminoBusqueda, this.filtros],
+			([$registros, $terminoBusqueda, $filtros]) => {
 				if (!$registros || !Array.isArray($registros)) {
 					return [];
 				}
 
-				if (!$terminoBusqueda.trim()) {
-					return $registros;
+				let registrosFiltrados = [...$registros];
+
+				// Aplicar filtros avanzados
+				if ($filtros.modulo) {
+					registrosFiltrados = registrosFiltrados.filter(registro => 
+						registro.nombre_tabla === $filtros.modulo
+					);
 				}
 
-				const busqueda = $terminoBusqueda.toLowerCase().trim();
-				
-				return $registros.filter(registro => {
-					// Mapeo de acciones traducidas
-					const traduccionAccion = {
-						'CREAR': 'alta de registro',
-						'MODIFICAR': 'modificación',
-						'ELIMINAR': 'registro eliminado',
-						'create': 'alta de registro',
-						'update': 'modificación',
-						'delete': 'registro eliminado'
-					};
+				if ($filtros.accion) {
+					registrosFiltrados = registrosFiltrados.filter(registro => 
+						registro.accion === $filtros.accion
+					);
+				}
 
-					// Campos de búsqueda
-					const usuario = (registro.creado_por_nombre || registro.id_agente?.nombre || 'sistema').toLowerCase();
-					const accion = (traduccionAccion[registro.accion] || registro.accion || '').toLowerCase();
-					const tabla = (registro.nombre_tabla || '').toLowerCase();
+				if ($filtros.categoria) {
+					const acciones = this.getAccionesPorCategoria($filtros.categoria);
+					registrosFiltrados = registrosFiltrados.filter(registro => 
+						acciones.includes(registro.accion)
+					);
+				}
+
+				if ($filtros.usuario) {
+					registrosFiltrados = registrosFiltrados.filter(registro => {
+						const usuario = registro.creado_por_nombre || 'Sistema';
+						return usuario.toLowerCase().includes($filtros.usuario.toLowerCase());
+					});
+				}
+
+				if ($filtros.fechaDesde) {
+					const fechaDesde = new Date($filtros.fechaDesde);
+					registrosFiltrados = registrosFiltrados.filter(registro => 
+						new Date(registro.creado_en) >= fechaDesde
+					);
+				}
+
+				if ($filtros.fechaHasta) {
+					const fechaHasta = new Date($filtros.fechaHasta);
+					fechaHasta.setHours(23, 59, 59, 999); // Incluir todo el día
+					registrosFiltrados = registrosFiltrados.filter(registro => 
+						new Date(registro.creado_en) <= fechaHasta
+					);
+				}
+
+				// Aplicar búsqueda de texto libre
+				if ($terminoBusqueda.trim()) {
+					const busqueda = $terminoBusqueda.toLowerCase().trim();
 					
-					// Buscar en todos los campos relevantes
-					return usuario.includes(busqueda) || 
-						   accion.includes(busqueda) || 
-						   tabla.includes(busqueda);
-				});
+					registrosFiltrados = registrosFiltrados.filter(registro => {
+						// Mapeo de acciones traducidas para búsqueda
+						const traduccionAccion = {
+							// Acciones generales
+							'CREAR': 'alta de registro',
+							'MODIFICAR': 'modificación',
+							'ELIMINAR': 'registro eliminado',
+							'ACTUALIZAR': 'actualización',
+							'create': 'alta de registro',
+							'update': 'modificación',
+							'delete': 'registro eliminado',
+							
+							// Acciones específicas de asistencias
+							'CREAR_ASISTENCIA': 'crear asistencia',
+							'MARCAR_ENTRADA': 'marcar entrada',
+							'MARCAR_SALIDA': 'marcar salida',
+							'MARCAR_ENTRADA_ADMIN': 'marcar entrada admin',
+							'MARCAR_SALIDA_ADMIN': 'marcar salida admin',
+							'CORREGIR_ASISTENCIA': 'corregir asistencia',
+							'MARCAR_AUSENTE': 'marcar ausente',
+							
+							// Acciones específicas de licencias
+							'CREAR_LICENCIA': 'crear licencia',
+							'APROBAR_LICENCIA': 'aprobar licencia',
+							'RECHAZAR_LICENCIA': 'rechazar licencia',
+							'ELIMINAR_LICENCIA': 'eliminar licencia',
+							
+							// Acciones específicas de tipos de licencia
+							'CREAR_TIPO_LICENCIA': 'crear tipo licencia',
+							'ACTUALIZAR_TIPO_LICENCIA': 'actualizar tipo licencia',
+							'ELIMINAR_TIPO_LICENCIA': 'eliminar tipo licencia',
+							
+							// Acciones específicas de roles
+							'ASIGNAR_ROL': 'asignar rol',
+							'QUITAR_ROL': 'quitar rol',
+							'CAMBIO_ROL_ATOMICO': 'cambio rol',
+							
+							// Acciones de autenticación
+							'LOGIN_EXITOSO': 'login exitoso',
+							'LOGIN_FALLIDO': 'login fallido',
+							'LOGOUT': 'logout'
+						};
+
+						// Campos de búsqueda
+						const usuario = (registro.creado_por_nombre || registro.id_agente?.nombre || 'sistema').toLowerCase();
+						const accion = (traduccionAccion[registro.accion] || registro.accion || '').toLowerCase();
+						const tabla = (registro.nombre_tabla || '').toLowerCase();
+						
+						// Buscar en todos los campos relevantes
+						return usuario.includes(busqueda) || 
+							   accion.includes(busqueda) || 
+							   tabla.includes(busqueda);
+					});
+				}
+
+				return registrosFiltrados;
 			}
 		);
 
@@ -145,6 +230,112 @@ class AuditoriaController {
 	}
 
 	/**
+	 * Actualiza los filtros
+	 */
+	actualizarFiltros(nuevosFiltros) {
+		this.filtros.update(filtros => ({ ...filtros, ...nuevosFiltros }));
+	}
+
+	/**
+	 * Limpia todos los filtros
+	 */
+	limpiarFiltros() {
+		this.filtros.set({
+			modulo: '',
+			accion: '',
+			usuario: '',
+			fechaDesde: '',
+			fechaHasta: '',
+			categoria: ''
+		});
+		this.terminoBusqueda.set('');
+	}
+
+	/**
+	 * Obtiene acciones por categoría
+	 */
+	getAccionesPorCategoria(categoria) {
+		const categorias = {
+			'creacion': ['CREAR', 'CREAR_ASISTENCIA', 'CREAR_LICENCIA', 'CREAR_TIPO_LICENCIA', 'create'],
+			'modificacion': ['MODIFICAR', 'ACTUALIZAR', 'ACTUALIZAR_TIPO_LICENCIA', 'CORREGIR_ASISTENCIA', 'update'],
+			'eliminacion': ['ELIMINAR', 'ELIMINAR_LICENCIA', 'ELIMINAR_TIPO_LICENCIA', 'delete'],
+			'asistencias': ['CREAR_ASISTENCIA', 'MARCAR_ENTRADA', 'MARCAR_SALIDA', 'MARCAR_ENTRADA_ADMIN', 'MARCAR_SALIDA_ADMIN', 'CORREGIR_ASISTENCIA', 'MARCAR_AUSENTE'],
+			'licencias': ['CREAR_LICENCIA', 'APROBAR_LICENCIA', 'RECHAZAR_LICENCIA', 'ELIMINAR_LICENCIA'],
+			'roles': ['ASIGNAR_ROL', 'QUITAR_ROL', 'CAMBIO_ROL_ATOMICO'],
+			'autenticacion': ['LOGIN_EXITOSO', 'LOGIN_FALLIDO', 'LOGOUT'],
+			'aprobacion': ['APROBAR_LICENCIA', 'APROBAR_COMPENSACION'],
+			'rechazo': ['RECHAZAR_LICENCIA', 'RECHAZAR_COMPENSACION']
+		};
+		
+		return categorias[categoria] || [];
+	}
+
+	/**
+	 * Obtiene módulos únicos de los registros
+	 */
+	getModulosUnicos() {
+		return derived([this.registros], ([$registros]) => {
+			if (!$registros || !Array.isArray($registros)) return [];
+			
+			const modulos = [...new Set($registros.map(r => r.nombre_tabla))].sort();
+			return modulos.map(modulo => ({
+				value: modulo,
+				label: this.formatearNombreModulo(modulo)
+			}));
+		});
+	}
+
+	/**
+	 * Obtiene acciones únicas de los registros
+	 */
+	getAccionesUnicas() {
+		return derived([this.registros], ([$registros]) => {
+			if (!$registros || !Array.isArray($registros)) return [];
+			
+			const acciones = [...new Set($registros.map(r => r.accion))].sort();
+			return acciones.map(accion => ({
+				value: accion,
+				label: this.traducirAccion(accion)
+			}));
+		});
+	}
+
+	/**
+	 * Obtiene usuarios únicos de los registros
+	 */
+	getUsuariosUnicos() {
+		return derived([this.registros], ([$registros]) => {
+			if (!$registros || !Array.isArray($registros)) return [];
+			
+			const usuarios = [...new Set($registros.map(r => r.creado_por_nombre || 'Sistema'))].sort();
+			return usuarios.map(usuario => ({
+				value: usuario,
+				label: usuario
+			}));
+		});
+	}
+
+	/**
+	 * Formatea el nombre del módulo/tabla para display
+	 */
+	formatearNombreModulo(modulo) {
+		const nombres = {
+			'agente': 'Usuarios/Agentes',
+			'area': 'Áreas',
+			'asistencia': 'Asistencias',
+			'licencia': 'Licencias',
+			'tipo_licencia': 'Tipos de Licencia',
+			'guardia': 'Guardias',
+			'organigrama': 'Organigrama',
+			'cronograma': 'Cronogramas',
+			'funciones_plus': 'Funciones Plus',
+			'hora_compensacion': 'Compensaciones'
+		};
+		
+		return nombres[modulo] || modulo.charAt(0).toUpperCase() + modulo.slice(1);
+	}
+
+	/**
 	 * Formatea una fecha en formato ISO a un string legible para Argentina
 	 */
 	formatearFecha(fechaISO) {
@@ -171,12 +362,44 @@ class AuditoriaController {
 	 */
 	traducirAccion(accion) {
 		const traducciones = {
+			// Acciones generales
 			'CREAR': 'Alta de registro',
 			'MODIFICAR': 'Modificación',
 			'ELIMINAR': 'Registro eliminado',
+			'ACTUALIZAR': 'Actualización',
 			'create': 'Alta de registro',
 			'update': 'Modificación',
-			'delete': 'Registro eliminado'
+			'delete': 'Registro eliminado',
+			
+			// Acciones específicas de asistencias
+			'CREAR_ASISTENCIA': 'Crear asistencia',
+			'MARCAR_ENTRADA': 'Marcar entrada',
+			'MARCAR_SALIDA': 'Marcar salida',
+			'MARCAR_ENTRADA_ADMIN': 'Marcar entrada (Admin)',
+			'MARCAR_SALIDA_ADMIN': 'Marcar salida (Admin)',
+			'CORREGIR_ASISTENCIA': 'Corregir asistencia',
+			'MARCAR_AUSENTE': 'Marcar ausente',
+			
+			// Acciones específicas de licencias
+			'CREAR_LICENCIA': 'Crear licencia',
+			'APROBAR_LICENCIA': 'Aprobar licencia',
+			'RECHAZAR_LICENCIA': 'Rechazar licencia',
+			'ELIMINAR_LICENCIA': 'Eliminar licencia',
+			
+			// Acciones específicas de tipos de licencia
+			'CREAR_TIPO_LICENCIA': 'Crear tipo de licencia',
+			'ACTUALIZAR_TIPO_LICENCIA': 'Actualizar tipo de licencia',
+			'ELIMINAR_TIPO_LICENCIA': 'Eliminar tipo de licencia',
+			
+			// Acciones específicas de roles
+			'ASIGNAR_ROL': 'Asignar rol',
+			'QUITAR_ROL': 'Quitar rol',
+			'CAMBIO_ROL_ATOMICO': 'Cambio de rol',
+			
+			// Acciones de autenticación
+			'LOGIN_EXITOSO': 'Inicio de sesión exitoso',
+			'LOGIN_FALLIDO': 'Intento de inicio de sesión fallido',
+			'LOGOUT': 'Cierre de sesión'
 		};
 
 		return traducciones[accion] || accion?.toUpperCase() || 'Acción desconocida';
@@ -209,12 +432,46 @@ class AuditoriaController {
 	 */
 	getBadgeColor(accion) {
 		const colores = {
+			// Acciones de creación (verde)
 			'CREAR': 'bg-green-500 text-white',
-			'MODIFICAR': 'bg-yellow-400 text-black',
-			'ELIMINAR': 'bg-red-500 text-white',
+			'CREAR_ASISTENCIA': 'bg-green-500 text-white',
+			'CREAR_LICENCIA': 'bg-green-500 text-white',
+			'CREAR_TIPO_LICENCIA': 'bg-green-500 text-white',
 			'create': 'bg-green-500 text-white',
+			
+			// Acciones de modificación/actualización (amarillo)
+			'MODIFICAR': 'bg-yellow-400 text-black',
+			'ACTUALIZAR': 'bg-yellow-400 text-black',
+			'ACTUALIZAR_TIPO_LICENCIA': 'bg-yellow-400 text-black',
+			'CORREGIR_ASISTENCIA': 'bg-yellow-400 text-black',
 			'update': 'bg-yellow-400 text-black',
-			'delete': 'bg-red-500 text-white'
+			
+			// Acciones de eliminación (rojo)
+			'ELIMINAR': 'bg-red-500 text-white',
+			'ELIMINAR_LICENCIA': 'bg-red-500 text-white',
+			'ELIMINAR_TIPO_LICENCIA': 'bg-red-500 text-white',
+			'delete': 'bg-red-500 text-white',
+			
+			// Acciones de aprobación/rechazo (azul/naranja)
+			'APROBAR_LICENCIA': 'bg-blue-500 text-white',
+			'RECHAZAR_LICENCIA': 'bg-orange-500 text-white',
+			
+			// Acciones de marcación (púrpura)
+			'MARCAR_ENTRADA': 'bg-purple-500 text-white',
+			'MARCAR_SALIDA': 'bg-purple-600 text-white',
+			'MARCAR_ENTRADA_ADMIN': 'bg-purple-700 text-white',
+			'MARCAR_SALIDA_ADMIN': 'bg-purple-700 text-white',
+			'MARCAR_AUSENTE': 'bg-gray-600 text-white',
+			
+			// Acciones de roles (índigo)
+			'ASIGNAR_ROL': 'bg-indigo-500 text-white',
+			'QUITAR_ROL': 'bg-indigo-600 text-white',
+			'CAMBIO_ROL_ATOMICO': 'bg-indigo-700 text-white',
+			
+			// Acciones de autenticación (cyan)
+			'LOGIN_EXITOSO': 'bg-cyan-500 text-white',
+			'LOGIN_FALLIDO': 'bg-red-600 text-white',
+			'LOGOUT': 'bg-cyan-600 text-white'
 		};
 
 		return colores[accion] || 'bg-gray-500 text-white';
@@ -241,6 +498,90 @@ class AuditoriaController {
 				eliminar: $registros.filter(r => ['ELIMINAR', 'delete'].includes(r.accion)).length
 			};
 		});
+	}
+
+	/**
+	 * Obtiene los módulos únicos para filtrado
+	 */
+	getModulosUnicos() {
+		return get(this.registros)
+			.map(registro => registro.nombre_tabla)
+			.filter((modulo, index, array) => array.indexOf(modulo) === index)
+			.sort();
+	}
+
+	/**
+	 * Obtiene las acciones únicas para filtrado
+	 */
+	getAccionesUnicas() {
+		return get(this.registros)
+			.map(registro => registro.accion)
+			.filter((accion, index, array) => array.indexOf(accion) === index)
+			.sort();
+	}
+
+	/**
+	 * Obtiene los usuarios únicos para filtrado
+	 */
+	getUsuariosUnicos() {
+		return get(this.registros)
+			.map(registro => registro.creado_por_nombre || 'Sistema')
+			.filter((usuario, index, array) => array.indexOf(usuario) === index)
+			.sort();
+	}
+
+	/**
+	 * Obtiene acciones agrupadas por categoría
+	 */
+	getAccionesPorCategoria() {
+		const acciones = this.getAccionesUnicas();
+		const categorias = {
+			'Gestión de Registros': ['CREAR', 'ACTUALIZAR', 'MODIFICAR', 'ELIMINAR', 'create', 'update', 'delete'],
+			'Asistencias': ['CREAR_ASISTENCIA', 'MARCAR_ENTRADA', 'MARCAR_SALIDA', 'MARCAR_ENTRADA_ADMIN', 'MARCAR_SALIDA_ADMIN', 'CORREGIR_ASISTENCIA', 'MARCAR_AUSENTE'],
+			'Licencias': ['CREAR_LICENCIA', 'APROBAR_LICENCIA', 'RECHAZAR_LICENCIA', 'ELIMINAR_LICENCIA'],
+			'Tipos de Licencia': ['CREAR_TIPO_LICENCIA', 'ACTUALIZAR_TIPO_LICENCIA', 'ELIMINAR_TIPO_LICENCIA'],
+			'Roles y Permisos': ['ASIGNAR_ROL', 'QUITAR_ROL', 'CAMBIO_ROL_ATOMICO'],
+			'Autenticación': ['LOGIN_EXITOSO', 'LOGIN_FALLIDO', 'LOGOUT']
+		};
+
+		const resultado = {};
+		for (const [categoria, accionesCategoria] of Object.entries(categorias)) {
+			const accionesFiltradas = acciones.filter(accion => accionesCategoria.includes(accion));
+			if (accionesFiltradas.length > 0) {
+				resultado[categoria] = accionesFiltradas;
+			}
+		}
+
+		// Agregar acciones no categorizadas
+		const todasLasAccionesCategorizada = Object.values(categorias).flat();
+		const accionesSinCategorizar = acciones.filter(accion => !todasLasAccionesCategorizada.includes(accion));
+		if (accionesSinCategorizar.length > 0) {
+			resultado['Otras'] = accionesSinCategorizar;
+		}
+
+		return resultado;
+	}
+
+	/**
+	 * Actualiza los filtros activos
+	 */
+	actualizarFiltros(nuevosFiltros) {
+		this.filtros.set(nuevosFiltros);
+	}
+
+	/**
+	 * Limpia todos los filtros
+	 */
+	limpiarFiltros() {
+		this.filtros.set({
+			modulo: '',
+			categoria: '',
+			accion: '',
+			usuario: '',
+			fechaDesde: '',
+			fechaHasta: ''
+		});
+		this.terminoBusqueda.set('');
 	}
 }
 

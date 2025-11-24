@@ -19,8 +19,111 @@ from .serializers import (
 )
 from personas.models import Agente, Area
 from guardias.models import Feriado
+from auditoria.models import Auditoria
 
 logger = logging.getLogger(__name__)
+
+
+def crear_auditoria_asistencia(agente_realizador_id, accion, asistencia_id, valor_previo=None, valor_nuevo=None):
+    """
+    Crear registro de auditoría específico para asistencias.
+    """
+    try:
+        from django.utils import timezone
+        from django.core.serializers.json import DjangoJSONEncoder
+        import json
+        
+        # Convertir datos a JSON serializable
+        valor_previo_json = None
+        valor_nuevo_json = None
+        
+        if valor_previo:
+            valor_previo_json = json.loads(json.dumps(valor_previo, cls=DjangoJSONEncoder))
+        
+        if valor_nuevo:
+            valor_nuevo_json = json.loads(json.dumps(valor_nuevo, cls=DjangoJSONEncoder))
+        
+        Auditoria.objects.create(
+            pk_afectada=asistencia_id,
+            nombre_tabla='asistencia',
+            creado_en=timezone.now(),
+            valor_previo=valor_previo_json,
+            valor_nuevo=valor_nuevo_json,
+            accion=accion,
+            id_agente_id=agente_realizador_id
+        )
+    except Exception as e:
+        logger.error(f"Error creando auditoría de asistencia: {e}")
+        # No fallar la operación principal por error de auditoría
+        pass
+
+
+def crear_auditoria_licencia(agente_realizador_id, accion, licencia_id, valor_previo=None, valor_nuevo=None):
+    """
+    Crear registro de auditoría específico para licencias.
+    """
+    try:
+        from django.utils import timezone
+        from django.core.serializers.json import DjangoJSONEncoder
+        import json
+        
+        # Convertir datos a JSON serializable
+        valor_previo_json = None
+        valor_nuevo_json = None
+        
+        if valor_previo:
+            valor_previo_json = json.loads(json.dumps(valor_previo, cls=DjangoJSONEncoder))
+        
+        if valor_nuevo:
+            valor_nuevo_json = json.loads(json.dumps(valor_nuevo, cls=DjangoJSONEncoder))
+        
+        Auditoria.objects.create(
+            pk_afectada=licencia_id,
+            nombre_tabla='licencia',
+            creado_en=timezone.now(),
+            valor_previo=valor_previo_json,
+            valor_nuevo=valor_nuevo_json,
+            accion=accion,
+            id_agente_id=agente_realizador_id
+        )
+    except Exception as e:
+        logger.error(f"Error creando auditoría de licencia: {e}")
+        # No fallar la operación principal por error de auditoría
+        pass
+
+
+def crear_auditoria_tipo_licencia(agente_realizador_id, accion, tipo_licencia_id, valor_previo=None, valor_nuevo=None):
+    """
+    Crear registro de auditoría específico para tipos de licencia.
+    """
+    try:
+        from django.utils import timezone
+        from django.core.serializers.json import DjangoJSONEncoder
+        import json
+        
+        # Convertir datos a JSON serializable
+        valor_previo_json = None
+        valor_nuevo_json = None
+        
+        if valor_previo:
+            valor_previo_json = json.loads(json.dumps(valor_previo, cls=DjangoJSONEncoder))
+        
+        if valor_nuevo:
+            valor_nuevo_json = json.loads(json.dumps(valor_nuevo, cls=DjangoJSONEncoder))
+        
+        Auditoria.objects.create(
+            pk_afectada=tipo_licencia_id,
+            nombre_tabla='tipo_licencia',
+            creado_en=timezone.now(),
+            valor_previo=valor_previo_json,
+            valor_nuevo=valor_nuevo_json,
+            accion=accion,
+            id_agente_id=agente_realizador_id
+        )
+    except Exception as e:
+        logger.error(f"Error creando auditoría de tipo de licencia: {e}")
+        # No fallar la operación principal por error de auditoría
+        pass
 
 
 def es_dia_laborable(fecha):
@@ -190,15 +293,59 @@ def marcar_asistencia(request):
                 }
             )
             
+            # Auditoría: Si se creó nueva asistencia
+            if created:
+                valor_nuevo = {
+                    'agente_dni': agente_a_marcar.dni,
+                    'agente_nombre': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}",
+                    'fecha': str(fecha_para_marcar),
+                    'area': agente_a_marcar.id_area.nombre if agente_a_marcar.id_area else None,
+                    'creado_por_admin': es_admin,
+                    'motivo': 'Creación automática de registro de asistencia'
+                }
+                crear_auditoria_asistencia(
+                    agente_sesion_id, 
+                    'CREAR_ASISTENCIA', 
+                    asistencia.id_asistencia, 
+                    None, 
+                    valor_nuevo
+                )
+            
             # Si es admin y especificó tipo_marcacion, respetarlo
             if es_admin and tipo_marcacion:
                 if tipo_marcacion == 'entrada':
+                    # Auditoría: Capturar estado previo
+                    valor_previo = {
+                        'hora_entrada': str(asistencia.hora_entrada) if asistencia.hora_entrada else None,
+                        'observaciones': asistencia.observaciones,
+                        'es_correccion': asistencia.es_correccion
+                    }
+                    
                     asistencia.hora_entrada = hora_para_marcar
                     if observacion:
                         asistencia.observaciones = observacion
                     asistencia.es_correccion = True
                     asistencia.corregido_por = agente_sesion
                     asistencia.save()
+                    
+                    # Auditoría: Registrar marcación de entrada por admin
+                    valor_nuevo = {
+                        'hora_entrada': str(hora_para_marcar),
+                        'observaciones': observacion,
+                        'es_correccion': True,
+                        'corregido_por': f"{agente_sesion.nombre} {agente_sesion.apellido}",
+                        'agente_afectado': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}",
+                        'agente_dni': agente_a_marcar.dni,
+                        'fecha': str(fecha_para_marcar),
+                        'marcacion_admin': True
+                    }
+                    crear_auditoria_asistencia(
+                        agente_sesion_id, 
+                        'MARCAR_ENTRADA_ADMIN', 
+                        asistencia.id_asistencia, 
+                        valor_previo, 
+                        valor_nuevo
+                    )
                     
                     return Response({
                         'success': True,
@@ -217,6 +364,13 @@ def marcar_asistencia(request):
                             'message': 'No se puede marcar salida sin entrada previa'
                         }, status=status.HTTP_400_BAD_REQUEST)
                     
+                    # Auditoría: Capturar estado previo
+                    valor_previo = {
+                        'hora_salida': str(asistencia.hora_salida) if asistencia.hora_salida else None,
+                        'observaciones': asistencia.observaciones,
+                        'es_correccion': asistencia.es_correccion
+                    }
+                    
                     asistencia.hora_salida = hora_para_marcar
                     if observacion:
                         if asistencia.observaciones:
@@ -226,6 +380,25 @@ def marcar_asistencia(request):
                     asistencia.es_correccion = True
                     asistencia.corregido_por = agente_sesion
                     asistencia.save()
+                    
+                    # Auditoría: Registrar marcación de salida por admin
+                    valor_nuevo = {
+                        'hora_salida': str(hora_para_marcar),
+                        'observaciones': asistencia.observaciones,
+                        'es_correccion': True,
+                        'corregido_por': f"{agente_sesion.nombre} {agente_sesion.apellido}",
+                        'agente_afectado': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}",
+                        'agente_dni': agente_a_marcar.dni,
+                        'fecha': str(fecha_para_marcar),
+                        'marcacion_admin': True
+                    }
+                    crear_auditoria_asistencia(
+                        agente_sesion_id, 
+                        'MARCAR_SALIDA_ADMIN', 
+                        asistencia.id_asistencia, 
+                        valor_previo, 
+                        valor_nuevo
+                    )
                     
                     return Response({
                         'success': True,
@@ -247,6 +420,24 @@ def marcar_asistencia(request):
                     asistencia.observaciones = observacion
                 asistencia.save()
                 
+                # Auditoría: Registrar marcación normal de entrada
+                valor_nuevo = {
+                    'hora_entrada': str(hora_para_marcar),
+                    'observaciones': observacion,
+                    'agente_nombre': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}",
+                    'agente_dni': agente_a_marcar.dni,
+                    'fecha': str(fecha_para_marcar),
+                    'marcacion_normal': True,
+                    'es_admin': es_admin
+                }
+                crear_auditoria_asistencia(
+                    agente_sesion_id, 
+                    'MARCAR_ENTRADA', 
+                    asistencia.id_asistencia, 
+                    None, 
+                    valor_nuevo
+                )
+                
                 return Response({
                     'success': True,
                     'message': f'Entrada registrada a las {hora_para_marcar.strftime("%H:%M")}',
@@ -260,6 +451,12 @@ def marcar_asistencia(request):
             
             elif asistencia.hora_salida is None:
                 # Marcar salida
+                valor_previo_salida = {
+                    'hora_salida': str(asistencia.hora_salida) if asistencia.hora_salida else None,
+                    'horas_efectivas': asistencia.horas_efectivas,
+                    'observaciones': asistencia.observaciones
+                }
+                
                 asistencia.hora_salida = hora_para_marcar
                 if observacion:
                     if asistencia.observaciones:
@@ -279,6 +476,25 @@ def marcar_asistencia(request):
                         asistencia.horas_efectivas = 0
                 
                 asistencia.save()
+                
+                # Auditoría: Registrar marcación normal de salida
+                valor_nuevo_salida = {
+                    'hora_salida': str(hora_para_marcar),
+                    'horas_efectivas': asistencia.horas_efectivas,
+                    'observaciones': asistencia.observaciones,
+                    'agente_nombre': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}",
+                    'agente_dni': agente_a_marcar.dni,
+                    'fecha': str(fecha_para_marcar),
+                    'marcacion_normal': True,
+                    'es_admin': es_admin
+                }
+                crear_auditoria_asistencia(
+                    agente_sesion_id, 
+                    'MARCAR_SALIDA', 
+                    asistencia.id_asistencia, 
+                    valor_previo_salida, 
+                    valor_nuevo_salida
+                )
                 
                 return Response({
                     'success': True,
@@ -438,7 +654,25 @@ def crear_tipo_licencia(request):
 
         serializer = TipoLicenciaSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            tipo_licencia = serializer.save()
+            
+            # Auditoría: Registrar creación de tipo de licencia
+            valor_nuevo = {
+                'codigo': tipo_licencia.codigo,
+                'descripcion': tipo_licencia.descripcion,
+                'creado_por': f"{agente.nombre} {agente.apellido}",
+                'id_tipo_licencia': tipo_licencia.id_tipo_licencia
+            }
+            crear_auditoria_tipo_licencia(
+                agente_id, 
+                'CREAR_TIPO_LICENCIA', 
+                tipo_licencia.id_tipo_licencia, 
+                None, 
+                valor_nuevo
+            )
+            
+            logger.info(f'Tipo de licencia creado por {agente.nombre} {agente.apellido}: {tipo_licencia.codigo}')
+            
             return Response({
                 'success': True,
                 'message': 'Tipo de licencia creado correctamente',
@@ -474,10 +708,36 @@ def actualizar_tipo_licencia(request, tipo_licencia_id):
             return Response({'success': False, 'message': 'No tiene permisos para actualizar tipos de licencia'}, status=status.HTTP_403_FORBIDDEN)
 
         tipo_licencia = TipoLicencia.objects.get(id_tipo_licencia=tipo_licencia_id)
+        
+        # Capturar valores previos para auditoría
+        valor_previo = {
+            'codigo': tipo_licencia.codigo,
+            'descripcion': tipo_licencia.descripcion,
+            'id_tipo_licencia': tipo_licencia.id_tipo_licencia
+        }
+        
         serializer = TipoLicenciaSerializer(tipo_licencia, data=request.data, partial=True)
 
         if serializer.is_valid():
-            serializer.save()
+            tipo_licencia_actualizado = serializer.save()
+            
+            # Auditoría: Registrar actualización de tipo de licencia
+            valor_nuevo = {
+                'codigo': tipo_licencia_actualizado.codigo,
+                'descripcion': tipo_licencia_actualizado.descripcion,
+                'actualizado_por': f"{agente.nombre} {agente.apellido}",
+                'id_tipo_licencia': tipo_licencia_actualizado.id_tipo_licencia
+            }
+            crear_auditoria_tipo_licencia(
+                agente_id, 
+                'ACTUALIZAR_TIPO_LICENCIA', 
+                tipo_licencia_id, 
+                valor_previo, 
+                valor_nuevo
+            )
+            
+            logger.info(f'Tipo de licencia actualizado por {agente.nombre} {agente.apellido}: {tipo_licencia.codigo}')
+            
             return Response({
                 'success': True,
                 'message': 'Tipo de licencia actualizado correctamente',
@@ -511,7 +771,30 @@ def eliminar_tipo_licencia(request, tipo_licencia_id):
             return Response({'success': False, 'message': 'No tiene permisos para eliminar tipos de licencia'}, status=status.HTTP_403_FORBIDDEN)
 
         tipo_licencia = TipoLicencia.objects.get(id_tipo_licencia=tipo_licencia_id)
+        
+        # Auditoría: Capturar datos antes de eliminar
+        valor_previo = {
+            'codigo': tipo_licencia.codigo,
+            'descripcion': tipo_licencia.descripcion,
+            'id_tipo_licencia': tipo_licencia.id_tipo_licencia,
+            'eliminado_por': f"{agente.nombre} {agente.apellido}"
+        }
+        tipo_licencia_info = f"ID: {tipo_licencia.id_tipo_licencia}, Código: {tipo_licencia.codigo}"
+        tipo_licencia_id_para_auditoria = tipo_licencia.id_tipo_licencia
+        
+        # Eliminar el tipo de licencia
         tipo_licencia.delete()
+        
+        # Auditoría: Registrar eliminación
+        crear_auditoria_tipo_licencia(
+            agente_id, 
+            'ELIMINAR_TIPO_LICENCIA', 
+            tipo_licencia_id_para_auditoria, 
+            valor_previo, 
+            None
+        )
+        
+        logger.info(f'Tipo de licencia eliminado por {agente.nombre} {agente.apellido}: {tipo_licencia_info}')
 
         return Response({'success': True, 'message': 'Tipo de licencia eliminado correctamente'}, status=status.HTTP_204_NO_CONTENT)
 
@@ -760,6 +1043,18 @@ def corregir_asistencia(request, asistencia_id):
         
         asistencia = Asistencia.objects.get(id_asistencia=asistencia_id)
         
+        # Auditoría: Capturar estado previo ANTES de hacer cambios
+        valor_previo = {
+            'hora_entrada': str(asistencia.hora_entrada) if asistencia.hora_entrada else None,
+            'hora_salida': str(asistencia.hora_salida) if asistencia.hora_salida else None,
+            'observaciones': asistencia.observaciones,
+            'es_correccion': asistencia.es_correccion,
+            'corregido_por': f"{asistencia.corregido_por.nombre} {asistencia.corregido_por.apellido}" if asistencia.corregido_por else None,
+            'agente_nombre': f"{asistencia.id_agente.nombre} {asistencia.id_agente.apellido}",
+            'agente_dni': asistencia.id_agente.dni,
+            'fecha': str(asistencia.fecha)
+        }
+        
         # Validar y procesar horas
         hora_entrada = request.data.get('hora_entrada')
         hora_salida = request.data.get('hora_salida')
@@ -808,6 +1103,28 @@ def corregir_asistencia(request, asistencia_id):
                 asistencia.observaciones = f"CORRECCIÓN: {observacion}"
         
         asistencia.save()
+        
+        # Auditoría: Registrar corrección de asistencia
+        valor_nuevo = {
+            'hora_entrada': str(asistencia.hora_entrada) if asistencia.hora_entrada else None,
+            'hora_salida': str(asistencia.hora_salida) if asistencia.hora_salida else None,
+            'observaciones': asistencia.observaciones,
+            'es_correccion': True,
+            'corregido_por': f"{agente.nombre} {agente.apellido}",
+            'agente_nombre': f"{asistencia.id_agente.nombre} {asistencia.id_agente.apellido}",
+            'agente_dni': asistencia.id_agente.dni,
+            'fecha': str(asistencia.fecha),
+            'motivo_correccion': observacion,
+            'hora_entrada_original': valor_previo['hora_entrada'],
+            'hora_salida_original': valor_previo['hora_salida']
+        }
+        crear_auditoria_asistencia(
+            agente_id, 
+            'CORREGIR_ASISTENCIA', 
+            asistencia.id_asistencia, 
+            valor_previo, 
+            valor_nuevo
+        )
         
         serializer = AsistenciaSerializer(asistencia)
         
@@ -1079,6 +1396,28 @@ def crear_licencia_impl(request):
         if serializer.is_valid():
             licencia = serializer.save()
             
+            # Auditoría: Registrar creación de licencia
+            valor_nuevo = {
+                'agente_licencia': f"{agente_licencia.nombre} {agente_licencia.apellido}",
+                'agente_dni': agente_licencia.dni,
+                'tipo_licencia': licencia.id_tipo_licencia.descripcion if licencia.id_tipo_licencia else 'N/A',
+                'fecha_desde': str(fecha_desde_obj),
+                'fecha_hasta': str(fecha_hasta_obj),
+                'estado': estado_inicial,
+                'observaciones': licencia.observaciones,
+                'justificacion': licencia.justificacion,
+                'solicitada_por': f"{agente_solicitante.nombre} {agente_solicitante.apellido}",
+                'es_auto_aprobada': estado_inicial == 'aprobada',
+                'area': agente_licencia.id_area.nombre if agente_licencia.id_area else None
+            }
+            crear_auditoria_licencia(
+                agente_id, 
+                'CREAR_LICENCIA', 
+                licencia.id_licencia, 
+                None, 
+                valor_nuevo
+            )
+            
             return Response({
                 'success': True,
                 'message': f'Licencia {"asignada" if estado_inicial == "aprobada" else "solicitada"} correctamente',
@@ -1129,6 +1468,18 @@ def aprobar_licencia(request, licencia_id):
         
         licencia = Licencia.objects.select_related('id_agente').get(id_licencia=licencia_id)
         
+        # Auditoría: Capturar estado previo
+        valor_previo = {
+            'estado': licencia.estado,
+            'aprobada_por': f"{licencia.aprobada_por.nombre} {licencia.aprobada_por.apellido}" if licencia.aprobada_por else None,
+            'fecha_aprobacion': str(licencia.fecha_aprobacion) if licencia.fecha_aprobacion else None,
+            'observaciones_aprobacion': licencia.observaciones_aprobacion,
+            'agente_licencia': f"{licencia.id_agente.nombre} {licencia.id_agente.apellido}",
+            'agente_dni': licencia.id_agente.dni,
+            'fecha_desde': str(licencia.fecha_desde),
+            'fecha_hasta': str(licencia.fecha_hasta)
+        }
+        
         # Validar que esté pendiente
         if licencia.estado != 'pendiente':
             return Response({
@@ -1160,11 +1511,32 @@ def aprobar_licencia(request, licencia_id):
             }, status=status.HTTP_403_FORBIDDEN)
         
         # Actualizar licencia
+        observaciones_aprobacion = request.data.get('observaciones', '')
         licencia.estado = 'aprobada'
         licencia.aprobada_por = agente
         licencia.fecha_aprobacion = timezone.now().date()
-        licencia.observaciones_aprobacion = request.data.get('observaciones', '')
+        licencia.observaciones_aprobacion = observaciones_aprobacion
         licencia.save()
+        
+        # Auditoría: Registrar aprobación de licencia
+        valor_nuevo = {
+            'estado': 'aprobada',
+            'aprobada_por': f"{agente.nombre} {agente.apellido}",
+            'fecha_aprobacion': str(licencia.fecha_aprobacion),
+            'observaciones_aprobacion': observaciones_aprobacion,
+            'agente_licencia': f"{licencia.id_agente.nombre} {licencia.id_agente.apellido}",
+            'agente_dni': licencia.id_agente.dni,
+            'fecha_desde': str(licencia.fecha_desde),
+            'fecha_hasta': str(licencia.fecha_hasta),
+            'tipo_licencia': licencia.id_tipo_licencia.descripcion if licencia.id_tipo_licencia else 'N/A'
+        }
+        crear_auditoria_licencia(
+            agente_id, 
+            'APROBAR_LICENCIA', 
+            licencia.id_licencia, 
+            valor_previo, 
+            valor_nuevo
+        )
         
         serializer = LicenciaSerializer(licencia)
         
@@ -1212,6 +1584,18 @@ def rechazar_licencia(request, licencia_id):
         
         licencia = Licencia.objects.select_related('id_agente').get(id_licencia=licencia_id)
         
+        # Auditoría: Capturar estado previo
+        valor_previo_rechazo = {
+            'estado': licencia.estado,
+            'rechazada_por': f"{licencia.rechazada_por.nombre} {licencia.rechazada_por.apellido}" if licencia.rechazada_por else None,
+            'fecha_rechazo': str(licencia.fecha_rechazo) if licencia.fecha_rechazo else None,
+            'motivo_rechazo': licencia.motivo_rechazo,
+            'agente_licencia': f"{licencia.id_agente.nombre} {licencia.id_agente.apellido}",
+            'agente_dni': licencia.id_agente.dni,
+            'fecha_desde': str(licencia.fecha_desde),
+            'fecha_hasta': str(licencia.fecha_hasta)
+        }
+        
         # Validar que esté pendiente
         if licencia.estado != 'pendiente':
             return Response({
@@ -1253,6 +1637,26 @@ def rechazar_licencia(request, licencia_id):
         licencia.fecha_rechazo = timezone.now().date()
         licencia.motivo_rechazo = motivo_rechazo
         licencia.save()
+        
+        # Auditoría: Registrar rechazo de licencia
+        valor_nuevo_rechazo = {
+            'estado': 'rechazada',
+            'rechazada_por': f"{agente.nombre} {agente.apellido}",
+            'fecha_rechazo': str(licencia.fecha_rechazo),
+            'motivo_rechazo': motivo_rechazo,
+            'agente_licencia': f"{licencia.id_agente.nombre} {licencia.id_agente.apellido}",
+            'agente_dni': licencia.id_agente.dni,
+            'fecha_desde': str(licencia.fecha_desde),
+            'fecha_hasta': str(licencia.fecha_hasta),
+            'tipo_licencia': licencia.id_tipo_licencia.descripcion if licencia.id_tipo_licencia else 'N/A'
+        }
+        crear_auditoria_licencia(
+            agente_id, 
+            'RECHAZAR_LICENCIA', 
+            licencia.id_licencia, 
+            valor_previo_rechazo, 
+            valor_nuevo_rechazo
+        )
         
         serializer = LicenciaSerializer(licencia)
         
@@ -1300,11 +1704,40 @@ def eliminar_licencia(request, licencia_id):
         
         licencia = Licencia.objects.get(id_licencia=licencia_id)
         
+        # Auditoría: Capturar datos completos antes de eliminar
+        valor_previo_eliminacion = {
+            'id_licencia': licencia.id_licencia,
+            'agente_licencia': f"{licencia.id_agente.nombre} {licencia.id_agente.apellido}",
+            'agente_dni': licencia.id_agente.dni,
+            'tipo_licencia': licencia.id_tipo_licencia.descripcion if licencia.id_tipo_licencia else 'N/A',
+            'fecha_desde': str(licencia.fecha_desde),
+            'fecha_hasta': str(licencia.fecha_hasta),
+            'estado': licencia.estado,
+            'observaciones': licencia.observaciones,
+            'justificacion': licencia.justificacion,
+            'solicitada_por': f"{licencia.solicitada_por.nombre} {licencia.solicitada_por.apellido}" if licencia.solicitada_por else None,
+            'aprobada_por': f"{licencia.aprobada_por.nombre} {licencia.aprobada_por.apellido}" if licencia.aprobada_por else None,
+            'rechazada_por': f"{licencia.rechazada_por.nombre} {licencia.rechazada_por.apellido}" if licencia.rechazada_por else None,
+            'fecha_aprobacion': str(licencia.fecha_aprobacion) if licencia.fecha_aprobacion else None,
+            'fecha_rechazo': str(licencia.fecha_rechazo) if licencia.fecha_rechazo else None,
+            'eliminada_por': f"{agente.nombre} {agente.apellido}"
+        }
+        
         # Guardar información para el log
         licencia_info = f"ID: {licencia.id_licencia}, Agente: {licencia.id_agente.nombre} {licencia.id_agente.apellido}, Estado: {licencia.estado}"
+        licencia_id_para_auditoria = licencia.id_licencia
         
         # Eliminar la licencia
         licencia.delete()
+        
+        # Auditoría: Registrar eliminación de licencia
+        crear_auditoria_licencia(
+            agente_id, 
+            'ELIMINAR_LICENCIA', 
+            licencia_id_para_auditoria, 
+            valor_previo_eliminacion, 
+            None
+        )
         
         logger.info(f'Licencia eliminada por administrador {agente.nombre} {agente.apellido}: {licencia_info}')
         
@@ -1398,6 +1831,19 @@ def marcar_como_ausente(request, asistencia_id):
         
         asistencia = Asistencia.objects.get(id_asistencia=asistencia_id)
         
+        # Auditoría: Capturar estado previo
+        valor_previo = {
+            'hora_entrada': str(asistencia.hora_entrada) if asistencia.hora_entrada else None,
+            'hora_salida': str(asistencia.hora_salida) if asistencia.hora_salida else None,
+            'horas_efectivas': asistencia.horas_efectivas,
+            'observaciones': asistencia.observaciones,
+            'marcacion_entrada_automatica': asistencia.marcacion_entrada_automatica,
+            'marcacion_salida_automatica': asistencia.marcacion_salida_automatica,
+            'agente_nombre': f"{asistencia.id_agente.nombre} {asistencia.id_agente.apellido}",
+            'agente_dni': asistencia.id_agente.dni,
+            'fecha': str(asistencia.fecha)
+        }
+        
         # Validar observación obligatoria
         observacion = request.data.get('observacion', '').strip()
         if not observacion:
@@ -1422,6 +1868,28 @@ def marcar_como_ausente(request, asistencia_id):
             asistencia.observaciones = f"MARCADO COMO AUSENTE: {observacion}"
         
         asistencia.save()
+        
+        # Auditoría: Registrar marcado como ausente
+        valor_nuevo = {
+            'hora_entrada': None,
+            'hora_salida': None,
+            'horas_efectivas': None,
+            'observaciones': asistencia.observaciones,
+            'marcacion_entrada_automatica': False,
+            'marcacion_salida_automatica': False,
+            'agente_nombre': f"{asistencia.id_agente.nombre} {asistencia.id_agente.apellido}",
+            'agente_dni': asistencia.id_agente.dni,
+            'fecha': str(asistencia.fecha),
+            'motivo_ausencia': observacion,
+            'marcado_por': f"{agente.nombre} {agente.apellido}"
+        }
+        crear_auditoria_asistencia(
+            agente_id, 
+            'MARCAR_AUSENTE', 
+            asistencia.id_asistencia, 
+            valor_previo, 
+            valor_nuevo
+        )
         
         logger.info(
             f'Agente {asistencia.id_agente.id_agente} marcado como ausente '
