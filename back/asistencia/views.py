@@ -142,11 +142,23 @@ def marcar_asistencia(request):
                 }, status=status.HTTP_403_FORBIDDEN)
         
         # DNI correcto, proceder con marcación
-        hoy = date.today()
+        fecha_especifica_str = request.data.get('fecha_especifica')  # Nueva: fecha específica en formato YYYY-MM-DD
         
-        # Verificar si es un día laborable
-        if not es_dia_laborable(hoy):
-            motivo = get_motivo_no_laborable(hoy)
+        # Determinar la fecha a usar
+        if fecha_especifica_str and es_admin:
+            try:
+                fecha_para_marcar = datetime.strptime(fecha_especifica_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({
+                    'success': False,
+                    'message': 'Formato de fecha inválido. Use YYYY-MM-DD (ej: 2025-11-24)'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            fecha_para_marcar = date.today()
+        
+        # Verificar si es un día laborable (solo para fechas actuales, no para correcciones históricas)
+        if fecha_para_marcar == date.today() and not es_dia_laborable(fecha_para_marcar):
+            motivo = get_motivo_no_laborable(fecha_para_marcar)
             return Response({
                 'success': False,
                 'message': f'No se puede registrar asistencia en {motivo}',
@@ -170,7 +182,7 @@ def marcar_asistencia(request):
             # Buscar o crear asistencia del día
             asistencia, created = Asistencia.objects.get_or_create(
                 id_agente=agente_a_marcar,
-                fecha=hoy,
+                fecha=fecha_para_marcar,
                 defaults={
                     'id_area': agente_a_marcar.id_area,
                     'hora_entrada': None,
@@ -193,7 +205,7 @@ def marcar_asistencia(request):
                         'message': f'Entrada registrada a las {hora_para_marcar.strftime("%H:%M")} por administrador',
                         'tipo': 'entrada',
                         'data': {
-                            'fecha': hoy,
+                            'fecha': fecha_para_marcar,
                             'hora_entrada': hora_para_marcar,
                             'agente': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}"
                         }
@@ -220,7 +232,7 @@ def marcar_asistencia(request):
                         'message': f'Salida registrada a las {hora_para_marcar.strftime("%H:%M")} por administrador',
                         'tipo': 'salida',
                         'data': {
-                            'fecha': hoy,
+                            'fecha': fecha_para_marcar,
                             'hora_entrada': asistencia.hora_entrada,
                             'hora_salida': hora_para_marcar,
                             'agente': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}"
@@ -240,7 +252,7 @@ def marcar_asistencia(request):
                     'message': f'Entrada registrada a las {hora_para_marcar.strftime("%H:%M")}',
                     'tipo': 'entrada',
                     'data': {
-                        'fecha': hoy,
+                        'fecha': fecha_para_marcar,
                         'hora_entrada': hora_para_marcar,
                         'agente': f"{agente_a_marcar.nombre} {agente_a_marcar.apellido}"
                     }
@@ -257,8 +269,8 @@ def marcar_asistencia(request):
                 
                 # Calcular horas efectivas solo si ambas están presentes
                 if asistencia.hora_entrada:
-                    entrada_dt = timezone.make_aware(timezone.datetime.combine(hoy, asistencia.hora_entrada))
-                    salida_dt = timezone.make_aware(timezone.datetime.combine(hoy, hora_para_marcar))
+                    entrada_dt = timezone.make_aware(timezone.datetime.combine(fecha_para_marcar, asistencia.hora_entrada))
+                    salida_dt = timezone.make_aware(timezone.datetime.combine(fecha_para_marcar, hora_para_marcar))
                     if salida_dt > entrada_dt:
                         diferencia = salida_dt - entrada_dt
                         horas_efectivas = diferencia.total_seconds() / 3600  # Convertir a horas
@@ -273,7 +285,7 @@ def marcar_asistencia(request):
                     'message': f'Salida registrada a las {hora_para_marcar.strftime("%H:%M")}',
                     'tipo': 'salida',
                     'data': {
-                        'fecha': hoy,
+                        'fecha': fecha_para_marcar,
                         'hora_entrada': asistencia.hora_entrada,
                         'hora_salida': hora_para_marcar,
                         'horas_efectivas': asistencia.horas_efectivas,
@@ -288,7 +300,7 @@ def marcar_asistencia(request):
                     'message': 'Ya has registrado entrada y salida para hoy',
                     'tipo': 'ya_completo',
                     'data': {
-                        'fecha': hoy,
+                        'fecha': fecha_para_marcar,
                         'hora_entrada': asistencia.hora_entrada,
                         'hora_salida': asistencia.hora_salida
                     }

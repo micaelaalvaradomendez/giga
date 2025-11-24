@@ -268,7 +268,23 @@ class AsistenciasController {
 			return;
 		}
 
-		this.asistenciaEditando.set(asistencia);
+		// Validar que tenga los datos mínimos necesarios
+		if (!asistencia.agente_dni) {
+			console.error('❌ Error: Asistencia sin DNI del agente:', {
+				asistencia_completa: asistencia,
+				tiene_agente_dni: !!asistencia.agente_dni,
+				tiene_dni: !!asistencia.dni,
+				tiene_id_agente: !!asistencia.id_agente,
+				keys: Object.keys(asistencia)
+			});
+			alert('Error: Los datos del agente están incompletos (falta DNI). No se puede proceder con la corrección.');
+			return;
+		}
+
+		// Solo usar los datos tal como vienen (sin normalización excesiva)
+		const asistenciaNormalizada = asistencia;
+
+		this.asistenciaEditando.set(asistenciaNormalizada);
 		this.observacionEdit.set('');
 		
 		// SIEMPRE iniciar en modo normal (sin checkbox marcado)
@@ -277,16 +293,17 @@ class AsistenciasController {
 		this.horaSalida.set('');
 		this.usarHoraEspecifica.set(false);
 		
-		console.log('📝 Abriendo modal para asistencia:', {
-			id_asistencia: asistencia.id_asistencia,
-			agente_nombre: asistencia.agente_nombre,
-			agente_dni: asistencia.agente_dni,
-			id_agente: asistencia.id_agente,
-			tiene_entrada: !!asistencia.hora_entrada,
-			tiene_salida: !!asistencia.hora_salida,
-			fecha: asistencia.fecha,
-			area_nombre: asistencia.area_nombre,
-			estructura_completa: asistencia
+		console.log('📝 Abriendo modal para asistencia (normalizada):', {
+			id_asistencia: asistenciaNormalizada.id_asistencia,
+			agente_nombre: asistenciaNormalizada.agente_nombre,
+			agente_dni: asistenciaNormalizada.agente_dni,
+			id_agente: asistenciaNormalizada.id_agente,
+			tiene_entrada: !!asistenciaNormalizada.hora_entrada,
+			tiene_salida: !!asistenciaNormalizada.hora_salida,
+			fecha: asistenciaNormalizada.fecha,
+			area_nombre: asistenciaNormalizada.area_nombre,
+			estructura_original: asistencia,
+			estructura_normalizada: asistenciaNormalizada
 		});
 		
 		this.modalCorreccion.set(true);
@@ -342,6 +359,7 @@ class AsistenciasController {
 			agente: asistencia?.agente_nombre,
 			dni: asistencia?.agente_dni,
 			id_agente: asistencia?.id_agente,
+			fecha: asistencia?.fecha,
 			usar_hora: usarHora,
 			hora_entrada: horaEntrada,
 			hora_especifica: horaEspecifica,
@@ -357,7 +375,12 @@ class AsistenciasController {
 		}
 
 		if (!asistencia.agente_dni) {
-			console.error('❌ Falta DNI del agente:', asistencia);
+			console.error('❌ Falta DNI del agente:', {
+				asistencia: asistencia,
+				tiene_agente_dni: !!asistencia.agente_dni,
+				tiene_id_agente: !!asistencia.id_agente,
+				keys: Object.keys(asistencia)
+			});
 			return {
 				success: false,
 				message: `Error: El agente ${asistencia.agente_nombre || 'desconocido'} no tiene DNI registrado`
@@ -377,6 +400,11 @@ class AsistenciasController {
 				tipo_marcacion: 'entrada',
 				observacion: observacion || 'Marcación corregida por administrador'
 			};
+
+			// Agregar la fecha específica de la asistencia que se está editando
+			if (asistencia.fecha) {
+				requestBody.fecha_especifica = asistencia.fecha;
+			}
 
 			// Agregar hora específica si se proporciona
 			if (horaEspecifica) {
@@ -430,6 +458,7 @@ class AsistenciasController {
 			agente: asistencia?.agente_nombre,
 			dni: asistencia?.agente_dni,
 			id_agente: asistencia?.id_agente,
+			fecha: asistencia?.fecha,
 			tiene_entrada: !!asistencia?.hora_entrada,
 			tiene_salida: !!asistencia?.hora_salida,
 			usar_hora: usarHora,
@@ -445,7 +474,12 @@ class AsistenciasController {
 		}
 
 		if (!asistencia.agente_dni) {
-			console.error('❌ Falta DNI del agente para salida:', asistencia);
+			console.error('❌ Falta DNI del agente para salida:', {
+				asistencia: asistencia,
+				tiene_agente_dni: !!asistencia.agente_dni,
+				tiene_id_agente: !!asistencia.id_agente,
+				keys: Object.keys(asistencia)
+			});
 			return {
 				success: false,
 				message: `Error: El agente ${asistencia.agente_nombre || 'desconocido'} no tiene DNI registrado`
@@ -472,6 +506,11 @@ class AsistenciasController {
 				tipo_marcacion: 'salida',
 				observacion: observacion || 'Marcación corregida por administrador'
 			};
+
+			// Agregar la fecha específica de la asistencia que se está editando
+			if (asistencia.fecha) {
+				requestBody.fecha_especifica = asistencia.fecha;
+			}
 
 			// Agregar hora específica si se proporciona
 			if (horaEspecifica) {
@@ -604,6 +643,29 @@ class AsistenciasController {
 						return resultado_entrada;
 					}
 					resultado_final.messages.push('Entrada creada');
+					
+					// IMPORTANTE: Recargar datos después de crear la entrada para tener el id_asistencia
+					if (horaSalida) {
+						console.log('🔄 Recargando datos después de crear entrada...');
+						await this.cargarAsistencias();
+						
+						// Buscar la asistencia recién creada
+						let asistenciasActuales;
+						this.asistencias.subscribe(value => asistenciasActuales = value)();
+						
+						const asistenciaActualizada = asistenciasActuales.find(a => 
+							a.agente_dni === asistencia.agente_dni && 
+							a.fecha === asistencia.fecha &&
+							a.hora_entrada !== null
+						);
+						
+						if (asistenciaActualizada) {
+							console.log('✅ Asistencia actualizada encontrada:', asistenciaActualizada);
+							this.asistenciaEditando.set(asistenciaActualizada);
+						} else {
+							console.warn('⚠️ No se encontró la asistencia actualizada');
+						}
+					}
 				}
 
 				// Marcar salida si se especifica (solo si también hay entrada)

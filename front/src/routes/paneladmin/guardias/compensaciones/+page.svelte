@@ -372,6 +372,26 @@
       return;
     }
 
+    // Validar que la hora de finalización real sea diferente a la hora programada
+    const guardiaData = guardias.find(
+      (g) => g.id_guardia == guardiaSeleccionada,
+    );
+
+    if (guardiaData && guardiaData.hora_fin) {
+      // Comparar las horas (formato HH:MM)
+      const horaFinProgramada = guardiaData.hora_fin.slice(0, 5);
+      const horaFinReal = nuevaCompensacion.hora_fin_real.slice(0, 5);
+      
+      if (horaFinProgramada === horaFinReal) {
+        mostrarConfirmacion(
+          "Hora de finalización incorrecta",
+          "La hora de finalización real no puede ser igual a la hora programada de la guardia. Si finalizó a la hora correcta, no corresponde generar una compensación por horas extra.",
+          "warning",
+        );
+        return;
+      }
+    }
+
     cargando = true;
     error = null;
 
