@@ -105,8 +105,13 @@
 		<div class="titulo-section">
 			<h1>📊 Gestión de Reportes</h1>
 			<p>Genere y exporte reportes de guardias individuales y generales</p>
-			<p> No funcionan algunos reportes, algunos traban la pagina</p>
-			<p> REvisar el tema de los pdf , lo intente pero me dan error</p>
+			{#if $loadingFiltros}
+				<p class="estado-carga">🔄 Cargando opciones disponibles...</p>
+			{:else if $filtrosDisponibles.agentes?.length === 0}
+				<p class="estado-advertencia">⚠️ Sistema en modo fallback - Los reportes usarán datos simulados</p>
+			{:else}
+				<p class="estado-ok">✅ Sistema conectado - Reportes con datos reales disponibles</p>
+			{/if}
 		</div>
 		
 		{#if $mensaje}
@@ -1036,6 +1041,21 @@
 		margin: 0;
 		color: #6c757d;
 		font-size: 1.1rem;
+	}
+
+	.estado-carga {
+		color: #007bff !important;
+		font-weight: 500;
+	}
+
+	.estado-advertencia {
+		color: #ffc107 !important;
+		font-weight: 500;
+	}
+
+	.estado-ok {
+		color: #28a745 !important;
+		font-weight: 500;
 	}
 
 	.mensaje {

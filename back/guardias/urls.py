@@ -46,6 +46,15 @@ urlpatterns = [
             '/api/compensaciones/aprobar-lote/',
             '/api/compensaciones/resumen-mensual/',
             '/api/compensaciones/reporte-compensaciones/',
+            # Endpoints de reportes
+            '/api/guardias/reporte_individual/',
+            '/api/guardias/reporte_general/',
+            '/api/guardias/reporte_horas_trabajadas/',
+            '/api/guardias/reporte_parte_diario/',
+            '/api/guardias/reporte_incumplimiento_normativo/',
+            '/api/guardias/exportar_pdf/',
+            '/api/guardias/exportar_excel/',
+            '/api/cronogramas/reporte_plus_simplificado/',
         ]
     }), name='guardias_index'),
 ]
