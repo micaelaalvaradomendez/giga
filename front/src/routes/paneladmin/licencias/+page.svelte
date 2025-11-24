@@ -11,6 +11,12 @@
 		obtenerPermisos, puedeAprobarLicencia, formatearFecha, calcularDiasLicencia,
 		obtenerColorEstado, obtenerIconoEstado
 	} from '$lib/paneladmin/controllers/licenciasController.js';
+	
+	// Componentes modales
+	import ModalSolicitar from '$lib/componentes/ModalSolicitar.svelte';
+	import ModalAsignar from '$lib/componentes/ModalAsignar.svelte';
+	import ModalAprobar from '$lib/componentes/ModalAprobar.svelte';
+	import ModalRechazar from '$lib/componentes/ModalRechazar.svelte';
 
 	// Estado principal - alternar entre gestión de licencias y tipos
 	let vistaActual = 'licencias'; // 'licencias' o 'tipos'
@@ -19,6 +25,43 @@
 	let userInfo = null;
 	let permisos = {};
 	let areas = [];
+	
+	// Variables reactivas para debug
+	$: console.log('🏢 Áreas actualizadas:', areas.length, areas);
+	$: console.log('📋 Tipos licencia actualizados:', $tiposLicencia.length, $tiposLicencia);
+	$: console.log('🎯 Filtros actualizados:', $filtros);
+
+	// Función de test para verificar conectividad
+	async function testearConectividad() {
+		console.log('🧪 PROBANDO CONECTIVIDAD...');
+		
+		// Test áreas
+		try {
+			console.log('🧪 Probando getAreas()...');
+			const areasTest = await personasService.getAreas();
+			console.log('✅ Áreas test resultado:', areasTest);
+		} catch (err) {
+			console.error('❌ Error en áreas test:', err);
+		}
+		
+		// Test tipos licencia
+		try {
+			console.log('🧪 Probando getTiposLicencia()...');
+			const tiposTest = await asistenciaService.getTiposLicencia();
+			console.log('✅ Tipos test resultado:', tiposTest);
+		} catch (err) {
+			console.error('❌ Error en tipos test:', err);
+		}
+		
+		// Test licencias
+		try {
+			console.log('🧪 Probando getLicencias()...');
+			const licenciasTest = await asistenciaService.getLicencias();
+			console.log('✅ Licencias test resultado:', licenciasTest);
+		} catch (err) {
+			console.error('❌ Error en licencias test:', err);
+		}
+	}
 	
 	// Modal states para licencias
 	let showModalCrear = false;
@@ -101,27 +144,40 @@
 	}
 
 	async function cargarDatosIniciales() {
-		console.log('Cargando datos iniciales...');
+		console.log('🚀 Cargando datos iniciales...');
 		
 		// Cargar tipos de licencia para los selectores
 		try {
-			console.log('Cargando tipos de licencia...');
+			console.log('📋 Cargando tipos de licencia...');
 			await cargarTiposLicencia();
-			console.log('Tipos de licencia cargados');
+			// Verificar si se cargaron correctamente
+			const tiposActuales = tiposLicencia;
+			tiposActuales.subscribe(value => {
+				console.log('✅ Tipos de licencia en store:', value.length, value);
+			});
 		} catch (err) {
-			console.error('Error cargando tipos de licencia:', err);
+			console.error('❌ Error cargando tipos de licencia:', err);
 		}
 		
 		// Cargar todas las áreas para filtros
 		try {
-			console.log('Cargando áreas...');
+			console.log('🏢 Cargando áreas...');
 			const areasResponse = await personasService.getAreas();
-			if (areasResponse?.data?.success) {
-				areas = areasResponse.data.data || [];
-				console.log('Áreas cargadas:', areas.length);
+			console.log('🏢 Respuesta de áreas:', areasResponse);
+			if (areasResponse?.data?.success && areasResponse?.data?.data?.results) {
+				// La API de áreas devuelve { success: true, data: { results: [...], count: N } }
+				areas = areasResponse.data.data.results || [];
+				console.log('✅ Áreas cargadas:', areas.length, areas);
+			} else if (areasResponse?.data?.results) {
+				// Formato alternativo directo
+				areas = areasResponse.data.results || [];
+				console.log('✅ Áreas cargadas (formato alt):', areas.length, areas);
+			} else {
+				console.warn('⚠️ No se pudieron cargar las áreas:', areasResponse);
+				areas = [];
 			}
 		} catch (err) {
-			console.error('Error cargando áreas:', err);
+			console.error('❌ Error cargando áreas:', err);
 			areas = [];
 		}
 		
@@ -148,6 +204,7 @@
 
 	// Funciones para carga de agentes por área
 	async function cargarAgentesPorArea(areaId) {
+		console.log('🔄 Cargando agentes para área:', areaId);
 		if (!areaId) {
 			agentesDelArea = [];
 			return;
@@ -155,9 +212,11 @@
 
 		try {
 			cargandoAgentes = true;
-			const response = await personasService.getAgentesPorArea(areaId);
+			const response = await personasService.getAgentesByArea(areaId);
+			console.log('📋 Respuesta agentes por área:', response);
 			if (response?.data?.success) {
 				agentesDelArea = response.data.data || [];
+				console.log('✅ Agentes cargados:', agentesDelArea.length);
 			} else {
 				console.error('Error cargando agentes:', response?.data?.message);
 				agentesDelArea = [];
@@ -172,6 +231,9 @@
 
 	// Funciones para modales de licencias
 	function abrirModalCrear() {
+		console.log('🆕 Abriendo modal crear licencia');
+		console.log('🧑 Usuario actual:', userInfo);
+		console.log('📋 Tipos disponibles:', $tiposLicencia.length);
 		licenciaSeleccionada = null;
 		formLicencia = {
 			id_agente: null,
@@ -185,6 +247,9 @@
 	}
 
 	function abrirModalAsignar() {
+		console.log('📝 Abriendo modal asignar licencia');
+		console.log('🏢 Áreas disponibles:', areas.length);
+		console.log('📋 Tipos disponibles:', $tiposLicencia.length);
 		areaSeleccionada = null;
 		agentesDelArea = [];
 		formLicencia = {
@@ -313,6 +378,8 @@
 
 	// Funciones para filtros
 	function aplicarFiltros() {
+		console.log('🔍 Aplicando filtros:', $filtros);
+		console.log('📊 Datos disponibles - Áreas:', areas.length, 'Tipos:', $tiposLicencia.length);
 		cargarLicencias($filtros);
 	}
 
@@ -463,6 +530,9 @@
 				<button class="btn-refresh" on:click={() => cargarLicencias()}>
 					🔄 Actualizar
 				</button>
+				<button class="btn-warning" on:click={testearConectividad} style="background: orange; color: white;">
+					🧪 Test API
+				</button>
 			</div>
 		{:else}
 			<div class="header-actions">
@@ -521,7 +591,7 @@
 						<input type="date" id="fecha_hasta" bind:value={$filtros.fecha_hasta} on:change={aplicarFiltros} />
 					</div>
 					<div class="filtro-group">
-						<label for="area_filter">Área</label>
+						<label for="area_filter">Área ({areas.length} áreas)</label>
 						<select id="area_filter" bind:value={$filtros.area_id} on:change={aplicarFiltros}>
 							<option value={null}>Todas las áreas</option>
 							{#each areas as area}
@@ -539,7 +609,7 @@
 						</select>
 					</div>
 					<div class="filtro-group">
-						<label for="tipo_filter">Tipo</label>
+						<label for="tipo_filter">Tipo ({$tiposLicencia.length} tipos)</label>
 						<select id="tipo_filter" bind:value={$filtros.tipo_licencia_id} on:change={aplicarFiltros}>
 							<option value={null}>Todos los tipos</option>
 							{#each $tiposLicencia as tipo}
@@ -550,6 +620,10 @@
 					<div class="filtro-group">
 						<button class="btn-clear" on:click={limpiarTodosFiltros}>Limpiar Filtros</button>
 					</div>
+				</div>
+				<!-- Debug info -->
+				<div style="font-size: 11px; color: #666; margin-top: 10px;">
+					Debug: Filtros = {JSON.stringify($filtros)} | Áreas: {areas.length} | Tipos: {$tiposLicencia.length}
 				</div>
 			</div>
 
@@ -592,27 +666,36 @@
 						</thead>
 						<tbody>
 							{#each $licenciasFiltradas as licencia (licencia.id_licencia)}
+								<!-- Debug: Ver estructura completa de la licencia -->
+								{#if licencia.id_licencia === ($licenciasFiltradas[0]?.id_licencia)}
+									<tr style="background: #f0f8ff; font-size: 10px;">
+										<td colspan="8">
+											<strong>DEBUG Licencia:</strong><br>
+											<pre style="font-size: 9px; max-height: 100px; overflow: auto;">{JSON.stringify(licencia, null, 2)}</pre>
+										</td>
+									</tr>
+								{/if}
 								<tr>
 									<td>
 										<div class="agente-info">
-											<strong>{licencia.agente?.nombre} {licencia.agente?.apellido}</strong>
-											<small>{licencia.agente?.numero_agente}</small>
+											<strong>{licencia.agente?.nombre || 'SIN NOMBRE'} {licencia.agente?.apellido || 'SIN APELLIDO'}</strong>
+											<small>{licencia.agente?.numero_agente || 'SIN NUMERO'}</small>
 										</div>
 									</td>
-									<td>{licencia.agente?.area?.nombre || 'N/A'}</td>
+									<td>{licencia.agente?.area?.nombre || licencia.area_nombre || 'N/A'}</td>
 									<td>
-										<span class="tipo-badge">{licencia.tipo_licencia?.nombre}</span>
+										<span class="tipo-badge">{licencia.tipo_licencia?.nombre || licencia.tipo_nombre || 'SIN TIPO'}</span>
 									</td>
 									<td>
-										{formatearFecha(licencia.fecha_desde)} - {formatearFecha(licencia.fecha_hasta)}
+										{formatearFecha(licencia.fecha_desde) || licencia.fecha_desde || 'SIN FECHA'} - {formatearFecha(licencia.fecha_hasta) || licencia.fecha_hasta || 'SIN FECHA'}
 									</td>
-									<td class="text-center">{licencia.dias_solicitados}</td>
+									<td class="text-center">{licencia.dias_solicitados || licencia.dias || 'SIN DÍAS'}</td>
 									<td>
 										<span class="estado-badge estado-{licencia.estado}">
-											{obtenerIconoEstado(licencia.estado)} {licencia.estado}
+											{obtenerIconoEstado(licencia.estado)} {licencia.estado || 'SIN ESTADO'}
 										</span>
 									</td>
-									<td>{formatearFecha(licencia.fecha_creacion)}</td>
+									<td>{formatearFecha(licencia.fecha_creacion) || licencia.fecha_creacion || 'SIN FECHA CREACIÓN'}</td>
 									<td>
 										<div class="acciones">
 											{#if puedeAprobar(licencia)}
@@ -784,9 +867,17 @@
 				<button type="button" class="btn-close" on:click={cerrarModales}>&times;</button>
 			</div>
 			<div class="modal-body">
+				<!-- Debug info -->
+				<div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 12px;">
+					<strong>Debug Modal Asignación:</strong><br>
+					Áreas disponibles: {areas.length}<br>
+					Tipos disponibles: {$tiposLicencia.length}<br>
+					Área seleccionada: {areaSeleccionada || 'ninguna'}<br>
+					Agentes en área: {agentesDelArea.length}
+				</div>
 				<form on:submit|preventDefault={handleAsignarLicencia}>
 					<div class="form-group">
-						<label for="area_asignar">Área *</label>
+						<label for="area_asignar">Área * (Total: {areas.length})</label>
 						<select id="area_asignar" bind:value={areaSeleccionada} on:change={() => cargarAgentesPorArea(areaSeleccionada)} required>
 							<option value="">Seleccione un área...</option>
 							{#each areas as area}
