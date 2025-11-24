@@ -1,11 +1,15 @@
 <script>
-	import { asignarLicencia } from '$lib/paneladmin/controllers/licenciasController.js';
+	import { asignarLicencia, puedeAsignarAAgente, puedeVerLicenciaDeRol } from '$lib/paneladmin/controllers/licenciasController.js';
 	import { personasService } from '$lib/services.js';
+	import AuthService from '$lib/login/authService.js';
 	
 	// Props
 	export let show = false;
 	export let tiposLicencia = [];
 	export let areas = [];
+	
+	// Usuario actual para validaciones
+	let userInfo = null;
 
 	// Events
 	import { createEventDispatcher } from 'svelte';
@@ -26,6 +30,11 @@
 	let cargandoAgentes = false;
 	let enviando = false;
 
+	// Cargar info del usuario al abrir modal
+	$: if (show && !userInfo) {
+		cargarUsuarioActual();
+	}
+
 	// Limpiar form cuando se cierra el modal
 	$: if (!show) {
 		formLicencia = {
@@ -40,6 +49,19 @@
 		agentesDelArea = [];
 		cargandoAgentes = false;
 		enviando = false;
+		userInfo = null;
+	}
+
+	async function cargarUsuarioActual() {
+		try {
+			const userResponse = await AuthService.getCurrentUserData();
+			if (userResponse?.success && userResponse.data?.success) {
+				userInfo = userResponse.data.data;
+				console.log('👤 Usuario en modal:', userInfo);
+			}
+		} catch (err) {
+			console.error('Error cargando usuario en modal:', err);
+		}
 	}
 
 	function cerrarModal() {
@@ -49,6 +71,7 @@
 
 	async function cargarAgentesPorArea(areaId) {
 		console.log('🔄 Cargando agentes para área:', areaId);
+		console.log('🔍 Áreas disponibles:', areas);
 		if (!areaId) {
 			agentesDelArea = [];
 			return;
@@ -56,14 +79,49 @@
 
 		try {
 			cargandoAgentes = true;
+			console.log('🌐 Haciendo request para área:', areaId);
 			const response = await personasService.getAgentesByArea(areaId);
-			console.log('📋 Respuesta agentes por área:', response);
-			if (response?.data?.success) {
-				agentesDelArea = response.data.data || [];
-				console.log('✅ Agentes cargados:', agentesDelArea.length);
+			console.log('📋 Respuesta completa agentes por área:', response);
+			
+			// Verificar la estructura de respuesta
+			let agentesCompletos = [];
+			if (response?.data) {
+				if (response.data.results) {
+					// Estructura paginada estándar de Django
+					agentesCompletos = response.data.results || [];
+					console.log('✅ Agentes cargados (formato paginado):', agentesCompletos.length);
+				} else if (response.data.success && response.data.data) {
+					// Estructura con wrapper de success
+					agentesCompletos = response.data.data || [];
+					console.log('✅ Agentes cargados (formato success):', agentesCompletos.length);
+				} else {
+					console.warn('⚠️ Respuesta sin formato conocido:', response.data);
+					agentesCompletos = [];
+				}
 			} else {
-				console.warn('⚠️ No se pudieron cargar agentes:', response);
-				agentesDelArea = [];
+				console.warn('⚠️ No hay data en la respuesta:', response);
+				agentesCompletos = [];
+			}
+
+			// Filtrar agentes según permisos del usuario
+			if (userInfo) {
+				const rolUsuario = userInfo.roles?.[0]?.nombre || userInfo.rol_nombre || 'Agente';
+				console.log('🔍 Filtrando agentes para rol:', rolUsuario);
+				
+				agentesDelArea = agentesCompletos.filter(agente => {
+					const puedeAsignar = puedeAsignarAAgente(
+						agente.rol?.nombre || agente.rol_nombre || 'Agente',
+						rolUsuario,
+						agente.id_area || areaId,
+						userInfo.id_area
+					);
+					console.log(`🔒 ¿Puede asignar a ${agente.nombre} (${agente.rol?.nombre || agente.rol_nombre})?`, puedeAsignar);
+					return puedeAsignar;
+				});
+				
+				console.log(`✅ Agentes filtrados: ${agentesDelArea.length} de ${agentesCompletos.length} totales`);
+			} else {
+				agentesDelArea = agentesCompletos;
 			}
 		} catch (err) {
 			console.error('❌ Error cargando agentes:', err);
@@ -74,7 +132,8 @@
 	}
 
 	// Reactivo: cuando cambia el área seleccionada, cargar agentes
-	$: if (areaSeleccionada && show) {
+	$: if (areaSeleccionada && show && areas.length > 0) {
+		console.log('🔄 Reactivo: área seleccionada cambió a:', areaSeleccionada);
 		cargarAgentesPorArea(areaSeleccionada);
 	}
 
@@ -91,12 +150,16 @@
 				cerrarModal();
 				dispatch('assigned', resultado.data);
 			} else {
-				throw new Error(resultado.message || 'Error al asignar la licencia');
+				// Usar el mensaje específico del backend si está disponible
+				const errorMessage = resultado.error || 'Error al asignar la licencia';
+				throw new Error(errorMessage);
 			}
-		} catch (err) {
-			console.error('❌ Error asignando licencia:', err);
-			alert(`Error: ${err.message}`);
-		} finally {
+	} catch (err) {
+		console.error('❌ Error asignando licencia:', err);
+		// Mostrar el mensaje específico del backend si está disponible
+		const errorMessage = err?.response?.data?.message || err.message || 'Error desconocido';
+		alert(`Error: ${errorMessage}`);
+	} finally {
 			enviando = false;
 		}
 	}
@@ -110,19 +173,10 @@
 				<button type="button" class="btn-close" on:click={cerrarModal}>&times;</button>
 			</div>
 			<div class="modal-body">
-				<!-- Debug info -->
-				<div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 12px;">
-					<strong>Debug Modal Asignación:</strong><br>
-					Áreas disponibles: {areas.length}<br>
-					Tipos disponibles: {tiposLicencia.length}<br>
-					Área seleccionada: {areaSeleccionada || 'ninguna'}<br>
-					Agentes en área: {agentesDelArea.length}
-				</div>
-				
 				<form on:submit|preventDefault={handleAsignarLicencia}>
 					<div class="form-group">
 						<label for="area_asignar">Área * (Total: {areas.length})</label>
-						<select id="area_asignar" bind:value={areaSeleccionada} required>
+						<select id="area_asignar" bind:value={areaSeleccionada} on:change={(e) => cargarAgentesPorArea(e.target.value)} required>
 							<option value="">Seleccione un área...</option>
 							{#each areas as area}
 								<option value={area.id_area}>{area.nombre}</option>
@@ -153,7 +207,7 @@
 						<select id="tipo_licencia_asignar" bind:value={formLicencia.id_tipo_licencia} required>
 							<option value="">Seleccione un tipo...</option>
 							{#each tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}>{tipo.nombre}</option>
+								<option value={tipo.id_tipo_licencia}>{tipo.codigo} - {tipo.descripcion}</option>
 							{/each}
 						</select>
 					</div>

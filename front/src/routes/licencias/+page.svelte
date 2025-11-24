@@ -8,8 +8,8 @@
 		licenciasFiltradas, estadisticas,
 		cargarLicencias, cargarTiposLicencia, crearLicencia,
 		aprobarLicencia, rechazarLicencia, actualizarFiltros, limpiarFiltros,
-		obtenerPermisos, puedeAprobarLicencia, formatearFecha, calcularDiasLicencia,
-		obtenerColorEstado, obtenerIconoEstado
+		obtenerPermisos, puedeAprobarLicencia, puedeAsignarAAgente, puedeVerLicenciaDeRol, 
+		formatearFecha, calcularDiasLicencia, obtenerColorEstado, obtenerIconoEstado
 	} from '$lib/paneladmin/controllers/licenciasController.js';
 
 	let userInfo = null;
@@ -60,15 +60,22 @@
 			if (userResponse?.success && userResponse.data?.success) {
 				userInfo = userResponse.data.data;
 				usuario.set(userInfo);
-				permisos = obtenerPermisos(userInfo.rol_nombre, userInfo.id_area);
+				
+				// Obtener el rol del usuario correctamente
+				const rol = userInfo.roles?.[0]?.nombre || userInfo.rol_nombre || 'Agente';
+				console.log('🔐 Usuario actual:', userInfo.nombre, userInfo.apellido, '| Rol:', rol, '| Área:', userInfo.area?.nombre);
+				
+				permisos = obtenerPermisos(rol, userInfo.id_area);
+				console.log('🔑 Permisos calculados:', permisos);
 				
 				// Cargar datos iniciales
 				await cargarDatosIniciales();
 			} else {
+				console.error('❌ No se pudo obtener información del usuario');
 				goto('/');
 			}
 		} catch (err) {
-			console.error('Error inicializando:', err);
+			console.error('❌ Error inicializando:', err);
 			goto('/');
 		}
 	}
@@ -78,17 +85,23 @@
 			// Cargar tipos de licencia
 			await cargarTiposLicencia();
 			
-		// Cargar áreas si tiene permisos
-		if (permisos.puedeVerTodasAreas || permisos.soloSuArea || permisos.puedeAsignar) {
-			const areasResponse = await personasService.getAreas();
-			if (areasResponse?.data?.success) {
-				areas = areasResponse.data.data.results || [];
-				// Si solo puede ver su área (y no puede ver todas), filtrar
-				if (permisos.soloSuArea && !permisos.puedeVerTodasAreas && !permisos.puedeAsignar) {
-					areas = areas.filter(a => a.id_area === userInfo.id_area);
+			// Cargar áreas según permisos
+			if (permisos.puedeVerTodasAreas) {
+				// Administrador puede ver todas las áreas
+				const areasResponse = await personasService.getAreas();
+				if (areasResponse?.data?.success) {
+					areas = areasResponse.data.data.results || [];
+				}
+			} else if (permisos.soloSuArea || permisos.puedeAsignar) {
+				// Director, Jefatura, Agente Avanzado solo ven su área
+				const areasResponse = await personasService.getAreas();
+				if (areasResponse?.data?.success) {
+					const todasAreas = areasResponse.data.data.results || [];
+					areas = todasAreas.filter(a => a.id_area === userInfo.id_area);
 				}
 			}
-		}			// Cargar agentes de su área si puede asignar licencias
+
+			// Cargar agentes de su área si puede asignar licencias
 			if (permisos.puedeAsignar) {
 				await cargarAgentesArea();
 			}
@@ -96,6 +109,7 @@
 			// Cargar licencias con filtros según permisos
 			const parametros = {};
 			if (permisos.soloSuArea && !permisos.puedeVerTodasAreas) {
+				// Filtrar por área para roles que no son administrador
 				parametros.area_id = userInfo.id_area;
 			}
 			
@@ -111,7 +125,18 @@
 			const params = permisos.soloSuArea ? { area_id: userInfo.id_area } : {};
 			const response = await personasService.getAgentes(params);
 			if (response?.data?.success) {
-				agentes = response.data.data || [];
+				let agentesCompletos = response.data.data || [];
+				
+				// Filtrar agentes según el rol del usuario (especialmente para Agente Avanzado)
+				if (permisos.puedeAsignarSoloAgentes) {
+					// Agente Avanzado solo puede ver/asignar a agentes simples
+					agentes = agentesCompletos.filter(agente => 
+						(agente.rol?.nombre || agente.rol_nombre) === 'Agente'
+					);
+					console.log(`🔍 Agente Avanzado: filtrado ${agentes.length} agentes de ${agentesCompletos.length} totales`);
+				} else {
+					agentes = agentesCompletos;
+				}
 			}
 		} catch (err) {
 			console.error('Error cargando agentes:', err);
@@ -225,16 +250,32 @@
 			return;
 		}
 
+		const rol = userInfo?.roles?.[0]?.nombre || userInfo?.rol_nombre || 'Agente';
 		saving = true;
+		
+		// Determinar el estado según el rol del usuario
+		let estadoLicencia = 'pendiente';
+		let aprobadaPor = null;
+		
+		if (rol === 'Director' || rol === 'Jefatura') {
+			// Director y Jefatura aprueban automáticamente sus asignaciones
+			estadoLicencia = 'aprobada';
+			aprobadaPor = userInfo.id_agente;
+		}
+		// Agente Avanzado asigna pero la licencia queda pendiente de aprobación
+
 		const resultado = await crearLicencia({
 			...formLicencia,
-			estado: 'aprobada', // Las licencias asignadas por jefatura se aprueban automáticamente
-			aprobada_por: userInfo.id_agente
+			estado: estadoLicencia,
+			aprobada_por: aprobadaPor
 		});
 
 		if (resultado.success) {
 			cerrarModales();
-			alert('Licencia asignada correctamente.');
+			const mensaje = estadoLicencia === 'aprobada' 
+				? 'Licencia asignada y aprobada correctamente.' 
+				: 'Licencia asignada correctamente. Queda pendiente de aprobación.';
+			alert(mensaje);
 		} else {
 			alert(resultado.error);
 		}
@@ -288,7 +329,8 @@
 
 	// Funciones de utilidad
 	function puedeAprobar(licencia) {
-		return puedeAprobarLicencia(licencia, userInfo?.rol_nombre, userInfo?.id_area);
+		const rol = userInfo?.roles?.[0]?.nombre || userInfo?.rol_nombre || 'Agente';
+		return puedeAprobarLicencia(licencia, rol, userInfo?.id_area);
 	}
 
 	$: diasLicencia = calcularDiasLicencia(formLicencia.fecha_desde, formLicencia.fecha_hasta);

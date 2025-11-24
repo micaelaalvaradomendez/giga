@@ -22,9 +22,25 @@ export const usuario = writable(null);
 
 // Store derivado para licencias filtradas
 export const licenciasFiltradas = derived(
-    [licencias, filtros],
-    ([$licencias, $filtros]) => {
+    [licencias, filtros, usuario],
+    ([$licencias, $filtros, $usuario]) => {
         let resultado = [...$licencias];
+
+        // 🔒 FILTRO JERÁRQUICO: Solo mostrar licencias de roles inferiores
+        if ($usuario) {
+            const usuarioRol = $usuario.roles?.[0]?.nombre || $usuario.rol_nombre || 'Agente';
+            console.log('🔍 Filtrando licencias para rol:', usuarioRol);
+            
+            resultado = resultado.filter(licencia => {
+                const puedeVer = puedeVerLicenciaDeRol(licencia.agente_rol, usuarioRol);
+                if (!puedeVer) {
+                    console.log(`🚫 ${usuarioRol} NO puede ver licencia de ${licencia.agente_rol} (${licencia.agente_nombre})`);
+                }
+                return puedeVer;
+            });
+            
+            console.log(`✅ Licencias filtradas: ${resultado.length} de ${$licencias.length} totales`);
+        }
 
         if ($filtros.fecha_desde) {
             resultado = resultado.filter(l => l.fecha_desde >= $filtros.fecha_desde);
@@ -79,7 +95,8 @@ export function obtenerPermisos(rolUsuario, areaUsuario) {
         puedeRechazar: false,
         puedeAsignar: false,
         puedeVerTodasAreas: false,
-        soloSuArea: false
+        soloSuArea: false,
+        puedeAsignarSoloAgentes: false // Nuevo permiso para Agente Avanzado
     };
 
     switch (rolUsuario) {
@@ -93,7 +110,7 @@ export function obtenerPermisos(rolUsuario, areaUsuario) {
         
         case 'Director':
             permisos.puedeCrear = true;
-            permisos.puedeAprobar = true;
+            permisos.puedeAprobar = true; // Puede aprobar: Jefatura, Agente Avanzado, Agente de su área
             permisos.puedeRechazar = true;
             permisos.puedeAsignar = true;
             permisos.soloSuArea = true;
@@ -101,15 +118,21 @@ export function obtenerPermisos(rolUsuario, areaUsuario) {
         
         case 'Jefatura':
             permisos.puedeCrear = true;
-            permisos.puedeAprobar = true;
+            permisos.puedeAprobar = true; // Puede aprobar: Agente Avanzado, Agente de su área
             permisos.puedeRechazar = true;
             permisos.puedeAsignar = true;
             permisos.soloSuArea = true;
             break;
         
         case 'Agente Avanzado':
+            permisos.puedeCrear = true; // Solo puede solicitar licencia
+            permisos.puedeAsignar = true; // Solo puede asignar licencias a Agentes de su área
+            permisos.puedeAsignarSoloAgentes = true; // Solo puede asignar a rol "Agente"
+            permisos.soloSuArea = true;
+            break;
+            
         case 'Agente':
-            permisos.puedeCrear = true;
+            permisos.puedeCrear = true; // Solo puede solicitar licencia
             permisos.soloSuArea = true;
             break;
     }
@@ -121,20 +144,102 @@ export function obtenerPermisos(rolUsuario, areaUsuario) {
  * Determina quién puede aprobar una licencia según la jerarquía
  */
 export function puedeAprobarLicencia(licencia, usuarioRol, usuarioArea) {
+    // Solo licencias pendientes pueden ser aprobadas
+    if (licencia.estado !== 'pendiente') {
+        return false;
+    }
+
+    // Administrador puede aprobar todo
     if (usuarioRol === 'Administrador') {
         return true;
     }
 
+    // Verificar que la licencia es del área del usuario (excepto administrador)
+    if (licencia.id_agente_area !== usuarioArea) {
+        return false;
+    }
+
     if (usuarioRol === 'Director') {
-        // Director puede aprobar todo en su área
-        return licencia.id_agente_area === usuarioArea;
+        // Director puede aprobar licencias de Jefatura, Agente Avanzado y Agente de su área
+        const rolesQueAprueba = ['Jefatura', 'Agente Avanzado', 'Agente'];
+        return rolesQueAprueba.includes(licencia.agente_rol);
     }
 
     if (usuarioRol === 'Jefatura') {
-        // Jefatura puede aprobar agentes y agentes avanzados de su área
-        const rolesQueAprueba = ['Agente', 'Agente Avanzado'];
-        return licencia.id_agente_area === usuarioArea && 
-               rolesQueAprueba.includes(licencia.agente_rol);
+        // Jefatura puede aprobar licencias de Agente Avanzado y Agente de su área
+        const rolesQueAprueba = ['Agente Avanzado', 'Agente'];
+        return rolesQueAprueba.includes(licencia.agente_rol);
+    }
+
+    // Agente Avanzado y Agente NO pueden aprobar licencias
+    return false;
+}
+
+/**
+ * Determina si el usuario puede asignar licencia a un agente específico
+ */
+export function puedeAsignarAAgente(agenteRol, usuarioRol, agenteArea, usuarioArea) {
+    // Administrador puede asignar a cualquiera
+    if (usuarioRol === 'Administrador') {
+        return true;
+    }
+
+    // Verificar que el agente es del área del usuario (excepto administrador)
+    if (agenteArea !== usuarioArea) {
+        return false;
+    }
+
+    if (usuarioRol === 'Director') {
+        // Director puede asignar a Jefatura, Agente Avanzado y Agente de su área
+        const rolesQueAsigna = ['Jefatura', 'Agente Avanzado', 'Agente'];
+        return rolesQueAsigna.includes(agenteRol);
+    }
+
+    if (usuarioRol === 'Jefatura') {
+        // Jefatura puede asignar a Agente Avanzado y Agente de su área
+        const rolesQueAsigna = ['Agente Avanzado', 'Agente'];
+        return rolesQueAsigna.includes(agenteRol);
+    }
+
+    if (usuarioRol === 'Agente Avanzado') {
+        // Agente Avanzado solo puede asignar a Agente de su área
+        return agenteRol === 'Agente';
+    }
+
+    // Agente NO puede asignar licencias
+    return false;
+}
+
+/**
+ * Determina qué roles puede ver cada usuario según la jerarquía
+ */
+export function puedeVerLicenciaDeRol(licenciaRol, usuarioRol) {
+    // Administrador puede ver todo
+    if (usuarioRol === 'Administrador') {
+        return true;
+    }
+
+    // Director puede ver licencias de: Director (propias), Jefatura, Agente Avanzado, Agente
+    if (usuarioRol === 'Director') {
+        const rolesQueVe = ['Director', 'Jefatura', 'Agente Avanzado', 'Agente'];
+        return rolesQueVe.includes(licenciaRol);
+    }
+
+    // Jefatura puede ver licencias de: Jefatura (propias), Agente Avanzado, Agente
+    if (usuarioRol === 'Jefatura') {
+        const rolesQueVe = ['Jefatura', 'Agente Avanzado', 'Agente'];
+        return rolesQueVe.includes(licenciaRol);
+    }
+
+    // Agente Avanzado puede ver licencias de: Agente Avanzado (propias), Agente
+    if (usuarioRol === 'Agente Avanzado') {
+        const rolesQueVe = ['Agente Avanzado', 'Agente'];
+        return rolesQueVe.includes(licenciaRol);
+    }
+
+    // Agente solo puede ver sus propias licencias
+    if (usuarioRol === 'Agente') {
+        return licenciaRol === 'Agente';
     }
 
     return false;
@@ -148,15 +253,25 @@ export async function cargarLicencias(parametros = {}) {
     error.set(null);
     
     try {
+        console.log('📊 Cargando licencias con parámetros:', parametros);
         const response = await asistenciaService.getLicencias(parametros);
+        console.log('📊 Respuesta completa de licencias:', response);
         
         if (response?.data?.success) {
-            licencias.set(response.data.data || []);
+            const licenciasData = response.data.data || [];
+            console.log('📊 Licencias procesadas:', licenciasData.length, licenciasData);
+            
+            // Debug: mostrar la primera licencia completa
+            if (licenciasData.length > 0) {
+                console.log('🔍 Primera licencia (estructura completa):', JSON.stringify(licenciasData[0], null, 2));
+            }
+            
+            licencias.set(licenciasData);
         } else {
             throw new Error(response?.data?.message || 'Error al cargar licencias');
         }
     } catch (err) {
-        console.error('Error cargando licencias:', err);
+        console.error('❌ Error cargando licencias:', err);
         error.set(err.message || 'Error al cargar licencias');
         licencias.set([]);
     } finally {
@@ -338,12 +453,13 @@ export async function asignarLicencia(datosAsignacion) {
         error.set(null);
 
         const response = await asistenciaService.createLicencia({
-            id_agente: datosAsignacion.agente_id,
-            id_tipo_licencia: datosAsignacion.tipo_licencia_id,
+            id_agente: datosAsignacion.id_agente,
+            id_tipo_licencia: datosAsignacion.id_tipo_licencia,
             fecha_desde: datosAsignacion.fecha_desde,
             fecha_hasta: datosAsignacion.fecha_hasta,
             observaciones: datosAsignacion.observaciones || '',
-            estado: 'aprobada' // Asignaciones administrativas se aprueban automáticamente
+            justificacion: datosAsignacion.justificacion || '',
+            estado: 'pendiente' // Las licencias asignadas quedan pendientes de aprobación
         });
 
         if (response?.data?.success) {
@@ -357,6 +473,39 @@ export async function asignarLicencia(datosAsignacion) {
         }
     } catch (err) {
         console.error('Error asignando licencia:', err);
+        console.error('Detalles del error:', err?.response?.data);
+        console.error('Status del error:', err?.response?.status);
+        const errorMsg = err?.response?.data?.message || err.message || 'Error de conexión';
+        error.set(errorMsg);
+        return { success: false, error: errorMsg, response: err.response };
+    } finally {
+        loading.set(false);
+    }
+}
+
+/**
+ * Eliminar licencia
+ */
+export async function eliminarLicencia(idLicencia) {
+    try {
+        loading.set(true);
+        error.set(null);
+
+        const response = await asistenciaService.deleteLicencia(idLicencia);
+
+        if (response?.status === 200 || response?.status === 204 || response?.data?.success) {
+            // Recargar licencias después de eliminar
+            await cargarLicencias();
+            return { success: true };
+        } else {
+            const errorMsg = response?.data?.message || 'Error al eliminar la licencia';
+            error.set(errorMsg);
+            return { success: false, error: errorMsg };
+        }
+    } catch (err) {
+        console.error('Error eliminando licencia:', err);
+        console.error('Detalles del error:', err?.response?.data);
+        console.error('Status del error:', err?.response?.status);
         const errorMsg = err?.response?.data?.message || err.message || 'Error de conexión';
         error.set(errorMsg);
         return { success: false, error: errorMsg };

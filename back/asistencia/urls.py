@@ -17,6 +17,7 @@ urlpatterns = [
     
     # Endpoints de licencias
     path('licencias/', views.gestionar_licencias, name='gestionar_licencias'),  # GET y POST
+    path('licencias/<int:licencia_id>/', views.eliminar_licencia, name='eliminar_licencia'),  # DELETE
     path('licencias/<int:licencia_id>/aprobar/', views.aprobar_licencia, name='aprobar_licencia'),
     path('licencias/<int:licencia_id>/rechazar/', views.rechazar_licencia, name='rechazar_licencia'),
 

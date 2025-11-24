@@ -7,7 +7,7 @@
 		licencias, tiposLicencia, filtros, loading, error, usuario,
 		licenciasFiltradas, estadisticas,
 		cargarLicencias, cargarTiposLicencia, crearLicencia, asignarLicencia,
-		aprobarLicencia, rechazarLicencia, actualizarFiltros, limpiarFiltros,
+		aprobarLicencia, rechazarLicencia, eliminarLicencia, actualizarFiltros, limpiarFiltros,
 		obtenerPermisos, puedeAprobarLicencia, formatearFecha, calcularDiasLicencia,
 		obtenerColorEstado, obtenerIconoEstado
 	} from '$lib/paneladmin/controllers/licenciasController.js';
@@ -26,48 +26,12 @@
 	let permisos = {};
 	let areas = [];
 	
-	// Variables reactivas para debug
-	$: console.log('🏢 Áreas actualizadas:', areas.length, areas);
-	$: console.log('📋 Tipos licencia actualizados:', $tiposLicencia.length, $tiposLicencia);
-	$: console.log('🎯 Filtros actualizados:', $filtros);
-
-	// Función de test para verificar conectividad
-	async function testearConectividad() {
-		console.log('🧪 PROBANDO CONECTIVIDAD...');
-		
-		// Test áreas
-		try {
-			console.log('🧪 Probando getAreas()...');
-			const areasTest = await personasService.getAreas();
-			console.log('✅ Áreas test resultado:', areasTest);
-		} catch (err) {
-			console.error('❌ Error en áreas test:', err);
-		}
-		
-		// Test tipos licencia
-		try {
-			console.log('🧪 Probando getTiposLicencia()...');
-			const tiposTest = await asistenciaService.getTiposLicencia();
-			console.log('✅ Tipos test resultado:', tiposTest);
-		} catch (err) {
-			console.error('❌ Error en tipos test:', err);
-		}
-		
-		// Test licencias
-		try {
-			console.log('🧪 Probando getLicencias()...');
-			const licenciasTest = await asistenciaService.getLicencias();
-			console.log('✅ Licencias test resultado:', licenciasTest);
-		} catch (err) {
-			console.error('❌ Error en licencias test:', err);
-		}
-	}
-	
-	// Modal states para licencias
+	// Estados de modales - usando componentes
+	let showModalSolicitar = false;
 	let showModalCrear = false;
+	let showModalAsignar = false;
 	let showModalAprobar = false;
 	let showModalRechazar = false;
-	let showModalAsignar = false;
 	let licenciaSeleccionada = null;
 	
 	// Variables para asignación de licencias
@@ -85,14 +49,6 @@
 		justificacion: ''
 	};
 	
-	let formAprobacion = {
-		observaciones: ''
-	};
-	
-	let formRechazo = {
-		motivo: ''
-	};
-
 	let saving = false;
 
 	// Variables para gestión de tipos de licencia (conservando la funcionalidad existente)
@@ -131,9 +87,18 @@
 				usuario.set(userInfo);
 				console.log('Usuario cargado:', userInfo);
 				
+				// Verificar si el usuario tiene rol de administrador en el array de roles
+				const tieneRolAdmin = userInfo.roles && userInfo.roles.length > 0 && 
+					userInfo.roles.some(rol => 
+						(typeof rol === 'string' && rol === 'Administrador') || 
+						(typeof rol === 'object' && rol.nombre === 'Administrador')
+					);
+				
 				// Solo mostrar advertencia si no es administrador, pero permitir acceso
-				if (userInfo.rol !== 'Administrador') {
-					console.warn('Usuario sin rol de administrador accediendo al panel:', userInfo.rol);
+				if (!tieneRolAdmin) {
+					console.warn('Usuario sin rol de administrador accediendo al panel. Roles:', userInfo.roles);
+				} else {
+					console.log('✅ Usuario administrador verificado');
 				}
 			} else {
 				console.warn('No se pudo obtener información del usuario, continuando sin autenticación');
@@ -265,14 +230,68 @@
 
 	function abrirModalAprobar(licencia) {
 		licenciaSeleccionada = licencia;
-		formAprobacion = { observaciones: '' };
 		showModalAprobar = true;
 	}
 
 	function abrirModalRechazar(licencia) {
 		licenciaSeleccionada = licencia;
-		formRechazo = { motivo: '' };
 		showModalRechazar = true;
+	}
+
+	// Handlers para eventos de los componentes
+	function handleAsignarEvent(event) {
+		console.log('Asignar licencia event:', event.detail);
+		// La función de asignar será manejada por el componente
+		showModalAsignar = false;
+	}
+
+	function handleAprobarEvent(event) {
+		if (licenciaSeleccionada) {
+			aprobarLicencia(licenciaSeleccionada.id_licencia, event.detail.observaciones)
+				.then(resultado => {
+					if (resultado.success) {
+						showModalAprobar = false;
+						alert('Licencia aprobada correctamente.');
+					} else {
+						alert(resultado.error);
+					}
+				});
+		}
+	}
+
+	function handleRechazarEvent(event) {
+		if (licenciaSeleccionada) {
+			rechazarLicencia(licenciaSeleccionada.id_licencia, event.detail.motivo)
+				.then(resultado => {
+					if (resultado.success) {
+						showModalRechazar = false;
+						alert('Licencia rechazada.');
+					} else {
+						alert(resultado.error);
+					}
+				});
+		}
+	}
+
+	async function confirmarEliminarLicencia(licencia) {
+		const mensaje = `¿Estás seguro de que deseas eliminar la licencia de ${licencia.agente_nombre}?\n\n` +
+						`📋 Tipo: ${licencia.tipo_licencia_descripcion}\n` +
+						`📅 Período: ${formatearFecha(licencia.fecha_desde)} al ${formatearFecha(licencia.fecha_hasta)}\n` +
+						`📊 Estado: ${licencia.estado}\n\n` +
+						`⚠️ Esta acción no se puede deshacer.`;
+		
+		if (confirm(mensaje)) {
+			try {
+				const resultado = await eliminarLicencia(licencia.id_licencia);
+				if (resultado.success) {
+					alert('✅ Licencia eliminada correctamente');
+				} else {
+					alert(`❌ Error: ${resultado.error}`);
+				}
+			} catch (err) {
+				alert(`❌ Error eliminando licencia: ${err.message}`);
+			}
+		}
 	}
 
 	function cerrarModales() {
@@ -319,62 +338,7 @@
 		saving = false;
 	}
 
-	async function handleAsignarLicencia() {
-		if (!areaSeleccionada || !formLicencia.id_agente || !formLicencia.id_tipo_licencia || !formLicencia.fecha_desde || !formLicencia.fecha_hasta) {
-			alert('Por favor complete todos los campos obligatorios');
-			return;
-		}
 
-		saving = true;
-		const resultado = await asignarLicencia({
-			id_agente: formLicencia.id_agente,
-			id_tipo_licencia: formLicencia.id_tipo_licencia,
-			fecha_desde: formLicencia.fecha_desde,
-			fecha_hasta: formLicencia.fecha_hasta,
-			observaciones: formLicencia.observaciones || ''
-		});
-
-		if (resultado.success) {
-			cerrarModales();
-			alert('Licencia asignada correctamente.');
-		} else {
-			alert(resultado.error);
-		}
-		saving = false;
-	}
-
-	async function handleAprobarLicencia() {
-		if (!licenciaSeleccionada) return;
-		
-		saving = true;
-		const resultado = await aprobarLicencia(licenciaSeleccionada.id_licencia, formAprobacion.observaciones);
-
-		if (resultado.success) {
-			cerrarModales();
-			alert('Licencia aprobada correctamente.');
-		} else {
-			alert(resultado.error);
-		}
-		saving = false;
-	}
-
-	async function handleRechazarLicencia() {
-		if (!licenciaSeleccionada || !formRechazo.motivo.trim()) {
-			alert('Debe indicar el motivo del rechazo');
-			return;
-		}
-		
-		saving = true;
-		const resultado = await rechazarLicencia(licenciaSeleccionada.id_licencia, formRechazo.motivo);
-
-		if (resultado.success) {
-			cerrarModales();
-			alert('Licencia rechazada.');
-		} else {
-			alert(resultado.error);
-		}
-		saving = false;
-	}
 
 	// Funciones para filtros
 	function aplicarFiltros() {
@@ -521,17 +485,11 @@
 		
 		{#if vistaActual === 'licencias'}
 			<div class="header-actions">
-				<button class="btn-primary" on:click={abrirModalCrear}>
-					➕ Solicitar Licencia
-				</button>
-				<button class="btn-secondary" on:click={abrirModalAsignar}>
+				<button class="btn-secondary" on:click={() => showModalAsignar = true}>
 					📝 Asignar Licencia
 				</button>
 				<button class="btn-refresh" on:click={() => cargarLicencias()}>
 					🔄 Actualizar
-				</button>
-				<button class="btn-warning" on:click={testearConectividad} style="background: orange; color: white;">
-					🧪 Test API
 				</button>
 			</div>
 		{:else}
@@ -613,17 +571,13 @@
 						<select id="tipo_filter" bind:value={$filtros.tipo_licencia_id} on:change={aplicarFiltros}>
 							<option value={null}>Todos los tipos</option>
 							{#each $tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}>{tipo.nombre}</option>
+								<option value={tipo.id_tipo_licencia}>{tipo.nombre || tipo.descripcion || tipo.codigo || `Tipo ${tipo.id_tipo_licencia}`}</option>
 							{/each}
 						</select>
 					</div>
 					<div class="filtro-group">
 						<button class="btn-clear" on:click={limpiarTodosFiltros}>Limpiar Filtros</button>
 					</div>
-				</div>
-				<!-- Debug info -->
-				<div style="font-size: 11px; color: #666; margin-top: 10px;">
-					Debug: Filtros = {JSON.stringify($filtros)} | Áreas: {areas.length} | Tipos: {$tiposLicencia.length}
 				</div>
 			</div>
 
@@ -655,7 +609,6 @@
 						<thead>
 							<tr>
 								<th>Agente</th>
-								<th>Área</th>
 								<th>Tipo</th>
 								<th>Período</th>
 								<th>Días</th>
@@ -666,36 +619,26 @@
 						</thead>
 						<tbody>
 							{#each $licenciasFiltradas as licencia (licencia.id_licencia)}
-								<!-- Debug: Ver estructura completa de la licencia -->
-								{#if licencia.id_licencia === ($licenciasFiltradas[0]?.id_licencia)}
-									<tr style="background: #f0f8ff; font-size: 10px;">
-										<td colspan="8">
-											<strong>DEBUG Licencia:</strong><br>
-											<pre style="font-size: 9px; max-height: 100px; overflow: auto;">{JSON.stringify(licencia, null, 2)}</pre>
-										</td>
-									</tr>
-								{/if}
 								<tr>
 									<td>
 										<div class="agente-info">
-											<strong>{licencia.agente?.nombre || 'SIN NOMBRE'} {licencia.agente?.apellido || 'SIN APELLIDO'}</strong>
-											<small>{licencia.agente?.numero_agente || 'SIN NUMERO'}</small>
+											<strong>{licencia.agente_nombre || 'SIN AGENTE'}</strong>
+											<small>{licencia.area_nombre || 'N/A'}</small>
 										</div>
 									</td>
-									<td>{licencia.agente?.area?.nombre || licencia.area_nombre || 'N/A'}</td>
 									<td>
-										<span class="tipo-badge">{licencia.tipo_licencia?.nombre || licencia.tipo_nombre || 'SIN TIPO'}</span>
+										<span class="tipo-badge">{licencia.tipo_licencia_descripcion || 'SIN TIPO'}</span>
 									</td>
 									<td>
-										{formatearFecha(licencia.fecha_desde) || licencia.fecha_desde || 'SIN FECHA'} - {formatearFecha(licencia.fecha_hasta) || licencia.fecha_hasta || 'SIN FECHA'}
+										{formatearFecha(licencia.fecha_desde)} - {formatearFecha(licencia.fecha_hasta)}
 									</td>
-									<td class="text-center">{licencia.dias_solicitados || licencia.dias || 'SIN DÍAS'}</td>
+									<td class="text-center">{licencia.dias_licencia}</td>
 									<td>
 										<span class="estado-badge estado-{licencia.estado}">
-											{obtenerIconoEstado(licencia.estado)} {licencia.estado || 'SIN ESTADO'}
+											{obtenerIconoEstado(licencia.estado)} {licencia.estado}
 										</span>
 									</td>
-									<td>{formatearFecha(licencia.fecha_creacion) || licencia.fecha_creacion || 'SIN FECHA CREACIÓN'}</td>
+									<td>{formatearFecha(licencia.creado_en)}</td>
 									<td>
 										<div class="acciones">
 											{#if puedeAprobar(licencia)}
@@ -714,16 +657,18 @@
 													❌
 												</button>
 											{/if}
+											<!-- Botón eliminar - siempre disponible para administradores -->
+											<button 
+												class="btn-sm btn-warning"
+												on:click={() => confirmarEliminarLicencia(licencia)}
+												title="Eliminar licencia"
+												style="margin-left: 4px;"
+											>
+												🗑️
+											</button>
 										</div>
 									</td>
 								</tr>
-								{#if licencia.observaciones}
-									<tr class="observaciones-row">
-										<td colspan="8">
-											<small><strong>Observaciones:</strong> {licencia.observaciones}</small>
-										</td>
-									</tr>
-								{/if}
 							{/each}
 						</tbody>
 					</table>
@@ -859,158 +804,29 @@
 {/if}
 
 <!-- Modal de Asignar Licencia -->
-{#if showModalAsignar}
-	<div class="modal-backdrop">
-		<div class="modal-contenido">
-			<div class="modal-header">
-				<h5>Asignar Nueva Licencia</h5>
-				<button type="button" class="btn-close" on:click={cerrarModales}>&times;</button>
-			</div>
-			<div class="modal-body">
-				<!-- Debug info -->
-				<div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 12px;">
-					<strong>Debug Modal Asignación:</strong><br>
-					Áreas disponibles: {areas.length}<br>
-					Tipos disponibles: {$tiposLicencia.length}<br>
-					Área seleccionada: {areaSeleccionada || 'ninguna'}<br>
-					Agentes en área: {agentesDelArea.length}
-				</div>
-				<form on:submit|preventDefault={handleAsignarLicencia}>
-					<div class="form-group">
-						<label for="area_asignar">Área * (Total: {areas.length})</label>
-						<select id="area_asignar" bind:value={areaSeleccionada} on:change={() => cargarAgentesPorArea(areaSeleccionada)} required>
-							<option value="">Seleccione un área...</option>
-							{#each areas as area}
-								<option value={area.id_area}>{area.nombre}</option>
-							{/each}
-						</select>
-					</div>
-					{#if areaSeleccionada}
-						<div class="form-group">
-							<label for="agente_asignar">Agente *</label>
-							{#if cargandoAgentes}
-								<div class="loading-small">Cargando agentes...</div>
-							{:else}
-								<select id="agente_asignar" bind:value={formLicencia.id_agente} required>
-									<option value="">Seleccione un agente...</option>
-									{#each agentesDelArea as agente}
-										<option value={agente.id_agente}>{agente.nombre} {agente.apellido}</option>
-									{/each}
-								</select>
-							{/if}
-						</div>
-					{/if}
-					<div class="form-group">
-						<label for="tipo_licencia_asignar">Tipo de Licencia *</label>
-						<select id="tipo_licencia_asignar" bind:value={formLicencia.id_tipo_licencia} required>
-							<option value="">Seleccione un tipo...</option>
-							{#each $tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}>{tipo.nombre}</option>
-							{/each}
-						</select>
-					</div>
-					<div class="form-group">
-						<label for="fecha_desde_asignar">Fecha de Inicio *</label>
-						<input type="date" id="fecha_desde_asignar" bind:value={formLicencia.fecha_desde} required />
-					</div>
-					<div class="form-group">
-						<label for="fecha_hasta_asignar">Fecha de Fin *</label>
-						<input type="date" id="fecha_hasta_asignar" bind:value={formLicencia.fecha_hasta} required />
-					</div>
-					{#if diasLicencia > 0}
-						<div class="info-dias">
-							<small>📅 Días a asignar: <strong>{diasLicencia}</strong></small>
-						</div>
-					{/if}
-					<div class="form-group">
-						<label for="observaciones_asignar">Observaciones</label>
-						<textarea id="observaciones_asignar" bind:value={formLicencia.observaciones} rows="3" placeholder="Motivo o comentarios adicionales..."></textarea>
-					</div>
-					<div class="modal-actions">
-						<button type="button" class="btn btn-secondary" on:click={cerrarModales}>Cancelar</button>
-						<button type="submit" class="btn btn-primary" disabled={saving || !areaSeleccionada}>
-							{saving ? 'Asignando...' : 'Asignar Licencia'}
-						</button>
-					</div>
-				</form>
-			</div>
-		</div>
-	</div>
-{/if}
+<ModalAsignar 
+	bind:show={showModalAsignar}
+	areas={areas}
+	tiposLicencia={$tiposLicencia}
+	on:asignar={handleAsignarEvent}
+	on:cancelar={() => showModalAsignar = false}
+/>
 
 <!-- Modal de Aprobar Licencia -->
-{#if showModalAprobar}
-	<div class="modal-backdrop">
-		<div class="modal-contenido">
-			<div class="modal-header">
-				<h5>Aprobar Licencia</h5>
-				<button type="button" class="btn-close" on:click={cerrarModales}>&times;</button>
-			</div>
-			<div class="modal-body">
-				<div class="licencia-info">
-					<h6>Información de la Licencia</h6>
-					<p><strong>Agente:</strong> {licenciaSeleccionada?.agente?.nombre} {licenciaSeleccionada?.agente?.apellido}</p>
-					<p><strong>Área:</strong> {licenciaSeleccionada?.agente?.area?.nombre}</p>
-					<p><strong>Tipo:</strong> {licenciaSeleccionada?.tipo_licencia?.nombre}</p>
-					<p><strong>Período:</strong> {formatearFecha(licenciaSeleccionada?.fecha_desde)} al {formatearFecha(licenciaSeleccionada?.fecha_hasta)}</p>
-					<p><strong>Días:</strong> {licenciaSeleccionada?.dias_solicitados}</p>
-					{#if licenciaSeleccionada?.observaciones}
-						<p><strong>Observaciones:</strong> {licenciaSeleccionada.observaciones}</p>
-					{/if}
-				</div>
-				<form on:submit|preventDefault={handleAprobarLicencia}>
-					<div class="form-group">
-						<label for="observaciones_aprobacion">Observaciones de Aprobación</label>
-						<textarea id="observaciones_aprobacion" bind:value={formAprobacion.observaciones} rows="3" placeholder="Comentarios adicionales (opcional)"></textarea>
-					</div>
-					<div class="modal-actions">
-						<button type="button" class="btn btn-secondary" on:click={cerrarModales}>Cancelar</button>
-						<button type="submit" class="btn btn-success" disabled={saving}>
-							{saving ? 'Aprobando...' : 'Aprobar Licencia'}
-						</button>
-					</div>
-				</form>
-			</div>
-		</div>
-	</div>
-{/if}
+<ModalAprobar 
+	bind:show={showModalAprobar}
+	licencia={licenciaSeleccionada}
+	on:aprobar={handleAprobarEvent}
+	on:cancelar={() => showModalAprobar = false}
+/>
 
 <!-- Modal de Rechazar Licencia -->
-{#if showModalRechazar}
-	<div class="modal-backdrop">
-		<div class="modal-contenido">
-			<div class="modal-header">
-				<h5>Rechazar Licencia</h5>
-				<button type="button" class="btn-close" on:click={cerrarModales}>&times;</button>
-			</div>
-			<div class="modal-body">
-				<div class="licencia-info">
-					<h6>Información de la Licencia</h6>
-					<p><strong>Agente:</strong> {licenciaSeleccionada?.agente?.nombre} {licenciaSeleccionada?.agente?.apellido}</p>
-					<p><strong>Área:</strong> {licenciaSeleccionada?.agente?.area?.nombre}</p>
-					<p><strong>Tipo:</strong> {licenciaSeleccionada?.tipo_licencia?.nombre}</p>
-					<p><strong>Período:</strong> {formatearFecha(licenciaSeleccionada?.fecha_desde)} al {formatearFecha(licenciaSeleccionada?.fecha_hasta)}</p>
-					<p><strong>Días:</strong> {licenciaSeleccionada?.dias_solicitados}</p>
-					{#if licenciaSeleccionada?.observaciones}
-						<p><strong>Observaciones:</strong> {licenciaSeleccionada.observaciones}</p>
-					{/if}
-				</div>
-				<form on:submit|preventDefault={handleRechazarLicencia}>
-					<div class="form-group">
-						<label for="motivo_rechazo">Motivo del Rechazo *</label>
-						<textarea id="motivo_rechazo" bind:value={formRechazo.motivo} rows="3" placeholder="Indique el motivo del rechazo..." required></textarea>
-					</div>
-					<div class="modal-actions">
-						<button type="button" class="btn btn-secondary" on:click={cerrarModales}>Cancelar</button>
-						<button type="submit" class="btn btn-danger" disabled={saving || !formRechazo.motivo.trim()}>
-							{saving ? 'Rechazando...' : 'Rechazar Licencia'}
-						</button>
-					</div>
-				</form>
-			</div>
-		</div>
-	</div>
-{/if}
+<ModalRechazar 
+	bind:show={showModalRechazar}
+	licencia={licenciaSeleccionada}
+	on:rechazar={handleRechazarEvent}
+	on:cancelar={() => showModalRechazar = false}
+/>
 
 <!-- Modal para gestión de tipos de licencia -->
 {#if showForm}
@@ -1359,6 +1175,16 @@
 
 	.btn-danger:hover {
 		background: #c53030;
+	}
+
+	.btn-warning {
+		background: #dd6b20;
+		color: white;
+	}
+
+	.btn-warning:hover {
+		background: #c05621;
+		transform: scale(1.05);
 	}
 
 	.observaciones-row {

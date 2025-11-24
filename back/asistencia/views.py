@@ -884,15 +884,38 @@ def listar_licencias_impl(request):
             'id_agente__agenterol_set__id_rol'
         )
         
-        # Aplicar filtros según permisos del usuario
-        if rol.id_rol.nombre == 'Administrador':
+        # Aplicar filtros según permisos y jerarquía del usuario
+        rol_nombre = rol.id_rol.nombre
+        
+        if rol_nombre == 'Administrador':
             # Administrador ve todo
             pass
-        elif rol.id_rol.nombre in ['Director', 'Jefatura']:
-            # Director y Jefatura solo ven su área
-            queryset = queryset.filter(id_agente__id_area=agente.id_area)
+        elif rol_nombre == 'Director':
+            # Director ve licencias de Director, Jefatura, Agente Avanzado y Agente de su área
+            from personas.models import Rol
+            roles_permitidos = ['Director', 'Jefatura', 'Agente Avanzado', 'Agente']
+            queryset = queryset.filter(
+                id_agente__id_area=agente.id_area,
+                id_agente__agenterol__id_rol__nombre__in=roles_permitidos
+            )
+        elif rol_nombre == 'Jefatura':
+            # Jefatura ve licencias de Jefatura, Agente Avanzado y Agente de su área
+            from personas.models import Rol
+            roles_permitidos = ['Jefatura', 'Agente Avanzado', 'Agente']
+            queryset = queryset.filter(
+                id_agente__id_area=agente.id_area,
+                id_agente__agenterol__id_rol__nombre__in=roles_permitidos
+            )
+        elif rol_nombre == 'Agente Avanzado':
+            # Agente Avanzado ve licencias de Agente Avanzado y Agente de su área
+            from personas.models import Rol
+            roles_permitidos = ['Agente Avanzado', 'Agente']
+            queryset = queryset.filter(
+                id_agente__id_area=agente.id_area,
+                id_agente__agenterol__id_rol__nombre__in=roles_permitidos
+            )
         else:
-            # Agente/Agente Avanzado solo ven sus propias licencias
+            # Agente solo ve sus propias licencias
             queryset = queryset.filter(id_agente=agente)
         
         # Aplicar filtros adicionales
@@ -1234,6 +1257,57 @@ def rechazar_licencia(request, licencia_id):
         }, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         logger.error(f'Error en rechazar_licencia: {str(e)}')
+        return Response({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def eliminar_licencia(request, licencia_id):
+    """
+    Eliminar una licencia (solo administradores).
+    """
+    try:
+        agente_id = request.session.get('user_id')
+        if not agente_id:
+            return Response({
+                'success': False,
+                'message': 'No hay sesión activa'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        agente = Agente.objects.get(id_agente=agente_id)
+        rol = agente.agenterol_set.first()
+        
+        if not rol or rol.id_rol.nombre != 'Administrador':
+            return Response({
+                'success': False,
+                'message': 'Solo los administradores pueden eliminar licencias'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        licencia = Licencia.objects.get(id_licencia=licencia_id)
+        
+        # Guardar información para el log
+        licencia_info = f"ID: {licencia.id_licencia}, Agente: {licencia.id_agente.nombre} {licencia.id_agente.apellido}, Estado: {licencia.estado}"
+        
+        # Eliminar la licencia
+        licencia.delete()
+        
+        logger.info(f'Licencia eliminada por administrador {agente.nombre} {agente.apellido}: {licencia_info}')
+        
+        return Response({
+            'success': True,
+            'message': 'Licencia eliminada correctamente'
+        }, status=status.HTTP_200_OK)
+    
+    except Licencia.DoesNotExist:
+        return Response({
+            'success': False,
+            'message': 'Licencia no encontrada'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f'Error en eliminar_licencia: {str(e)}')
         return Response({
             'success': False,
             'message': f'Error: {str(e)}'
