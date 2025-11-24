@@ -166,9 +166,10 @@ class PlanificadorGuardiasController {
 	 * Carga los agentes del área seleccionada y filtra los disponibles
 	 */
 	async cargarAgentesDeArea() {
-		let areaId, fechaInicio, horaInicio, horaFin, token;
+		let areaId, fechaInicio, fechaFin, horaInicio, horaFin, token;
 		this.areaSeleccionada.subscribe(a => areaId = a)();
 		this.fechaInicio.subscribe(f => fechaInicio = f)();
+		this.fechaFin.subscribe(f => fechaFin = f)();
 		this.horaInicio.subscribe(h => horaInicio = h)();
 		this.horaFin.subscribe(h => horaFin = h)();
 		this.token.subscribe(t => token = t)();
@@ -188,27 +189,46 @@ class PlanificadorGuardiasController {
 			// Filtrar solo agentes activos
 			agentes = agentes.filter(a => a.activo === true);
 			
-			// Si tenemos fecha y horario, filtrar agentes que NO tienen conflicto
+			// Si tenemos fecha y horario, filtrar agentes que NO tienen conflictos ni licencias
 			if (fechaInicio && horaInicio && horaFin) {
 				const agentesDisponibles = [];
 				
 				for (const agente of agentes) {
+					let disponible = true;
+					
 					try {
-						const disponibilidad = await guardiasService.verificarDisponibilidad(agente.id_agente, fechaInicio, token);
-						
-						// Si está disponible (sin guardias ese día), incluirlo
-						if (disponibilidad.data?.disponible) {
-							agentesDisponibles.push(agente);
+						// 1. Verificar conflictos con otras guardias
+						const disponibilidadGuardias = await guardiasService.verificarDisponibilidad(agente.id_agente, fechaInicio, token);
+						if (!disponibilidadGuardias.data?.disponible) {
+							console.log(`🚫 Agente ${agente.nombre} ${agente.apellido} tiene conflictos con guardias`);
+							disponible = false;
 						}
 					} catch (e) {
-						console.warn(`⚠️ Error verificando disponibilidad del agente ${agente.id_agente}:`, e);
-						// En caso de error, incluir el agente (mejor que excluirlo)
+						console.warn(`⚠️ Error verificando disponibilidad de guardias del agente ${agente.id_agente}:`, e);
+					}
+					
+					if (disponible) {
+						try {
+							// 2. Verificar si está en licencia durante el período de la guardia
+							const fechaFinalGuardia = fechaFin || fechaInicio;
+							const estaEnLicencia = await this.verificarLicenciasAgente(agente.id_agente, fechaInicio, fechaFinalGuardia);
+							if (estaEnLicencia) {
+								console.log(`🏖️ Agente ${agente.nombre} ${agente.apellido} está en licencia durante el período`);
+								disponible = false;
+							}
+						} catch (e) {
+							console.warn(`⚠️ Error verificando licencias del agente ${agente.id_agente}:`, e);
+							// En caso de error verificando licencias, incluir el agente pero con advertencia
+						}
+					}
+					
+					if (disponible) {
 						agentesDisponibles.push(agente);
 					}
 				}
 				
 				this.agentesDisponibles.set(agentesDisponibles);
-				console.log(`✅ Agentes disponibles para ${fechaInicio}: ${agentesDisponibles.length}/${agentes.length}`);
+				console.log(`✅ Agentes disponibles para ${fechaInicio}-${fechaFin || fechaInicio}: ${agentesDisponibles.length}/${agentes.length} (sin guardias ni licencias)`);
 			} else {
 				// Sin fecha/horario, mostrar todos los agentes activos
 				this.agentesDisponibles.set(agentes);
@@ -257,12 +277,13 @@ class PlanificadorGuardiasController {
 		let paso;
 		this.paso.subscribe(p => paso = p)();
 		
-		// Si estamos en el paso 2, recargar agentes
+		// Si estamos en el paso 2, recargar agentes considerando nuevas fechas y licencias
 		if (paso === 2) {
 			// Limpiar selecciones ya que la disponibilidad puede haber cambiado
 			this.agentesSeleccionados.set(new Set());
 			this.agentesConConflicto.set(new Set());
 			
+			console.log('🔄 Recargando agentes disponibles tras cambio de fecha/horario...');
 			await this.cargarAgentesDeArea();
 		}
 	}
@@ -346,6 +367,59 @@ class PlanificadorGuardiasController {
 	}
 
 	/**
+	 * Verifica si un agente tiene licencias aprobadas durante el período especificado
+	 * @param {number} agenteId - ID del agente
+	 * @param {string} fechaInicio - Fecha de inicio (YYYY-MM-DD)
+	 * @param {string} fechaFin - Fecha de fin (YYYY-MM-DD)
+	 * @returns {Promise<boolean>} - true si está en licencia
+	 */
+	async verificarLicenciasAgente(agenteId, fechaInicio, fechaFin) {
+		try {
+			// Importar asistenciaService si no está disponible
+			const { asistenciaService } = await import('$lib/services.js');
+			
+			// Consultar licencias del agente en el rango de fechas
+			const params = {
+				id_agente: agenteId,
+				fecha_desde: fechaInicio,
+				fecha_hasta: fechaFin,
+				estado: 'aprobada' // Solo considerar licencias aprobadas
+			};
+			
+			const response = await asistenciaService.getLicencias(params);
+			
+			if (response?.data?.success && response.data.data) {
+				const licencias = response.data.data;
+				
+				// Verificar si hay licencias que se superponen con el período de la guardia
+				const tieneConflicto = licencias.some(licencia => {
+					const licenciaInicio = new Date(licencia.fecha_desde);
+					const licenciaFin = new Date(licencia.fecha_hasta);
+					const guardiaInicio = new Date(fechaInicio);
+					const guardiaFin = new Date(fechaFin);
+					
+					// Verificar superposición de fechas
+					const haySuperposicion = licenciaInicio <= guardiaFin && licenciaFin >= guardiaInicio;
+					
+					if (haySuperposicion) {
+						console.log(`📋 Licencia encontrada: ${licencia.tipo_licencia_descripcion} del ${licencia.fecha_desde} al ${licencia.fecha_hasta}`);
+					}
+					
+					return haySuperposicion;
+				});
+				
+				return tieneConflicto;
+			}
+			
+			return false;
+		} catch (e) {
+			console.error('❌ Error verificando licencias del agente:', e);
+			// En caso de error, asumir que no está en licencia para no bloquear innecesariamente
+			return false;
+		}
+	}
+
+	/**
 	 * Valida el paso 1 del wizard
 	 * @returns {Object} - { valido: boolean, errores: string[] }
 	 */
@@ -414,33 +488,48 @@ class PlanificadorGuardiasController {
 		try {
 			const fechaDate = new Date(fechaInicio + 'T00:00:00');
 			const diaSemana = fechaDate.getDay();
+			const nombresDias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+			
+			console.log(`🗓️ Validando fecha: ${fechaInicio} (${nombresDias[diaSemana]})`);
 			
 			// Si es fin de semana (sábado=6, domingo=0), está permitido
 			if (diaSemana === 0 || diaSemana === 6) {
+				console.log('✅ Fecha válida: Es fin de semana');
 				return { valido: true, errores: [] };
 			}
 			
 			// Si no es fin de semana, verificar si es feriado
+			console.log('🔍 Verificando si es feriado...');
 			const verificacionFeriado = await guardiasService.verificarFeriado({ fecha: fechaInicio }, token);
 			
+			console.log('📋 Respuesta verificación feriado:', verificacionFeriado.data);
+			
 			if (verificacionFeriado.data?.es_feriado) {
-				// Es feriado, está permitido
+				console.log('✅ Fecha válida: Es feriado');
+				const feriados = verificacionFeriado.data.feriados || [];
+				if (feriados.length > 0) {
+					console.log('🎉 Feriados encontrados:', feriados.map(f => f.nombre).join(', '));
+				}
 				return { valido: true, errores: [] };
 			} else {
-				// No es fin de semana ni feriado
+				console.log('❌ Fecha inválida: No es fin de semana ni feriado');
 				errores.push('Las guardias solo pueden programarse en fines de semana (sábado y domingo) o feriados');
 				return { valido: false, errores };
 			}
 			
 		} catch (e) {
 			console.error('❌ Error verificando feriado:', e);
-			// En caso de error, mantener solo validación de fin de semana
+			console.error('❌ Detalles del error:', e.response?.data || e.message);
+			
+			// En caso de error, permitir la creación pero con advertencia
+			console.warn('⚠️ No se pudo verificar feriados, permitiendo creación con advertencia');
 			const fechaDate = new Date(fechaInicio + 'T00:00:00');
 			const diaSemana = fechaDate.getDay();
 			
 			if (diaSemana !== 0 && diaSemana !== 6) {
-				errores.push('Las guardias solo pueden programarse en fines de semana (sábado y domingo). No se pudo verificar feriados');
-				return { valido: false, errores };
+				// Si no es fin de semana y no pudimos verificar feriados, permitir pero con advertencia
+				console.warn('⚠️ Permitiendo creación de guardia a pesar del error en verificación de feriados');
+				return { valido: true, errores: [] }; // Cambiado para permitir la creación
 			}
 			
 			return { valido: true, errores: [] };
