@@ -1,6 +1,6 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
-	import AuthService from '../login/authService.js';
+	import { createEventDispatcher } from "svelte";
+	import AuthService from "../login/authService.js";
 
 	export let isOpen = false;
 	export let user = null;
@@ -8,57 +8,57 @@
 	const dispatch = createEventDispatcher();
 
 	function cerrarModal() {
-		dispatch('cerrar');
+		dispatch("cerrar");
 	}
 
 	function editarPerfil() {
-		dispatch('editarPerfil');
+		dispatch("editarPerfil");
 	}
 
 	function cerrarSesion() {
-		dispatch('cerrarSesion');
+		dispatch("cerrarSesion");
 	}
 
 	function formatCuil(cuil) {
-		if (!cuil) return 'N/A';
+		if (!cuil) return "N/A";
 		return AuthService.formatCuil(cuil);
 	}
 
 	function formatearHoraLogin(fechaHora) {
-		if (!fechaHora) return 'N/A';
+		if (!fechaHora) return "N/A";
 		try {
 			const fecha = new Date(fechaHora);
-			const horas = fecha.getHours().toString().padStart(2, '0');
-			const minutos = fecha.getMinutes().toString().padStart(2, '0');
+			const horas = fecha.getHours().toString().padStart(2, "0");
+			const minutos = fecha.getMinutes().toString().padStart(2, "0");
 			return `${horas}:${minutos}`;
 		} catch (e) {
-			return 'N/A';
+			return "N/A";
 		}
 	}
 
 	function formatearFechaLogin(fechaHora) {
-		if (!fechaHora) return 'N/A';
+		if (!fechaHora) return "N/A";
 		try {
 			const fecha = new Date(fechaHora);
-			return fecha.toLocaleDateString('es-AR', {
-				day: '2-digit',
-				month: '2-digit',
-				year: 'numeric'
+			return fecha.toLocaleDateString("es-AR", {
+				day: "2-digit",
+				month: "2-digit",
+				year: "numeric",
 			});
 		} catch (e) {
-			return 'N/A';
+			return "N/A";
 		}
 	}
 
 	function getRoleBadgeClass(rol) {
 		const roleClasses = {
-			Administrador: 'role-admin',
-			Director: 'role-director',
-			Jefatura: 'role-jefatura',
-			'Agente Avanzado': 'role-agente-avanzado',
-			Agente: 'role-agente'
+			Administrador: "role-admin",
+			Director: "role-director",
+			Jefatura: "role-jefatura",
+			"Agente Avanzado": "role-agente-avanzado",
+			Agente: "role-agente",
 		};
-		return roleClasses[rol] || 'role-default';
+		return roleClasses[rol] || "role-default";
 	}
 </script>
 
@@ -72,7 +72,11 @@
 			<div class="modal-header">
 				<div class="avatar-container">
 					<div class="avatar-circle">
-						{user.first_name?.charAt(0).toUpperCase()}{user.last_name?.charAt(0).toUpperCase()}
+						{user.first_name
+							?.charAt(0)
+							.toUpperCase()}{user.last_name
+							?.charAt(0)
+							.toUpperCase()}
 					</div>
 				</div>
 				<button class="btn-close" on:click={cerrarModal}>×</button>
@@ -94,7 +98,9 @@
 						<span class="icon">🆔</span>
 						<div class="info-content">
 							<span class="info-label">CUIL</span>
-							<span class="info-value">{formatCuil(user.cuil)}</span>
+							<span class="info-value"
+								>{formatCuil(user.cuil)}</span
+							>
 						</div>
 					</div>
 
@@ -103,7 +109,11 @@
 							<span class="icon">🏢</span>
 							<div class="info-content">
 								<span class="info-label">Área</span>
-								<span class="info-value">{typeof user.area === 'object' ? user.area.nombre : user.area}</span>
+								<span class="info-value"
+									>{typeof user.area === "object"
+										? user.area.nombre
+										: user.area}</span
+								>
 							</div>
 						</div>
 					{/if}
@@ -115,7 +125,11 @@
 								<span class="info-label">Roles</span>
 								<div class="roles-badges">
 									{#each user.roles as role}
-										<span class="role-badge {getRoleBadgeClass(role.nombre)}">
+										<span
+											class="role-badge {getRoleBadgeClass(
+												role.nombre,
+											)}"
+										>
 											{role.nombre}
 										</span>
 									{/each}
@@ -130,7 +144,9 @@
 							<div class="info-content">
 								<span class="info-label">Última sesión</span>
 								<span class="info-value">
-									{formatearFechaLogin(user.last_login)} - {formatearHoraLogin(user.last_login)}
+									{formatearFechaLogin(user.last_login)} - {formatearHoraLogin(
+										user.last_login,
+									)}
 								</span>
 							</div>
 						</div>
@@ -174,6 +190,7 @@
 		overflow-y: auto;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		animation: slideUp 0.3s ease-out;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	@keyframes slideUp {
@@ -213,6 +230,7 @@
 		font-weight: bold;
 		color: #667eea;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+		border: 3px solid rgba(255, 255, 255, 0.3);
 	}
 
 	.btn-close {
@@ -224,18 +242,19 @@
 		width: 32px;
 		height: 32px;
 		border-radius: 50%;
-		font-size: 1.5rem;
+		font-size: 2rem;
 		color: white;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		transition: all 0.2s;
+		font-weight: 300;
 	}
 
 	.btn-close:hover {
-		background: rgba(255, 255, 255, 0.3);
-		transform: rotate(90deg);
+		transform: scale(1.2) rotate(90deg);
+		color: rgba(255, 255, 255, 0.8);
 	}
 
 	.modal-body {
@@ -244,10 +263,28 @@
 
 	.nombre-usuario {
 		text-align: center;
-		font-size: 1.5rem;
-		font-weight: 600;
+		font-size: 1.75rem;
+		font-weight: 700;
 		color: #1a1a1a;
 		margin: 0 0 1.5rem 0;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		position: relative;
+		padding-bottom: 0.75rem;
+	}
+
+	.nombre-usuario::after {
+		content: "";
+		position: absolute;
+		bottom: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 60px;
+		height: 3px;
+		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+		border-radius: 2px;
 	}
 
 	.info-grid {
@@ -292,30 +329,52 @@
 	}
 
 	.info-value {
-		font-size: 1rem;
+		font-size: 18px;
 		color: #1a1a1a;
 		font-weight: 500;
 	}
 
 	.roles-item {
-		flex-direction: column;
+		display: flex;
 		align-items: flex-start;
+		gap: 1rem;
+		padding: 1rem;
+		background: #f8f9fa;
+		border-radius: 12px;
+		transition: all 0.2s;
+	}
+
+	.roles-item:hover {
+		background: #e9ecef;
+		transform: translateX(4px);
+	}
+
+	.roles-item .icon {
+		font-size: 1.5rem;
+		flex-shrink: 0;
+	}
+	.roles-item .info-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
 	}
 
 	.roles-badges {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.5rem;
-		margin-top: 0.5rem;
+		width: 100%;
 	}
 
 	.role-badge {
-		padding: 0.4rem 0.8rem;
+		padding: 0.5rem 1rem;
 		border-radius: 20px;
 		font-size: 0.85rem;
 		font-weight: 600;
 		color: white;
 		display: inline-block;
+		white-space: nowrap;
 	}
 
 	.role-admin {
@@ -356,7 +415,7 @@
 		padding: 0.75rem 1.5rem;
 		border: none;
 		border-radius: 8px;
-		font-size: 1rem;
+		font-size: 18px;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.2s;
@@ -364,6 +423,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.btn-secondary {

@@ -33,26 +33,32 @@
     let showGuardiasModal = false;
     let guardiasModalData = {
         fecha: null,
-        guardias: []
+        guardias: [],
     };
 
     // Función para verificar si una fecha es feriado
     function esFeriado(fecha) {
         if (!feriados || feriados.length === 0) return false;
-        const fechaStr = fecha.toISOString().split('T')[0];
-        return feriados.some(feriado => {
+        const fechaStr = fecha.toISOString().split("T")[0];
+        return feriados.some((feriado) => {
             // Verificar si la fecha está dentro del rango fecha_inicio - fecha_fin
-            return fechaStr >= feriado.fecha_inicio && fechaStr <= feriado.fecha_fin;
+            return (
+                fechaStr >= feriado.fecha_inicio &&
+                fechaStr <= feriado.fecha_fin
+            );
         });
     }
 
     // Función para obtener feriados de una fecha específica (puede haber múltiples)
     function getFeriados(fecha) {
         if (!feriados || feriados.length === 0) return [];
-        const fechaStr = fecha.toISOString().split('T')[0];
-        return feriados.filter(feriado => {
+        const fechaStr = fecha.toISOString().split("T")[0];
+        return feriados.filter((feriado) => {
             // Verificar si la fecha está dentro del rango fecha_inicio - fecha_fin
-            return fechaStr >= feriado.fecha_inicio && fechaStr <= feriado.fecha_fin;
+            return (
+                fechaStr >= feriado.fecha_inicio &&
+                fechaStr <= feriado.fecha_fin
+            );
         });
     }
 
@@ -65,22 +71,25 @@
     // Función para verificar si una fecha tiene guardia
     function tieneGuardia(fecha) {
         if (!guardias || guardias.length === 0) return false;
-        const fechaStr = fecha.toISOString().split('T')[0];
-        
-        return guardias.some(guardia => {
+        const fechaStr = fecha.toISOString().split("T")[0];
+
+        return guardias.some((guardia) => {
             // Verificar si la guardia incluye esta fecha
             if (guardia.fecha === fechaStr) {
                 return true;
             }
-            
+
             // Verificar si es una guardia multi-día que se inició el día anterior
-            if (guardia.es_multiples_dias || (guardia.hora_inicio > guardia.hora_fin)) {
+            if (
+                guardia.es_multiples_dias ||
+                guardia.hora_inicio > guardia.hora_fin
+            ) {
                 const fechaGuardia = new Date(guardia.fecha);
                 const fechaSiguiente = new Date(fechaGuardia);
                 fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
-                return fechaSiguiente.toISOString().split('T')[0] === fechaStr;
+                return fechaSiguiente.toISOString().split("T")[0] === fechaStr;
             }
-            
+
             return false;
         });
     }
@@ -88,22 +97,25 @@
     // Función para obtener las guardias de una fecha específica
     function getGuardias(fecha) {
         if (!guardias || guardias.length === 0) return [];
-        const fechaStr = fecha.toISOString().split('T')[0];
-        
-        return guardias.filter(guardia => {
+        const fechaStr = fecha.toISOString().split("T")[0];
+
+        return guardias.filter((guardia) => {
             // Verificar si la guardia incluye esta fecha
             if (guardia.fecha === fechaStr) {
                 return true;
             }
-            
+
             // Verificar si es una guardia multi-día que se inició el día anterior
-            if (guardia.es_multiples_dias || (guardia.hora_inicio > guardia.hora_fin)) {
+            if (
+                guardia.es_multiples_dias ||
+                guardia.hora_inicio > guardia.hora_fin
+            ) {
                 const fechaGuardia = new Date(guardia.fecha);
                 const fechaSiguiente = new Date(fechaGuardia);
                 fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
-                return fechaSiguiente.toISOString().split('T')[0] === fechaStr;
+                return fechaSiguiente.toISOString().split("T")[0] === fechaStr;
             }
-            
+
             return false;
         });
     }
@@ -151,7 +163,7 @@
                 d.getDate() == today.getDate() &&
                 d.getMonth() == today.getMonth() &&
                 d.getFullYear() == today.getFullYear();
-            
+
             let isFeriadoDay = esFeriado(d);
             let feriadoData = isFeriadoDay ? getFeriado(d) : null;
             let feriadosData = isFeriadoDay ? getFeriados(d) : [];
@@ -220,21 +232,21 @@
 
     function dayClick(day) {
         if (!day.enabled) return;
-        
-        dispatch('dayclick', {
+
+        dispatch("dayclick", {
             date: day.date,
             isFeriado: day.isFeriado,
             feriado: day.feriado, // Primer feriado (compatibilidad)
             feriados: day.feriados || [], // Todos los feriados del día
             tieneGuardia: day.tieneGuardia,
-            guardias: day.guardias
+            guardias: day.guardias,
         });
     }
 
     function showAllGuardias(fecha, guardias) {
         guardiasModalData = {
             fecha: fecha,
-            guardias: guardias
+            guardias: guardias,
         };
         showGuardiasModal = true;
     }
@@ -243,18 +255,18 @@
         showGuardiasModal = false;
         guardiasModalData = {
             fecha: null,
-            guardias: []
+            guardias: [],
         };
     }
 
     function formatFecha(fecha) {
-        if (!fecha) return '';
+        if (!fecha) return "";
         const date = new Date(fecha);
-        return date.toLocaleDateString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
+        return date.toLocaleDateString("es-ES", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
         });
     }
 
@@ -301,7 +313,7 @@
                     class:feriado={day.isFeriado}
                     class:guardia={day.tieneGuardia}
                     on:click={() => dayClick(day)}
-                    on:keydown={(e) => e.key === 'Enter' && dayClick(day)}
+                    on:keydown={(e) => e.key === "Enter" && dayClick(day)}
                     role="button"
                     tabindex="0"
                 >
@@ -312,21 +324,33 @@
                                 <!-- Mostrar todos los feriados -->
                                 {#each day.feriados as feriado}
                                     <div class="feriado-item">
-                                        <div class="feriado-nombre">{feriado.nombre}</div>
+                                        <div class="feriado-nombre">
+                                            {feriado.nombre}
+                                        </div>
                                         {#if feriado.es_multiples_dias}
-                                            <div class="feriado-duracion">{feriado.duracion_dias} días</div>
+                                            <div class="feriado-duracion">
+                                                {feriado.duracion_dias} días
+                                            </div>
                                         {/if}
-                                        <div class="feriado-tipo">{feriado.tipo_feriado}</div>
+                                        <div class="feriado-tipo">
+                                            {feriado.tipo_feriado}
+                                        </div>
                                     </div>
                                 {/each}
                             {:else if day.feriado}
                                 <!-- Compatibilidad con formato anterior -->
                                 <div class="feriado-item">
-                                    <div class="feriado-nombre">{day.feriado.nombre}</div>
+                                    <div class="feriado-nombre">
+                                        {day.feriado.nombre}
+                                    </div>
                                     {#if day.feriado.es_multiples_dias}
-                                        <div class="feriado-duracion">{day.feriado.duracion_dias} días</div>
+                                        <div class="feriado-duracion">
+                                            {day.feriado.duracion_dias} días
+                                        </div>
                                     {/if}
-                                    <div class="feriado-tipo">{day.feriado.tipo_feriado}</div>
+                                    <div class="feriado-tipo">
+                                        {day.feriado.tipo_feriado}
+                                    </div>
                                 </div>
                             {/if}
                         </div>
@@ -335,21 +359,43 @@
                         <div class="guardias-info">
                             {#each day.guardias.slice(0, 1) as guardia}
                                 <div class="guardia-item">
-                                    <div class="guardia-tipo">🚨 {guardia.tipo || 'Guardia'}</div>
-                                    <div class="guardia-horario">{guardia.hora_inicio?.slice(0,5)} - {guardia.hora_fin?.slice(0,5)}</div>
-                                    {#if guardia.es_multiples_dias || (guardia.hora_inicio > guardia.hora_fin)}
-                                        <div class="guardia-duracion">2 días</div>
+                                    <div class="guardia-tipo">
+                                        🚨 {guardia.tipo || "Guardia"}
+                                    </div>
+                                    <div class="guardia-horario">
+                                        {guardia.hora_inicio?.slice(0, 5)} - {guardia.hora_fin?.slice(
+                                            0,
+                                            5,
+                                        )}
+                                    </div>
+                                    {#if guardia.es_multiples_dias || guardia.hora_inicio > guardia.hora_fin}
+                                        <div class="guardia-duracion">
+                                            2 días
+                                        </div>
                                     {/if}
                                     {#if guardia.agente_nombre}
-                                        <div class="guardia-agente">{guardia.agente_nombre}</div>
+                                        <div class="guardia-agente">
+                                            {guardia.agente_nombre}
+                                        </div>
                                     {/if}
                                     {#if guardia.cantidad && guardia.cantidad > 1}
-                                        <div class="guardia-cantidad">({guardia.cantidad} agentes)</div>
+                                        <div class="guardia-cantidad">
+                                            ({guardia.cantidad} agentes)
+                                        </div>
                                     {/if}
                                 </div>
                             {/each}
                             {#if day.guardias.length > 1}
-                                <div class="guardias-more" on:click={() => showAllGuardias(day.date, day.guardias)} on:keydown={(e) => e.key === 'Enter' && showAllGuardias(day.date, day.guardias)} role="button" tabindex="0">
+                                <div
+                                    class="guardias-more"
+                                    on:click={() =>
+                                        showAllGuardias(day.date, day.guardias)}
+                                    on:keydown={(e) =>
+                                        e.key === "Enter" &&
+                                        showAllGuardias(day.date, day.guardias)}
+                                    role="button"
+                                    tabindex="0"
+                                >
                                     +{day.guardias.length - 1} más
                                 </div>
                             {/if}
@@ -363,46 +409,77 @@
 
 <!-- Modal de Guardias -->
 {#if showGuardiasModal}
-    <div class="modal-overlay" on:click={closeGuardiasModal} on:keydown={(e) => e.key === 'Escape' && closeGuardiasModal()} role="button" tabindex="0">
-        <div class="modal-content" on:click|stopPropagation on:keydown|stopPropagation role="dialog" tabindex="-1">
+    <div
+        class="modal-overlay"
+        on:click={closeGuardiasModal}
+        on:keydown={(e) => e.key === "Escape" && closeGuardiasModal()}
+        role="button"
+        tabindex="0"
+    >
+        <div
+            class="modal-content"
+            on:click|stopPropagation
+            on:keydown|stopPropagation
+            role="dialog"
+            tabindex="-1"
+        >
             <div class="modal-header">
                 <h3>Guardias del día</h3>
-                <button class="modal-close" on:click={closeGuardiasModal} aria-label="Cerrar modal">×</button>
+                <button
+                    class="modal-close"
+                    on:click={closeGuardiasModal}
+                    aria-label="Cerrar modal">×</button
+                >
             </div>
             <div class="modal-body">
-                <p class="modal-fecha">{formatFecha(guardiasModalData.fecha)}</p>
+                <p class="modal-fecha">
+                    {formatFecha(guardiasModalData.fecha)}
+                </p>
                 <div class="guardias-list">
                     {#each guardiasModalData.guardias as guardia, index}
                         <div class="guardia-detail">
                             <div class="guardia-header">
                                 <span class="guardia-numero">#{index + 1}</span>
-                                <span class="guardia-tipo-modal">🚨 {guardia.tipo || 'Guardia'}</span>
+                                <span class="guardia-tipo-modal"
+                                    >🚨 {guardia.tipo || "Guardia"}</span
+                                >
                             </div>
                             <div class="guardia-info-modal">
                                 <div class="guardia-horario-modal">
-                                    <strong>Horario:</strong> {guardia.hora_inicio?.slice(0,5)} - {guardia.hora_fin?.slice(0,5)}
-                                    {#if guardia.es_multiples_dias || (guardia.hora_inicio > guardia.hora_fin)}
-                                        <span class="guardia-duracion-modal">(2 días)</span>
+                                    <strong>Horario:</strong>
+                                    {guardia.hora_inicio?.slice(0, 5)} - {guardia.hora_fin?.slice(
+                                        0,
+                                        5,
+                                    )}
+                                    {#if guardia.es_multiples_dias || guardia.hora_inicio > guardia.hora_fin}
+                                        <span class="guardia-duracion-modal"
+                                            >(2 días)</span
+                                        >
                                     {/if}
                                 </div>
                                 {#if guardia.agente_nombre}
                                     <div class="guardia-agente-modal">
-                                        <strong>Agente:</strong> {guardia.agente_nombre} {guardia.agente_apellido || ''}
+                                        <strong>Agente:</strong>
+                                        {guardia.agente_nombre}
+                                        {guardia.agente_apellido || ""}
                                     </div>
                                 {/if}
                                 {#if guardia.area_nombre}
                                     <div class="guardia-area-modal">
-                                        <strong>Área:</strong> {guardia.area_nombre}
+                                        <strong>Área:</strong>
+                                        {guardia.area_nombre}
                                     </div>
                                 {/if}
                                 {#if guardia.observaciones}
                                     <div class="guardia-observaciones-modal">
-                                        <strong>Observaciones:</strong> {guardia.observaciones}
+                                        <strong>Observaciones:</strong>
+                                        {guardia.observaciones}
                                     </div>
                                 {/if}
                                 {#if guardia.cantidad && guardia.cantidad > 1}
                                     <div class="guardia-cantidad-modal">
-                                        <strong>Agentes:</strong> {guardia.cantidad} agentes
+                                        <strong>Agentes:</strong>
+                                        {guardia.cantidad} agentes
                                     </div>
                                 {/if}
                             </div>
@@ -424,17 +501,22 @@
         background: transparent;
         border: none;
         max-width: 1200px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
     .calendar-header {
         text-align: center;
         padding: 20px 0;
-        background: linear-gradient(135deg, rgba(231, 144, 67, 0.85) 0%, rgba(255, 139, 50, 0.85) 100%);
+        background: linear-gradient(
+            135deg,
+            rgba(231, 144, 67, 0.85) 0%,
+            rgba(255, 139, 50, 0.85) 100%
+        );
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
         color: white;
         border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 16px;
-        box-shadow: 
+        box-shadow:
             inset 0 1px 2px rgba(255, 255, 255, 0.3),
             0 2px 10px rgba(231, 144, 67, 0.2);
     }
@@ -471,7 +553,11 @@
         font-weight: bold;
         padding: 15px;
         margin: 4px;
-        background: linear-gradient(135deg, rgba(142, 182, 228, 0.5) 0%, rgba(61, 151, 255, 0.45) 100%);
+        background: linear-gradient(
+            135deg,
+            rgba(142, 182, 228, 0.5) 0%,
+            rgba(61, 151, 255, 0.45) 100%
+        );
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
         color: rgba(0, 0, 0, 0.63);
@@ -495,14 +581,14 @@
         flex-direction: column;
         position: relative;
     }
-    
+
     .calendar-day:not(.disabled):hover {
         background: #fef6ee;
         cursor: pointer;
         border-color: #e79043;
         transform: scale(1.02);
     }
-    
+
     .calendar-day.disabled {
         background: rgba(250, 250, 250, 0.5);
         color: rgba(204, 204, 204, 0.6);
@@ -510,7 +596,7 @@
         border-color: rgba(240, 240, 240, 0.5);
         opacity: 0.6;
     }
-    
+
     .calendar-day.today {
         background: #e7904396;
         color: white;
@@ -580,8 +666,6 @@
         font-weight: 600;
         margin-bottom: 1px;
     }
-
-
 
     .feriado-tipo {
         font-size: 0.65rem;

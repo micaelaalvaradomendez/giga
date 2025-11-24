@@ -1,16 +1,16 @@
 <script>
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import AuthService from '../../lib/login/authService.js';
-	import ModalUsuario from '../../lib/componentes/ModalUsuario.svelte';
-	import EditarPerfil from '../../lib/componentes/EditarPerfil.svelte';
-	import CambioContrasenaObligatorio from '../../lib/componentes/CambioContrasenaObligatorio.svelte';
-	import CalendarioBase from '../../lib/componentes/calendarioBase.svelte';
-	import { guardiasService } from '../../lib/services.js';
+	import { onMount } from "svelte";
+	import { goto } from "$app/navigation";
+	import AuthService from "../../lib/login/authService.js";
+	import ModalUsuario from "../../lib/componentes/ModalUsuario.svelte";
+	import EditarPerfil from "../../lib/componentes/EditarPerfil.svelte";
+	import CambioContrasenaObligatorio from "../../lib/componentes/CambioContrasenaObligatorio.svelte";
+	import CalendarioBase from "../../lib/componentes/calendarioBase.svelte";
+	import { guardiasService } from "../../lib/services.js";
 
 	let user = null;
 	let isLoading = true;
-	let errorMessage = '';
+	let errorMessage = "";
 	let showModalUsuario = false;
 	let showEditProfile = false;
 	let showMandatoryPasswordChange = false;
@@ -28,23 +28,26 @@
 			if (sessionCheck.authenticated) {
 				user = sessionCheck.user;
 
-				if (sessionCheck.requires_password_change || AuthService.requiresPasswordChange()) {
+				if (
+					sessionCheck.requires_password_change ||
+					AuthService.requiresPasswordChange()
+				) {
 					showMandatoryPasswordChange = true;
 				}
 
 				await Promise.all([
 					cargarFeriados(),
 					cargarGuardias(),
-					cargarEstadoAsistencia()
+					cargarEstadoAsistencia(),
 				]);
 			} else {
-				goto('/');
+				goto("/");
 				return;
 			}
 		} catch (error) {
-			console.error('Error verificando sesión:', error);
-			errorMessage = 'Error verificando la sesión';
-			setTimeout(() => goto('/'), 2000);
+			console.error("Error verificando sesión:", error);
+			errorMessage = "Error verificando la sesión";
+			setTimeout(() => goto("/"), 2000);
 		} finally {
 			isLoading = false;
 		}
@@ -56,7 +59,7 @@
 			const response = await guardiasService.getFeriados();
 			feriados = response.data?.results || response.data || [];
 		} catch (error) {
-			console.error('Error cargando feriados:', error);
+			console.error("Error cargando feriados:", error);
 			feriados = [];
 		} finally {
 			loadingFeriados = false;
@@ -71,7 +74,7 @@
 			const response = await guardiasService.getGuardiasAgente(user.id);
 			guardias = response.data?.guardias || [];
 		} catch (error) {
-			console.error('Error cargando guardias:', error);
+			console.error("Error cargando guardias:", error);
 			guardias = [];
 		} finally {
 			loadingGuardias = false;
@@ -81,15 +84,15 @@
 	async function cargarEstadoAsistencia() {
 		try {
 			loadingAsistencia = true;
-			const response = await fetch('/api/asistencia/estado/', {
-				credentials: 'include'
+			const response = await fetch("/api/asistencia/estado/", {
+				credentials: "include",
 			});
 			if (response.ok) {
 				const data = await response.json();
 				asistenciaHoy = data.data;
 			}
 		} catch (error) {
-			console.error('Error cargando estado asistencia:', error);
+			console.error("Error cargando estado asistencia:", error);
 		} finally {
 			loadingAsistencia = false;
 		}
@@ -98,10 +101,10 @@
 	async function handleLogout() {
 		try {
 			await AuthService.logout();
-			goto('/');
+			goto("/");
 		} catch (error) {
-			console.error('Error durante logout:', error);
-			goto('/');
+			console.error("Error durante logout:", error);
+			goto("/");
 		}
 	}
 
@@ -131,9 +134,9 @@
 		if (!guardias || guardias.length === 0) return [];
 		const hoy = new Date();
 		hoy.setHours(0, 0, 0, 0);
-		
+
 		return guardias
-			.filter(g => {
+			.filter((g) => {
 				const fechaGuardia = new Date(g.fecha);
 				fechaGuardia.setHours(0, 0, 0, 0);
 				return fechaGuardia >= hoy;
@@ -143,29 +146,31 @@
 	}
 
 	function formatearFecha(fecha) {
-		if (!fecha) return '';
+		if (!fecha) return "";
 		const d = new Date(fecha);
-		return d.toLocaleDateString('es-AR', {
-			day: '2-digit',
-			month: '2-digit',
-			year: 'numeric'
+		return d.toLocaleDateString("es-AR", {
+			day: "2-digit",
+			month: "2-digit",
+			year: "numeric",
 		});
 	}
 
 	function formatearHora(hora) {
-		if (!hora) return '';
+		if (!hora) return "";
 		return hora.slice(0, 5);
 	}
 
 	function esAdministrador() {
 		if (!user || !user.roles) return false;
-		return user.roles.some(r => ['Administrador', 'Director', 'Jefatura'].includes(r.nombre));
+		return user.roles.some((r) =>
+			["Administrador", "Director", "Jefatura"].includes(r.nombre),
+		);
 	}
 
 	function getIniciales() {
-		if (!user) return '';
-		const first = user.first_name?.charAt(0).toUpperCase() || '';
-		const last = user.last_name?.charAt(0).toUpperCase() || '';
+		if (!user) return "";
+		const first = user.first_name?.charAt(0).toUpperCase() || "";
+		const last = user.last_name?.charAt(0).toUpperCase() || "";
 		return first + last;
 	}
 </script>
@@ -212,8 +217,10 @@
 		<!-- Header con usuario -->
 		<header class="dashboard-header">
 			<div class="header-content">
-				<h1 class="dashboard-title">¡Bienvenido/a, {user.first_name}!</h1>
-				
+				<h1 class="dashboard-title">
+					¡Bienvenido/a, {user.first_name}!
+				</h1>
+
 				<!-- Avatar clickeable -->
 				<button class="user-avatar" on:click={toggleModalUsuario}>
 					<div class="avatar-circle">
@@ -233,7 +240,10 @@
 				<div class="dashboard-card guardias-card">
 					<div class="card-header">
 						<h2>🛡️ Mis Guardias</h2>
-						<button class="btn-ir" on:click={() => goto('/guardias')}>
+						<button
+							class="btn-ir"
+							on:click={() => goto("/guardias")}
+						>
 							Ir a Guardias →
 						</button>
 					</div>
@@ -250,15 +260,29 @@
 									{#each proximasGuardias as guardia}
 										<div class="guardia-item">
 											<div class="guardia-fecha">
-												<span class="fecha-dia">{new Date(guardia.fecha).getDate()}</span>
+												<span class="fecha-dia"
+													>{new Date(
+														guardia.fecha,
+													).getDate()}</span
+												>
 												<span class="fecha-mes">
-													{new Date(guardia.fecha).toLocaleDateString('es-AR', { month: 'short' })}
+													{new Date(
+														guardia.fecha,
+													).toLocaleDateString(
+														"es-AR",
+														{ month: "short" },
+													)}
 												</span>
 											</div>
 											<div class="guardia-info">
-												<span class="guardia-turno">{guardia.turno || 'Turno completo'}</span>
+												<span class="guardia-turno"
+													>{guardia.turno ||
+														"Turno completo"}</span
+												>
 												<span class="guardia-detalle">
-													{guardia.hora_inicio ? `${formatearHora(guardia.hora_inicio)} - ${formatearHora(guardia.hora_fin)}` : 'Día completo'}
+													{guardia.hora_inicio
+														? `${formatearHora(guardia.hora_inicio)} - ${formatearHora(guardia.hora_fin)}`
+														: "Día completo"}
 												</span>
 											</div>
 										</div>
@@ -278,7 +302,10 @@
 				<div class="dashboard-card asistencia-card">
 					<div class="card-header">
 						<h2>Asistencia Hoy</h2>
-						<button class="btn-ir" on:click={() => goto('/asistencia')}>
+						<button
+							class="btn-ir"
+							on:click={() => goto("/asistencia")}
+						>
 							Ir a Asistencia →
 						</button>
 					</div>
@@ -290,21 +317,46 @@
 							</div>
 						{:else if asistenciaHoy}
 							<div class="asistencia-estado">
-								<div class="estado-item {asistenciaHoy.tiene_entrada ? 'marcado' : 'pendiente'}">
-									<span class="estado-icon">{asistenciaHoy.tiene_entrada ? '✓' : '○'}</span>
+								<div
+									class="estado-item {asistenciaHoy.tiene_entrada
+										? 'marcado'
+										: 'pendiente'}"
+								>
+									<span class="estado-icon"
+										>{asistenciaHoy.tiene_entrada
+											? "✓"
+											: "○"}</span
+									>
 									<div class="estado-info">
-										<span class="estado-label">Entrada</span>
+										<span class="estado-label">Entrada</span
+										>
 										<span class="estado-hora">
-											{asistenciaHoy.hora_entrada ? formatearHora(asistenciaHoy.hora_entrada) : 'Sin marcar'}
+											{asistenciaHoy.hora_entrada
+												? formatearHora(
+														asistenciaHoy.hora_entrada,
+													)
+												: "Sin marcar"}
 										</span>
 									</div>
 								</div>
-								<div class="estado-item {asistenciaHoy.tiene_salida ? 'marcado' : 'pendiente'}">
-									<span class="estado-icon">{asistenciaHoy.tiene_salida ? '✓' : '○'}</span>
+								<div
+									class="estado-item {asistenciaHoy.tiene_salida
+										? 'marcado'
+										: 'pendiente'}"
+								>
+									<span class="estado-icon"
+										>{asistenciaHoy.tiene_salida
+											? "✓"
+											: "○"}</span
+									>
 									<div class="estado-info">
 										<span class="estado-label">Salida</span>
 										<span class="estado-hora">
-											{asistenciaHoy.hora_salida ? formatearHora(asistenciaHoy.hora_salida) : 'Sin marcar'}
+											{asistenciaHoy.hora_salida
+												? formatearHora(
+														asistenciaHoy.hora_salida,
+													)
+												: "Sin marcar"}
 										</span>
 									</div>
 								</div>
@@ -325,21 +377,35 @@
 					</div>
 					<div class="card-body">
 						<div class="accesos-grid">
-							<button class="acceso-btn" on:click={() => goto('/reportes')}>
+							<button
+								class="acceso-btn"
+								on:click={() => goto("/reportes")}
+							>
 								<span class="acceso-icon">📊</span>
 								<span class="acceso-label">Reportes</span>
 							</button>
-							<button class="acceso-btn" on:click={() => goto('/guardias')}>
+							<button
+								class="acceso-btn"
+								on:click={() => goto("/guardias")}
+							>
 								<span class="acceso-icon">🛡️</span>
 								<span class="acceso-label">Guardias</span>
 							</button>
 							{#if esAdministrador()}
-								<button class="acceso-btn admin" on:click={() => goto('/paneladmin')}>
+								<button
+									class="acceso-btn admin"
+									on:click={() => goto("/paneladmin")}
+								>
 									<span class="acceso-icon">⚙️</span>
-									<span class="acceso-label">Administración</span>
+									<span class="acceso-label"
+										>Administración</span
+									>
 								</button>
 							{/if}
-							<button class="acceso-btn" on:click={() => goto('/organigrama')}>
+							<button
+								class="acceso-btn"
+								on:click={() => goto("/organigrama")}
+							>
 								<span class="acceso-icon">🏢</span>
 								<span class="acceso-label">Organigrama</span>
 							</button>
@@ -350,9 +416,9 @@
 
 			<!-- Columna derecha: Calendario -->
 			<div class="right-column">
-                <div class="card-body calendario-body">
-                    <CalendarioBase {feriados} {guardias} />
-                </div>
+				<div class="card-body calendario-body">
+					<CalendarioBase {feriados} {guardias} />
+				</div>
 			</div>
 		</div>
 	</div>
@@ -391,6 +457,7 @@
 	.dashboard-container {
 		min-height: 100vh;
 		padding: 2rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.dashboard-header {
@@ -406,10 +473,38 @@
 	}
 
 	.dashboard-title {
-		font-size: 2rem;
+		font-size: 40px;
 		font-weight: 700;
-		color: #1a1a1a;
-		margin: 0;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		margin: 10px;
+		position: relative;
+		padding-bottom: 0.5rem;
+		overflow: hidden;
+		display: inline-block;
+	}
+
+	.dashboard-title::after {
+		content: "";
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 80px;
+		height: 4px;
+		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+		border-radius: 2px;
+		animation: moveLine 2.2s linear infinite;
+	}
+
+	@keyframes moveLine {
+		0% {
+			left: -40%;
+		}
+		100% {
+			left: 100%;
+		}
 	}
 
 	.user-avatar {
@@ -417,17 +512,20 @@
 		align-items: center;
 		gap: 0.75rem;
 		background: white;
-		border: none;
+		border: 2px solid #e9ecef;
 		padding: 0.5rem 1rem;
 		border-radius: 50px;
 		cursor: pointer;
 		transition: all 0.2s;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.user-avatar:hover {
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 		transform: translateY(-2px);
+		border-color: #667eea;
+		background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
 	}
 
 	.avatar-circle {
@@ -445,7 +543,9 @@
 
 	.avatar-name {
 		font-weight: 600;
+		font-size: 16px;
 		color: #1a1a1a;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.avatar-icon {
@@ -478,10 +578,36 @@
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 		overflow: hidden;
 		transition: all 0.3s;
+		border: 1px solid #e9ecef;
+		position: relative;
+	}
+
+	.dashboard-card::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 4px;
+		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+	}
+
+	.guardias-card::before {
+		background: linear-gradient(90deg, #ffc107 0%, #ff9800 100%);
+	}
+
+	.asistencia-card::before {
+		background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+	}
+
+	.accesos-card::before {
+		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
 	}
 
 	.dashboard-card:hover {
 		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+		transform: translateY(-4px);
+		border-color: #667eeabd;
 	}
 
 	.card-header {
@@ -490,6 +616,7 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
 	}
 
 	.card-header h2 {
