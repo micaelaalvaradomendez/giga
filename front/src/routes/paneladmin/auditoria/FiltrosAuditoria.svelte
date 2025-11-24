@@ -2,12 +2,35 @@
 	import { auditoriaController } from "$lib/paneladmin/controllers";
 
 	// Stores del controlador
-	const { filtros } = auditoriaController;
+	const { filtros, registros } = auditoriaController;
 
-	// Obtener datos únicos para los filtros
-	const modulosUnicos = auditoriaController.getModulosUnicos();
-	const accionesUnicas = auditoriaController.getAccionesUnicas();
-	const usuariosUnicos = auditoriaController.getUsuariosUnicos();
+	// Obtener datos únicos para los filtros (stores derivados que dependen de registros)
+	$: modulosUnicos = $registros ? $registros
+		.map(registro => registro.nombre_tabla)
+		.filter((modulo, index, array) => array.indexOf(modulo) === index)
+		.sort()
+		.map(modulo => ({
+			value: modulo,
+			label: auditoriaController.formatearNombreModulo(modulo)
+		})) : [];
+
+	$: accionesUnicas = $registros ? $registros
+		.map(registro => registro.accion)
+		.filter((accion, index, array) => array.indexOf(accion) === index)
+		.sort()
+		.map(accion => ({
+			value: accion,
+			label: auditoriaController.traducirAccion(accion)
+		})) : [];
+
+	$: usuariosUnicos = $registros ? $registros
+		.map(registro => registro.creado_por_nombre || 'Sistema')
+		.filter((usuario, index, array) => array.indexOf(usuario) === index)
+		.sort()
+		.map(usuario => ({
+			value: usuario,
+			label: usuario
+		})) : [];
 
 	// Categorías predefinidas
 	const categorias = [
@@ -93,7 +116,7 @@
 				on:change={(e) => actualizarFiltro('modulo', e.target.value)}
 			>
 				<option value="">Todos los módulos</option>
-				{#each $modulosUnicos as modulo}
+				{#each modulosUnicos as modulo}
 					<option value={modulo.value}>{modulo.label}</option>
 				{/each}
 			</select>
@@ -122,7 +145,7 @@
 				on:change={(e) => actualizarFiltro('accion', e.target.value)}
 			>
 				<option value="">Todas las acciones</option>
-				{#each $accionesUnicas as accion}
+				{#each accionesUnicas as accion}
 					<option value={accion.value}>{accion.label}</option>
 				{/each}
 			</select>
@@ -137,7 +160,7 @@
 				on:change={(e) => actualizarFiltro('usuario', e.target.value)}
 			>
 				<option value="">Todos los usuarios</option>
-				{#each $usuariosUnicos as usuario}
+				{#each usuariosUnicos as usuario}
 					<option value={usuario.value}>{usuario.label}</option>
 				{/each}
 			</select>
@@ -189,7 +212,7 @@
 			<div class="filtros-activos-tags">
 				{#if $filtros.modulo}
 					<span class="tag tag-modulo">
-						📦 {$modulosUnicos.find(m => m.value === $filtros.modulo)?.label}
+						📦 {modulosUnicos.find(m => m.value === $filtros.modulo)?.label}
 						<button on:click={() => actualizarFiltro('modulo', '')}>×</button>
 					</span>
 				{/if}
@@ -201,7 +224,7 @@
 				{/if}
 				{#if $filtros.accion}
 					<span class="tag tag-accion">
-						⚡ {$accionesUnicas.find(a => a.value === $filtros.accion)?.label}
+						⚡ {accionesUnicas.find(a => a.value === $filtros.accion)?.label}
 						<button on:click={() => actualizarFiltro('accion', '')}>×</button>
 					</span>
 				{/if}

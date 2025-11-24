@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import { auditoriaService } from '$lib/services.js';
 import AuthService from '$lib/login/authService.js';
 
@@ -500,67 +500,7 @@ class AuditoriaController {
 		});
 	}
 
-	/**
-	 * Obtiene los módulos únicos para filtrado
-	 */
-	getModulosUnicos() {
-		return get(this.registros)
-			.map(registro => registro.nombre_tabla)
-			.filter((modulo, index, array) => array.indexOf(modulo) === index)
-			.sort();
-	}
 
-	/**
-	 * Obtiene las acciones únicas para filtrado
-	 */
-	getAccionesUnicas() {
-		return get(this.registros)
-			.map(registro => registro.accion)
-			.filter((accion, index, array) => array.indexOf(accion) === index)
-			.sort();
-	}
-
-	/**
-	 * Obtiene los usuarios únicos para filtrado
-	 */
-	getUsuariosUnicos() {
-		return get(this.registros)
-			.map(registro => registro.creado_por_nombre || 'Sistema')
-			.filter((usuario, index, array) => array.indexOf(usuario) === index)
-			.sort();
-	}
-
-	/**
-	 * Obtiene acciones agrupadas por categoría
-	 */
-	getAccionesPorCategoria() {
-		const acciones = this.getAccionesUnicas();
-		const categorias = {
-			'Gestión de Registros': ['CREAR', 'ACTUALIZAR', 'MODIFICAR', 'ELIMINAR', 'create', 'update', 'delete'],
-			'Asistencias': ['CREAR_ASISTENCIA', 'MARCAR_ENTRADA', 'MARCAR_SALIDA', 'MARCAR_ENTRADA_ADMIN', 'MARCAR_SALIDA_ADMIN', 'CORREGIR_ASISTENCIA', 'MARCAR_AUSENTE'],
-			'Licencias': ['CREAR_LICENCIA', 'APROBAR_LICENCIA', 'RECHAZAR_LICENCIA', 'ELIMINAR_LICENCIA'],
-			'Tipos de Licencia': ['CREAR_TIPO_LICENCIA', 'ACTUALIZAR_TIPO_LICENCIA', 'ELIMINAR_TIPO_LICENCIA'],
-			'Roles y Permisos': ['ASIGNAR_ROL', 'QUITAR_ROL', 'CAMBIO_ROL_ATOMICO'],
-			'Autenticación': ['LOGIN_EXITOSO', 'LOGIN_FALLIDO', 'LOGOUT']
-		};
-
-		const resultado = {};
-		for (const [categoria, accionesCategoria] of Object.entries(categorias)) {
-			const accionesFiltradas = acciones.filter(accion => accionesCategoria.includes(accion));
-			if (accionesFiltradas.length > 0) {
-				resultado[categoria] = accionesFiltradas;
-			}
-		}
-
-		// Agregar acciones no categorizadas
-		const todasLasAccionesCategorizada = Object.values(categorias).flat();
-		const accionesSinCategorizar = acciones.filter(accion => !todasLasAccionesCategorizada.includes(accion));
-		if (accionesSinCategorizar.length > 0) {
-			resultado['Otras'] = accionesSinCategorizar;
-		}
-
-		return resultado;
-	}
 
 	/**
 	 * Actualiza los filtros activos
