@@ -1223,7 +1223,6 @@
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
-	/* Header */
 	.page-header {
 		display: flex;
 		justify-content: space-between;
@@ -1578,6 +1577,7 @@
 		background: #5a6268;
 		transform: translateY(-1px);
 	}
+
 	/* Tabla */
 	.table-container {
 		overflow-x: auto;

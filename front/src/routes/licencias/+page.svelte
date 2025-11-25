@@ -29,16 +29,24 @@
 		obtenerIconoEstado,
 	} from "$lib/paneladmin/controllers/licenciasController.js";
 
+	import ModalAsignar from "$lib/componentes/ModalAsignar.svelte";
+	import ModalAprobar from "$lib/componentes/ModalAprobar.svelte";
+	import ModalRechazar from "$lib/componentes/ModalRechazar.svelte";
+	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+
+	let vistaActual = "licencias"; // 'licencias' o 'tipos'
+
 	let userInfo = null;
 	let permisos = {};
 	let areas = [];
 	let agentes = [];
 
 	// Modal states
+	let showModalSolicitar = false;
 	let showModalCrear = false;
+	let showModalAsignar = false;
 	let showModalAprobar = false;
 	let showModalRechazar = false;
-	let showModalAsignar = false;
 	let licenciaSeleccionada = null;
 
 	// Form data
@@ -66,9 +74,96 @@
 
 	let saving = false;
 
+	let tipos = [];
+	let loadingTipos = false;
+	let errorTipos = null;
+	let searchTerm = "";
+
+	let showForm = false;
+	let isEditing = false;
+	let editingId = null;
+	let form = {
+		codigo: "",
+		descripcion: "",
+	};
+
+	// Modal de confirmación para tipos
+	let showConfirmDelete = false;
+	let tipoAEliminar = null;
+
+	// Modal de confirmación para eliminar licencias
+	let showConfirmDeleteLicencia = false;
+	let licenciaAEliminar = null;
+	let eliminandoLicencia = false;
+
+	let alertConfig = {
+		show: false,
+		type: "info",
+		title: "",
+		message: "",
+		duration: 0,
+		showConfirmButton: true,
+		confirmText: "Aceptar",
+		showCancelButton: false,
+		cancelText: "Cancelar",
+		onConfirm: null,
+		onCancel: null,
+		onClose: null,
+	};
+
 	onMount(async () => {
 		await inicializar();
 	});
+
+	function mostrarExito(mensaje, titulo = "Éxito") {
+		mostrarAlerta({
+			title: titulo,
+			message: mensaje,
+			type: "success",
+			duration: 3000,
+		});
+	}
+
+	function mostrarError(mensaje, titulo = "Error") {
+		mostrarAlerta({
+			title: titulo,
+			message: mensaje,
+			type: "error",
+		});
+	}
+
+	function mostrarConfirmacion(mensaje, titulo = "Confirmar", onConfirm) {
+		mostrarAlerta({
+			title: titulo,
+			message: mensaje,
+			type: "warning",
+			showCancelButton: true,
+			confirmText: "Sí, continuar",
+			cancelText: "Cancelar",
+			onConfirm: onConfirm,
+		});
+	}
+
+	function handleAlertConfirm() {
+		if (alertConfig.onConfirm) {
+			alertConfig.onConfirm();
+		}
+		alertConfig.show = false;
+	}
+
+	function handleAlertCancel() {
+		if (alertConfig.onCancel) {
+			alertConfig.onCancel();
+		}
+		alertConfig.show = false;
+	}
+
+	function handleAlertClose() {
+		if (alertConfig.onClose) {
+			alertConfig.onClose();
+		}
+		alertConfig.show = false;
+	}
 
 	async function inicializar() {
 		try {
@@ -254,13 +349,29 @@
 		saving = false;
 	}
 
+	function mostrarAlerta(config) {
+		if (typeof config === "string") {
+			config = {
+				title: "Información",
+				message: config,
+				type: "info",
+			};
+		}
+
+		alertConfig = {
+			...alertConfig,
+			...config,
+			show: true,
+		};
+	}
+
 	async function handleCrearLicencia() {
 		if (
 			!formLicencia.id_tipo_licencia ||
 			!formLicencia.fecha_desde ||
 			!formLicencia.fecha_hasta
 		) {
-			alert("Por favor complete todos los campos obligatorios");
+			mostrarError("Por favor complete todos los campos obligatorios");
 			return;
 		}
 
@@ -268,7 +379,7 @@
 			new Date(formLicencia.fecha_desde) >
 			new Date(formLicencia.fecha_hasta)
 		) {
-			alert(
+			mostrarError(
 				"La fecha de inicio no puede ser posterior a la fecha de fin",
 			);
 			return;
@@ -282,12 +393,137 @@
 
 		if (resultado.success) {
 			cerrarModales();
-			alert("Licencia solicitada correctamente. Aguarde aprobación.");
+			mostrarExito(
+				"Licencia solicitada correctamente. Aguarde aprobación.",
+			);
 		} else {
-			alert(resultado.error);
+			mostrarError(resultado.error);
 		}
 		saving = false;
 	}
+
+	function handleAsignarEvent(event) {
+		console.log("Asignar licencia event:", event.detail);
+		showModalAsignar = false;
+		mostrarExito("Licencia asignada correctamente");
+	}
+
+	function handleAprobarEvent(event) {
+		if (licenciaSeleccionada) {
+			aprobarLicencia(
+				licenciaSeleccionada.id_licencia,
+				event.detail.observaciones,
+			).then((resultado) => {
+				if (resultado.success) {
+					showModalAprobar = false;
+					mostrarExito("Licencia aprobada correctamente.");
+				} else {
+					mostrarError(resultado.error);
+				}
+			});
+		}
+	}
+
+	function handleRechazarEvent(event) {
+		if (licenciaSeleccionada) {
+			rechazarLicencia(
+				licenciaSeleccionada.id_licencia,
+				event.detail.motivo,
+			).then((resultado) => {
+				if (resultado.success) {
+					showModalRechazar = false;
+					mostrarExito("Licencia rechazada correctamente.");
+				} else {
+					mostrarError(resultado.error);
+				}
+			});
+		}
+	}
+
+	// Función para cambiar entre vistas
+	function cambiarVista(vista) {
+		vistaActual = vista;
+		if (vista === "tipos") {
+			cargarTipos();
+		}
+	}
+
+	// Función para cargar tipos de licencia
+	async function cargarTipos() {
+		loadingTipos = true;
+		errorTipos = null;
+		try {
+			const resp = await asistenciaService.getTiposLicencia();
+			if (resp?.data?.success) {
+				tipos = resp.data.data || [];
+			} else {
+				tipos = [];
+				errorTipos = resp?.data?.message || "Error al cargar tipos";
+			}
+		} catch (err) {
+			console.error(err);
+			errorTipos =
+				err?.response?.data?.message ||
+				err.message ||
+				"Error cargando tipos";
+		} finally {
+			loadingTipos = false;
+		}
+	}
+
+	function abrirAlta() {
+		isEditing = false;
+		editingId = null;
+		form = { codigo: "", descripcion: "" };
+		showForm = true;
+	}
+
+	function abrirEdicion(tipo) {
+		isEditing = true;
+		editingId = tipo.id_tipo_licencia || tipo.id || null;
+		form = {
+			codigo: tipo.codigo || tipo.nombre || "",
+			descripcion: tipo.descripcion || "",
+		};
+		showForm = true;
+	}
+
+	// Función para eliminar tipos
+	function eliminar(tipo) {
+		mostrarConfirmacion(
+			`¿Eliminar el tipo de licencia "<strong>${tipo.codigo || tipo.nombre}</strong>"?<br><br>
+		Esta acción fallará si hay agentes con este tipo asignado.`,
+			"⚠️ Eliminar Tipo de Licencia",
+			() => confirmarEliminacionTipo(tipo),
+		);
+	}
+
+	async function confirmarEliminacionTipo(tipo) {
+		const id = tipo.id_tipo_licencia || tipo.id || null;
+		if (!id) return;
+
+		try {
+			await asistenciaService.deleteTipoLicencia(id);
+			tipos = tipos.filter((t) => (t.id_tipo_licencia || t.id) !== id);
+			mostrarExito("Tipo de licencia eliminado correctamente");
+		} catch (err) {
+			console.error(err);
+			const msg =
+				err?.response?.data?.message ||
+				err.message ||
+				"No se pudo eliminar. Puede que existan agentes vinculados.";
+			mostrarError(msg);
+		}
+	}
+
+	$: tiposFiltrados = tipos.filter((t) => {
+		if (!searchTerm) return true;
+		const s = searchTerm.toLowerCase();
+		return (
+			(t.codigo || t.nombre || "").toLowerCase().includes(s) ||
+			(t.descripcion || "").toLowerCase().includes(s)
+		);
+	});
 
 	async function handleAsignarLicencia() {
 		if (
@@ -297,7 +533,7 @@
 			!formLicencia.fecha_desde ||
 			!formLicencia.fecha_hasta
 		) {
-			alert("Por favor complete todos los campos obligatorios");
+			mostrarError("Por favor complete todos los campos obligatorios");
 			return;
 		}
 
@@ -328,9 +564,9 @@
 				estadoLicencia === "aprobada"
 					? "Licencia asignada y aprobada correctamente."
 					: "Licencia asignada correctamente. Queda pendiente de aprobación.";
-			alert(mensaje);
+			mostrarExito(mensaje);
 		} else {
-			alert(resultado.error);
+			mostrarError(resultado.error);
 		}
 		saving = false;
 	}
@@ -346,16 +582,16 @@
 
 		if (resultado.success) {
 			cerrarModales();
-			alert("Licencia aprobada correctamente.");
+			mostrarExito("Licencia aprobada correctamente.");
 		} else {
-			alert(resultado.error);
+			mostrarError(resultado.error);
 		}
 		saving = false;
 	}
 
 	async function handleRechazarLicencia() {
 		if (!licenciaSeleccionada || !formRechazo.motivo.trim()) {
-			alert("Debe indicar el motivo del rechazo");
+			mostrarError("Debe indicar el motivo del rechazo");
 			return;
 		}
 
@@ -367,9 +603,9 @@
 
 		if (resultado.success) {
 			cerrarModales();
-			alert("Licencia rechazada.");
+			mostrarExito("Licencia rechazada.");
 		} else {
-			alert(resultado.error);
+			mostrarError(resultado.error);
 		}
 		saving = false;
 	}
@@ -451,67 +687,73 @@
 	<div class="filtros-container">
 		<div class="filtros-row">
 			<div class="filtro-group">
-				<label for="desde">Desde</label>
+				<label for="fecha_desde">📆 Desde</label>
 				<input
 					type="date"
+					id="fecha_desde"
 					bind:value={$filtros.fecha_desde}
 					on:change={aplicarFiltros}
 				/>
 			</div>
 			<div class="filtro-group">
-				<label for="hasata">Hasta</label>
+				<label for="fecha_hasta">📆 Hasta</label>
 				<input
 					type="date"
+					id="fecha_hasta"
 					bind:value={$filtros.fecha_hasta}
 					on:change={aplicarFiltros}
 				/>
 			</div>
-			{#if permisos.puedeVerTodasAreas || permisos.puedeAsignar || (permisos.soloSuArea && areas.length > 1)}
-				<div class="filtro-group">
-					<label for="area">Área</label>
-					<select
-						bind:value={$filtros.area_id}
-						on:change={aplicarFiltros}
-					>
-						<option value={null}
-							>{permisos.puedeVerTodasAreas ||
-							permisos.puedeAsignar
-								? "Todas las áreas"
-								: "Mi área"}</option
-						>
-						{#each areas as area}
-							<option value={area.id_area}>{area.nombre}</option>
-						{/each}
-					</select>
-				</div>
-			{/if}
 			<div class="filtro-group">
-				<label for="estado">Estado</label>
-				<select bind:value={$filtros.estado} on:change={aplicarFiltros}>
-					<option value="todas">Todos</option>
-					<option value="pendiente">Pendientes</option>
-					<option value="aprobada">Aprobadas</option>
-					<option value="rechazada">Rechazadas</option>
+				<label for="area_filter">🗂️ Área ({areas.length} áreas)</label>
+				<select
+					id="area_filter"
+					bind:value={$filtros.area_id}
+					on:change={aplicarFiltros}
+				>
+					<option value={null}>Todas las áreas</option>
+					{#each areas as area}
+						<option value={area.id_area}>{area.nombre}</option>
+					{/each}
 				</select>
 			</div>
 			<div class="filtro-group">
-				<label for="tipo">Tipo</label>
+				<label for="estado_filter">✨ Estado</label>
 				<select
+					id="estado_filter"
+					bind:value={$filtros.estado}
+					on:change={aplicarFiltros}
+				>
+					<option value="todas">Todos los estados</option>
+					<option value="pendiente">Pendiente</option>
+					<option value="aprobada">Aprobada</option>
+					<option value="rechazada">Rechazada</option>
+				</select>
+			</div>
+			<div class="filtro-group">
+				<label for="tipo_filter"
+					>📝 Tipo ({$tiposLicencia.length} tipos)</label
+				>
+				<select
+					id="tipo_filter"
 					bind:value={$filtros.tipo_licencia_id}
 					on:change={aplicarFiltros}
 				>
 					<option value={null}>Todos los tipos</option>
 					{#each $tiposLicencia as tipo}
 						<option value={tipo.id_tipo_licencia}
-							>{tipo.codigo}</option
+							>{tipo.nombre ||
+								tipo.descripcion ||
+								tipo.codigo ||
+								`Tipo ${tipo.id_tipo_licencia}`}</option
 						>
 					{/each}
 				</select>
 			</div>
-			<div class="filtro-actions">
-				<button class="btn-clear" on:click={limpiarTodosFiltros}>
-					🗑️ Limpiar
-				</button>
+			<div class="filtro-group">
+				<button class="btn-clear" on:click={limpiarTodosFiltros}
+					>🗑️ Limpiar Filtros</button
+				>
 			</div>
 		</div>
 	</div>
@@ -745,283 +987,52 @@
 	</div>
 {/if}
 
-<!-- Modal Asignar Licencia -->
-{#if showModalAsignar}
-	<div class="modal-overlay">
-		<div class="modal">
-			<div class="modal-header">
-				<h3>📝 Asignar Licencia</h3>
-				<button class="modal-close" on:click={cerrarModales}>✕</button>
-			</div>
-			<form on:submit|preventDefault={handleAsignarLicencia}>
-				<div class="modal-body">
-					<!-- Selección de Área -->
-					<div class="form-group">
-						<label for="area">Área *</label>
-						<select
-							bind:value={areaSeleccionada}
-							on:change={() =>
-								cargarAgentesPorArea(areaSeleccionada)}
-							required
-						>
-							<option value={null}>Seleccione un área...</option>
-							{#each areas as area}
-								<option value={area.id_area}
-									>{area.nombre}</option
-								>
-							{/each}
-						</select>
-					</div>
+<!-- Modal de Asignar Licencia -->
+<ModalAsignar
+	bind:show={showModalAsignar}
+	{areas}
+	tiposLicencia={$tiposLicencia}
+	on:asignar={handleAsignarEvent}
+	on:cancelar={() => (showModalAsignar = false)}
+/>
 
-					<!-- Selección de Agente (solo se muestra si hay un área seleccionada) -->
-					{#if areaSeleccionada}
-						<div class="form-group">
-							<label for="agentes">Agente *</label>
-							<select
-								bind:value={formLicencia.id_agente}
-								disabled={cargandoAgentes}
-								required
-							>
-								<option value={null}>
-									{cargandoAgentes
-										? "Cargando agentes..."
-										: "Seleccione un agente..."}
-								</option>
-								{#each agentesDelArea as agente}
-									<option value={agente.id_agente}
-										>{agente.nombre}
-										{agente.apellido} - {agente.legajo}</option
-									>
-								{/each}
-							</select>
-							{#if cargandoAgentes}
-								<small
-									style="color: #3b82f6; font-style: italic;"
-								>
-									🔄 Cargando agentes del área seleccionada...
-								</small>
-							{:else if agentesDelArea.length === 0}
-								<small
-									style="color: #6b7280; font-style: italic;"
-								>
-									No hay agentes disponibles en esta área
-								</small>
-							{:else}
-								<small
-									style="color: #10b981; font-style: italic;"
-								>
-									{agentesDelArea.length} agente{agentesDelArea.length !==
-									1
-										? "s"
-										: ""} disponible{agentesDelArea.length !==
-									1
-										? "s"
-										: ""}
-								</small>
-							{/if}
-						</div>
-					{/if}
+<!-- Modal de Aprobar Licencia -->
+<ModalAprobar
+	bind:show={showModalAprobar}
+	licencia={licenciaSeleccionada}
+	on:aprobar={handleAprobarEvent}
+	on:cancelar={() => (showModalAprobar = false)}
+/>
 
-					<div class="form-group">
-						<label for="tipo">Tipo de Licencia *</label>
-						<select
-							bind:value={formLicencia.id_tipo_licencia}
-							required
-						>
-							<option value={null}>Seleccione un tipo...</option>
-							{#each $tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}
-									>{tipo.codigo} - {tipo.descripcion}</option
-								>
-							{/each}
-						</select>
-					</div>
+<!-- Modal de Rechazar Licencia -->
+<ModalRechazar
+	bind:show={showModalRechazar}
+	licencia={licenciaSeleccionada}
+	on:rechazar={handleRechazarEvent}
+	on:cancelar={() => (showModalRechazar = false)}
+/>
 
-					<div class="form-row">
-						<div class="form-group">
-							<label for="fecha">Fecha Desde *</label>
-							<input
-								type="date"
-								bind:value={formLicencia.fecha_desde}
-								required
-							/>
-						</div>
-						<div class="form-group">
-							<label for="fecha">Fecha Hasta *</label>
-							<input
-								type="date"
-								bind:value={formLicencia.fecha_hasta}
-								required
-							/>
-						</div>
-					</div>
-
-					{#if diasLicencia > 0}
-						<div class="info-days">
-							📅 Duración: <strong>{diasLicencia} días</strong>
-						</div>
-					{/if}
-
-					<div class="form-group">
-						<label for="justificion">Justificación *</label>
-						<textarea
-							bind:value={formLicencia.justificacion}
-							placeholder="Motivo de asignación de la licencia..."
-							rows="3"
-							required
-						></textarea>
-					</div>
-				</div>
-				<div class="modal-footer">
-					<button
-						type="button"
-						class="btn-cancel"
-						on:click={cerrarModales}
-						disabled={saving}
-					>
-						Cancelar
-					</button>
-					<button type="submit" class="btn-success" disabled={saving}>
-						{saving ? "Asignando..." : "✅ Asignar Licencia"}
-					</button>
-				</div>
-			</form>
-		</div>
-	</div>
-{/if}
-
-<!-- Modal Aprobar Licencia -->
-{#if showModalAprobar && licenciaSeleccionada}
-	<div class="modal-overlay">
-		<div class="modal">
-			<div class="modal-header">
-				<h3>✅ Aprobar Licencia</h3>
-				<button class="modal-close" on:click={cerrarModales}>✕</button>
-			</div>
-			<div class="modal-body">
-				<div class="licencia-details">
-					<p>
-						<strong>Agente:</strong>
-						{licenciaSeleccionada.agente_nombre}
-					</p>
-					<p>
-						<strong>Tipo:</strong>
-						{licenciaSeleccionada.tipo_licencia_descripcion}
-					</p>
-					<p>
-						<strong>Período:</strong>
-						{formatearFecha(licenciaSeleccionada.fecha_desde)} - {formatearFecha(
-							licenciaSeleccionada.fecha_hasta,
-						)}
-					</p>
-					<p>
-						<strong>Días:</strong>
-						{calcularDiasLicencia(
-							licenciaSeleccionada.fecha_desde,
-							licenciaSeleccionada.fecha_hasta,
-						)}
-					</p>
-					{#if licenciaSeleccionada.justificacion}
-						<p>
-							<strong>Justificación:</strong>
-							{licenciaSeleccionada.justificacion}
-						</p>
-					{/if}
-				</div>
-
-				<div class="form-group">
-					<label for="obs"
-						>Observaciones de aprobación (opcional)</label
-					>
-					<textarea
-						bind:value={formAprobacion.observaciones}
-						placeholder="Observaciones sobre la aprobación..."
-						rows="3"
-					></textarea>
-				</div>
-			</div>
-			<div class="modal-footer">
-				<button
-					class="btn-cancel"
-					on:click={cerrarModales}
-					disabled={saving}
-				>
-					Cancelar
-				</button>
-				<button
-					class="btn-success"
-					on:click={handleAprobarLicencia}
-					disabled={saving}
-				>
-					{saving ? "Aprobando..." : "✅ Aprobar Licencia"}
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
-
-<!-- Modal Rechazar Licencia -->
-{#if showModalRechazar && licenciaSeleccionada}
-	<div class="modal-overlay">
-		<div class="modal">
-			<div class="modal-header">
-				<h3>❌ Rechazar Licencia</h3>
-				<button class="modal-close" on:click={cerrarModales}>✕</button>
-			</div>
-			<div class="modal-body">
-				<div class="licencia-details">
-					<p>
-						<strong>Agente:</strong>
-						{licenciaSeleccionada.agente_nombre}
-					</p>
-					<p>
-						<strong>Tipo:</strong>
-						{licenciaSeleccionada.tipo_licencia_descripcion}
-					</p>
-					<p>
-						<strong>Período:</strong>
-						{formatearFecha(licenciaSeleccionada.fecha_desde)} - {formatearFecha(
-							licenciaSeleccionada.fecha_hasta,
-						)}
-					</p>
-				</div>
-
-				<div class="form-group">
-					<label for="motivo">Motivo del rechazo *</label>
-					<textarea
-						bind:value={formRechazo.motivo}
-						placeholder="Indique el motivo por el cual se rechaza la licencia..."
-						rows="4"
-						required
-					></textarea>
-				</div>
-			</div>
-			<div class="modal-footer">
-				<button
-					class="btn-cancel"
-					on:click={cerrarModales}
-					disabled={saving}
-				>
-					Cancelar
-				</button>
-				<button
-					class="btn-danger"
-					on:click={handleRechazarLicencia}
-					disabled={saving}
-				>
-					{saving ? "Rechazando..." : "❌ Rechazar Licencia"}
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
+<ModalAlert
+	bind:show={alertConfig.show}
+	type={alertConfig.type}
+	title={alertConfig.title}
+	message={alertConfig.message}
+	duration={alertConfig.duration}
+	showConfirmButton={alertConfig.showConfirmButton}
+	confirmText={alertConfig.confirmText}
+	showCancelButton={alertConfig.showCancelButton}
+	cancelText={alertConfig.cancelText}
+	on:confirm={handleAlertConfirm}
+	on:cancel={handleAlertCancel}
+	on:close={handleAlertClose}
+/>
 
 <style>
-	/* Layout principal */
 	.page-container {
-		max-width: 1400px;
+		max-width: 1600px;
 		margin: 0 auto;
-		padding: 2rem;
+		background: #f8fafc;
+		min-height: 100vh;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
@@ -1030,19 +1041,22 @@
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 2rem;
-		padding-bottom: 1.5rem;
-		border-bottom: 3px solid #f1f3f5;
+		padding-bottom: 20px;
 	}
 
 	.header-title {
-		background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
-		padding: 2rem;
-		margin-bottom: 2rem;
-		border-radius: 16px;
-		text-align: left;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-		border: 1px solid #e9ecef;
 		position: relative;
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+		color: white;
+		padding: 30px 40px;
+		margin: 0;
+		max-width: 1000px;
+		border-radius: 28px;
+		overflow: hidden;
+		text-align: center;
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+			0 20px 60px rgba(30, 64, 175, 0.4);
 	}
 
 	.header-title::before {
@@ -1051,52 +1065,106 @@
 		top: 0;
 		left: 0;
 		right: 0;
-		height: 4px;
-		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-		border-radius: 16px 16px 0 0;
+		bottom: 0;
+		background-image: linear-gradient(
+				90deg,
+				rgba(255, 255, 255, 0.03) 1px,
+				transparent 1px
+			),
+			linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+		background-size: 50px 50px;
+		animation: moveLines 20s linear infinite;
 	}
 
 	.header-title h1 {
-		margin: 0;
-		padding-top: 0.5rem;
-		font-size: 2rem;
-		font-weight: 700;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
+		margin: 10px;
+		font-weight: 800;
+		font-size: 30px;
+		letter-spacing: 0.2px;
 		position: relative;
-		padding-bottom: 0.75rem;
+		padding-bottom: 12px;
+		overflow: hidden;
 		display: inline-block;
 	}
 
 	.header-title h1::after {
 		content: "";
 		position: absolute;
+		width: 40%;
+		height: 3px;
 		bottom: 0;
 		left: 0;
-		width: 80px;
-		height: 4px;
-		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-		border-radius: 2px;
-		animation: slideIn 0.6s ease-out;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.9),
+			transparent
+		);
+		animation: moveLine 2s linear infinite;
 	}
 
-	@keyframes slideIn {
-		from {
-			width: 0;
-			opacity: 0;
+	@keyframes moveLine {
+		0% {
+			left: -40%;
 		}
-		to {
-			width: 80px;
-			opacity: 1;
+		100% {
+			left: 100%;
 		}
 	}
 
 	.header-actions {
 		display: flex;
-		gap: 0.75rem;
-		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	.btn-primary,
+	.btn-secondary,
+	.btn-refresh {
+		padding: 16px 32px;
+		border: none;
+		border-radius: 10px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		font-size: 17px;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	}
+
+	.btn-primary {
+		background: linear-gradient(135deg, #4c51bf 0%, #5b21b6 100%);
+		color: white;
+		box-shadow: 0 4px 15px rgba(76, 81, 191, 0.3);
+	}
+
+	.btn-primary:hover:not(:disabled) {
+		background: linear-gradient(135deg, #5b21b6, #6d28d9);
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(76, 81, 191, 0.4);
+	}
+
+	.btn-secondary {
+		background: linear-gradient(135deg, #b78ef8 0%, #b966d3 100%);
+		color: white;
+		box-shadow: 0 4px 15px rgba(183, 142, 248, 0.3);
+	}
+
+	.btn-secondary:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(215, 111, 241, 0.5);
+	}
+
+	.btn-refresh {
+		background: linear-gradient(135deg, #ff9939 0%, #ffa358 100%);
+		color: white;
+	}
+
+	.btn-refresh:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 5px 15px rgba(226, 148, 59, 0.4);
 	}
 
 	/* Estadísticas */
@@ -1104,88 +1172,151 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 		gap: 1rem;
-		margin-bottom: 1.5rem;
+		margin-top: 20px;
+		margin-bottom: 20px;
 	}
 
 	.stat-card {
 		background: white;
-		padding: 1.5rem;
-		border-radius: 10px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		padding: 20px;
+		border-radius: 16px;
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 		text-align: center;
-		border-left: 4px solid #3b82f6;
+		border-top: 4px solid #4c51bf;
+		transition: transform 0.3s ease;
 	}
 
-	.stat-card.pending {
-		border-left-color: #f59e0b;
-	}
-	.stat-card.approved {
-		border-left-color: #10b981;
-	}
-	.stat-card.rejected {
-		border-left-color: #ef4444;
+	.stat-card:hover {
+		transform: translateY(-5px);
 	}
 
 	.stat-number {
-		font-size: 2rem;
-		font-weight: bold;
-		color: #1f2937;
+		font-size: 2.2rem;
+		font-weight: 700;
+		color: #4c51bf;
+	}
+
+	.stat-card.pending .stat-number {
+		color: #ed8936;
+	}
+	.stat-card.approved .stat-number {
+		color: #38a169;
+	}
+	.stat-card.rejected .stat-number {
+		color: #e53e3e;
+	}
+
+	.stat-card.pending {
+		border-top: 4px solid #ed8936;
+	}
+	.stat-card.approved {
+		border-top: 4px solid #38a169;
+	}
+	.stat-card.rejected {
+		border-top: 4px solid #e53e3e;
 	}
 
 	.stat-label {
-		color: #6b7280;
-		font-size: 0.875rem;
+		font-size: 16px;
+		color: #222222e0;
 		margin-top: 0.5rem;
+		font-weight: 600;
 	}
 
 	/* Filtros */
 	.filtros-container {
-		background: white;
+		background: #f3f3f3d8;
+		border: 1px solid #e0e0e09c;
+		border-radius: 12px;
 		padding: 1.5rem;
-		border-radius: 10px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		margin-bottom: 1.5rem;
+		margin-bottom: 2rem;
 	}
 
 	.filtros-row {
 		display: flex;
-		gap: 1rem;
+		gap: 2rem;
 		align-items: end;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 	}
 
 	.filtro-group {
-		display: flex;
-		flex-direction: column;
-		min-width: 150px;
+		flex: 1 1 200px;
+		min-width: 160px;
+		max-width: 100%;
 	}
 
 	.filtro-group label {
+		color: #1a1a1a;
 		font-weight: 600;
-		margin-bottom: 0.5rem;
 		color: #374151;
-		font-size: 0.875rem;
+		font-size: 16px;
 	}
 
 	.filtro-group input,
 	.filtro-group select {
-		padding: 0.5rem;
-		border: 1px solid #d1d5db;
-		border-radius: 6px;
+		margin-top: 10px;
+		width: 100%;
+		padding: 0.7rem;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
 		font-size: 0.875rem;
+		background: white;
+		appearance: none;
 	}
 
-	.filtro-actions {
-		display: flex;
-		gap: 0.5rem;
+	.filtro-group input:focus,
+	.filtro-group select:focus {
+		outline: none;
+		border-color: #4c51bf;
+		box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
+	}
+
+	.btn-clear {
+		padding: 10px 25px;
+		background: #6c757d;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 0.9rem;
+		transition: all 0.3s ease;
+		white-space: nowrap;
+		height: 42px;
+	}
+
+	.btn-clear:hover {
+		background: #5a6268;
+		transform: translateY(-1px);
 	}
 
 	/* Tabla */
 	.table-container {
+		overflow-x: auto;
+		overflow-y: auto;
+		border: 1px solid #e5e7eb;
+		border-radius: 12px;
 		background: white;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+		max-height: 600px;
+	}
+
+	.table-container::-webkit-scrollbar {
+		height: 8px;
+		width: 8px;
+	}
+
+	.table-container::-webkit-scrollbar-track {
+		background: #f1f5f9;
 		border-radius: 10px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		overflow: hidden;
+	}
+
+	.table-container::-webkit-scrollbar-thumb {
+		background: #cbd5e1;
+		border-radius: 10px;
+	}
+
+	.table-container::-webkit-scrollbar-thumb:hover {
+		background: #94a3b8;
 	}
 
 	.licencias-table {
@@ -1193,22 +1324,45 @@
 		border-collapse: collapse;
 	}
 
+	/* Header fijo con gradiente */
+	.licencias-table thead {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: linear-gradient(135deg, #bad0e6 0%, #a3d3fac0 100%);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+	}
+
 	.licencias-table th {
-		background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-		color: white;
-		padding: 1rem;
+		padding: 18px 20px;
 		text-align: left;
-		font-weight: 600;
-		font-size: 0.875rem;
+		font-weight: 700;
+		color: #1e293b;
+		font-size: 13px;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		border-bottom: 3px solid #3b82f6;
+		background: transparent;
 	}
 
 	.licencias-table td {
-		padding: 1rem;
-		border-bottom: 1px solid #f3f4f6;
+		padding: 18px 20px;
+		font-size: 14px;
+		color: #374151;
+		vertical-align: middle;
+		border-bottom: 1px solid #e5e7eb;
 	}
 
-	.licencia-row:hover {
-		background-color: #f9fafb;
+	/* Hover effect para la tabla */
+	.licencias-table tbody tr {
+		border-bottom: 1px solid #e5e7eb;
+		transition: all 0.2s ease;
+	}
+
+	.licencias-table tbody tr:hover {
+		background: linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 100%);
+		transform: scale(1.005);
+		box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
 	}
 
 	.licencia-row.pending {
@@ -1217,19 +1371,19 @@
 
 	.agente-info strong {
 		display: block;
-		color: #1f2937;
+		color: #2d3748;
 	}
 
 	.agente-info small {
-		color: #6b7280;
+		color: #718096;
 		font-size: 0.75rem;
 	}
 
 	.tipo-badge {
-		background: #dbeafe;
-		color: #1e40af;
+		background: #edf2f7;
+		color: #4a5568;
 		padding: 0.25rem 0.75rem;
-		border-radius: 15px;
+		border-radius: 20px;
 		font-size: 0.75rem;
 		font-weight: 500;
 	}
@@ -1249,11 +1403,22 @@
 	}
 
 	.estado-badge {
-		padding: 0.375rem 0.75rem;
-		border-radius: 15px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: uppercase;
+		display: inline-block;
+		padding: 8px 16px;
+		border-radius: 20px;
+		font-size: 12px;
+		font-weight: 700;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.05);
+		}
 	}
 
 	.acciones {
@@ -1262,83 +1427,38 @@
 		flex-wrap: wrap;
 	}
 
-	/* Botones */
-	.btn-primary,
-	.btn-secondary,
-	.btn-success,
-	.btn-danger,
-	.btn-refresh,
-	.btn-clear,
-	.btn-cancel,
-	.btn-retry {
-		padding: 0.5rem 1rem;
+	.btn-small {
+		padding: 0.375rem 0.75rem;
+		font-size: 14px;
 		border: none;
 		border-radius: 6px;
-		font-weight: 600;
 		cursor: pointer;
+		font-weight: 500;
 		transition: all 0.2s;
-		font-size: 0.875rem;
-	}
-
-	.btn-primary {
-		background: #3b82f6;
-		color: white;
-	}
-	.btn-primary:hover {
-		background: #2563eb;
-	}
-
-	.btn-secondary {
-		background: #6b7280;
-		color: white;
-	}
-	.btn-secondary:hover {
-		background: #4b5563;
 	}
 
 	.btn-success {
-		background: #10b981;
+		background: linear-gradient(135deg, #10b981, #059669);
 		color: white;
+		box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
 	}
+
 	.btn-success:hover {
-		background: #059669;
+		background: linear-gradient(135deg, #059669, #047857);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
 	}
 
 	.btn-danger {
-		background: #ef4444;
+		background: linear-gradient(135deg, #ef4444, #dc2626);
 		color: white;
+		box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 	}
+
 	.btn-danger:hover {
-		background: #dc2626;
-	}
-
-	.btn-refresh {
-		background: #8b5cf6;
-		color: white;
-	}
-	.btn-refresh:hover {
-		background: #7c3aed;
-	}
-
-	.btn-clear {
-		background: #f59e0b;
-		color: white;
-	}
-	.btn-clear:hover {
-		background: #d97706;
-	}
-
-	.btn-cancel {
-		background: #6b7280;
-		color: white;
-	}
-	.btn-cancel:hover {
-		background: #4b5563;
-	}
-
-	.btn-small {
-		padding: 0.25rem 0.5rem;
-		font-size: 0.75rem;
+		background: linear-gradient(135deg, #dc2626, #b91c1c);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
 	}
 
 	.btn-info {
@@ -1346,61 +1466,151 @@
 		color: white;
 	}
 
-	/* Modales */
+	.btn-info:hover {
+		background: #0284c7;
+		transform: translateY(-2px);
+	}
+
+	/* Estados de carga y vacío */
+	.loading-container {
+		text-align: center;
+		padding: 3rem;
+		color: #718096;
+	}
+
+	.loading-container .spinner-large {
+		margin: 0 auto 1rem;
+		width: 2rem;
+		height: 2rem;
+		border: 2px solid #e2e8f0;
+		border-top: 2px solid #4c51bf;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+
+	.empty-state {
+		text-align: center;
+		padding: 3rem;
+		color: #718096;
+	}
+
+	.empty-state p {
+		margin-bottom: 1rem;
+	}
+
+	.empty-icon {
+		font-size: 3rem;
+		margin-bottom: 1rem;
+	}
+
+	/* Alertas */
+	.alert {
+		padding: 1rem;
+		border-radius: 8px;
+		margin-bottom: 1rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.alert-error {
+		background: #fed7d7;
+		color: #742a2a;
+		border: 1px solid #feb2b2;
+	}
+
+	.btn-retry {
+		background: linear-gradient(135deg, #4c51bf, #5b21b6);
+		color: white;
+		padding: 8px 16px;
+		border-radius: 8px;
+		font-size: 13px;
+		font-weight: 600;
+		border: none;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		box-shadow: 0 2px 4px rgba(76, 81, 191, 0.3);
+	}
+
+	.btn-retry:hover {
+		background: linear-gradient(135deg, #5b21b6, #6d28d9);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(76, 81, 191, 0.4);
+	}
+
+	/* Modales - Estilo unificado */
 	.modal-overlay {
 		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 0, 0.5);
 		display: flex;
-		align-items: center;
 		justify-content: center;
+		align-items: center;
 		z-index: 1000;
-		padding: 1rem;
+		backdrop-filter: blur(4px);
 	}
 
 	.modal {
 		background: white;
-		border-radius: 12px;
-		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-		width: 100%;
+		border-radius: 16px;
 		max-width: 600px;
+		width: 90%;
 		max-height: 90vh;
 		overflow-y: auto;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.modal-header {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		padding: 1.5rem 2rem;
+		border-radius: 16px 16px 0 0;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 1.5rem;
-		border-bottom: 1px solid #e5e7eb;
 	}
 
 	.modal-header h3 {
 		margin: 0;
-		color: #1f2937;
+		font-size: 1.5rem;
+		font-weight: 600;
 	}
 
 	.modal-close {
 		background: none;
 		border: none;
-		font-size: 1.5rem;
+		color: white;
+		font-size: 25px;
 		cursor: pointer;
-		color: #6b7280;
-		padding: 0.25rem;
+		padding: 0;
+		width: 30px;
+		height: 30px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		transition: all 0.3s ease;
+	}
+
+	.modal-close:hover {
+		background: rgba(255, 255, 255, 0.2);
 	}
 
 	.modal-body {
-		padding: 1.5rem;
+		padding: 2rem;
 	}
 
 	.modal-footer {
 		display: flex;
-		gap: 0.75rem;
 		justify-content: flex-end;
-		padding: 1rem 1.5rem;
+		gap: 0.5rem;
+		margin-top: 1.5rem;
+		padding: 1.5rem 2rem;
 		border-top: 1px solid #e5e7eb;
-		background: #f9fafb;
 	}
 
 	.form-group {
@@ -1409,25 +1619,43 @@
 
 	.form-group label {
 		display: block;
+		margin-bottom: 5px;
 		font-weight: 600;
-		margin-bottom: 0.5rem;
-		color: #374151;
+		color: #313131;
 	}
 
 	.form-group input,
 	.form-group select,
 	.form-group textarea {
+		padding: 12px 15px;
+		border: 2px solid #e1e5e9;
+		border-radius: 8px;
+		font-size: 16px;
+		transition: all 0.3s ease;
+		font-family: inherit;
+		resize: vertical;
 		width: 100%;
-		padding: 0.75rem;
-		border: 1px solid #d1d5db;
-		border-radius: 6px;
-		font-size: 0.875rem;
+		box-sizing: border-box;
+	}
+
+	.form-group input:focus,
+	.form-group select:focus,
+	.form-group textarea:focus {
+		outline: none;
+		border-color: #667eea;
+		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+	}
+
+	.form-group textarea {
+		resize: vertical;
+		min-height: 80px;
 	}
 
 	.form-row {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1rem;
+		margin-bottom: 1.25rem;
 	}
 
 	.info-days {
@@ -1437,101 +1665,246 @@
 		border-radius: 6px;
 		margin-bottom: 1rem;
 		text-align: center;
+		font-weight: 600;
 	}
 
-	.licencia-details {
-		background: #f9fafb;
-		padding: 1rem;
-		border-radius: 6px;
-		margin-bottom: 1rem;
+	.btn-cancel {
+		background: #6c757d;
+		color: white;
+		padding: 12px 24px;
+		border: none;
+		border-radius: 8px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		font-size: 16px;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
-	.licencia-details p {
-		margin: 0.5rem 0;
+	.btn-cancel:hover:not(:disabled) {
+		background: #5a6268;
+		transform: translateY(-2px);
 	}
-
-	/* Estados vacíos y de carga */
-	.loading-container {
-		text-align: center;
-		padding: 4rem 2rem;
-		color: #6b7280;
-	}
-
-	.spinner-large {
-		width: 3rem;
-		height: 3rem;
-		border: 3px solid #e5e7eb;
-		border-top: 3px solid #3b82f6;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-		margin: 0 auto 1rem;
-	}
-
-	.empty-state {
-		text-align: center;
-		padding: 4rem 2rem;
-		color: #6b7280;
-	}
-
-	.empty-icon {
-		font-size: 4rem;
-		margin-bottom: 1rem;
-	}
-
-	.alert {
-		padding: 1rem;
-		border-radius: 6px;
-		margin-bottom: 1rem;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.alert-error {
-		background: #fee2e2;
-		color: #991b1b;
-		border: 1px solid #fca5a5;
-	}
-
-	@keyframes spin {
-		0% {
-			transform: rotate(0deg);
-		}
-		100% {
-			transform: rotate(360deg);
-		}
-	}
-
 	/* Responsive */
+	@media (max-width: 1200px) {
+		.page-container {
+			padding: 1rem;
+		}
+
+		.header-title {
+			max-width: 100%;
+			padding: 20px 30px;
+		}
+
+		.header-title h1 {
+			font-size: 24px;
+		}
+
+		.filtros-row {
+			flex-wrap: wrap;
+			gap: 1rem;
+		}
+
+		.filtro-group {
+			flex: 1 1 calc(50% - 0.5rem);
+			min-width: 200px;
+		}
+
+		.table-container {
+			font-size: 0.875rem;
+		}
+	}
+
 	@media (max-width: 768px) {
+		.page-container {
+			padding: 0.5rem;
+		}
+
 		.page-header {
 			flex-direction: column;
 			gap: 1rem;
 			align-items: stretch;
+			padding-bottom: 1rem;
+		}
+
+		.header-title {
+			padding: 20px 15px;
+			border-radius: 16px;
+			margin-right: 0;
+		}
+
+		.header-title h1 {
+			font-size: 20px;
 		}
 
 		.header-actions {
-			flex-wrap: wrap;
+			flex-direction: column;
+			width: 100%;
+		}
+
+		.btn-primary,
+		.btn-secondary,
+		.btn-refresh {
+			width: 100%;
+			justify-content: center;
+			margin-left: 0;
+			padding: 12px 20px;
+			font-size: 15px;
 		}
 
 		.stats-container {
 			grid-template-columns: repeat(2, 1fr);
+			gap: 0.75rem;
+		}
+
+		.stat-card {
+			padding: 15px;
+		}
+
+		.stat-number {
+			font-size: 1.8rem;
+		}
+
+		.filtros-container {
+			padding: 1rem;
 		}
 
 		.filtros-row {
 			flex-direction: column;
+			gap: 1rem;
+		}
+
+		.filtro-group {
+			flex: 1 1 100%;
+			min-width: 100%;
+		}
+
+		.filtro-group label {
+			font-size: 14px;
+		}
+
+		.btn-clear {
+			width: 100%;
+			height: auto;
+			padding: 12px;
+		}
+
+		/* Tabla responsive */
+		.table-container {
+			border-radius: 8px;
+			max-height: 500px;
+		}
+
+		.licencias-table th {
+			padding: 12px 10px;
+			font-size: 11px;
+		}
+
+		.licencias-table td {
+			padding: 12px 10px;
+			font-size: 13px;
+		}
+
+		.agente-info strong {
+			font-size: 13px;
+		}
+
+		.agente-info small {
+			font-size: 11px;
+		}
+
+		.tipo-badge,
+		.estado-badge {
+			font-size: 10px;
+			padding: 6px 10px;
+		}
+
+		.acciones {
+			flex-direction: column;
+			gap: 6px;
+		}
+
+		.btn-sm {
+			width: 100%;
+			padding: 8px 12px;
+			font-size: 12px;
+		}
+
+		/* Modales responsive */
+		.modal {
+			margin: 0.5rem;
+			max-width: calc(100vw - 1rem);
+			max-height: calc(100vh - 1rem);
+		}
+
+		.modal-header {
+			padding: 1rem;
+		}
+
+		.modal-header h3 {
+			font-size: 18px;
+		}
+
+		.modal-body {
+			padding: 0 1rem 1rem;
+		}
+
+		.form-group label {
+			font-size: 14px;
+		}
+
+		.form-group input,
+		.form-group select,
+		.form-group textarea {
+			padding: 0.6rem;
+			font-size: 14px;
 		}
 
 		.form-row {
 			grid-template-columns: 1fr;
 		}
 
-		.table-container {
-			overflow-x: auto;
+		.modal-footer {
+			flex-direction: column;
+			gap: 0.5rem;
 		}
 
-		.licencias-table {
-			min-width: 800px;
+		.btn {
+			width: 100%;
+			padding: 0.875rem 1rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.header-title h1 {
+			font-size: 18px;
+		}
+
+		.stats-container {
+			grid-template-columns: 1fr;
+		}
+
+		.stat-number {
+			font-size: 1.5rem;
+		}
+
+		.stat-label {
+			font-size: 14px;
+		}
+
+		/* Tabla muy pequeña */
+		.licencias-table th {
+			padding: 10px 8px;
+			font-size: 10px;
+		}
+
+		.licencias-table td {
+			padding: 10px 8px;
+			font-size: 12px;
+		}
+
+		.table-container {
+			max-height: 400px;
 		}
 	}
 </style>
