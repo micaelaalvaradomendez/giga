@@ -2,7 +2,7 @@
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import AuthService from "../../lib/login/authService.js";
-	import ModalUsuario from "../../lib/componentes/admin/agente/ModalUsuario.svelte";
+	import ModalUsuario from "../../lib/componentes/usuario/ModalUsuario.svelte";
 	import EditarPerfil from "../../lib/componentes/EditarPerfil.svelte";
 	import CambioContrasenaObligatorio from "../../lib/componentes/CambioContrasenaObligatorio.svelte";
 	import CalendarioBase from "../../lib/componentes/calendarioBase.svelte";

@@ -1,6 +1,6 @@
 <script>
 	import { createEventDispatcher } from "svelte";
-	import AuthService from "../../../login/authService.js";
+	import AuthService from "../../login/authService.js";
 
 	export let isOpen = false;
 	export let user = null;

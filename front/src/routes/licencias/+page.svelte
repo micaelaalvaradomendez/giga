@@ -1824,12 +1824,6 @@
 			gap: 6px;
 		}
 
-		.btn-sm {
-			width: 100%;
-			padding: 8px 12px;
-			font-size: 12px;
-		}
-
 		/* Modales responsive */
 		.modal {
 			margin: 0.5rem;
@@ -1867,11 +1861,6 @@
 		.modal-footer {
 			flex-direction: column;
 			gap: 0.5rem;
-		}
-
-		.btn {
-			width: 100%;
-			padding: 0.875rem 1rem;
 		}
 	}
 

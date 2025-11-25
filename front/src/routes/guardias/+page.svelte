@@ -3,6 +3,7 @@
   import { goto } from "$app/navigation";
   import { guardiasService } from "$lib/services";
   import AuthService from "$lib/login/authService.js";
+  import ModalNotaGuardia from "$lib/componentes/usuario/ModalNotaGuardia.svelte";
 
   let user = null;
   let token = null;
@@ -128,7 +129,6 @@
   function abrirModalNota(guardia) {
     guardiaSeleccionada = guardia;
 
-    // Si la guardia tiene nota, cargar su contenido
     if (guardia.notas && guardia.notas.length > 0) {
       const miNota = guardia.notas.find((n) => n.id_agente === user.id);
       if (miNota) {
@@ -558,70 +558,16 @@
   {/if}
 </div>
 
-<!-- Modal de Nota -->
-{#if modalNotaAbierto && guardiaSeleccionada}
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <div class="modal-overlay" on:click={cerrarModalNota}>
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div class="modal-glass" on:click|stopPropagation>
-      <div class="modal-header">
-        <h2>{notaId ? "📝 Editar nota" : "➕ Nueva nota"}</h2>
-        <button class="btn-close" on:click={cerrarModalNota}>✕</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="guardia-info">
-          <p>
-            <strong>Fecha:</strong>
-            {formatearFecha(guardiaSeleccionada.fecha)}
-          </p>
-          <p>
-            <strong>Horario:</strong>
-            {guardiaSeleccionada.hora_inicio} - {guardiaSeleccionada.hora_fin}
-          </p>
-          <p><strong>Tipo:</strong> {guardiaSeleccionada.tipo}</p>
-        </div>
-
-        <label for="nota-texto">Nota personal:</label>
-        <textarea
-          id="nota-texto"
-          bind:value={notaTexto}
-          placeholder="Escribe tus observaciones sobre esta guardia..."
-          rows="6"
-          disabled={guardandoNota}
-        ></textarea>
-      </div>
-
-      <div class="modal-footer">
-        {#if notaId}
-          <button
-            class="btn-danger"
-            on:click={eliminarNota}
-            disabled={guardandoNota}
-          >
-            🗑️ Eliminar
-          </button>
-        {/if}
-        <button
-          class="btn-secondary"
-          on:click={cerrarModalNota}
-          disabled={guardandoNota}
-        >
-          Cancelar
-        </button>
-        <button
-          class="btn-primary"
-          on:click={guardarNota}
-          disabled={guardandoNota || !notaTexto.trim()}
-        >
-          {guardandoNota ? "Guardando..." : "Guardar"}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ModalNotaGuardia
+  bind:show={modalNotaAbierto}
+  guardia={guardiaSeleccionada}
+  bind:notaTexto
+  bind:notaId
+  bind:guardandoNota
+  on:cerrar={cerrarModalNota}
+  on:guardar={guardarNota}
+  on:eliminar={eliminarNota}
+/>
 
 <style>
   .container {
@@ -903,125 +849,6 @@
     to {
       transform: rotate(360deg);
     }
-  }
-
-  /* Modal */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(5px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-  }
-
-  .modal-glass {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 20px;
-    max-width: 600px;
-    width: 100%;
-    max-height: 90vh;
-    overflow: auto;
-    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  }
-
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 2rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  }
-
-  .modal-header h2 {
-    margin: 0;
-    color: #173263;
-    font-size: 1.5rem;
-  }
-
-  .btn-close {
-    background: none;
-    border: none;
-    color: rgba(0, 0, 0, 0.6);
-    font-size: 1.5rem;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    transition: color 0.3s ease;
-  }
-
-  .btn-close:hover {
-    color: #000000;
-  }
-
-  .modal-body {
-    padding: 2rem;
-  }
-
-  .guardia-info {
-    background: rgba(23, 50, 99, 0.08);
-    padding: 1rem;
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
-    border: 1px solid rgba(23, 50, 99, 0.15);
-  }
-
-  .guardia-info p {
-    margin: 0.5rem 0;
-    color: rgba(0, 0, 0, 0.85);
-  }
-
-  .guardia-info strong {
-    color: #173263;
-    font-weight: 600;
-  }
-
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: rgba(0, 0, 0, 0.8);
-    font-weight: 600;
-  }
-
-  textarea {
-    width: 100%;
-    padding: 1rem;
-    background: rgb(255, 255, 255);
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
-    color: #000000;
-    font-family: inherit;
-    font-size: 1rem;
-    resize: vertical;
-    box-sizing: border-box;
-  }
-
-  textarea:focus {
-    outline: none;
-    border-color: #407bff;
-    box-shadow: 0 0 0 3px rgba(64, 123, 255, 0.15);
-  }
-
-  textarea:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    padding: 1.5rem 2rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
   }
 
   .btn-primary,
