@@ -30,10 +30,10 @@
 	} from "$lib/paneladmin/controllers/licenciasController.js";
 
 	// Componentes modales
-	import ModalSolicitar from "$lib/componentes/ModalSolicitar.svelte";
-	import ModalAsignar from "$lib/componentes/ModalAsignar.svelte";
-	import ModalAprobar from "$lib/componentes/ModalAprobar.svelte";
-	import ModalRechazar from "$lib/componentes/ModalRechazar.svelte";
+	import ModalSolicitar from "$lib/componentes/admin/licencias/ModalSolicitar.svelte";
+	import ModalAsignar from "$lib/componentes/admin/licencias/ModalAsignar.svelte";
+	import ModalAprobar from "$lib/componentes/admin/licencias/ModalAprobar.svelte";
+	import ModalRechazar from "$lib/componentes/admin/licencias/ModalRechazar.svelte";
 
 	// Estado principal - alternar entre gestión de licencias y tipos
 	let vistaActual = "licencias"; // 'licencias' o 'tipos'

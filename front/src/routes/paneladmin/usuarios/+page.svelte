@@ -2,10 +2,10 @@
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { usuariosController } from "$lib/paneladmin/controllers";
-	import ModalVerAgente from "$lib/componentes/ModalVerAgente.svelte";
-	import ModalEditarAgente from "$lib/componentes/ModalEditarAgente.svelte";
-	import ModalEliminarAgente from "$lib/componentes/ModalEliminarAgente.svelte";
-	import ModalAgregarAgente from "$lib/componentes/ModalAgregarAgente.svelte";
+	import ModalVerAgente from "$lib/componentes/admin/agente/ModalVerAgente.svelte";
+	import ModalEditarAgente from "$lib/componentes/admin/agente/ModalEditarAgente.svelte";
+	import ModalEliminarAgente from "$lib/componentes/admin/agente/ModalEliminarAgente.svelte";
+	import ModalAgregarAgente from "$lib/componentes/admin/agente/ModalAgregarAgente.svelte";
 
 	/** @type {import('./$types').PageData} */
 

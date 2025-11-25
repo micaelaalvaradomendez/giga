@@ -4,11 +4,11 @@
 	import { goto } from "$app/navigation";
 
 	// Importar componentes modales
-	import ModalArea from "$lib/componentes/ModalArea.svelte";
-	import ModalAgrupacion from "$lib/componentes/ModalAgrupacion.svelte";
-	import ModalHorarios from "$lib/componentes/ModalHorarios.svelte";
-	import ModalEliminar from "$lib/componentes/ModalEliminar.svelte";
-	import ModalHorarioGlobal from "$lib/componentes/ModalHorarioGlobal.svelte";
+	import ModalArea from "$lib/componentes/admin/parametros/ModalArea.svelte";
+	import ModalAgrupacion from "$lib/componentes/admin/parametros/ModalAgrupacion.svelte";
+	import ModalHorarios from "$lib/componentes/admin/parametros/ModalHorarios.svelte";
+	import ModalEliminar from "$lib/componentes/admin/parametros/ModalEliminar.svelte";
+	import ModalHorarioGlobal from "$lib/componentes/admin/parametros/ModalHorarioGlobal.svelte";
 
 	// Obtener referencias a los stores individuales
 	const {

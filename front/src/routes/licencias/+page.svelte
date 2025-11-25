@@ -29,9 +29,9 @@
 		obtenerIconoEstado,
 	} from "$lib/paneladmin/controllers/licenciasController.js";
 
-	import ModalAsignar from "$lib/componentes/ModalAsignar.svelte";
-	import ModalAprobar from "$lib/componentes/ModalAprobar.svelte";
-	import ModalRechazar from "$lib/componentes/ModalRechazar.svelte";
+	import ModalAsignar from "$lib/componentes/admin/licencias/ModalAsignar.svelte";
+	import ModalAprobar from "$lib/componentes/admin/licencias/ModalAprobar.svelte";
+	import ModalRechazar from "$lib/componentes/admin/licencias/ModalRechazar.svelte";
 	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
 
 	let vistaActual = "licencias"; // 'licencias' o 'tipos'

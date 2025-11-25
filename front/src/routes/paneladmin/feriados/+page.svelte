@@ -3,7 +3,7 @@
     import { browser } from "$app/environment";
     import { goto } from "$app/navigation";
     import CalendarioBase from "$lib/componentes/calendarioBase.svelte";
-    import ModalGestionFeriado from "$lib/componentes/ModalGestionFeriado.svelte";
+    import ModalGestionFeriado from "$lib/componentes/admin/parametros/ModalGestionFeriado.svelte";
     import { feriadosController } from "$lib/paneladmin/controllers";
 
     // Stores del controlador
@@ -60,10 +60,11 @@
     function handleDayClick(event) {
         const { date, isFeriado, feriados } = event.detail;
         const selectedDate = date.toISOString().split("T")[0];
-        
+
         // Obtener feriados existentes en la fecha
-        const feriadosEnFecha = feriados || feriadosController.getFeriadosByDate(selectedDate);
-        
+        const feriadosEnFecha =
+            feriados || feriadosController.getFeriadosByDate(selectedDate);
+
         // Siempre abrir modal en modo creación para permitir múltiples feriados
         // El modal mostrará los feriados existentes como información
         feriadosController.openModal(selectedDate, null);

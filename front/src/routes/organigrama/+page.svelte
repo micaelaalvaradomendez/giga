@@ -1,7 +1,7 @@
 <script>
 	import { onMount } from "svelte";
 	import { browser } from "$app/environment";
-	import OrganigramaViewer from "$lib/componentes/OrganigramaViewer.svelte";
+	import OrganigramaViewer from "$lib/componentes/admin/organigrama/OrganigramaViewer.svelte";
 
 	let organigramaData = null;
 	let loading = true;
@@ -31,7 +31,10 @@
 						updatedBy: result.data.creado_por,
 						organigrama: result.data.estructura,
 					};
-					console.log("✅ Datos del organigrama procesados:", organigramaData);
+					console.log(
+						"✅ Datos del organigrama procesados:",
+						organigramaData,
+					);
 				} else {
 					throw new Error(
 						result.message || "Error al cargar organigrama",
