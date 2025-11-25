@@ -835,12 +835,6 @@
 	}
 
 	/* Calendario */
-	.calendario-card {
-		height: fit-content;
-		position: sticky;
-		top: 2rem;
-	}
-
 	.calendario-body {
 		padding: 1rem;
 	}
@@ -848,10 +842,6 @@
 	@media (max-width: 1024px) {
 		.dashboard-layout {
 			grid-template-columns: 1fr;
-		}
-
-		.calendario-card {
-			position: static;
 		}
 	}
 

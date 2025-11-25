@@ -3,16 +3,23 @@
 	import { goto } from "$app/navigation";
 	import { slide } from "svelte/transition";
 	import { auditoriaController } from "$lib/paneladmin/controllers";
-	import FiltrosAuditoria from './FiltrosAuditoria.svelte';
-	import TablaAuditoria from './TablaAuditoria.svelte';
-	import EstadisticasAuditoria from './EstadisticasAuditoria.svelte';
+	import FiltrosAuditoria from "./FiltrosAuditoria.svelte";
+	import TablaAuditoria from "./TablaAuditoria.svelte";
+	import EstadisticasAuditoria from "./EstadisticasAuditoria.svelte";
 
 	// Estados reactivos
 	let mostrarEstadisticas = false;
 	let cargandoDatos = false;
 
 	// Stores del controlador
-	const { loading, error, registros, registrosFiltrados, terminoBusqueda, filtros } = auditoriaController;
+	const {
+		loading,
+		error,
+		registros,
+		registrosFiltrados,
+		terminoBusqueda,
+		filtros,
+	} = auditoriaController;
 
 	// Inicializar el controlador
 	onMount(async () => {
@@ -62,8 +69,6 @@
 			}
 		}
 	});
-
-
 </script>
 
 <div class="auditoria-container">
@@ -71,20 +76,24 @@
 	<div class="auditoria-header">
 		<div class="header-content">
 			<div class="header-info">
-				<h1>📊 Auditoría del Sistema</h1>
-				<p>Sistema profesional de seguimiento y auditoría de actividades</p>
+				<h1>Auditoría del Sistema</h1>
+				<p>
+					Sistema profesional de seguimiento y auditoría de
+					actividades
+				</p>
 			</div>
-			
+
 			<div class="header-controls">
-				<button 
+				<button
 					class="btn-estadisticas"
 					class:activo={mostrarEstadisticas}
-					on:click={() => mostrarEstadisticas = !mostrarEstadisticas}
+					on:click={() =>
+						(mostrarEstadisticas = !mostrarEstadisticas)}
 				>
-					📈 {mostrarEstadisticas ? 'Ocultar' : 'Ver'} Estadísticas
+					📈 {mostrarEstadisticas ? "Ocultar" : "Ver"} Estadísticas
 				</button>
-				
-				<button 
+
+				<button
 					class="btn-refresh"
 					on:click={async () => {
 						cargandoDatos = true;
@@ -105,17 +114,24 @@
 		<!-- Stats rápidas -->
 		<div class="stats-rapidas">
 			<div class="stat-item">
-				<span class="stat-numero">{$registros.length.toLocaleString()}</span>
+				<span class="stat-numero"
+					>{$registros.length.toLocaleString()}</span
+				>
 				<span class="stat-etiqueta">Total de Registros</span>
 			</div>
 			<div class="stat-item">
-				<span class="stat-numero">{$registrosFiltrados.length.toLocaleString()}</span>
+				<span class="stat-numero"
+					>{$registrosFiltrados.length.toLocaleString()}</span
+				>
 				<span class="stat-etiqueta">Registros Filtrados</span>
 			</div>
 			<div class="stat-item">
 				<span class="stat-numero">
 					{#if $registros.length > 0}
-						{Math.round((($registrosFiltrados.length / $registros.length) * 100))}%
+						{Math.round(
+							($registrosFiltrados.length / $registros.length) *
+								100,
+						)}%
 					{:else}
 						0%
 					{/if}
@@ -146,7 +162,7 @@
 					<h3>Error al cargar datos</h3>
 					<p>{$error}</p>
 				</div>
-				<button 
+				<button
 					class="btn-retry"
 					on:click={async () => {
 						cargandoDatos = true;
@@ -173,8 +189,14 @@
 			<div class="sin-resultados-content">
 				<span class="sin-resultados-icon">🔍</span>
 				<h3>Sin Resultados</h3>
-				<p>No se encontraron registros que coincidan con los filtros actuales.</p>
-				<p class="hint">Prueba ajustando los criterios de filtrado o limpia los filtros activos.</p>
+				<p>
+					No se encontraron registros que coincidan con los filtros
+					actuales.
+				</p>
+				<p class="hint">
+					Prueba ajustando los criterios de filtrado o limpia los
+					filtros activos.
+				</p>
 			</div>
 		</div>
 	{:else if $registrosFiltrados.length === 0 && $registros.length === 0}
@@ -183,7 +205,10 @@
 				<span class="sin-datos-icon">📝</span>
 				<h3>Sin Datos de Auditoría</h3>
 				<p>No hay registros de auditoría disponibles en el sistema.</p>
-				<p class="hint">Los registros aparecerán aquí cuando se generen actividades en el sistema.</p>
+				<p class="hint">
+					Los registros aparecerán aquí cuando se generen actividades
+					en el sistema.
+				</p>
 			</div>
 		</div>
 	{:else}
@@ -201,6 +226,7 @@
 		padding: 20px;
 		background: #f8fafc;
 		min-height: 100vh;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	/* Header Principal */
@@ -216,7 +242,7 @@
 	}
 
 	.auditoria-header::before {
-		content: '';
+		content: "";
 		position: absolute;
 		top: 0;
 		left: 0;
@@ -242,7 +268,7 @@
 		background: linear-gradient(45deg, #ffffff, #e2e8f0);
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
-		text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
 	.header-info p {
@@ -256,7 +282,8 @@
 		gap: 12px;
 	}
 
-	.btn-estadisticas, .btn-refresh {
+	.btn-estadisticas,
+	.btn-refresh {
 		padding: 12px 20px;
 		border: none;
 		border-radius: 8px;
@@ -273,7 +300,8 @@
 		border: 1px solid rgba(255, 255, 255, 0.2);
 	}
 
-	.btn-estadisticas:hover, .btn-estadisticas.activo {
+	.btn-estadisticas:hover,
+	.btn-estadisticas.activo {
 		background: rgba(255, 255, 255, 0.25);
 		transform: translateY(-2px);
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -332,7 +360,9 @@
 	}
 
 	/* Secciones */
-	.seccion-estadisticas, .seccion-filtros, .seccion-tabla {
+	.seccion-estadisticas,
+	.seccion-filtros,
+	.seccion-tabla {
 		margin-bottom: 24px;
 	}
 
@@ -367,11 +397,17 @@
 	}
 
 	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
 	}
 
-	.error-container, .sin-resultados-container, .sin-datos-container {
+	.error-container,
+	.sin-resultados-container,
+	.sin-datos-container {
 		background: white;
 		border-radius: 16px;
 		padding: 60px;
@@ -379,24 +415,32 @@
 		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 	}
 
-	.error-content, .sin-resultados-content, .sin-datos-content {
+	.error-content,
+	.sin-resultados-content,
+	.sin-datos-content {
 		max-width: 500px;
 		margin: 0 auto;
 	}
 
-	.error-icon, .sin-resultados-icon, .sin-datos-icon {
+	.error-icon,
+	.sin-resultados-icon,
+	.sin-datos-icon {
 		font-size: 4rem;
 		margin-bottom: 20px;
 		display: block;
 	}
 
-	.error-content h3, .sin-resultados-content h3, .sin-datos-content h3 {
+	.error-content h3,
+	.sin-resultados-content h3,
+	.sin-datos-content h3 {
 		color: #374151;
 		margin: 0 0 12px 0;
 		font-size: 1.5rem;
 	}
 
-	.error-content p, .sin-resultados-content p, .sin-datos-content p {
+	.error-content p,
+	.sin-resultados-content p,
+	.sin-datos-content p {
 		color: #6b7280;
 		margin: 0 0 8px 0;
 		line-height: 1.6;
@@ -455,7 +499,10 @@
 			grid-template-columns: 1fr;
 		}
 
-		.loading-container, .error-container, .sin-resultados-container, .sin-datos-container {
+		.loading-container,
+		.error-container,
+		.sin-resultados-container,
+		.sin-datos-container {
 			padding: 40px 20px;
 		}
 	}
@@ -465,7 +512,8 @@
 			font-size: 1.7rem;
 		}
 
-		.btn-estadisticas, .btn-refresh {
+		.btn-estadisticas,
+		.btn-refresh {
 			padding: 10px 16px;
 			font-size: 0.85rem;
 		}

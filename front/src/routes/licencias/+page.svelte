@@ -1,50 +1,67 @@
 <script>
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import AuthService from '$lib/login/authService.js';
-	import { asistenciaService, personasService } from '$lib/services.js';
+	import { onMount } from "svelte";
+	import { goto } from "$app/navigation";
+	import AuthService from "$lib/login/authService.js";
+	import { asistenciaService, personasService } from "$lib/services.js";
 	import {
-		licencias, tiposLicencia, filtros, loading, error, usuario,
-		licenciasFiltradas, estadisticas,
-		cargarLicencias, cargarTiposLicencia, crearLicencia,
-		aprobarLicencia, rechazarLicencia, actualizarFiltros, limpiarFiltros,
-		obtenerPermisos, puedeAprobarLicencia, puedeAsignarAAgente, puedeVerLicenciaDeRol, 
-		formatearFecha, calcularDiasLicencia, obtenerColorEstado, obtenerIconoEstado
-	} from '$lib/paneladmin/controllers/licenciasController.js';
+		licencias,
+		tiposLicencia,
+		filtros,
+		loading,
+		error,
+		usuario,
+		licenciasFiltradas,
+		estadisticas,
+		cargarLicencias,
+		cargarTiposLicencia,
+		crearLicencia,
+		aprobarLicencia,
+		rechazarLicencia,
+		actualizarFiltros,
+		limpiarFiltros,
+		obtenerPermisos,
+		puedeAprobarLicencia,
+		puedeAsignarAAgente,
+		puedeVerLicenciaDeRol,
+		formatearFecha,
+		calcularDiasLicencia,
+		obtenerColorEstado,
+		obtenerIconoEstado,
+	} from "$lib/paneladmin/controllers/licenciasController.js";
 
 	let userInfo = null;
 	let permisos = {};
 	let areas = [];
 	let agentes = [];
-	
+
 	// Modal states
 	let showModalCrear = false;
 	let showModalAprobar = false;
 	let showModalRechazar = false;
 	let showModalAsignar = false;
 	let licenciaSeleccionada = null;
-	
+
 	// Form data
 	let formLicencia = {
 		id_agente: null,
 		id_tipo_licencia: null,
-		fecha_desde: '',
-		fecha_hasta: '',
-		observaciones: '',
-		justificacion: ''
+		fecha_desde: "",
+		fecha_hasta: "",
+		observaciones: "",
+		justificacion: "",
 	};
-	
+
 	// Variables para asignación de licencias
 	let areaSeleccionada = null;
 	let agentesDelArea = [];
 	let cargandoAgentes = false;
-	
+
 	let formAprobacion = {
-		observaciones: ''
+		observaciones: "",
 	};
-	
+
 	let formRechazo = {
-		motivo: ''
+		motivo: "",
 	};
 
 	let saving = false;
@@ -60,23 +77,34 @@
 			if (userResponse?.success && userResponse.data?.success) {
 				userInfo = userResponse.data.data;
 				usuario.set(userInfo);
-				
+
 				// Obtener el rol del usuario correctamente
-				const rol = userInfo.roles?.[0]?.nombre || userInfo.rol_nombre || 'Agente';
-				console.log('🔐 Usuario actual:', userInfo.nombre, userInfo.apellido, '| Rol:', rol, '| Área:', userInfo.area?.nombre);
-				
+				const rol =
+					userInfo.roles?.[0]?.nombre ||
+					userInfo.rol_nombre ||
+					"Agente";
+				console.log(
+					"🔐 Usuario actual:",
+					userInfo.nombre,
+					userInfo.apellido,
+					"| Rol:",
+					rol,
+					"| Área:",
+					userInfo.area?.nombre,
+				);
+
 				permisos = obtenerPermisos(rol, userInfo.id_area);
-				console.log('🔑 Permisos calculados:', permisos);
-				
+				console.log("🔑 Permisos calculados:", permisos);
+
 				// Cargar datos iniciales
 				await cargarDatosIniciales();
 			} else {
-				console.error('❌ No se pudo obtener información del usuario');
-				goto('/');
+				console.error("❌ No se pudo obtener información del usuario");
+				goto("/");
 			}
 		} catch (err) {
-			console.error('❌ Error inicializando:', err);
-			goto('/');
+			console.error("❌ Error inicializando:", err);
+			goto("/");
 		}
 	}
 
@@ -84,7 +112,7 @@
 		try {
 			// Cargar tipos de licencia
 			await cargarTiposLicencia();
-			
+
 			// Cargar áreas según permisos
 			if (permisos.puedeVerTodasAreas) {
 				// Administrador puede ver todas las áreas
@@ -97,7 +125,9 @@
 				const areasResponse = await personasService.getAreas();
 				if (areasResponse?.data?.success) {
 					const todasAreas = areasResponse.data.data.results || [];
-					areas = todasAreas.filter(a => a.id_area === userInfo.id_area);
+					areas = todasAreas.filter(
+						(a) => a.id_area === userInfo.id_area,
+					);
 				}
 			}
 
@@ -105,41 +135,47 @@
 			if (permisos.puedeAsignar) {
 				await cargarAgentesArea();
 			}
-			
+
 			// Cargar licencias con filtros según permisos
 			const parametros = {};
 			if (permisos.soloSuArea && !permisos.puedeVerTodasAreas) {
 				// Filtrar por área para roles que no son administrador
 				parametros.area_id = userInfo.id_area;
 			}
-			
+
 			await cargarLicencias(parametros);
 		} catch (err) {
-			console.error('Error cargando datos iniciales:', err);
-			error.set('Error al cargar datos iniciales');
+			console.error("Error cargando datos iniciales:", err);
+			error.set("Error al cargar datos iniciales");
 		}
 	}
 
 	async function cargarAgentesArea() {
 		try {
-			const params = permisos.soloSuArea ? { area_id: userInfo.id_area } : {};
+			const params = permisos.soloSuArea
+				? { area_id: userInfo.id_area }
+				: {};
 			const response = await personasService.getAgentes(params);
 			if (response?.data?.success) {
 				let agentesCompletos = response.data.data || [];
-				
+
 				// Filtrar agentes según el rol del usuario (especialmente para Agente Avanzado)
 				if (permisos.puedeAsignarSoloAgentes) {
 					// Agente Avanzado solo puede ver/asignar a agentes simples
-					agentes = agentesCompletos.filter(agente => 
-						(agente.rol?.nombre || agente.rol_nombre) === 'Agente'
+					agentes = agentesCompletos.filter(
+						(agente) =>
+							(agente.rol?.nombre || agente.rol_nombre) ===
+							"Agente",
 					);
-					console.log(`🔍 Agente Avanzado: filtrado ${agentes.length} agentes de ${agentesCompletos.length} totales`);
+					console.log(
+						`🔍 Agente Avanzado: filtrado ${agentes.length} agentes de ${agentesCompletos.length} totales`,
+					);
 				} else {
 					agentes = agentesCompletos;
 				}
 			}
 		} catch (err) {
-			console.error('Error cargando agentes:', err);
+			console.error("Error cargando agentes:", err);
 		}
 	}
 
@@ -150,7 +186,7 @@
 				cargandoAgentes = false;
 				return;
 			}
-			
+
 			cargandoAgentes = true;
 			const response = await personasService.getAgentesByArea(areaId);
 			if (response?.data) {
@@ -159,11 +195,11 @@
 			} else {
 				agentesDelArea = [];
 			}
-			
+
 			// Reset agente seleccionado cuando cambia el área
 			formLicencia.id_agente = null;
 		} catch (err) {
-			console.error('Error cargando agentes del área:', err);
+			console.error("Error cargando agentes del área:", err);
 			agentesDelArea = [];
 		} finally {
 			cargandoAgentes = false;
@@ -174,10 +210,10 @@
 		formLicencia = {
 			id_agente: userInfo.id_agente, // Por defecto, el usuario actual
 			id_tipo_licencia: null,
-			fecha_desde: '',
-			fecha_hasta: '',
-			observaciones: '',
-			justificacion: ''
+			fecha_desde: "",
+			fecha_hasta: "",
+			observaciones: "",
+			justificacion: "",
 		};
 		showModalCrear = true;
 	}
@@ -186,10 +222,10 @@
 		formLicencia = {
 			id_agente: null,
 			id_tipo_licencia: null,
-			fecha_desde: '',
-			fecha_hasta: '',
-			observaciones: '',
-			justificacion: 'Asignada por jefatura'
+			fecha_desde: "",
+			fecha_hasta: "",
+			observaciones: "",
+			justificacion: "Asignada por jefatura",
 		};
 		areaSeleccionada = null;
 		agentesDelArea = [];
@@ -199,13 +235,13 @@
 
 	function abrirModalAprobar(licencia) {
 		licenciaSeleccionada = licencia;
-		formAprobacion = { observaciones: '' };
+		formAprobacion = { observaciones: "" };
 		showModalAprobar = true;
 	}
 
 	function abrirModalRechazar(licencia) {
 		licenciaSeleccionada = licencia;
-		formRechazo = { motivo: '' };
+		formRechazo = { motivo: "" };
 		showModalRechazar = true;
 	}
 
@@ -219,25 +255,34 @@
 	}
 
 	async function handleCrearLicencia() {
-		if (!formLicencia.id_tipo_licencia || !formLicencia.fecha_desde || !formLicencia.fecha_hasta) {
-			alert('Por favor complete todos los campos obligatorios');
+		if (
+			!formLicencia.id_tipo_licencia ||
+			!formLicencia.fecha_desde ||
+			!formLicencia.fecha_hasta
+		) {
+			alert("Por favor complete todos los campos obligatorios");
 			return;
 		}
 
-		if (new Date(formLicencia.fecha_desde) > new Date(formLicencia.fecha_hasta)) {
-			alert('La fecha de inicio no puede ser posterior a la fecha de fin');
+		if (
+			new Date(formLicencia.fecha_desde) >
+			new Date(formLicencia.fecha_hasta)
+		) {
+			alert(
+				"La fecha de inicio no puede ser posterior a la fecha de fin",
+			);
 			return;
 		}
 
 		saving = true;
 		const resultado = await crearLicencia({
 			...formLicencia,
-			estado: 'pendiente'
+			estado: "pendiente",
 		});
 
 		if (resultado.success) {
 			cerrarModales();
-			alert('Licencia solicitada correctamente. Aguarde aprobación.');
+			alert("Licencia solicitada correctamente. Aguarde aprobación.");
 		} else {
 			alert(resultado.error);
 		}
@@ -245,21 +290,28 @@
 	}
 
 	async function handleAsignarLicencia() {
-		if (!areaSeleccionada || !formLicencia.id_agente || !formLicencia.id_tipo_licencia || !formLicencia.fecha_desde || !formLicencia.fecha_hasta) {
-			alert('Por favor complete todos los campos obligatorios');
+		if (
+			!areaSeleccionada ||
+			!formLicencia.id_agente ||
+			!formLicencia.id_tipo_licencia ||
+			!formLicencia.fecha_desde ||
+			!formLicencia.fecha_hasta
+		) {
+			alert("Por favor complete todos los campos obligatorios");
 			return;
 		}
 
-		const rol = userInfo?.roles?.[0]?.nombre || userInfo?.rol_nombre || 'Agente';
+		const rol =
+			userInfo?.roles?.[0]?.nombre || userInfo?.rol_nombre || "Agente";
 		saving = true;
-		
+
 		// Determinar el estado según el rol del usuario
-		let estadoLicencia = 'pendiente';
+		let estadoLicencia = "pendiente";
 		let aprobadaPor = null;
-		
-		if (rol === 'Director' || rol === 'Jefatura') {
+
+		if (rol === "Director" || rol === "Jefatura") {
 			// Director y Jefatura aprueban automáticamente sus asignaciones
-			estadoLicencia = 'aprobada';
+			estadoLicencia = "aprobada";
 			aprobadaPor = userInfo.id_agente;
 		}
 		// Agente Avanzado asigna pero la licencia queda pendiente de aprobación
@@ -267,14 +319,15 @@
 		const resultado = await crearLicencia({
 			...formLicencia,
 			estado: estadoLicencia,
-			aprobada_por: aprobadaPor
+			aprobada_por: aprobadaPor,
 		});
 
 		if (resultado.success) {
 			cerrarModales();
-			const mensaje = estadoLicencia === 'aprobada' 
-				? 'Licencia asignada y aprobada correctamente.' 
-				: 'Licencia asignada correctamente. Queda pendiente de aprobación.';
+			const mensaje =
+				estadoLicencia === "aprobada"
+					? "Licencia asignada y aprobada correctamente."
+					: "Licencia asignada correctamente. Queda pendiente de aprobación.";
 			alert(mensaje);
 		} else {
 			alert(resultado.error);
@@ -284,13 +337,16 @@
 
 	async function handleAprobarLicencia() {
 		if (!licenciaSeleccionada) return;
-		
+
 		saving = true;
-		const resultado = await aprobarLicencia(licenciaSeleccionada.id_licencia, formAprobacion.observaciones);
+		const resultado = await aprobarLicencia(
+			licenciaSeleccionada.id_licencia,
+			formAprobacion.observaciones,
+		);
 
 		if (resultado.success) {
 			cerrarModales();
-			alert('Licencia aprobada correctamente.');
+			alert("Licencia aprobada correctamente.");
 		} else {
 			alert(resultado.error);
 		}
@@ -299,16 +355,19 @@
 
 	async function handleRechazarLicencia() {
 		if (!licenciaSeleccionada || !formRechazo.motivo.trim()) {
-			alert('Debe indicar el motivo del rechazo');
+			alert("Debe indicar el motivo del rechazo");
 			return;
 		}
-		
+
 		saving = true;
-		const resultado = await rechazarLicencia(licenciaSeleccionada.id_licencia, formRechazo.motivo);
+		const resultado = await rechazarLicencia(
+			licenciaSeleccionada.id_licencia,
+			formRechazo.motivo,
+		);
 
 		if (resultado.success) {
 			cerrarModales();
-			alert('Licencia rechazada.');
+			alert("Licencia rechazada.");
 		} else {
 			alert(resultado.error);
 		}
@@ -329,11 +388,15 @@
 
 	// Funciones de utilidad
 	function puedeAprobar(licencia) {
-		const rol = userInfo?.roles?.[0]?.nombre || userInfo?.rol_nombre || 'Agente';
+		const rol =
+			userInfo?.roles?.[0]?.nombre || userInfo?.rol_nombre || "Agente";
 		return puedeAprobarLicencia(licencia, rol, userInfo?.id_area);
 	}
 
-	$: diasLicencia = calcularDiasLicencia(formLicencia.fecha_desde, formLicencia.fecha_hasta);
+	$: diasLicencia = calcularDiasLicencia(
+		formLicencia.fecha_desde,
+		formLicencia.fecha_hasta,
+	);
 </script>
 
 <svelte:head>
@@ -344,7 +407,6 @@
 	<div class="page-header">
 		<div class="header-title">
 			<h1>📋 Gestión de Licencias</h1>
-			<p>Solicitar, aprobar y gestionar licencias del personal</p>
 		</div>
 		<div class="header-actions">
 			{#if permisos.puedeCrear}
@@ -389,18 +451,34 @@
 	<div class="filtros-container">
 		<div class="filtros-row">
 			<div class="filtro-group">
-				<label>Desde</label>
-				<input type="date" bind:value={$filtros.fecha_desde} on:change={aplicarFiltros} />
+				<label for="desde">Desde</label>
+				<input
+					type="date"
+					bind:value={$filtros.fecha_desde}
+					on:change={aplicarFiltros}
+				/>
 			</div>
 			<div class="filtro-group">
-				<label>Hasta</label>
-				<input type="date" bind:value={$filtros.fecha_hasta} on:change={aplicarFiltros} />
+				<label for="hasata">Hasta</label>
+				<input
+					type="date"
+					bind:value={$filtros.fecha_hasta}
+					on:change={aplicarFiltros}
+				/>
 			</div>
-			{#if (permisos.puedeVerTodasAreas || permisos.puedeAsignar) || (permisos.soloSuArea && areas.length > 1)}
+			{#if permisos.puedeVerTodasAreas || permisos.puedeAsignar || (permisos.soloSuArea && areas.length > 1)}
 				<div class="filtro-group">
-					<label>Área</label>
-					<select bind:value={$filtros.area_id} on:change={aplicarFiltros}>
-						<option value={null}>{permisos.puedeVerTodasAreas || permisos.puedeAsignar ? 'Todas las áreas' : 'Mi área'}</option>
+					<label for="area">Área</label>
+					<select
+						bind:value={$filtros.area_id}
+						on:change={aplicarFiltros}
+					>
+						<option value={null}
+							>{permisos.puedeVerTodasAreas ||
+							permisos.puedeAsignar
+								? "Todas las áreas"
+								: "Mi área"}</option
+						>
 						{#each areas as area}
 							<option value={area.id_area}>{area.nombre}</option>
 						{/each}
@@ -408,7 +486,7 @@
 				</div>
 			{/if}
 			<div class="filtro-group">
-				<label>Estado</label>
+				<label for="estado">Estado</label>
 				<select bind:value={$filtros.estado} on:change={aplicarFiltros}>
 					<option value="todas">Todos</option>
 					<option value="pendiente">Pendientes</option>
@@ -417,11 +495,16 @@
 				</select>
 			</div>
 			<div class="filtro-group">
-				<label>Tipo</label>
-				<select bind:value={$filtros.tipo_licencia_id} on:change={aplicarFiltros}>
+				<label for="tipo">Tipo</label>
+				<select
+					bind:value={$filtros.tipo_licencia_id}
+					on:change={aplicarFiltros}
+				>
 					<option value={null}>Todos los tipos</option>
 					{#each $tiposLicencia as tipo}
-						<option value={tipo.id_tipo_licencia}>{tipo.codigo}</option>
+						<option value={tipo.id_tipo_licencia}
+							>{tipo.codigo}</option
+						>
 					{/each}
 				</select>
 			</div>
@@ -437,8 +520,11 @@
 	<div class="page-content">
 		{#if $error}
 			<div class="alert alert-error">
-				<strong>❌ Error:</strong> {$error}
-				<button class="btn-retry" on:click={() => cargarLicencias()}>Reintentar</button>
+				<strong>❌ Error:</strong>
+				{$error}
+				<button class="btn-retry" on:click={() => cargarLicencias()}
+					>Reintentar</button
+				>
 			</div>
 		{/if}
 
@@ -452,8 +538,9 @@
 				<div class="empty-icon">📋</div>
 				<h3>No se encontraron licencias</h3>
 				<p>
-					{#if Object.values($filtros).some(v => v)}
-						No hay licencias que coincidan con los filtros aplicados.
+					{#if Object.values($filtros).some((v) => v)}
+						No hay licencias que coincidan con los filtros
+						aplicados.
 					{:else}
 						No hay licencias registradas aún.
 					{/if}
@@ -480,10 +567,14 @@
 					</thead>
 					<tbody>
 						{#each $licenciasFiltradas as licencia (licencia.id_licencia)}
-							<tr class="licencia-row" class:pending={licencia.estado === 'pendiente'}>
+							<tr
+								class="licencia-row"
+								class:pending={licencia.estado === "pendiente"}
+							>
 								<td>
 									<div class="agente-info">
-										<strong>{licencia.agente_nombre}</strong>
+										<strong>{licencia.agente_nombre}</strong
+										>
 										<small>{licencia.area_nombre}</small>
 									</div>
 								</td>
@@ -494,20 +585,31 @@
 								</td>
 								<td>
 									<div class="periodo">
-										{formatearFecha(licencia.fecha_desde)} - {formatearFecha(licencia.fecha_hasta)}
+										{formatearFecha(licencia.fecha_desde)} -
+										{formatearFecha(licencia.fecha_hasta)}
 									</div>
 								</td>
 								<td>
 									<span class="dias-count">
-										{calcularDiasLicencia(licencia.fecha_desde, licencia.fecha_hasta)} días
+										{calcularDiasLicencia(
+											licencia.fecha_desde,
+											licencia.fecha_hasta,
+										)} días
 									</span>
 								</td>
 								<td>
-									<span 
-										class="estado-badge" 
-										style="background-color: {obtenerColorEstado(licencia.estado)}20; color: {obtenerColorEstado(licencia.estado)}; border: 1px solid {obtenerColorEstado(licencia.estado)}40"
+									<span
+										class="estado-badge"
+										style="background-color: {obtenerColorEstado(
+											licencia.estado,
+										)}20; color: {obtenerColorEstado(
+											licencia.estado,
+										)}; border: 1px solid {obtenerColorEstado(
+											licencia.estado,
+										)}40"
 									>
-										{obtenerIconoEstado(licencia.estado)} {licencia.estado.toUpperCase()}
+										{obtenerIconoEstado(licencia.estado)}
+										{licencia.estado.toUpperCase()}
 									</span>
 								</td>
 								<td>
@@ -515,25 +617,29 @@
 								</td>
 								<td>
 									<div class="acciones">
-										{#if licencia.estado === 'pendiente' && puedeAprobar(licencia)}
-											<button 
-												class="btn-small btn-success" 
-												on:click={() => abrirModalAprobar(licencia)}
+										{#if licencia.estado === "pendiente" && puedeAprobar(licencia)}
+											<button
+												class="btn-small btn-success"
+												on:click={() =>
+													abrirModalAprobar(licencia)}
 												title="Aprobar licencia"
 											>
 												✅ Aprobar
 											</button>
-											<button 
-												class="btn-small btn-danger" 
-												on:click={() => abrirModalRechazar(licencia)}
+											<button
+												class="btn-small btn-danger"
+												on:click={() =>
+													abrirModalRechazar(
+														licencia,
+													)}
 												title="Rechazar licencia"
 											>
 												❌ Rechazar
 											</button>
 										{/if}
 										{#if licencia.observaciones}
-											<button 
-												class="btn-small btn-info" 
+											<button
+												class="btn-small btn-info"
 												title="Observaciones: {licencia.observaciones}"
 											>
 												💬 Info
@@ -561,23 +667,36 @@
 			<form on:submit|preventDefault={handleCrearLicencia}>
 				<div class="modal-body">
 					<div class="form-group">
-						<label>Tipo de Licencia *</label>
-						<select bind:value={formLicencia.id_tipo_licencia} required>
+						<label for="tipo">Tipo de Licencia *</label>
+						<select
+							bind:value={formLicencia.id_tipo_licencia}
+							required
+						>
 							<option value={null}>Seleccione un tipo...</option>
 							{#each $tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}>{tipo.codigo} - {tipo.descripcion}</option>
+								<option value={tipo.id_tipo_licencia}
+									>{tipo.codigo} - {tipo.descripcion}</option
+								>
 							{/each}
 						</select>
 					</div>
 
 					<div class="form-row">
 						<div class="form-group">
-							<label>Fecha Desde *</label>
-							<input type="date" bind:value={formLicencia.fecha_desde} required />
+							<label for="fecha">Fecha Desde *</label>
+							<input
+								type="date"
+								bind:value={formLicencia.fecha_desde}
+								required
+							/>
 						</div>
 						<div class="form-group">
-							<label>Fecha Hasta *</label>
-							<input type="date" bind:value={formLicencia.fecha_hasta} required />
+							<label for="fecha">Fecha Hasta *</label>
+							<input
+								type="date"
+								bind:value={formLicencia.fecha_hasta}
+								required
+							/>
 						</div>
 					</div>
 
@@ -588,9 +707,9 @@
 					{/if}
 
 					<div class="form-group">
-						<label>Justificación *</label>
-						<textarea 
-							bind:value={formLicencia.justificacion} 
+						<label for="justificacion">Justificación *</label>
+						<textarea
+							bind:value={formLicencia.justificacion}
 							placeholder="Indique el motivo de la licencia..."
 							rows="3"
 							required
@@ -598,20 +717,27 @@
 					</div>
 
 					<div class="form-group">
-						<label>Observaciones adicionales</label>
-						<textarea 
-							bind:value={formLicencia.observaciones} 
+						<label for="observaciones"
+							>Observaciones adicionales</label
+						>
+						<textarea
+							bind:value={formLicencia.observaciones}
 							placeholder="Observaciones opcionales..."
 							rows="2"
 						></textarea>
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn-cancel" on:click={cerrarModales} disabled={saving}>
+					<button
+						type="button"
+						class="btn-cancel"
+						on:click={cerrarModales}
+						disabled={saving}
+					>
 						Cancelar
 					</button>
 					<button type="submit" class="btn-primary" disabled={saving}>
-						{saving ? 'Enviando...' : '📤 Enviar Solicitud'}
+						{saving ? "Enviando..." : "📤 Enviar Solicitud"}
 					</button>
 				</div>
 			</form>
@@ -631,11 +757,18 @@
 				<div class="modal-body">
 					<!-- Selección de Área -->
 					<div class="form-group">
-						<label>Área *</label>
-						<select bind:value={areaSeleccionada} on:change={() => cargarAgentesPorArea(areaSeleccionada)} required>
+						<label for="area">Área *</label>
+						<select
+							bind:value={areaSeleccionada}
+							on:change={() =>
+								cargarAgentesPorArea(areaSeleccionada)}
+							required
+						>
 							<option value={null}>Seleccione un área...</option>
 							{#each areas as area}
-								<option value={area.id_area}>{area.nombre}</option>
+								<option value={area.id_area}
+									>{area.nombre}</option
+								>
 							{/each}
 						</select>
 					</div>
@@ -643,49 +776,83 @@
 					<!-- Selección de Agente (solo se muestra si hay un área seleccionada) -->
 					{#if areaSeleccionada}
 						<div class="form-group">
-							<label>Agente *</label>
-							<select bind:value={formLicencia.id_agente} disabled={cargandoAgentes} required>
+							<label for="agentes">Agente *</label>
+							<select
+								bind:value={formLicencia.id_agente}
+								disabled={cargandoAgentes}
+								required
+							>
 								<option value={null}>
-									{cargandoAgentes ? 'Cargando agentes...' : 'Seleccione un agente...'}
+									{cargandoAgentes
+										? "Cargando agentes..."
+										: "Seleccione un agente..."}
 								</option>
 								{#each agentesDelArea as agente}
-									<option value={agente.id_agente}>{agente.nombre} {agente.apellido} - {agente.legajo}</option>
+									<option value={agente.id_agente}
+										>{agente.nombre}
+										{agente.apellido} - {agente.legajo}</option
+									>
 								{/each}
 							</select>
 							{#if cargandoAgentes}
-								<small style="color: #3b82f6; font-style: italic;">
+								<small
+									style="color: #3b82f6; font-style: italic;"
+								>
 									🔄 Cargando agentes del área seleccionada...
 								</small>
 							{:else if agentesDelArea.length === 0}
-								<small style="color: #6b7280; font-style: italic;">
+								<small
+									style="color: #6b7280; font-style: italic;"
+								>
 									No hay agentes disponibles en esta área
 								</small>
 							{:else}
-								<small style="color: #10b981; font-style: italic;">
-									{agentesDelArea.length} agente{agentesDelArea.length !== 1 ? 's' : ''} disponible{agentesDelArea.length !== 1 ? 's' : ''}
+								<small
+									style="color: #10b981; font-style: italic;"
+								>
+									{agentesDelArea.length} agente{agentesDelArea.length !==
+									1
+										? "s"
+										: ""} disponible{agentesDelArea.length !==
+									1
+										? "s"
+										: ""}
 								</small>
 							{/if}
 						</div>
 					{/if}
 
 					<div class="form-group">
-						<label>Tipo de Licencia *</label>
-						<select bind:value={formLicencia.id_tipo_licencia} required>
+						<label for="tipo">Tipo de Licencia *</label>
+						<select
+							bind:value={formLicencia.id_tipo_licencia}
+							required
+						>
 							<option value={null}>Seleccione un tipo...</option>
 							{#each $tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}>{tipo.codigo} - {tipo.descripcion}</option>
+								<option value={tipo.id_tipo_licencia}
+									>{tipo.codigo} - {tipo.descripcion}</option
+								>
 							{/each}
 						</select>
 					</div>
 
 					<div class="form-row">
 						<div class="form-group">
-							<label>Fecha Desde *</label>
-							<input type="date" bind:value={formLicencia.fecha_desde} required />
+							<label for="fecha">Fecha Desde *</label>
+							<input
+								type="date"
+								bind:value={formLicencia.fecha_desde}
+								required
+							/>
 						</div>
 						<div class="form-group">
-							<label>Fecha Hasta *</label>
-							<input type="date" bind:value={formLicencia.fecha_hasta} required />
+							<label for="fecha">Fecha Hasta *</label>
+							<input
+								type="date"
+								bind:value={formLicencia.fecha_hasta}
+								required
+							/>
 						</div>
 					</div>
 
@@ -696,9 +863,9 @@
 					{/if}
 
 					<div class="form-group">
-						<label>Justificación *</label>
-						<textarea 
-							bind:value={formLicencia.justificacion} 
+						<label for="justificion">Justificación *</label>
+						<textarea
+							bind:value={formLicencia.justificacion}
 							placeholder="Motivo de asignación de la licencia..."
 							rows="3"
 							required
@@ -706,11 +873,16 @@
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn-cancel" on:click={cerrarModales} disabled={saving}>
+					<button
+						type="button"
+						class="btn-cancel"
+						on:click={cerrarModales}
+						disabled={saving}
+					>
 						Cancelar
 					</button>
 					<button type="submit" class="btn-success" disabled={saving}>
-						{saving ? 'Asignando...' : '✅ Asignar Licencia'}
+						{saving ? "Asignando..." : "✅ Asignar Licencia"}
 					</button>
 				</div>
 			</form>
@@ -728,30 +900,60 @@
 			</div>
 			<div class="modal-body">
 				<div class="licencia-details">
-					<p><strong>Agente:</strong> {licenciaSeleccionada.agente_nombre}</p>
-					<p><strong>Tipo:</strong> {licenciaSeleccionada.tipo_licencia_descripcion}</p>
-					<p><strong>Período:</strong> {formatearFecha(licenciaSeleccionada.fecha_desde)} - {formatearFecha(licenciaSeleccionada.fecha_hasta)}</p>
-					<p><strong>Días:</strong> {calcularDiasLicencia(licenciaSeleccionada.fecha_desde, licenciaSeleccionada.fecha_hasta)}</p>
+					<p>
+						<strong>Agente:</strong>
+						{licenciaSeleccionada.agente_nombre}
+					</p>
+					<p>
+						<strong>Tipo:</strong>
+						{licenciaSeleccionada.tipo_licencia_descripcion}
+					</p>
+					<p>
+						<strong>Período:</strong>
+						{formatearFecha(licenciaSeleccionada.fecha_desde)} - {formatearFecha(
+							licenciaSeleccionada.fecha_hasta,
+						)}
+					</p>
+					<p>
+						<strong>Días:</strong>
+						{calcularDiasLicencia(
+							licenciaSeleccionada.fecha_desde,
+							licenciaSeleccionada.fecha_hasta,
+						)}
+					</p>
 					{#if licenciaSeleccionada.justificacion}
-						<p><strong>Justificación:</strong> {licenciaSeleccionada.justificacion}</p>
+						<p>
+							<strong>Justificación:</strong>
+							{licenciaSeleccionada.justificacion}
+						</p>
 					{/if}
 				</div>
 
 				<div class="form-group">
-					<label>Observaciones de aprobación (opcional)</label>
-					<textarea 
-						bind:value={formAprobacion.observaciones} 
+					<label for="obs"
+						>Observaciones de aprobación (opcional)</label
+					>
+					<textarea
+						bind:value={formAprobacion.observaciones}
 						placeholder="Observaciones sobre la aprobación..."
 						rows="3"
 					></textarea>
 				</div>
 			</div>
 			<div class="modal-footer">
-				<button class="btn-cancel" on:click={cerrarModales} disabled={saving}>
+				<button
+					class="btn-cancel"
+					on:click={cerrarModales}
+					disabled={saving}
+				>
 					Cancelar
 				</button>
-				<button class="btn-success" on:click={handleAprobarLicencia} disabled={saving}>
-					{saving ? 'Aprobando...' : '✅ Aprobar Licencia'}
+				<button
+					class="btn-success"
+					on:click={handleAprobarLicencia}
+					disabled={saving}
+				>
+					{saving ? "Aprobando..." : "✅ Aprobar Licencia"}
 				</button>
 			</div>
 		</div>
@@ -768,15 +970,26 @@
 			</div>
 			<div class="modal-body">
 				<div class="licencia-details">
-					<p><strong>Agente:</strong> {licenciaSeleccionada.agente_nombre}</p>
-					<p><strong>Tipo:</strong> {licenciaSeleccionada.tipo_licencia_descripcion}</p>
-					<p><strong>Período:</strong> {formatearFecha(licenciaSeleccionada.fecha_desde)} - {formatearFecha(licenciaSeleccionada.fecha_hasta)}</p>
+					<p>
+						<strong>Agente:</strong>
+						{licenciaSeleccionada.agente_nombre}
+					</p>
+					<p>
+						<strong>Tipo:</strong>
+						{licenciaSeleccionada.tipo_licencia_descripcion}
+					</p>
+					<p>
+						<strong>Período:</strong>
+						{formatearFecha(licenciaSeleccionada.fecha_desde)} - {formatearFecha(
+							licenciaSeleccionada.fecha_hasta,
+						)}
+					</p>
 				</div>
 
 				<div class="form-group">
-					<label>Motivo del rechazo *</label>
-					<textarea 
-						bind:value={formRechazo.motivo} 
+					<label for="motivo">Motivo del rechazo *</label>
+					<textarea
+						bind:value={formRechazo.motivo}
 						placeholder="Indique el motivo por el cual se rechaza la licencia..."
 						rows="4"
 						required
@@ -784,11 +997,19 @@
 				</div>
 			</div>
 			<div class="modal-footer">
-				<button class="btn-cancel" on:click={cerrarModales} disabled={saving}>
+				<button
+					class="btn-cancel"
+					on:click={cerrarModales}
+					disabled={saving}
+				>
 					Cancelar
 				</button>
-				<button class="btn-danger" on:click={handleRechazarLicencia} disabled={saving}>
-					{saving ? 'Rechazando...' : '❌ Rechazar Licencia'}
+				<button
+					class="btn-danger"
+					on:click={handleRechazarLicencia}
+					disabled={saving}
+				>
+					{saving ? "Rechazando..." : "❌ Rechazar Licencia"}
 				</button>
 			</div>
 		</div>
@@ -800,33 +1021,82 @@
 	.page-container {
 		max-width: 1400px;
 		margin: 0 auto;
-		padding: 1rem;
+		padding: 2rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.page-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 1.5rem;
-		padding-bottom: 1rem;
-		border-bottom: 2px solid #e5e7eb;
+		margin-bottom: 2rem;
+		padding-bottom: 1.5rem;
+		border-bottom: 3px solid #f1f3f5;
+	}
+
+	.header-title {
+		background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+		padding: 2rem;
+		margin-bottom: 2rem;
+		border-radius: 16px;
+		text-align: left;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+		border: 1px solid #e9ecef;
+		position: relative;
+	}
+
+	.header-title::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 4px;
+		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+		border-radius: 16px 16px 0 0;
 	}
 
 	.header-title h1 {
 		margin: 0;
-		font-size: 1.8rem;
-		color: #1f2937;
+		padding-top: 0.5rem;
+		font-size: 2rem;
+		font-weight: 700;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		position: relative;
+		padding-bottom: 0.75rem;
+		display: inline-block;
 	}
 
-	.header-title p {
-		margin: 0.5rem 0 0 0;
-		color: #6b7280;
-		font-size: 0.9rem;
+	.header-title h1::after {
+		content: "";
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 80px;
+		height: 4px;
+		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+		border-radius: 2px;
+		animation: slideIn 0.6s ease-out;
+	}
+
+	@keyframes slideIn {
+		from {
+			width: 0;
+			opacity: 0;
+		}
+		to {
+			width: 80px;
+			opacity: 1;
+		}
 	}
 
 	.header-actions {
 		display: flex;
 		gap: 0.75rem;
+		flex-wrap: wrap;
 	}
 
 	/* Estadísticas */
@@ -841,14 +1111,20 @@
 		background: white;
 		padding: 1.5rem;
 		border-radius: 10px;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 		text-align: center;
 		border-left: 4px solid #3b82f6;
 	}
 
-	.stat-card.pending { border-left-color: #f59e0b; }
-	.stat-card.approved { border-left-color: #10b981; }
-	.stat-card.rejected { border-left-color: #ef4444; }
+	.stat-card.pending {
+		border-left-color: #f59e0b;
+	}
+	.stat-card.approved {
+		border-left-color: #10b981;
+	}
+	.stat-card.rejected {
+		border-left-color: #ef4444;
+	}
 
 	.stat-number {
 		font-size: 2rem;
@@ -867,7 +1143,7 @@
 		background: white;
 		padding: 1.5rem;
 		border-radius: 10px;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 		margin-bottom: 1.5rem;
 	}
 
@@ -908,7 +1184,7 @@
 	.table-container {
 		background: white;
 		border-radius: 10px;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 		overflow: hidden;
 	}
 
@@ -1004,26 +1280,61 @@
 		font-size: 0.875rem;
 	}
 
-	.btn-primary { background: #3b82f6; color: white; }
-	.btn-primary:hover { background: #2563eb; }
+	.btn-primary {
+		background: #3b82f6;
+		color: white;
+	}
+	.btn-primary:hover {
+		background: #2563eb;
+	}
 
-	.btn-secondary { background: #6b7280; color: white; }
-	.btn-secondary:hover { background: #4b5563; }
+	.btn-secondary {
+		background: #6b7280;
+		color: white;
+	}
+	.btn-secondary:hover {
+		background: #4b5563;
+	}
 
-	.btn-success { background: #10b981; color: white; }
-	.btn-success:hover { background: #059669; }
+	.btn-success {
+		background: #10b981;
+		color: white;
+	}
+	.btn-success:hover {
+		background: #059669;
+	}
 
-	.btn-danger { background: #ef4444; color: white; }
-	.btn-danger:hover { background: #dc2626; }
+	.btn-danger {
+		background: #ef4444;
+		color: white;
+	}
+	.btn-danger:hover {
+		background: #dc2626;
+	}
 
-	.btn-refresh { background: #8b5cf6; color: white; }
-	.btn-refresh:hover { background: #7c3aed; }
+	.btn-refresh {
+		background: #8b5cf6;
+		color: white;
+	}
+	.btn-refresh:hover {
+		background: #7c3aed;
+	}
 
-	.btn-clear { background: #f59e0b; color: white; }
-	.btn-clear:hover { background: #d97706; }
+	.btn-clear {
+		background: #f59e0b;
+		color: white;
+	}
+	.btn-clear:hover {
+		background: #d97706;
+	}
 
-	.btn-cancel { background: #6b7280; color: white; }
-	.btn-cancel:hover { background: #4b5563; }
+	.btn-cancel {
+		background: #6b7280;
+		color: white;
+	}
+	.btn-cancel:hover {
+		background: #4b5563;
+	}
 
 	.btn-small {
 		padding: 0.25rem 0.5rem;
@@ -1183,8 +1494,12 @@
 	}
 
 	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
 	}
 
 	/* Responsive */

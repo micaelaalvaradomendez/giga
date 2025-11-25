@@ -1,34 +1,45 @@
 <script>
-	import { asignarLicencia, puedeAsignarAAgente, puedeVerLicenciaDeRol } from '$lib/paneladmin/controllers/licenciasController.js';
-	import { personasService } from '$lib/services.js';
-	import AuthService from '$lib/login/authService.js';
-	
+	import {
+		asignarLicencia,
+		puedeAsignarAAgente,
+		puedeVerLicenciaDeRol,
+	} from "$lib/paneladmin/controllers/licenciasController.js";
+	import { personasService } from "$lib/services.js";
+	import AuthService from "$lib/login/authService.js";
+
 	// Props
 	export let show = false;
 	export let tiposLicencia = [];
 	export let areas = [];
-	
+
 	// Usuario actual para validaciones
 	let userInfo = null;
 
 	// Events
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from "svelte";
 	const dispatch = createEventDispatcher();
 
 	// Form data
 	let formLicencia = {
 		id_agente: null,
 		id_tipo_licencia: null,
-		fecha_desde: '',
-		fecha_hasta: '',
-		observaciones: '',
-		justificacion: ''
+		fecha_desde: "",
+		fecha_hasta: "",
+		observaciones: "",
+		justificacion: "",
 	};
 
 	let areaSeleccionada = null;
 	let agentesDelArea = [];
 	let cargandoAgentes = false;
 	let enviando = false;
+
+	// Modal de confirmación / alerta
+	let mostrandoConfirmacion = false;
+	let tituloConfirmacion = "";
+	let mensajeConfirmacion = "";
+	let tipoConfirmacion = "success";
+	let resolverConfirmacion = null;
 
 	// Cargar info del usuario al abrir modal
 	$: if (show && !userInfo) {
@@ -40,10 +51,10 @@
 		formLicencia = {
 			id_agente: null,
 			id_tipo_licencia: null,
-			fecha_desde: '',
-			fecha_hasta: '',
-			observaciones: '',
-			justificacion: ''
+			fecha_desde: "",
+			fecha_hasta: "",
+			observaciones: "",
+			justificacion: "",
 		};
 		areaSeleccionada = null;
 		agentesDelArea = [];
@@ -57,21 +68,21 @@
 			const userResponse = await AuthService.getCurrentUserData();
 			if (userResponse?.success && userResponse.data?.success) {
 				userInfo = userResponse.data.data;
-				console.log('👤 Usuario en modal:', userInfo);
+				console.log("👤 Usuario en modal:", userInfo);
 			}
 		} catch (err) {
-			console.error('Error cargando usuario en modal:', err);
+			console.error("Error cargando usuario en modal:", err);
 		}
 	}
 
 	function cerrarModal() {
 		show = false;
-		dispatch('close');
+		dispatch("close");
 	}
 
 	async function cargarAgentesPorArea(areaId) {
-		console.log('🔄 Cargando agentes para área:', areaId);
-		console.log('🔍 Áreas disponibles:', areas);
+		console.log("🔄 Cargando agentes para área:", areaId);
+		console.log("🔍 Áreas disponibles:", areas);
 		if (!areaId) {
 			agentesDelArea = [];
 			return;
@@ -79,52 +90,69 @@
 
 		try {
 			cargandoAgentes = true;
-			console.log('🌐 Haciendo request para área:', areaId);
+			console.log("🌐 Haciendo request para área:", areaId);
 			const response = await personasService.getAgentesByArea(areaId);
-			console.log('📋 Respuesta completa agentes por área:', response);
-			
+			console.log("📋 Respuesta completa agentes por área:", response);
+
 			// Verificar la estructura de respuesta
 			let agentesCompletos = [];
 			if (response?.data) {
 				if (response.data.results) {
 					// Estructura paginada estándar de Django
 					agentesCompletos = response.data.results || [];
-					console.log('✅ Agentes cargados (formato paginado):', agentesCompletos.length);
+					console.log(
+						"✅ Agentes cargados (formato paginado):",
+						agentesCompletos.length,
+					);
 				} else if (response.data.success && response.data.data) {
 					// Estructura con wrapper de success
 					agentesCompletos = response.data.data || [];
-					console.log('✅ Agentes cargados (formato success):', agentesCompletos.length);
+					console.log(
+						"✅ Agentes cargados (formato success):",
+						agentesCompletos.length,
+					);
 				} else {
-					console.warn('⚠️ Respuesta sin formato conocido:', response.data);
+					console.warn(
+						"⚠️ Respuesta sin formato conocido:",
+						response.data,
+					);
 					agentesCompletos = [];
 				}
 			} else {
-				console.warn('⚠️ No hay data en la respuesta:', response);
+				console.warn("⚠️ No hay data en la respuesta:", response);
 				agentesCompletos = [];
 			}
 
 			// Filtrar agentes según permisos del usuario
 			if (userInfo) {
-				const rolUsuario = userInfo.roles?.[0]?.nombre || userInfo.rol_nombre || 'Agente';
-				console.log('🔍 Filtrando agentes para rol:', rolUsuario);
-				
-				agentesDelArea = agentesCompletos.filter(agente => {
+				const rolUsuario =
+					userInfo.roles?.[0]?.nombre ||
+					userInfo.rol_nombre ||
+					"Agente";
+				console.log("🔍 Filtrando agentes para rol:", rolUsuario);
+
+				agentesDelArea = agentesCompletos.filter((agente) => {
 					const puedeAsignar = puedeAsignarAAgente(
-						agente.rol?.nombre || agente.rol_nombre || 'Agente',
+						agente.rol?.nombre || agente.rol_nombre || "Agente",
 						rolUsuario,
 						agente.id_area || areaId,
-						userInfo.id_area
+						userInfo.id_area,
 					);
-					console.log(`🔒 ¿Puede asignar a ${agente.nombre} (${agente.rol?.nombre || agente.rol_nombre})?`, puedeAsignar);
+					console.log(
+						`🔒 ¿Puede asignar a ${agente.nombre} (${agente.rol?.nombre || agente.rol_nombre})?`,
+						puedeAsignar,
+					);
 					return puedeAsignar;
 				});
-				
-				console.log(`✅ Agentes filtrados: ${agentesDelArea.length} de ${agentesCompletos.length} totales`);
+
+				console.log(
+					`✅ Agentes filtrados: ${agentesDelArea.length} de ${agentesCompletos.length} totales`,
+				);
 			} else {
 				agentesDelArea = agentesCompletos;
 			}
 		} catch (err) {
-			console.error('❌ Error cargando agentes:', err);
+			console.error("❌ Error cargando agentes:", err);
 			agentesDelArea = [];
 		} finally {
 			cargandoAgentes = false;
@@ -133,35 +161,77 @@
 
 	// Reactivo: cuando cambia el área seleccionada, cargar agentes
 	$: if (areaSeleccionada && show && areas.length > 0) {
-		console.log('🔄 Reactivo: área seleccionada cambió a:', areaSeleccionada);
+		console.log(
+			"🔄 Reactivo: área seleccionada cambió a:",
+			areaSeleccionada,
+		);
 		cargarAgentesPorArea(areaSeleccionada);
 	}
 
 	async function handleAsignarLicencia() {
 		try {
 			enviando = true;
-			
-			console.log('📝 Asignando licencia:', formLicencia);
-			
+
+			console.log("📝 Asignando licencia:", formLicencia);
+
 			const resultado = await asignarLicencia(formLicencia);
-			
+
 			if (resultado.success) {
-				alert('✅ Licencia asignada correctamente');
+				mostrarConfirmacion("✅ Licencia asignada correctamente");
 				cerrarModal();
-				dispatch('assigned', resultado.data);
+				dispatch("assigned", resultado.data);
 			} else {
 				// Usar el mensaje específico del backend si está disponible
-				const errorMessage = resultado.error || 'Error al asignar la licencia';
+				const errorMessage =
+					resultado.error || "Error al asignar la licencia";
 				throw new Error(errorMessage);
 			}
-	} catch (err) {
-		console.error('❌ Error asignando licencia:', err);
-		// Mostrar el mensaje específico del backend si está disponible
-		const errorMessage = err?.response?.data?.message || err.message || 'Error desconocido';
-		alert(`Error: ${errorMessage}`);
-	} finally {
+		} catch (err) {
+			console.error("❌ Error asignando licencia:", err);
+			// Mostrar el mensaje específico del backend si está disponible
+			const errorMessage =
+				err?.response?.data?.message ||
+				err.message ||
+				"Error desconocido";
+			mostrarConfirmacion("Error", errorMessage, "error");
+		} finally {
 			enviando = false;
 		}
+	}
+
+	function mostrarConfirmacion(titulo, mensaje, tipo = "success") {
+		tituloConfirmacion = titulo;
+		mensajeConfirmacion = mensaje;
+		const tiposValidos = ["success", "error", "warning"];
+		tipoConfirmacion = tiposValidos.includes(tipo) ? tipo : "success";
+		mostrandoConfirmacion = true;
+	}
+
+	function cerrarConfirmacion() {
+		mostrandoConfirmacion = false;
+	}
+
+	function confirmar(titulo, mensaje = "", tipo = "success") {
+		tituloConfirmacion = titulo;
+		mensajeConfirmacion = mensaje;
+
+		const tiposValidos = ["success", "error", "warning"];
+		tipoConfirmacion = tiposValidos.includes(tipo) ? tipo : "success";
+
+		mostrandoConfirmacion = true;
+
+		return new Promise((resolve) => {
+			resolverConfirmacion = resolve;
+		});
+	}
+
+	function aceptarConfirmacion() {
+		mostrandoConfirmacion = false;
+
+		if (resolverConfirmacion) {
+			resolverConfirmacion(true);
+		}
+		resolverConfirmacion = null;
 	}
 </script>
 
@@ -170,16 +240,28 @@
 		<div class="modal-contenido">
 			<div class="modal-header">
 				<h5>Asignar Nueva Licencia</h5>
-				<button type="button" class="btn-close" on:click={cerrarModal}>&times;</button>
+				<button type="button" class="btn-close" on:click={cerrarModal}
+					>&times;</button
+				>
 			</div>
 			<div class="modal-body">
 				<form on:submit|preventDefault={handleAsignarLicencia}>
 					<div class="form-group">
-						<label for="area_asignar">Área * (Total: {areas.length})</label>
-						<select id="area_asignar" bind:value={areaSeleccionada} on:change={(e) => cargarAgentesPorArea(e.target.value)} required>
+						<label for="area_asignar"
+							>Área * (Total: {areas.length})</label
+						>
+						<select
+							id="area_asignar"
+							bind:value={areaSeleccionada}
+							on:change={(e) =>
+								cargarAgentesPorArea(e.target.value)}
+							required
+						>
 							<option value="">Seleccione un área...</option>
 							{#each areas as area}
-								<option value={area.id_area}>{area.nombre}</option>
+								<option value={area.id_area}
+									>{area.nombre}</option
+								>
 							{/each}
 						</select>
 					</div>
@@ -188,14 +270,27 @@
 						<div class="form-group">
 							<label for="agente_asignar">Agente *</label>
 							{#if cargandoAgentes}
-								<div class="loading-small">⏳ Cargando agentes...</div>
+								<div class="loading-small">
+									⏳ Cargando agentes...
+								</div>
 							{:else if agentesDelArea.length === 0}
-								<div class="no-agentes">⚠️ No hay agentes en esta área</div>
+								<div class="no-agentes">
+									⚠️ No hay agentes en esta área
+								</div>
 							{:else}
-								<select id="agente_asignar" bind:value={formLicencia.id_agente} required>
-									<option value="">Seleccione un agente...</option>
+								<select
+									id="agente_asignar"
+									bind:value={formLicencia.id_agente}
+									required
+								>
+									<option value=""
+										>Seleccione un agente...</option
+									>
 									{#each agentesDelArea as agente}
-										<option value={agente.id_agente}>{agente.nombre} {agente.apellido}</option>
+										<option value={agente.id_agente}
+											>{agente.nombre}
+											{agente.apellido}</option
+										>
 									{/each}
 								</select>
 							{/if}
@@ -203,30 +298,52 @@
 					{/if}
 
 					<div class="form-group">
-						<label for="tipo_licencia_asignar">Tipo de Licencia *</label>
-						<select id="tipo_licencia_asignar" bind:value={formLicencia.id_tipo_licencia} required>
+						<label for="tipo_licencia_asignar"
+							>Tipo de Licencia *</label
+						>
+						<select
+							id="tipo_licencia_asignar"
+							bind:value={formLicencia.id_tipo_licencia}
+							required
+						>
 							<option value="">Seleccione un tipo...</option>
 							{#each tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}>{tipo.codigo} - {tipo.descripcion}</option>
+								<option value={tipo.id_tipo_licencia}
+									>{tipo.codigo} - {tipo.descripcion}</option
+								>
 							{/each}
 						</select>
 					</div>
 
 					<div class="form-group">
-						<label for="fecha_desde_asignar">Fecha de Inicio *</label>
-						<input type="date" id="fecha_desde_asignar" bind:value={formLicencia.fecha_desde} required />
+						<label for="fecha_desde_asignar"
+							>Fecha de Inicio *</label
+						>
+						<input
+							type="date"
+							id="fecha_desde_asignar"
+							bind:value={formLicencia.fecha_desde}
+							required
+						/>
 					</div>
 
 					<div class="form-group">
 						<label for="fecha_hasta_asignar">Fecha de Fin *</label>
-						<input type="date" id="fecha_hasta_asignar" bind:value={formLicencia.fecha_hasta} required />
+						<input
+							type="date"
+							id="fecha_hasta_asignar"
+							bind:value={formLicencia.fecha_hasta}
+							required
+						/>
 					</div>
 
 					<div class="form-group">
-						<label for="justificacion_asignar">Justificación *</label>
-						<textarea 
-							id="justificacion_asignar" 
-							bind:value={formLicencia.justificacion} 
+						<label for="justificacion_asignar"
+							>Justificación *</label
+						>
+						<textarea
+							id="justificacion_asignar"
+							bind:value={formLicencia.justificacion}
 							placeholder="Escriba la justificación de la licencia..."
 							rows="3"
 							required
@@ -235,23 +352,63 @@
 
 					<div class="form-group">
 						<label for="observaciones_asignar">Observaciones</label>
-						<textarea 
-							id="observaciones_asignar" 
-							bind:value={formLicencia.observaciones} 
+						<textarea
+							id="observaciones_asignar"
+							bind:value={formLicencia.observaciones}
 							placeholder="Observaciones adicionales (opcional)..."
 							rows="2"
 						></textarea>
 					</div>
 
 					<div class="modal-footer">
-						<button type="button" class="btn-secondary" on:click={cerrarModal} disabled={enviando}>
+						<button
+							type="button"
+							class="btn-secondary"
+							on:click={cerrarModal}
+							disabled={enviando}
+						>
 							Cancelar
 						</button>
-						<button type="submit" class="btn-primary" disabled={enviando || !formLicencia.id_agente}>
-							{enviando ? '⏳ Enviando...' : '✅ Asignar Licencia'}
+						<button
+							type="submit"
+							class="btn-primary"
+							disabled={enviando || !formLicencia.id_agente}
+						>
+							{enviando
+								? "⏳ Enviando..."
+								: "✅ Asignar Licencia"}
 						</button>
 					</div>
 				</form>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if mostrandoConfirmacion}
+	<div class="modal-confirmacion">
+		<div class="modal-confirmacion-contenido {tipoConfirmacion}">
+			<div class="modal-confirmacion-icono">
+				{#if tipoConfirmacion === "success"}
+					✓
+				{:else if tipoConfirmacion === "error"}
+					✕
+				{:else if tipoConfirmacion === "warning"}
+					⚠
+				{:else}
+					✓
+				{/if}
+			</div>
+			<h3 class="modal-confirmacion-titulo">{tituloConfirmacion}</h3>
+			<p class="modal-confirmacion-mensaje">{mensajeConfirmacion}</p>
+
+			<div class="modal-confirmacion-botones">
+				<button
+					class="modal-confirmacion-boton"
+					on:click={aceptarConfirmacion}
+				>
+					Aceptar
+				</button>
 			</div>
 		</div>
 	</div>
@@ -269,49 +426,53 @@
 		justify-content: center;
 		align-items: center;
 		z-index: 1000;
+		backdrop-filter: blur(4px);
 	}
 
 	.modal-contenido {
 		background: white;
-		border-radius: 8px;
+		border-radius: 16px;
+		max-width: 600px;
 		width: 90%;
-		max-width: 500px;
 		max-height: 90vh;
 		overflow-y: auto;
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.modal-header {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		padding: 1.5rem 2rem;
+		border-radius: 16px 16px 0 0;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 1rem;
-		border-bottom: 1px solid #eee;
 	}
 
 	.modal-header h5 {
 		margin: 0;
-		font-size: 1.2rem;
-		color: #333;
+		font-size: 1.5rem;
 	}
 
 	.btn-close {
 		background: none;
 		border: none;
-		font-size: 1.5rem;
+		color: white;
+		font-size: 25px;
 		cursor: pointer;
-		color: #666;
 		padding: 0;
 		width: 30px;
 		height: 30px;
-	}
-
-	.btn-close:hover {
-		color: #000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		transition: all 0.3s ease;
 	}
 
 	.modal-body {
-		padding: 1rem;
+		padding: 2rem;
 	}
 
 	.form-group {
@@ -320,19 +481,33 @@
 
 	.form-group label {
 		display: block;
-		margin-bottom: 0.25rem;
-		font-weight: bold;
-		color: #333;
+		margin-bottom: 5px;
+		font-weight: 600;
+		color: #313131;
 	}
 
 	.form-group input,
 	.form-group select,
 	.form-group textarea {
+		padding: 12px 15px;
+		border: 2px solid #e1e5e9;
+		border-radius: 8px;
+		font-size: 16px;
+		transition: all 0.3s ease;
+		font-family: inherit;
+		resize: vertical;
+	}
+
+	.form-group input {
+		width: 94%;
+	}
+
+	.form-group select {
 		width: 100%;
-		padding: 0.5rem;
-		border: 1px solid #ddd;
-		border-radius: 4px;
-		font-size: 0.9rem;
+	}
+
+	.form-group textarea {
+		width: 94%;
 	}
 
 	.loading-small {
@@ -360,39 +535,128 @@
 		margin-top: 1.5rem;
 	}
 
+	.btn-secondary,
 	.btn-primary {
-		background: #007bff;
-		color: white;
+		padding: 10px 20px;
 		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 4px;
+		border-radius: 8px;
+		font-weight: 600;
 		cursor: pointer;
+		transition: all 0.3s ease;
+		font-size: 16px;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	}
+
+	.btn-primary {
+		background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+		color: white;
 	}
 
 	.btn-primary:hover:not(:disabled) {
-		background: #0056b3;
-	}
-
-	.btn-primary:disabled {
-		background: #6c757d;
-		cursor: not-allowed;
+		transform: translateY(-2px);
+		box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
 	}
 
 	.btn-secondary {
 		background: #6c757d;
 		color: white;
-		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 4px;
-		cursor: pointer;
 	}
 
 	.btn-secondary:hover:not(:disabled) {
-		background: #545b62;
+		background: #5a6268;
+		transform: translateY(-2px);
 	}
 
+	.btn-primary:disabled,
 	.btn-secondary:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+		transform: none;
+	}
+
+	/* Modal de confirmación/alerta */
+	.modal-confirmacion {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0, 0, 0, 0.55);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 99999;
+		backdrop-filter: blur(4px);
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	}
+
+	.modal-confirmacion-contenido {
+		background: #ffffff;
+		padding: 32px;
+		width: 380px;
+		border-radius: 16px;
+		text-align: center;
+		box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+	}
+
+	.modal-confirmacion-contenido.success {
+		background: #d4edda;
+		border: 4px solid #28a745;
+	}
+
+	.modal-confirmacion-contenido.error {
+		background: #f8d7da;
+		border: 4px solid #dc3545;
+	}
+
+	.modal-confirmacion-contenido.warning {
+		background: #fff3cd;
+		border: 4px solid #ffc107;
+	}
+
+	.modal-confirmacion-icono {
+		font-size: 3rem;
+		font-weight: bold;
+		color: inherit;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.modal-confirmacion-titulo {
+		font-size: 20px;
+		font-weight: 700;
+		color: #1e293b;
+		margin-bottom: 8px;
+	}
+
+	.modal-confirmacion-mensaje {
+		font-size: 15px;
+		color: #475569;
+		margin-bottom: 20px;
+	}
+
+	.modal-confirmacion-botones {
+		display: flex;
+		justify-content: center;
+		gap: 10px;
+	}
+
+	.modal-confirmacion-boton {
+		padding: 10px 28px;
+		background: #3b82f6;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		font-size: 14px;
+		cursor: pointer;
+		transition: all 0.2s;
+		box-shadow: 0 3px 6px rgba(59, 130, 246, 0.3);
+	}
+
+	.modal-confirmacion-boton:hover {
+		background: #2563eb;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
 	}
 </style>

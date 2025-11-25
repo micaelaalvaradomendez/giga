@@ -111,6 +111,32 @@
         <h1>Gestión de Asistencias</h1>
     </div>
 
+    <!-- Resumen -->
+    {#if $resumen}
+        <div class="resumen-grid">
+            <div class="resumen-card total">
+                <div class="numero">{$resumen.total_agentes}</div>
+                <div class="label">Total Agentes</div>
+            </div>
+            <div class="resumen-card presentes">
+                <div class="numero">{$resumen.presentes}</div>
+                <div class="label">Presentes</div>
+            </div>
+            <div class="resumen-card ausentes">
+                <div class="numero">{$resumen.ausentes}</div>
+                <div class="label">Ausentes</div>
+            </div>
+            <div class="resumen-card sin-salida">
+                <div class="numero">{$resumen.sin_salida}</div>
+                <div class="label">Sin Salida</div>
+            </div>
+            <div class="resumen-card automaticas">
+                <div class="numero">{$resumen.salidas_automaticas}</div>
+                <div class="label">Salidas Auto</div>
+            </div>
+        </div>
+    {/if}
+
     <!-- Filtros -->
     <div class="filtros-card">
         <div class="filtros-grid">
@@ -153,32 +179,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Resumen -->
-    {#if $resumen}
-        <div class="resumen-grid">
-            <div class="resumen-card total">
-                <div class="numero">{$resumen.total_agentes}</div>
-                <div class="label">Total Agentes</div>
-            </div>
-            <div class="resumen-card presentes">
-                <div class="numero">{$resumen.presentes}</div>
-                <div class="label">Presentes</div>
-            </div>
-            <div class="resumen-card ausentes">
-                <div class="numero">{$resumen.ausentes}</div>
-                <div class="label">Ausentes</div>
-            </div>
-            <div class="resumen-card sin-salida">
-                <div class="numero">{$resumen.sin_salida}</div>
-                <div class="label">Sin Salida</div>
-            </div>
-            <div class="resumen-card automaticas">
-                <div class="numero">{$resumen.salidas_automaticas}</div>
-                <div class="label">Salidas Auto</div>
-            </div>
-        </div>
-    {/if}
 
     <!-- Tabs -->
     <div class="tabs">
@@ -837,16 +837,22 @@
 
     .resumen-card {
         background: white;
+        padding: 20px;
         border-radius: 16px;
-        padding: 1.5rem;
-        text-align: center;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        border-top: 4px solid #4c51bf;
         transition: transform 0.3s ease;
-        border-top: 4px solid;
     }
 
     .resumen-card:hover {
         transform: translateY(-5px);
+    }
+
+    .numero {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #4c51bf;
     }
 
     .resumen-card.total {
@@ -869,16 +875,27 @@
         border-top-color: #17a2b8;
     }
 
-    .resumen-card .numero {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #333;
+    .resumen-card.presentes .numero {
+        color: #28a745;
+    }
+
+    .resumen-card.ausentes .numero {
+        color: #dc3545;
+    }
+
+    .resumen-card.sin-salida .numero {
+        color: #ffc107;
+    }
+
+    .resumen-card.automaticas .numero {
+        color: #17a2b8;
     }
 
     .resumen-card .label {
-        font-size: 0.9rem;
-        color: #666;
+        font-size: 16px;
+        color: #222222e0;
         margin-top: 0.5rem;
+        font-weight: 600;
     }
 
     /* Tabs */
@@ -1266,15 +1283,6 @@
         padding: 1rem;
         border-radius: 8px;
         margin-top: 1rem;
-    }
-
-    .observaciones-previas strong {
-        color: #856404;
-    }
-
-    .observaciones-previas p {
-        margin: 0.5rem 0 0 0;
-        color: #333;
     }
 
     .info-correccion {
