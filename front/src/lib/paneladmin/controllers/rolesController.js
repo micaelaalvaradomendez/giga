@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import { personasService } from '$lib/services.js';
 import AuthService from '$lib/login/authService.js';
 
@@ -21,6 +21,7 @@ class RolesController {
 
 		// Stores para edición de roles
 		this.editingRoleId = writable(null);
+		this.selectedRoleId = writable(null);
 		this.savingRoleId = writable(null);
 
 		// Store para usuario actual
@@ -39,7 +40,7 @@ class RolesController {
 				// Filtrar por búsqueda
 				if ($searchTerm.trim()) {
 					const term = $searchTerm.toLowerCase();
-					resultado = resultado.filter(agente => 
+					resultado = resultado.filter(agente =>
 						agente.nombre?.toLowerCase().includes(term) ||
 						agente.apellido?.toLowerCase().includes(term) ||
 						agente.legajo?.toLowerCase().includes(term) ||
@@ -51,7 +52,7 @@ class RolesController {
 
 				// Filtrar por área
 				if ($filtroArea) {
-					resultado = resultado.filter(agente => 
+					resultado = resultado.filter(agente =>
 						agente.area_id === parseInt($filtroArea)
 					);
 				}
@@ -101,7 +102,7 @@ class RolesController {
 
 			// Agentes vienen directamente en formato paginado
 			const agentesData = agentesResponse.data?.results || agentesResponse.results || [];
-			
+
 			// Asegurar que sea array
 			if (!Array.isArray(agentesData)) {
 				this.agentes.set([]);
@@ -129,7 +130,7 @@ class RolesController {
 			console.log('✅ Datos cargados correctamente');
 		} catch (err) {
 			console.error('❌ Error cargando datos:', err);
-			
+
 			let errorMessage = '';
 			if (err.response?.status === 401) {
 				throw new Error('Sesión expirada');
@@ -138,7 +139,7 @@ class RolesController {
 			} else {
 				errorMessage = `Error al cargar los datos: ${err.response?.data?.message || err.message}. Por favor, intenta nuevamente.`;
 			}
-			
+
 			this.error.set(errorMessage);
 			throw err;
 		} finally {
@@ -160,7 +161,6 @@ class RolesController {
 	obtenerRolActual(agente) {
 		if (agente.roles && agente.roles.length > 0) {
 			const rolAgente = agente.roles[0];
-			console.log('Rol actual del agente:', agente.nombre, rolAgente);
 			return rolAgente;
 		}
 		return null;
@@ -180,11 +180,8 @@ class RolesController {
 	 * Obtener nombre de un rol por su ID usando el store actual
 	 */
 	obtenerNombreRolPorId(rolId) {
-		let rolesDisponibles = [];
-		this.rolesDisponibles.subscribe(roles => {
-			rolesDisponibles = roles;
-		})();
-		
+		const rolesDisponibles = get(this.rolesDisponibles);
+
 		if (!rolId) return 'Sin rol asignado';
 		const rol = rolesDisponibles.find(r => r.id_rol === rolId || r.id === rolId);
 		return rol ? rol.nombre : 'Rol desconocido';
@@ -209,8 +206,9 @@ class RolesController {
 	/**
 	 * Iniciar edición de rol para un agente
 	 */
-	iniciarEdicionRol(agenteId) {
+	iniciarEdicionRol(agenteId, rolActualId = null) {
 		this.editingRoleId.set(agenteId);
+		this.selectedRoleId.set(rolActualId);
 	}
 
 	/**
@@ -218,6 +216,7 @@ class RolesController {
 	 */
 	cancelarEdicionRol() {
 		this.editingRoleId.set(null);
+		this.selectedRoleId.set(null);
 	}
 
 	/**
@@ -226,7 +225,7 @@ class RolesController {
 	puedeEditarRol(agente, currentUser) {
 		// No permitir que el usuario se cambie el rol a sí mismo
 		if (!currentUser) return true;
-		
+
 		// Comparar por email ya que es más confiable
 		return currentUser.email !== agente.email;
 	}
@@ -234,7 +233,7 @@ class RolesController {
 	/**
 	 * Guardar cambio de rol para un agente usando operación atómica en backend
 	 */
-	async guardarCambioRol(agente, nuevoRolId) {
+	async guardarCambioRol(agente) {
 		// Verificar que no se esté cambiando el rol a sí mismo
 		const currentUserValue = AuthService.getCurrentUser();
 		if (!this.puedeEditarRol(agente, currentUserValue)) {
@@ -242,45 +241,47 @@ class RolesController {
 		}
 
 		this.savingRoleId.set(agente.id_agente);
-		
+		const nuevoRolId = get(this.selectedRoleId);
+
 		try {
 			// Obtener rol anterior para el mensaje
 			const rolAnterior = this.obtenerRolActual(agente);
 			const rolAnteriorNombre = rolAnterior ? rolAnterior.nombre : 'Sin rol';
-			
+
 			// Usar el nuevo endpoint atómico que garantiza un solo rol
 			const cambioData = {
 				agente_id: agente.id_agente,
-				rol_id: nuevoRolId && nuevoRolId.trim() !== '' ? parseInt(nuevoRolId) : null
+				rol_id: nuevoRolId && String(nuevoRolId).trim() !== '' ? parseInt(nuevoRolId) : null
 			};
 
 			console.log('Cambiando rol con operación atómica:', cambioData);
 			const response = await personasService.cambiarRolAgente(cambioData);
-			
-			if (response.success) {
+
+			if (response.data && response.data.success) {
 				// Recargar datos para mostrar el cambio
 				await this.cargarDatos();
 				this.editingRoleId.set(null);
-				
+				this.selectedRoleId.set(null);
+
 				// Log del cambio para auditoría
 				const rolNuevo = nuevoRolId ? this.obtenerNombreRolPorId(parseInt(nuevoRolId)) : 'Sin rol';
-				
+
 				console.log(`🔄 Cambio de rol realizado: ${agente.nombre} ${agente.apellido} - ${rolAnteriorNombre} → ${rolNuevo}`);
-				console.log(`📊 Backend reporta: ${response.data.roles_eliminados} roles eliminados`);
-				
-				return { 
-					success: true, 
-					message: `Rol actualizado: ${rolAnteriorNombre} → ${rolNuevo}` 
+				console.log(`📊 Backend reporta: ${response.data.data.roles_eliminados} roles eliminados`);
+
+				return {
+					success: true,
+					message: `Rol actualizado: ${rolAnteriorNombre} → ${rolNuevo}`
 				};
 			} else {
-				throw new Error(response.message || 'Error en la respuesta del servidor');
+				throw new Error(response.data?.message || 'Error en la respuesta del servidor');
 			}
 		} catch (err) {
 			console.error('Error al cambiar rol:', err);
 			console.error('Respuesta del error:', err.response?.data);
-			
+
 			let errorMessage = 'Error al cambiar el rol: ';
-			
+
 			if (err.response?.status === 400) {
 				const errorData = err.response.data;
 				if (errorData?.message) {
@@ -297,7 +298,7 @@ class RolesController {
 			} else {
 				errorMessage += err.message || 'Error desconocido.';
 			}
-			
+
 			throw new Error(errorMessage);
 		} finally {
 			this.savingRoleId.set(null);
@@ -310,7 +311,7 @@ class RolesController {
 	async handleKeyPress(event, agente, nuevoRolId) {
 		if (event.key === 'Enter') {
 			try {
-				await this.guardarCambioRol(agente, nuevoRolId);
+				await this.guardarCambioRol(agente);
 			} catch (error) {
 				// Re-lanzar para que el componente maneje la UI del error
 				throw error;
@@ -358,23 +359,23 @@ class RolesController {
 		try {
 			const response = await personasService.limpiarRolesDuplicados();
 
-			if (response.success) {
+			if (response.data && response.data.success) {
 				// Recargar datos después de la limpieza
 				await this.cargarDatos();
-				
+
 				return {
 					success: true,
-					message: `Limpieza completada: ${response.data.agentes_procesados} agentes procesados, ${response.data.roles_eliminados} roles eliminados`,
-					data: response.data
+					message: `Limpieza completada: ${response.data.data.agentes_procesados} agentes procesados, ${response.data.data.roles_eliminados} roles eliminados`,
+					data: response.data.data
 				};
 			} else {
-				throw new Error(response.message || 'Error al limpiar roles duplicados');
+				throw new Error(response.data?.message || 'Error al limpiar roles duplicados');
 			}
 		} catch (error) {
 			const errorMessage = error.message || 'Error inesperado al limpiar roles duplicados';
 			this.error.set(errorMessage);
 			console.error('Error al limpiar roles duplicados:', error);
-			
+
 			return {
 				success: false,
 				message: errorMessage

@@ -16,6 +16,7 @@
 		searchTerm,
 		filtroArea,
 		editingRoleId,
+		selectedRoleId,
 		savingRoleId,
 		currentUser,
 	} = rolesController;
@@ -246,19 +247,17 @@
 											"Sin área"}
 									</span>
 								</td>
-								<td class="rol">
+									<td class="rol">
 									{#if $editingRoleId === agente.id_agente}
 										<div class="rol-editor">
 											<select
 												class="rol-select"
-												value={rolActual?.id ||
-													rolActual?.id_rol ||
-													""}
+												bind:value={$selectedRoleId}
 												on:keydown={(e) =>
 													rolesController.handleKeyPress(
 														e,
 														agente,
-														e.target.value,
+														$selectedRoleId,
 													)}
 												disabled={$savingRoleId ===
 													agente.id_agente}
@@ -281,19 +280,7 @@
 											<div class="rol-actions">
 												<button
 													class="btn-success"
-													on:click={(e) => {
-														const select = e.target
-															.closest(
-																".rol-editor",
-															)
-															.querySelector(
-																".rol-select",
-															);
-														rolesController.guardarCambioRol(
-															agente,
-															select.value,
-														);
-													}}
+													on:click={() => rolesController.guardarCambioRol(agente)}
 													disabled={$savingRoleId ===
 														agente.id_agente}
 												>
@@ -336,6 +323,7 @@
 												on:click={() =>
 													rolesController.iniciarEdicionRol(
 														agente.id_agente,
+														rolActual?.id || rolActual?.id_rol
 													)}
 												disabled={$savingRoleId !==
 													null}
