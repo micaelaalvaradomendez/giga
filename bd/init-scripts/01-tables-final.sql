@@ -90,9 +90,11 @@ END $$;
 -- 5. Tabla: agente_rol
 CREATE TABLE IF NOT EXISTS agente_rol (
     id_agente_rol BIGSERIAL PRIMARY KEY,
-    fecha_asignacion DATE DEFAULT CURRENT_DATE,
     id_agente BIGINT NOT NULL,
     id_rol BIGINT NOT NULL,
+    asignado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_agente) REFERENCES agente(id_agente) ON DELETE CASCADE,
     FOREIGN KEY (id_rol) REFERENCES rol(id_rol) ON DELETE RESTRICT,
     UNIQUE(id_agente, id_rol)
@@ -103,11 +105,24 @@ CREATE TABLE IF NOT EXISTS agrupacion (
     id_agrupacion BIGSERIAL PRIMARY KEY,
     nombre VARCHAR(100) UNIQUE NOT NULL,
     descripcion TEXT,
+    color VARCHAR(7) DEFAULT '#e79043',
     id_area BIGINT,
     activo BOOLEAN DEFAULT true,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_area) REFERENCES area(id_area) ON DELETE CASCADE
+);
+
+-- 6b. Tabla: organigrama (NUEVA - Managed by Django but needed for consistency)
+CREATE TABLE IF NOT EXISTS organigrama (
+    id_organigrama BIGSERIAL PRIMARY KEY,
+    nombre VARCHAR(200) NOT NULL,
+    estructura JSONB NOT NULL,
+    version VARCHAR(20) DEFAULT '1.0.0',
+    activo BOOLEAN DEFAULT true,
+    creado_por VARCHAR(100) DEFAULT 'Sistema',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 7. Tabla: cronograma (CON campos de aprobación jerárquica del script 06)
@@ -176,11 +191,14 @@ CREATE INDEX IF NOT EXISTS idx_guardia_estado ON guardia(estado);
 CREATE TABLE IF NOT EXISTS nota_guardia (
     id_nota BIGSERIAL PRIMARY KEY,
     id_guardia BIGINT NOT NULL,
-    contenido TEXT NOT NULL,
-    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    creado_por BIGINT NOT NULL,
+    id_agente BIGINT NOT NULL,
+    nota TEXT,
+    fecha_nota TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_guardia) REFERENCES guardia(id_guardia) ON DELETE CASCADE,
-    FOREIGN KEY (creado_por) REFERENCES agente(id_agente) ON DELETE RESTRICT
+    FOREIGN KEY (id_agente) REFERENCES agente(id_agente) ON DELETE CASCADE,
+    UNIQUE(id_guardia, id_agente)
 );
 
 -- 10. Tabla: hora_compensacion (del script 06 - COMPLETA)
@@ -254,17 +272,18 @@ CREATE INDEX IF NOT EXISTS idx_feriado_fecha_fin ON feriado(fecha_fin);
 CREATE INDEX IF NOT EXISTS idx_feriado_rango ON feriado(fecha_inicio, fecha_fin);
 CREATE INDEX IF NOT EXISTS idx_feriado_activo ON feriado(activo) WHERE activo = true;
 
--- 12. Tabla: parametros_area
+-- 5. Tabla: parametros_area
 CREATE TABLE IF NOT EXISTS parametros_area (
-    id_parametro_area BIGSERIAL PRIMARY KEY,
+    id_parametros_area BIGSERIAL PRIMARY KEY,
     id_area BIGINT NOT NULL,
-    ventana_entrada_inicio TIME,
-    ventana_entrada_fin TIME,
-    ventana_salida_inicio TIME,
-    ventana_salida_fin TIME,
-    tolerancia_entrada_min INTEGER DEFAULT 10,
-    tolerancia_salida_min INTEGER DEFAULT 10,
-    vigente_desde DATE DEFAULT CURRENT_DATE,
+    ventana_entrada_inicio TIME DEFAULT '07:30:00',
+    ventana_entrada_fin TIME DEFAULT '09:00:00',
+    ventana_salida_inicio TIME DEFAULT '16:00:00',
+    ventana_salida_fin TIME DEFAULT '18:30:00',
+    tolerancia_entrada_min INTEGER DEFAULT 15,
+    tolerancia_salida_min INTEGER DEFAULT 15,
+    horas_trabajo_dia DECIMAL(4,2) DEFAULT 8.0,
+    vigente_desde DATE NOT NULL,
     vigente_hasta DATE,
     activo BOOLEAN DEFAULT true,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -272,42 +291,58 @@ CREATE TABLE IF NOT EXISTS parametros_area (
     FOREIGN KEY (id_area) REFERENCES area(id_area) ON DELETE CASCADE
 );
 
--- 13. Tabla: reglas_plus
+-- 6. Tabla: reglas_plus
 CREATE TABLE IF NOT EXISTS reglas_plus (
     id_regla_plus BIGSERIAL PRIMARY KEY,
-    horas_minimas_mensuales INTEGER NOT NULL,
-    porcentaje_plus DECIMAL(5,2) NOT NULL,
-    descripcion TEXT,
-    vigente_desde DATE DEFAULT CURRENT_DATE,
+    nombre VARCHAR(100) NOT NULL DEFAULT 'Regla General',
+    horas_minimas_diarias DECIMAL(5,2) DEFAULT 8.0,
+    horas_minimas_mensuales DECIMAL(6,2) DEFAULT 160.0,
+    porcentaje_plus DECIMAL(5,2) DEFAULT 20.0,
+    aplica_areas_operativas BOOLEAN DEFAULT true,
+    aplica_areas_administrativas BOOLEAN DEFAULT false,
+    vigente_desde DATE NOT NULL,
     vigente_hasta DATE,
     activa BOOLEAN DEFAULT true,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 14. Tabla: resumen_guardia_mes
+-- 7. Tabla: resumen_guardia_mes
 CREATE TABLE IF NOT EXISTS resumen_guardia_mes (
-    id_resumen BIGSERIAL PRIMARY KEY,
+    id_resumen_guardia_mes BIGSERIAL PRIMARY KEY,
     id_agente BIGINT NOT NULL,
-    mes INTEGER NOT NULL CHECK (mes BETWEEN 1 AND 12),
-    anio INTEGER NOT NULL CHECK (anio >= 2020),
+    mes INTEGER NOT NULL,
+    anio INTEGER NOT NULL,
+    plus20 BOOLEAN,
+    plus40 BOOLEAN,
+    total_horas_guardia INTEGER,
     horas_efectivas DECIMAL(6,2) DEFAULT 0.0,
     porcentaje_plus DECIMAL(5,2) DEFAULT 0.0,
-    estado_plus VARCHAR(20) DEFAULT 'pendiente',
-    fecha_calculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    aprobado_por BIGINT,
-    fecha_aprobacion TIMESTAMP,
-    observaciones TEXT,
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    monto_calculado DECIMAL(10,2),
+    estado_plus VARCHAR(30) DEFAULT 'pendiente',
+    fecha_calculo TIMESTAMP,
+    aprobado_en TIMESTAMP,
     FOREIGN KEY (id_agente) REFERENCES agente(id_agente) ON DELETE CASCADE,
-    FOREIGN KEY (aprobado_por) REFERENCES agente(id_agente) ON DELETE SET NULL,
     UNIQUE(id_agente, mes, anio)
 );
 
 -- =====================================================
 -- TABLAS DE ASISTENCIA (REFACTORIZADAS del script 08)
 -- =====================================================
+
+-- 14. Tabla: parte_diario
+CREATE TABLE IF NOT EXISTS parte_diario (
+    id_parte_diario BIGSERIAL PRIMARY KEY,
+    fecha_parte DATE NOT NULL,
+    id_agente BIGINT NOT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_agente) REFERENCES agente(id_agente) ON DELETE CASCADE,
+    UNIQUE(id_agente, fecha_parte)
+);
+
+CREATE INDEX IF NOT EXISTS idx_parte_diario_fecha ON parte_diario(fecha_parte DESC);
+CREATE INDEX IF NOT EXISTS idx_parte_diario_agente ON parte_diario(id_agente);
 
 -- 15. Tabla: asistencia (NUEVA ESTRUCTURA del script 08)
 CREATE TABLE IF NOT EXISTS asistencia (
@@ -324,9 +359,11 @@ CREATE TABLE IF NOT EXISTS asistencia (
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     id_agente BIGINT NOT NULL,
     id_area BIGINT,
+    id_parte_diario BIGINT,
     FOREIGN KEY (id_agente) REFERENCES agente(id_agente) ON DELETE RESTRICT,
     FOREIGN KEY (id_area) REFERENCES area(id_area) ON DELETE SET NULL,
     FOREIGN KEY (corregido_por) REFERENCES agente(id_agente) ON DELETE SET NULL,
+    FOREIGN KEY (id_parte_diario) REFERENCES parte_diario(id_parte_diario) ON DELETE SET NULL,
     UNIQUE(id_agente, fecha)
 );
 
@@ -538,6 +575,6 @@ CREATE INDEX IF NOT EXISTS django_admin_log_user_id_idx ON django_admin_log(user
 -- ========================================================================
 -- FIN DEL SCRIPT CONSOLIDADO DE TABLAS
 -- ========================================================================
--- Total: 29 tablas consolidadas
+-- Total: 30 tablas consolidadas (agregada parte_diario)
 -- Incluye: Tablas base + ALTER TABLE + Licencias + Asistencia + Django
 -- ========================================================================
