@@ -1031,7 +1031,6 @@
 	.page-container {
 		max-width: 1600px;
 		margin: 0 auto;
-		background: #f8fafc;
 		min-height: 100vh;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
