@@ -1,0 +1,636 @@
+@startuml diagrama_clases_frontend
+!theme plain
+title Sistema GIGA - Diagrama de Clases Frontend\nSvelteKit + JavaScript
+
+' ========== SERVICIOS API ==========
+
+package "services" <<Cloud>> {
+  
+  class personasService <<Service>> {
+    {static} +getAllAgentes(token): Promise
+    {static} +getAgentes(token): Promise
+    {static} +getAgentesByArea(areaId, token): Promise
+    {static} +getAgente(id, token): Promise
+    {static} +createAgente(data, token): Promise
+    {static} +updateAgente(id, data, token): Promise
+    {static} +deleteAgente(id, token): Promise
+    {static} +createAgenteConRol(agenteData): Promise
+    --
+    {static} +getAreas(token): Promise
+    {static} +getArea(id, token): Promise
+    {static} +createArea(data, token): Promise
+    {static} +updateArea(id, data, token): Promise
+    {static} +deleteArea(id, token): Promise
+    {static} +updateAreaSchedule(id, data, token): Promise
+    --
+    {static} +getRoles(token): Promise
+    {static} +getRol(id, token): Promise
+    {static} +createRol(data, token): Promise
+    {static} +updateRol(id, data, token): Promise
+    {static} +deleteRol(id, token): Promise
+    --
+    {static} +getAsignaciones(token): Promise
+    {static} +createAsignacion(data, token): Promise
+    {static} +deleteAsignacion(id, token): Promise
+    {static} +cambiarRolAgente(data, token): Promise
+    {static} +limpiarRolesDuplicados(token): Promise
+    --
+    {static} +getAgrupaciones(token): Promise
+    {static} +createAgrupacion(data, token): Promise
+    {static} +updateAgrupacion(id, data, token): Promise
+    {static} +deleteAgrupacion(id, data, token): Promise
+  }
+  
+  class asistenciaService <<Service>> {
+    {static} +getAsistencias(): Promise
+    {static} +getAsistencia(id): Promise
+    {static} +createAsistencia(data): Promise
+    {static} +updateAsistencia(id, data): Promise
+    --
+    {static} +getMarcas(): Promise
+    {static} +createMarca(data): Promise
+    --
+    {static} +getLicencias(params): Promise
+    {static} +getLicencia(id): Promise
+    {static} +createLicencia(data): Promise
+    {static} +updateLicencia(id, data): Promise
+    {static} +deleteLicencia(id): Promise
+    {static} +aprobarLicencia(id, data): Promise
+    {static} +rechazarLicencia(id, data): Promise
+    {static} +asignarLicencia(data): Promise
+    {static} +getLicenciasArea(areaId, params): Promise
+    {static} +getLicenciasPendientes(params): Promise
+    --
+    {static} +getTiposLicencia(token): Promise
+    {static} +createTipoLicencia(data, token): Promise
+    {static} +updateTipoLicencia(id, data, token): Promise
+    {static} +deleteTipoLicencia(id, token): Promise
+    --
+    {static} +getNovedades(): Promise
+    {static} +getNovedad(id): Promise
+    {static} +createNovedad(data): Promise
+    {static} +updateNovedad(id, data): Promise
+  }
+  
+  class guardiasService <<Service>> {
+    {static} +getCronogramas(token): Promise
+    {static} +getCronogramasPendientes(token): Promise
+    {static} +getCronogramasAprobadas(token): Promise
+    {static} +getCronograma(id, token): Promise
+    {static} +createCronograma(data, token): Promise
+    {static} +updateCronograma(id, data, token): Promise
+    {static} +planificar(data, token): Promise
+    {static} +aprobarCronograma(id, data, token): Promise
+    {static} +publicarCronograma(id, token): Promise
+    {static} +crearGuardia(data, token): Promise
+    {static} +actualizarConGuardias(id, data, token): Promise
+    {static} +getPendientesAprobacion(agenteId, token): Promise
+    {static} +rechazarCronograma(id, data, token): Promise
+    {static} +deleteCronograma(id, token): Promise
+    {static} +despublicarCronograma(id, data, token): Promise
+    --
+    {static} +getGuardias(token): Promise
+    {static} +getGuardia(id, token): Promise
+    {static} +createGuardia(data, token): Promise
+    {static} +updateGuardia(id, data, token): Promise
+    {static} +deleteGuardia(id, token): Promise
+    {static} +getResumenGuardias(params, token): Promise
+    {static} +getGuardiasAgente(agenteId, token): Promise
+    {static} +getGuardiasPorCronograma(cronogramaId, token): Promise
+    {static} +verificarDisponibilidad(agenteId, fecha, token): Promise
+    --
+    {static} +getNotasGuardia(guardiaId, token): Promise
+    {static} +createNotaGuardia(guardiaId, data, token): Promise
+    {static} +updateNotaGuardia(notaId, data, token): Promise
+    {static} +deleteNotaGuardia(notaId, agenteId, token): Promise
+    --
+    {static} +getFeriados(token): Promise
+    {static} +getFeriado(id, token): Promise
+    {static} +createFeriado(data, token): Promise
+    {static} +updateFeriado(id, data, token): Promise
+    {static} +deleteFeriado(id, token): Promise
+    {static} +verificarFeriado(data, token): Promise
+    --
+    {static} +getReglasPlus(token): Promise
+    {static} +getReglaPlus(id, token): Promise
+    {static} +createReglaPlus(data, token): Promise
+    {static} +updateReglaPlus(id, data, token): Promise
+    {static} +deleteReglaPlus(id, token): Promise
+    --
+    {static} +getParametrosArea(params, token): Promise
+    {static} +getParametroArea(id, token): Promise
+    {static} +createParametroArea(data, token): Promise
+    {static} +updateParametroArea(id, data, token): Promise
+    --
+    {static} +getResumenesMensuales(params, token): Promise
+    {static} +getResumenMensual(id, token): Promise
+    {static} +calcularPlusMensual(data, token): Promise
+    {static} +aprobarLotePlus(data, token): Promise
+    --
+    {static} +getCompensaciones(params, token): Promise
+    {static} +getCompensacion(id, token): Promise
+    {static} +createCompensacion(data, token): Promise
+    {static} +createCompensacionFromGuardia(guardiaId, data, token): Promise
+    {static} +aprobarCompensacion(id, data, token): Promise
+    {static} +rechazarCompensacion(id, data, token): Promise
+    --
+    {static} +exportarReporteIndividual(params, formato, token): Promise
+    {static} +exportarReporteGeneral(params, formato, token): Promise
+    {static} +exportarReporteHorasTrabajadas(params, formato, token): Promise
+    {static} +exportarReporteParteDiario(params, formato, token): Promise
+  }
+  
+  class convenioIaService <<Service>> {
+    {static} +N8N_WEBHOOK_URL: string
+    {static} +consultarConvenio(pregunta): Promise
+  }
+  
+  class auditoriaService <<Service>> {
+    {static} +getParametros(token): Promise
+    {static} +getRegistrosAuditoria(token): Promise
+  }
+  
+  class authService <<Service>> {
+    {static} +login(credentials): Promise
+    {static} +logout(): void
+    {static} +getSession(): object
+    {static} +isAuthenticated(): boolean
+  }
+  
+  class exportService <<Service>> {
+    {static} +exportToPDF(data, filename): void
+    {static} +exportToExcel(data, filename): void
+    {static} +exportToCSV(data, filename): void
+  }
+  
+  class ApiClient <<Singleton>> {
+    -baseURL: string
+    -token: string
+    --
+    +get(endpoint): Promise
+    +post(endpoint, data): Promise
+    +put(endpoint, data): Promise
+    +patch(endpoint, data): Promise
+    +delete(endpoint): Promise
+    +request(config): Promise
+  }
+}
+
+' ========== CONTROLADORES ==========
+
+package "controllers" <<Node>> {
+  
+  class usuariosController <<Controller>> {
+    +state: object
+    --
+    +listarAgentes(): Promise
+    +crearAgente(data): Promise
+    +actualizarAgente(id, data): Promise
+    +eliminarAgente(id): Promise
+    +filtrarPorArea(areaId): Promise
+    +buscarPorNombre(nombre): Promise
+    +exportarListado(formato): Promise
+  }
+  
+  class rolesController <<Controller>> {
+    +state: object
+    --
+    +listarRoles(): Promise
+    +crearRol(data): Promise
+    +actualizarRol(id, data): Promise
+    +eliminarRol(id): Promise
+    +asignarRolAgente(agenteId, rolId): Promise
+    +removerRolAgente(agenteId, rolId): Promise
+  }
+  
+  class guardiasMainController <<Controller>> {
+    +state: object
+    +cronogramas: array
+    +guardias: array
+    --
+    +listarCronogramas(): Promise
+    +listarGuardias(filtros): Promise
+    +buscarGuardias(criterio): Promise
+  }
+  
+  class guardiasController <<Controller>> {
+    +state: object
+    +guardiaSeleccionada: object
+    --
+    +crearGuardia(data): Promise
+    +actualizarGuardia(id, data): Promise
+    +eliminarGuardia(id): Promise
+    +verificarDisponibilidad(agenteId, fecha): Promise
+    +confirmarGuardia(id): Promise
+    +cancelarGuardia(id): Promise
+  }
+  
+  class planificadorGuardiasController <<Controller>> {
+    +state: object
+    +agentesDisponibles: array
+    +feriados: array
+    --
+    +planificarAutomatico(data): Promise
+    +crearConGuardias(data): Promise
+    +actualizarConGuardias(id, data): Promise
+    +validarFecha(fecha): boolean
+    +calcularDistribucion(agentes, periodo): array
+  }
+  
+  class aprobacionesGuardiasController <<Controller>> {
+    +state: object
+    +cronogramasPendientes: array
+    --
+    +listarPendientes(): Promise
+    +aprobarCronograma(id, data): Promise
+    +rechazarCronograma(id, motivo): Promise
+    +publicarCronograma(id): Promise
+    +despublicarCronograma(id): Promise
+  }
+  
+  class asistenciasController <<Controller>> {
+    +state: object
+    +asistencias: array
+    --
+    +listarAsistencias(filtros): Promise
+    +marcarEntrada(dni): Promise
+    +marcarSalida(dni): Promise
+    +corregirAsistencia(id, data): Promise
+    +generarReporteMensual(mes, anio): Promise
+  }
+  
+  class licenciasController <<Controller>> {
+    +state: object
+    +licencias: array
+    +tiposLicencia: array
+    --
+    +listarLicencias(filtros): Promise
+    +crearLicencia(data): Promise
+    +aprobarLicencia(id, data): Promise
+    +rechazarLicencia(id, motivo): Promise
+    +calcularDias(fechaDesde, fechaHasta): number
+  }
+  
+  class feriadosController <<Controller>> {
+    +state: object
+    +feriados: array
+    --
+    +listarFeriados(): Promise
+    +crearFeriado(data): Promise
+    +actualizarFeriado(id, data): Promise
+    +eliminarFeriado(id): Promise
+    +verificarFeriado(fecha): Promise
+    +crearRango(fechaInicio, fechaFin, nombre): Promise
+  }
+  
+  class parametrosController <<Controller>> {
+    +state: object
+    +parametrosAreas: array
+    +reglasPlus: array
+    --
+    +listarParametrosArea(): Promise
+    +crearParametroArea(data): Promise
+    +actualizarParametroArea(id, data): Promise
+    +listarReglasPlus(): Promise
+    +crearReglaPlus(data): Promise
+    +actualizarReglaPlus(id, data): Promise
+    +simularCalculoPlus(reglaId, data): Promise
+  }
+  
+  class reporteController <<Controller>> {
+    +state: object
+    +reporteActual: object
+    --
+    +generarReporteIndividual(agenteId, mes, anio): Promise
+    +generarReporteGeneral(filtros): Promise
+    +exportarPDF(data): Promise
+    +exportarExcel(data): Promise
+    +exportarCSV(data): Promise
+  }
+  
+  class organigramaController <<Controller>> {
+    +state: object
+    +estructuraOrganigrama: object
+    --
+    +cargarOrganigrama(): Promise
+    +actualizarOrganigrama(estructura): Promise
+    +exportarOrganigrama(formato): Promise
+  }
+  
+  class auditoriaController <<Controller>> {
+    +state: object
+    +registros: array
+    --
+    +listarRegistros(filtros): Promise
+    +filtrarPorTabla(tabla): Promise
+    +filtrarPorAgente(agenteId): Promise
+    +filtrarPorFecha(fechaInicio, fechaFin): Promise
+    +exportarAuditoria(filtros): Promise
+  }
+}
+
+' ========== COMPONENTES SVELTE ==========
+
+package "componentes" <<Frame>> {
+  
+  class TablaDinamica <<Component>> {
+    +props: {
+    +  datos: array
+    +  columnas: array
+    +  acciones: array
+    +  paginacion: object
+    +}
+    --
+    +ordenar(columna): void
+    +filtrar(criterio): void
+    +paginar(pagina): void
+    +exportar(formato): void
+  }
+  
+  class FormularioDinamico <<Component>> {
+    +props: {
+    +  campos: array
+    +  valores: object
+    +  validaciones: object
+    +}
+    --
+    +validar(): boolean
+    +enviar(): Promise
+    +limpiar(): void
+    +cargarValores(data): void
+  }
+  
+  class Modal <<Component>> {
+    +props: {
+    +  titulo: string
+    +  contenido: string
+    +  mostrar: boolean
+    +}
+    --
+    +abrir(): void
+    +cerrar(): void
+    +confirmar(): void
+    +cancelar(): void
+  }
+  
+  class Calendario <<Component>> {
+    +props: {
+    +  eventos: array
+    +  fechaInicial: date
+    +  vista: string
+    +}
+    --
+    +cambiarVista(vista): void
+    +navegarMes(direccion): void
+    +seleccionarFecha(fecha): void
+    +agregarEvento(evento): void
+    +eliminarEvento(eventoId): void
+  }
+  
+  class CalendarioGuardias <<Component>> {
+    +props: {
+    +  guardias: array
+    +  agentes: array
+    +  mes: number
+    +  anio: number
+    +}
+    --
+    +renderizarMes(): void
+    +renderizarGuardia(guardia): void
+    +seleccionarGuardia(guardiaId): void
+    +filtrarPorAgente(agenteId): void
+  }
+  
+  class SelectorAgente <<Component>> {
+    +props: {
+    +  multiple: boolean
+    +  filtroArea: number
+    +  placeholder: string
+    +}
+    --
+    +buscar(termino): void
+    +seleccionar(agente): void
+    +deseleccionar(agente): void
+    +limpiar(): void
+  }
+  
+  class SelectorFecha <<Component>> {
+    +props: {
+    +  valor: date
+    +  rango: boolean
+    +  min: date
+    +  max: date
+    +}
+    --
+    +seleccionarFecha(fecha): void
+    +validarFecha(fecha): boolean
+    +formatearFecha(fecha): string
+  }
+  
+  class Notificacion <<Component>> {
+    +props: {
+    +  tipo: string
+    +  mensaje: string
+    +  duracion: number
+    +}
+    --
+    +mostrar(): void
+    +ocultar(): void
+    +autoOcultar(): void
+  }
+  
+  class Loader <<Component>> {
+    +props: {
+    +  activo: boolean
+    +  mensaje: string
+    +}
+    --
+    +mostrar(): void
+    +ocultar(): void
+  }
+  
+  class Breadcrumb <<Component>> {
+    +props: {
+    +  ruta: array
+    +}
+    --
+    +navegar(nivel): void
+  }
+  
+  class Menu <<Component>> {
+    +props: {
+    +  items: array
+    +  rolUsuario: string
+    +}
+    --
+    +filtrarPorRol(): array
+    +navegarA(ruta): void
+    +expandir(item): void
+    +contraer(item): void
+  }
+  
+  class TarjetaEstadistica <<Component>> {
+    +props: {
+    +  titulo: string
+    +  valor: number
+    +  icono: string
+    +  tendencia: string
+    +}
+    --
+    +renderizar(): void
+  }
+}
+
+' ========== UTILIDADES ==========
+
+package "utils" <<Folder>> {
+  
+  class "<<functions>>" as commonUtils {
+    +formatearFecha(fecha): string
+    +formatearHora(hora): string
+    +calcularDiferenciaDias(fecha1, fecha2): number
+    +validarEmail(email): boolean
+    +validarDNI(dni): boolean
+    +validarCUIL(cuil): boolean
+    +generarPassword(): string
+    +hashPassword(password): string
+    +sanitizeInput(input): string
+  }
+  
+  class "<<functions>>" as validationUtils {
+    +validarCampoRequerido(valor): boolean
+    +validarRango(valor, min, max): boolean
+    +validarFormatoFecha(fecha): boolean
+    +validarHorasMayorACero(horas): boolean
+    +validarDNIUnico(dni, agentes): boolean
+  }
+  
+  class "<<functions>>" as exportUtils {
+    +descargarArchivo(blob, nombre): void
+    +generarCSV(datos, columnas): string
+    +generarExcel(datos, columnas): Blob
+    +generarPDF(datos, opciones): Blob
+  }
+}
+
+' ========== STORES (ESTADO GLOBAL) ==========
+
+package "stores" <<Database>> {
+  
+  class sessionStore {
+    +usuario: writable
+    +token: writable
+    +rol: writable
+    +area: writable
+    --
+    +login(usuario): void
+    +logout(): void
+    +isAuthenticated(): boolean
+  }
+  
+  class notificationStore {
+    +notificaciones: writable
+    --
+    +agregar(notificacion): void
+    +eliminar(id): void
+    +limpiar(): void
+  }
+  
+  class loadingStore {
+    +activo: writable
+    +mensaje: writable
+    --
+    +mostrar(mensaje): void
+    +ocultar(): void
+  }
+}
+
+' ========== RELACIONES ==========
+
+' Servicios usan ApiClient
+personasService ..> ApiClient : usa
+asistenciaService ..> ApiClient : usa
+guardiasService ..> ApiClient : usa
+auditoriaService ..> ApiClient : usa
+authService ..> ApiClient : usa
+
+' Controladores usan Servicios
+usuariosController ..> personasService : consume
+rolesController ..> personasService : consume
+guardiasMainController ..> guardiasService : consume
+guardiasController ..> guardiasService : consume
+planificadorGuardiasController ..> guardiasService : consume
+planificadorGuardiasController ..> personasService : consume
+aprobacionesGuardiasController ..> guardiasService : consume
+asistenciasController ..> asistenciaService : consume
+licenciasController ..> asistenciaService : consume
+feriadosController ..> guardiasService : consume
+parametrosController ..> guardiasService : consume
+reporteController ..> guardiasService : consume
+reporteController ..> asistenciaService : consume
+reporteController ..> exportService : consume
+organigramaController ..> personasService : consume
+auditoriaController ..> auditoriaService : consume
+
+' Componentes usan Controladores y Stores
+TablaDinamica ..> exportUtils : usa
+FormularioDinamico ..> validationUtils : usa
+Calendario ..> commonUtils : usa
+CalendarioGuardias ..> guardiasController : usa
+SelectorAgente ..> personasService : usa
+SelectorFecha ..> validationUtils : usa
+Notificacion ..> notificationStore : usa
+Loader ..> loadingStore : usa
+Menu ..> sessionStore : usa
+
+' Stores
+sessionStore ..> authService : usa
+
+note top of ApiClient
+  **Cliente HTTP Singleton**
+  Axios configurado con:
+  - Interceptores de autenticación
+  - Manejo de errores global
+  - Retry logic
+  - Base URL configurable
+end note
+
+note top of guardiasService
+  **Servicio más completo**
+  Gestiona:
+  - Cronogramas y Guardias
+  - Feriados y Compensaciones
+  - Parámetros y Reglas Plus
+  - Reportes y Exportaciones
+end note
+
+note bottom of convenioIaService
+  **Integración con n8n**
+  Webhook HTTP directo a workflow
+  de n8n que integra IA para
+  consultas al Convenio Colectivo
+end note
+
+note bottom of planificadorGuardiasController
+  **Lógica Compleja**
+  - Validación de disponibilidad
+  - Distribución automática
+  - Verificación de feriados
+  - Cálculo de turnos rotativos
+end note
+
+note right of TablaDinamica
+  **Componente Reutilizable**
+  Usado en todas las vistas
+  de listado con funcionalidad
+  completa de CRUD
+end note
+
+note right of CalendarioGuardias
+  **Vista Especializada**
+  Calendario mensual con
+  visualización de guardias
+  por agente y color-coding
+end note
+
+@enduml

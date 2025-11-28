@@ -1610,6 +1610,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             
             # Crear mapa de guardias por fecha
             guardias_map = {g.fecha.strftime('%Y-%m-%d'): g for g in guardias}
+
             
             # Generar días del mes
             dias_reporte = []

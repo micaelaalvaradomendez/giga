@@ -1,0 +1,429 @@
+@startuml diagrama_base_datos_giga
+!define TABLE(x) class x << (T,#FFAAAA) >>
+!define PK(x) <u>x</u>
+!define FK(x) <i>x</i>
+
+title Sistema GIGA - Diagrama Entidad-Relación\nBase de Datos Relacional - PostgreSQL 16
+
+' ========== MÓDULO DE PERSONAS ==========
+
+TABLE(area) {
+  PK(id_area): BIGSERIAL
+  nombre: VARCHAR(100)
+  descripcion: TEXT
+  FK(id_area_padre): BIGINT
+  FK(jefe_area): BIGINT
+  nivel: INTEGER
+  orden_visualizacion: INTEGER
+  activo: BOOLEAN
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(rol) {
+  PK(id_rol): BIGSERIAL
+  nombre: VARCHAR(100) UNIQUE
+  descripcion: TEXT
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(agente) {
+  PK(id_agente): BIGSERIAL
+  email: VARCHAR(100) UNIQUE
+  dni: VARCHAR(20) UNIQUE
+  cuil: VARCHAR(20) UNIQUE
+  legajo: VARCHAR(50) UNIQUE
+  nombre: VARCHAR(100)
+  apellido: VARCHAR(100)
+  password_hash: VARCHAR(255)
+  telefono: VARCHAR(15)
+  fecha_nacimiento: DATE
+  provincia: VARCHAR(100)
+  ciudad: VARCHAR(100)
+  calle: VARCHAR(150)
+  numero: VARCHAR(10)
+  horario_entrada: TIME
+  horario_salida: TIME
+  agrupacion: VARCHAR(100)
+  activo: BOOLEAN
+  FK(id_area): BIGINT
+  tolerancia_entrada_min: INTEGER
+  tolerancia_salida_min: INTEGER
+  horas_trabajo_dia: DECIMAL(4,2)
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(agente_rol) {
+  PK(id_agente_rol): BIGSERIAL
+  FK(id_agente): BIGINT
+  FK(id_rol): BIGINT
+  asignado_en: TIMESTAMP
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(agrupacion) {
+  PK(id_agrupacion): BIGSERIAL
+  nombre: VARCHAR(100) UNIQUE
+  descripcion: TEXT
+  color: VARCHAR(7)
+  FK(id_area): BIGINT
+  activo: BOOLEAN
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(organigrama) {
+  PK(id_organigrama): BIGSERIAL
+  nombre: VARCHAR(200)
+  estructura: JSONB
+  version: VARCHAR(20)
+  activo: BOOLEAN
+  creado_por: VARCHAR(100)
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+' ========== MÓDULO DE GUARDIAS ==========
+
+TABLE(cronograma) {
+  PK(id_cronograma): BIGSERIAL
+  fecha_aprobacion: DATE
+  tipo: VARCHAR(50)
+  hora_fin: TIME
+  hora_inicio: TIME
+  estado: VARCHAR(50)
+  fecha_creacion: DATE
+  activa: BOOLEAN
+  FK(id_jefe): BIGINT
+  FK(id_director): BIGINT
+  FK(id_area): BIGINT
+  creado_por_rol: VARCHAR(50)
+  FK(creado_por_id): BIGINT
+  FK(aprobado_por_id): BIGINT
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(guardia) {
+  PK(id_guardia): BIGSERIAL
+  fecha: DATE
+  hora_inicio: TIME
+  hora_fin: TIME
+  tipo: VARCHAR(50)
+  estado: VARCHAR(50)
+  activa: BOOLEAN
+  horas_planificadas: INTEGER
+  horas_efectivas: INTEGER
+  observaciones: TEXT
+  FK(id_cronograma): BIGINT
+  FK(id_agente): BIGINT
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(nota_guardia) {
+  PK(id_nota): BIGSERIAL
+  FK(id_guardia): BIGINT
+  FK(id_agente): BIGINT
+  nota: TEXT
+  fecha_nota: TIMESTAMP
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(hora_compensacion) {
+  PK(id_hora_compensacion): BIGSERIAL
+  FK(id_agente): BIGINT
+  FK(id_guardia): BIGINT
+  FK(id_cronograma): BIGINT
+  fecha_servicio: DATE
+  hora_inicio_programada: TIME
+  hora_fin_programada: TIME
+  hora_fin_real: TIME
+  horas_programadas: DECIMAL(4,2)
+  horas_efectivas: DECIMAL(4,2)
+  horas_extra: DECIMAL(4,2)
+  motivo: VARCHAR(20)
+  descripcion_motivo: TEXT
+  numero_acta: VARCHAR(50)
+  estado: VARCHAR(20)
+  tipo_compensacion: VARCHAR(20)
+  FK(solicitado_por): BIGINT
+  FK(aprobado_por): BIGINT
+  fecha_solicitud: TIMESTAMP
+  fecha_aprobacion: TIMESTAMP
+  observaciones_aprobacion: TEXT
+  valor_hora_extra: DECIMAL(10,2)
+  monto_total: DECIMAL(10,2)
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(feriado) {
+  PK(id_feriado): BIGSERIAL
+  nombre: VARCHAR(200)
+  descripcion: TEXT
+  fecha_inicio: DATE
+  fecha_fin: DATE
+  es_nacional: BOOLEAN
+  es_provincial: BOOLEAN
+  es_local: BOOLEAN
+  activo: BOOLEAN
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(parametros_area) {
+  PK(id_parametros_area): BIGSERIAL
+  FK(id_area): BIGINT
+  ventana_entrada_inicio: TIME
+  ventana_entrada_fin: TIME
+  ventana_salida_inicio: TIME
+  ventana_salida_fin: TIME
+  tolerancia_entrada_min: INTEGER
+  tolerancia_salida_min: INTEGER
+  horas_trabajo_dia: DECIMAL(4,2)
+  vigente_desde: DATE
+  vigente_hasta: DATE
+  activo: BOOLEAN
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(reglas_plus) {
+  PK(id_regla_plus): BIGSERIAL
+  nombre: VARCHAR(100)
+  horas_minimas_diarias: DECIMAL(5,2)
+  horas_minimas_mensuales: DECIMAL(6,2)
+  porcentaje_plus: DECIMAL(5,2)
+  aplica_areas_operativas: BOOLEAN
+  aplica_areas_administrativas: BOOLEAN
+  vigente_desde: DATE
+  vigente_hasta: DATE
+  activa: BOOLEAN
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(resumen_guardia_mes) {
+  PK(id_resumen_guardia_mes): BIGSERIAL
+  FK(id_agente): BIGINT
+  mes: INTEGER
+  anio: INTEGER
+  plus20: BOOLEAN
+  plus40: BOOLEAN
+  total_horas_guardia: INTEGER
+  horas_efectivas: DECIMAL(6,2)
+  porcentaje_plus: DECIMAL(5,2)
+  monto_calculado: DECIMAL(10,2)
+  estado_plus: VARCHAR(30)
+  fecha_calculo: TIMESTAMP
+  aprobado_en: TIMESTAMP
+}
+
+' ========== MÓDULO DE ASISTENCIA ==========
+
+TABLE(tipo_licencia) {
+  PK(id_tipo_licencia): BIGSERIAL
+  codigo: VARCHAR(50) UNIQUE
+  descripcion: TEXT
+}
+
+TABLE(parte_diario) {
+  PK(id_parte_diario): BIGSERIAL
+  fecha_parte: DATE
+  FK(id_agente): BIGINT
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(asistencia) {
+  PK(id_asistencia): BIGSERIAL
+  fecha: DATE
+  hora_entrada: TIME
+  hora_salida: TIME
+  marcacion_entrada_automatica: BOOLEAN
+  marcacion_salida_automatica: BOOLEAN
+  es_correccion: BOOLEAN
+  FK(corregido_por): BIGINT
+  observaciones: TEXT
+  FK(id_agente): BIGINT
+  FK(id_area): BIGINT
+  FK(id_parte_diario): BIGINT
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(intento_marcacion_fraudulenta) {
+  PK(id_intento): BIGSERIAL
+  fecha: DATE
+  hora: TIME
+  dni_ingresado: VARCHAR(20)
+  FK(id_agente_sesion): BIGINT
+  FK(id_agente_dni): BIGINT
+  tipo_intento: VARCHAR(50)
+  ip_address: VARCHAR(45)
+  creado_en: TIMESTAMP
+}
+
+TABLE(licencia) {
+  PK(id_licencia): BIGSERIAL
+  fecha_desde: DATE
+  fecha_hasta: DATE
+  estado: VARCHAR(50)
+  FK(id_agente): BIGINT
+  FK(id_tipo_licencia): BIGINT
+  observaciones: TEXT
+  justificacion: TEXT
+  FK(aprobada_por): BIGINT
+  fecha_aprobacion: DATE
+  observaciones_aprobacion: TEXT
+  FK(rechazada_por): BIGINT
+  fecha_rechazo: DATE
+  motivo_rechazo: TEXT
+  FK(solicitada_por): BIGINT
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+TABLE(novedad) {
+  PK(id_novedad): BIGSERIAL
+  fecha: DATE
+  tipo: VARCHAR(100)
+  descripcion: TEXT
+  observaciones: TEXT
+  FK(id_agente): BIGINT
+  creado_en: TIMESTAMP
+  actualizado_en: TIMESTAMP
+}
+
+' ========== MÓDULO DE AUDITORÍA ==========
+
+TABLE(auditoria) {
+  PK(id_auditoria): BIGSERIAL
+  pk_afectada: BIGINT
+  nombre_tabla: VARCHAR(100)
+  creado_en: TIMESTAMP
+  valor_previo: JSONB
+  valor_nuevo: JSONB
+  accion: VARCHAR(50)
+  FK(id_agente): BIGINT
+}
+
+' ========== RELACIONES ==========
+
+' Área - Auto-referencia jerárquica
+area "0..1" -- "0..*" area : id_area_padre
+area "0..1" -- "0..1" agente : jefe_area
+
+' Agente - Rol (Many-to-Many)
+agente "1" -- "0..*" agente_rol
+rol "1" -- "0..*" agente_rol
+
+' Agente - Área
+area "1" -- "0..*" agente : pertenece
+
+' Agrupación - Área
+area "0..1" -- "0..*" agrupacion
+
+' Cronograma - Agentes y Área
+agente "0..1" -- "0..*" cronograma : creado_por
+agente "0..1" -- "0..*" cronograma : aprobado_por
+agente "0..1" -- "0..*" cronograma : jefe
+agente "0..1" -- "0..*" cronograma : director
+area "1" -- "0..*" cronograma
+
+' Guardia - Cronograma y Agente
+cronograma "1" -- "0..*" guardia
+agente "1" -- "0..*" guardia : asignado
+
+' Nota Guardia - Guardia y Agente
+guardia "1" -- "0..*" nota_guardia
+agente "1" -- "0..*" nota_guardia : escribe
+
+' Compensación - Guardia, Cronograma y Agentes
+agente "1" -- "0..*" hora_compensacion : recibe
+guardia "0..1" -- "0..*" hora_compensacion
+cronograma "1" -- "0..*" hora_compensacion
+agente "1" -- "0..*" hora_compensacion : solicitado_por
+agente "0..1" -- "0..*" hora_compensacion : aprobado_por
+
+' Parámetros Área
+area "1" -- "0..*" parametros_area
+
+' Resumen Guardia Mes
+agente "1" -- "0..*" resumen_guardia_mes
+
+' Asistencia - Agente, Área y Parte Diario
+agente "1" -- "0..*" asistencia : registra
+area "0..1" -- "0..*" asistencia
+agente "0..1" -- "0..*" asistencia : corregido_por
+parte_diario "0..1" -- "0..*" asistencia
+
+' Parte Diario - Agente
+agente "1" -- "0..*" parte_diario
+
+' Intento Fraudulento - Agentes
+agente "1" -- "0..*" intento_marcacion_fraudulenta : sesion
+agente "0..1" -- "0..*" intento_marcacion_fraudulenta : dni
+
+' Licencia - Tipo, Agente
+tipo_licencia "1" -- "0..*" licencia
+agente "1" -- "0..*" licencia : solicita
+agente "0..1" -- "0..*" licencia : aprobada_por
+agente "0..1" -- "0..*" licencia : rechazada_por
+agente "0..1" -- "0..*" licencia : solicitada_por
+
+' Novedad - Agente
+agente "1" -- "0..*" novedad
+
+' Auditoría - Agente
+agente "0..1" -- "0..*" auditoria
+
+note right of area
+  **Soporte Jerárquico**
+  Permite sub-áreas mediante
+  id_area_padre (auto-referencia)
+end note
+
+note right of cronograma
+  **Workflow de Aprobación**
+  Estados: generada, pendiente,
+  aprobada, publicada, rechazada
+  
+  Auto-aprobación para Admin
+  Requiere aprobación jerárquica
+  para Jefatura/Director
+end note
+
+note right of feriado
+  **Feriados Multi-Día**
+  Soporte para rangos de fechas
+  Múltiples feriados en misma fecha
+  Categorización: nacional, provincial, local
+end note
+
+note bottom of hora_compensacion
+  **Compensaciones**
+  Tipos: pago, franco, plus
+  Motivos: siniestro, emergencia,
+  operativo, refuerzo, otro
+  
+  Constraints:
+  - Horas extra: 0 < h <= 8
+  - Hora fin real > hora programada
+end note
+
+note bottom of asistencia
+  **Marcación de Asistencia**
+  - Solo días laborables
+  - Restricción: NO fines de semana ni feriados
+  - Detección de fraude
+  - Sistema de correcciones
+  - Unique constraint: agente + fecha
+end note
+
+@enduml
