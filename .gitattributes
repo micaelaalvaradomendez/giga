@@ -1,0 +1,7 @@
+# Solución al error "cannot execute: required file not found" en Docker.
+# Esta línea fuerza a todos los scripts de shell (.sh) a utilizar finales
+# de línea (EOL) de formato Unix (LF) en lugar del formato Windows (CRLF).
+# Esto es esencial para que los scripts se ejecuten correctamente dentro
+# del entorno Linux de Docker.
+
+*.sh text eol=lf
