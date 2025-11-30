@@ -580,8 +580,6 @@ DECLARE
     v_total_horas_guardia DECIMAL(6,2) := 0;
     v_total_horas_compensacion DECIMAL(6,2) := 0;
     v_total_horas_completas DECIMAL(6,2) := 0;
-    v_tiene_guardias BOOLEAN := FALSE;
-    v_tiene_compensaciones BOOLEAN := FALSE;
     v_fecha_inicio DATE;
     v_fecha_fin DATE;
 BEGIN
@@ -609,10 +607,8 @@ BEGIN
     );
     
     --  Obtener horas de guardias regulares
-    SELECT 
-        COALESCE(SUM(horas_efectivas), 0),
-        COUNT(*) > 0
-    INTO v_total_horas_guardia, v_tiene_guardias
+    SELECT COALESCE(SUM(horas_efectivas), 0)
+    INTO v_total_horas_guardia
     FROM guardia
     WHERE id_agente = p_id_agente
         AND fecha >= v_fecha_inicio
@@ -620,11 +616,9 @@ BEGIN
         AND activa = TRUE
         AND estado = 'planificada';
     
-    -- INCLUIR horas de compensación aprobadas (NOVEDAD v2.0)
-    SELECT 
-        COALESCE(SUM(horas_extra), 0),
-        COUNT(*) > 0
-    INTO v_total_horas_compensacion, v_tiene_compensaciones
+    -- INCLUIR horas de compensación aprobadas
+    SELECT COALESCE(SUM(horas_extra), 0)
+    INTO v_total_horas_compensacion
     FROM hora_compensacion
     WHERE id_agente = p_id_agente
         AND fecha_servicio >= v_fecha_inicio
@@ -634,20 +628,30 @@ BEGIN
     -- Calcular total combinado
     v_total_horas_completas := v_total_horas_guardia + v_total_horas_compensacion;
     
-    -- Aplicar reglas de plus (ACTUALIZADAS con compensaciones)
-    IF v_es_area_operativa AND (v_tiene_guardias OR v_tiene_compensaciones) THEN
-        RETURN 40.0;  -- Área operativa con guardias/compensaciones
-    ELSIF NOT v_es_area_operativa AND v_total_horas_completas >= 32 THEN
-        RETURN 40.0;  -- Otras áreas con 32+ horas (incl. compensaciones)
-    ELSIF v_tiene_guardias OR v_tiene_compensaciones THEN
-        RETURN 20.0;  -- Cualquier caso con guardias/compensaciones
+    -- LÓGICA CORREGIDA: Diferenciar por tipo de área y horas trabajadas
+    IF v_es_area_operativa THEN
+        -- ÁREA OPERATIVA
+        IF v_total_horas_completas >= 8 THEN
+            RETURN 40.0;  -- Plus 40% si >= 8 horas
+        ELSIF v_total_horas_completas > 0 THEN
+            RETURN 20.0;  -- Plus 20% si 1-7 horas
+        ELSE
+            RETURN 0.0;   -- Sin plus si 0 horas
+        END IF;
     ELSE
-        RETURN 0.0;   -- Sin guardias ni compensaciones
+        -- ÁREA ADMINISTRATIVA (O CUALQUIER OTRA)
+        IF v_total_horas_completas >= 32 THEN
+            RETURN 40.0;  -- Plus 40% si >= 32 horas
+        ELSIF v_total_horas_completas > 0 THEN
+            RETURN 20.0;  -- Plus 20% si 1-31 horas
+        ELSE
+            RETURN 0.0;   -- Sin plus si 0 horas
+        END IF;
     END IF;
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION calcular_plus_agente(BIGINT, INT, INT) IS 'Calcula el porcentaje de plus para un agente en un mes específico, incluyendo horas de compensación aprobadas (v2.0)';
+COMMENT ON FUNCTION calcular_plus_agente(BIGINT, INT, INT) IS 'Calcula el porcentaje de plus para un agente. CORREGIDO: Operativos >=8h=40%, 1-7h=20%. Administrativos >=32h=40%, 1-31h=20%.';
 
 -- Función de detalle de cálculo de plus (para debugging)
 CREATE OR REPLACE FUNCTION detalle_calculo_plus_agente(
@@ -731,18 +735,31 @@ BEGIN
     v_tiene_compensaciones := v_cantidad_compensaciones > 0;
     v_total_horas_completas := v_total_horas_guardia + v_total_horas_compensacion;
     
-    IF v_es_area_operativa AND (v_tiene_guardias OR v_tiene_compensaciones) THEN
-        v_porcentaje_plus := 40.0;
-        v_regla_aplicada := 'Área operativa + guardias/compensaciones = 40%';
-    ELSIF NOT v_es_area_operativa AND v_total_horas_completas >= 32 THEN
-        v_porcentaje_plus := 40.0;
-        v_regla_aplicada := 'Otras áreas + 32+ horas (con compensaciones) = 40%';
-    ELSIF v_tiene_guardias OR v_tiene_compensaciones THEN
-        v_porcentaje_plus := 20.0;
-        v_regla_aplicada := 'Guardias/compensaciones presentes = 20%';
+    -- LÓGICA CORREGIDA
+    IF v_es_area_operativa THEN
+        -- ÁREA OPERATIVA
+        IF v_total_horas_completas >= 8 THEN
+            v_porcentaje_plus := 40.0;
+            v_regla_aplicada := 'Área operativa + >= 8 horas = 40%';
+        ELSIF v_total_horas_completas > 0 THEN
+            v_porcentaje_plus := 20.0;
+            v_regla_aplicada := 'Área operativa + 1-7 horas = 20%';
+        ELSE
+            v_porcentaje_plus := 0.0;
+            v_regla_aplicada := 'Sin horas trabajadas = 0%';
+        END IF;
     ELSE
-        v_porcentaje_plus := 0.0;
-        v_regla_aplicada := 'Sin guardias ni compensaciones = 0%';
+        -- ÁREA ADMINISTRATIVA
+        IF v_total_horas_completas >= 32 THEN
+            v_porcentaje_plus := 40.0;
+            v_regla_aplicada := 'Área administrativa + >= 32 horas = 40%';
+        ELSIF v_total_horas_completas > 0 THEN
+            v_porcentaje_plus := 20.0;
+            v_regla_aplicada := 'Área administrativa + 1-31 horas = 20%';
+        ELSE
+            v_porcentaje_plus := 0.0;
+            v_regla_aplicada := 'Sin horas trabajadas = 0%';
+        END IF;
     END IF;
     
     agente_nombre := v_agente_nombre;

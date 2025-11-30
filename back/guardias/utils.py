@@ -36,10 +36,17 @@ class CalculadoraPlus:
     @staticmethod
     def calcular_plus_simplificado(agente_id, mes, anio):
         """
-        Calcula el plus según las reglas simplificadas:
-        1. Área operativa + guardia = 40% plus
-        2. Otras áreas + 32+ horas = 40% plus  
-        3. Cualquier otro caso = 20% plus
+        Calcula el plus según las reglas del convenio colectivo:
+        
+        OPERATIVOS:
+        - >= 8 horas  → 40% plus
+        - 1-7 horas   → 20% plus
+        - 0 horas     → 0% plus
+        
+        ADMINISTRATIVOS (y otras áreas):
+        - >= 32 horas → 40% plus
+        - 1-31 horas  → 20% plus
+        - 0 horas     → 0% plus
         """
         try:
             from personas.models import Agente
@@ -69,6 +76,7 @@ class CalculadoraPlus:
             else:
                 fecha_fin = date(anio, mes + 1, 1)
             
+            # Horas de guardias regulares
             guardias_mes = Guardia.objects.filter(
                 id_agente=agente_id,
                 fecha__gte=fecha_inicio,
@@ -77,12 +85,11 @@ class CalculadoraPlus:
                 estado='planificada'
             )
             
-            total_horas = guardias_mes.aggregate(
+            total_horas_guardias = guardias_mes.aggregate(
                 total=Sum('horas_efectivas')
             )['total'] or 0
             
-            # *** NUEVA FUNCIONALIDAD: Incluir horas de compensación aprobadas ***
-            # Las horas de compensación aprobadas se suman al total mensual
+            # Horas de compensación aprobadas
             compensaciones_aprobadas = HoraCompensacion.objects.filter(
                 id_agente=agente_id,
                 fecha_servicio__gte=fecha_inicio,
@@ -95,25 +102,25 @@ class CalculadoraPlus:
             )['total'] or 0
             
             # Sumar horas regulares + horas de compensación
-            total_horas_completas = total_horas + horas_compensacion
+            total_horas_completas = total_horas_guardias + horas_compensacion
             
-            tiene_guardias = guardias_mes.exists()
-            tiene_compensaciones = compensaciones_aprobadas.exists()
-            
-            # *** REGLAS ACTUALIZADAS: Incluyen horas de compensación ***
-            # Aplicar reglas de plus (ahora con horas de compensación incluidas)
-            if es_area_operativa and (tiene_guardias or tiene_compensaciones):
-                # Regla 1: Área operativa + guardia/compensación = 40%
-                return Decimal('40.0')
-            elif not es_area_operativa and total_horas_completas >= 32:
-                # Regla 2: Otras áreas + 32+ horas (incluyendo compensaciones) = 40%
-                return Decimal('40.0')
-            elif tiene_guardias or tiene_compensaciones:
-                # Regla 3: Cualquier caso con guardias/compensaciones = 20%
-                return Decimal('20.0')
+            # APLICAR REGLAS CORREGIDAS
+            if es_area_operativa:
+                # ÁREA OPERATIVA
+                if total_horas_completas >= 8:
+                    return Decimal('40.0')
+                elif total_horas_completas > 0:
+                    return Decimal('20.0')
+                else:
+                    return Decimal('0.0')
             else:
-                # Sin guardias ni compensaciones = sin plus
-                return Decimal('0.0')
+                # ÁREA ADMINISTRATIVA (O CUALQUIER OTRA)
+                if total_horas_completas >= 32:
+                    return Decimal('40.0')
+                elif total_horas_completas > 0:
+                    return Decimal('20.0')
+                else:
+                    return Decimal('0.0')
                 
         except Exception as e:
             logger.error(f"Error calculando plus simplificado para agente {agente_id}: {e}")
