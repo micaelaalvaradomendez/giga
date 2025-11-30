@@ -1,0 +1,280 @@
+@startuml Diagrama_Estados_Compensacion_GIGA
+!define STATEDIAGRAM
+
+title Sistema GIGA - Diagrama de Estados\nFlujo de Compensación de Horas Extra\nPendiente → Aprobada/Rechazada
+
+' ==============================================================================
+' CONFIGURACIÓN DE ESTILOS
+' ==============================================================================
+skinparam backgroundColor #FFFFFF
+
+skinparam state {
+    BackgroundColor<<Pendiente>> #FFF3E0
+    BorderColor<<Pendiente>> #F57C00
+    
+    BackgroundColor<<Aprobada>> #E8F5E8
+    BorderColor<<Aprobada>> #4CAF50
+    
+    BackgroundColor<<Rechazada>> #FFEBEE
+    BorderColor<<Rechazada>> #F44336
+    
+    BackgroundColor<<Final>> #E3F2FD
+    BorderColor<<Final>> #2196F3
+    
+    FontSize 11
+}
+
+skinparam activity {
+    BackgroundColor #F5F5F5
+    BorderColor #9E9E9E
+    FontSize 10
+}
+
+' ==============================================================================
+' INICIO DEL FLUJO
+' ==============================================================================
+[*] --> CargaExceso : Jefatura detecta\nexceso horario
+
+note right of CargaExceso
+  **Situación Inicial:**
+  • Guardia programada: 08:00-16:00 (8 horas)
+  • Emergencia extendió servicio hasta 20:00
+  • Exceso: 4 horas extra por siniestro
+  • Requiere justificación y aprobación
+end note
+
+' ==============================================================================
+' ACCIÓN: JEFATURA CARGA EXCESO HORARIO
+' ==============================================================================
+CargaExceso : 👨‍💼 **JEFATURA CARGA**\n**EXCESO HORARIO**
+CargaExceso : ━━━━━━━━━━━━━━━━━━━━━
+CargaExceso : 📊 Datos del Servicio:
+CargaExceso : • Agente: Juan Pérez
+CargaExceso : • Fecha: 15/01/2025
+CargaExceso : • Programado: 08:00-16:00
+CargaExceso : • Real: 08:00-20:00
+CargaExceso : • Horas Extra: 4 horas
+CargaExceso : ━━━━━━━━━━━━━━━━━━━━━
+CargaExceso : 📝 Justificación:
+CargaExceso : • Motivo: Siniestro
+CargaExceso : • Descripción: Accidente ruta 3
+CargaExceso : • N° Acta: EXP-2025-001
+CargaExceso : • Tipo: Plus adicional
+
+note right of CargaExceso
+  **Endpoint:** POST /api/guardias/compensaciones/crear/
+  
+  **Request Payload:**
+  {
+    "id_agente": 201,
+    "id_guardia": 1501,
+    "fecha_servicio": "2025-01-15",
+    "hora_fin_real": "20:00:00",
+    "motivo": "siniestro",
+    "descripcion_motivo": "Accidente en ruta 3 requirió extensión del servicio",
+    "numero_acta": "EXP-2025-001",
+    "tipo_compensacion": "plus"
+  }
+end note
+
+CargaExceso --> PENDIENTE : Sistema calcula\nhoras extra automáticamente
+
+' ==============================================================================
+' ESTADO: PENDIENTE DE APROBACIÓN
+' ==============================================================================
+state PENDIENTE <<Pendiente>> {
+  PENDIENTE : 🔄 **COMPENSACIÓN PENDIENTE**
+  PENDIENTE : ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PENDIENTE : 📋 Estado: "pendiente"
+  PENDIENTE : 👤 Solicitado por: Jefatura
+  PENDIENTE : 📅 Fecha solicitud: 16/01/2025
+  PENDIENTE : ⏰ Horas extra: 4.0 horas
+  PENDIENTE : 💰 Monto estimado: $45,000
+  PENDIENTE : ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PENDIENTE : ⏳ Esperando revisión del Director
+  PENDIENTE : 📊 Días en estado: 2 días
+  PENDIENTE : 🚨 Vencimiento: 28 días restantes
+}
+
+note right of PENDIENTE
+  **Características del Estado:**
+  • Creado automáticamente al cargar exceso
+  • Visible para Director en "Compensaciones Pendientes"
+  • Cálculos automáticos: horas_extra, monto_total
+  • Auditoría: CREAR_COMPENSACION registrada
+  • No afecta plus mensual hasta aprobación
+  
+  **Validaciones Activas:**
+  • puede_aprobar() = true
+  • esta_vencida() = false (< 30 días)
+  • estado = 'pendiente'
+end note
+
+' ==============================================================================
+' DECISIÓN: DIRECTOR REVISA
+' ==============================================================================
+PENDIENTE --> DecisionDirector
+
+state DecisionDirector <<choice>>
+DecisionDirector : 💎 **DIRECTOR REVISA**\nCompensación #1501
+
+note right of DecisionDirector
+  **Proceso de Revisión:**
+  • Director accede a lista de pendientes
+  • Revisa documentación del siniestro
+  • Verifica horas extra registradas
+  • Consulta N° Acta de emergencia
+  • Evalúa si corresponde compensación
+  
+  **Criterios de Evaluación:**
+  ✅ Emergencia real comprobada
+  ✅ Exceso horario justificado
+  ✅ Documentación completa
+  ✅ Agente disponible para extender servicio
+  
+  **Opciones Disponibles:**
+  [🟢 Aprobar] [🔴 Rechazar] [👁️ Ver Detalle]
+end note
+
+' ==============================================================================
+' FLUJO APROBACIÓN: APROBADA
+' ==============================================================================
+DecisionDirector --> APROBADA : [🟢 Aprueba]\nDirector confirma compensación
+DecisionDirector --> RECHAZADA : [🔴 Rechaza]\nNo corresponde o falta documentación
+
+state APROBADA <<Aprobada>> {
+  APROBADA : ✅ **COMPENSACIÓN APROBADA**
+  APROBADA : ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  APROBADA : 📋 Estado: "aprobada"
+  APROBADA : 👔 Aprobado por: María González (Director)
+  APROBADA : 📅 Fecha aprobación: 18/01/2025
+  APROBADA : 💰 Monto aprobado: $45,000
+  APROBADA : ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  APROBADA : ✅ Incluida en cálculo de plus mensual
+  APROBADA : 📊 Lista para liquidación
+  APROBADA : 🎯 Proceso completado exitosamente
+}
+
+note right of APROBADA
+  **Efectos de la Aprobación:**
+  • Estado cambia a "aprobada"
+  • aprobado_por_id = Director
+  • fecha_aprobacion = timestamp actual
+  • Auditoría: APROBAR_COMPENSACION
+  
+  **Impactos en el Sistema:**
+  ✅ Se incluye en calcular_plus_simplificado()
+  ✅ Suma a total_horas_completas mensual
+  ✅ Puede elevar plus de 20% → 40%
+  ✅ Visible en reportes mensuales
+  ✅ Lista para proceso de liquidación
+end note
+
+' ==============================================================================
+' FLUJO RECHAZO: RECHAZADA
+' ==============================================================================
+state RECHAZADA <<Rechazada>> {
+  RECHAZADA : ❌ **COMPENSACIÓN RECHAZADA**
+  RECHAZADA : ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  RECHAZADA : 📋 Estado: "rechazada"  
+  RECHAZADA : 👔 Rechazado por: María González (Director)
+  RECHAZADA : 📅 Fecha rechazo: 18/01/2025
+  RECHAZADA : 📝 Motivo: Documentación incompleta
+  RECHAZADA : ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  RECHAZADA : ❌ NO incluida en plus mensual
+  RECHAZADA : 🔄 Agente puede volver a solicitar
+  RECHAZADA : 📊 Registrado para estadísticas
+}
+
+note right of RECHAZADA
+  **Efectos del Rechazo:**
+  • Estado cambia a "rechazada"
+  • aprobado_por_id = Director (quien rechaza)
+  • observaciones_aprobacion = motivo del rechazo
+  • Auditoría: RECHAZAR_COMPENSACION
+  
+  **Impactos en el Sistema:**
+  ❌ NO se incluye en cálculo de plus
+  ❌ NO suma a horas totales mensuales
+  ❌ NO aparece en reportes de liquidación
+  ✅ Mantiene historial para auditoría
+  ✅ Agente puede solicitar nueva compensación con mejor documentación
+end note
+
+' ==============================================================================
+' ESTADOS FINALES: LIQUIDACIÓN Y FRANCO
+' ==============================================================================
+APROBADA --> Liquidacion : Sistema procesa\npara pago mensual
+APROBADA --> Franco : Agente solicita\nfranco compensatorio
+
+state Liquidacion <<Final>> {
+  Liquidacion : 💵 **LIQUIDACIÓN**
+  Liquidacion : ━━━━━━━━━━━━━━━━━
+  Liquidacion : 📊 Incluida en plus mensual
+  Liquidacion : 💰 Monto: $45,000
+  Liquidacion : 📅 Período: Enero 2025
+  Liquidacion : 🧮 Cálculo automático
+}
+
+state Franco <<Final>> {
+  Franco : 🏖️ **FRANCO COMPENSATORIO**
+  Franco : ━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Franco : ⏰ 4 horas = 0.5 días franco
+  Franco : 📅 Fecha asignada: A coordinar
+  Franco : 👥 Requiere cobertura de guardia
+  Franco : 📋 Gestión por RRHH
+}
+
+note bottom of Franco
+  **Opciones de Compensación:**
+  
+  **1. Plus Adicional (automático):**
+  • Se incluye en cálculo mensual de plus
+  • Impacta porcentaje 20% → 40% si supera umbral
+  • Pago junto con salario mensual
+  
+  **2. Franco Compensatorio (opcional):**
+  • Agente puede solicitar días de descanso
+  • 8 horas extra = 1 día de franco
+  • Requiere coordinación con cronograma
+  • Gestión manual por RRHH
+  
+  **3. Pago Directo (futuro):**
+  • Pago independiente del salario base
+  • Valor por hora según escalafón
+  • Liquidación especial
+end note
+
+' ==============================================================================
+' ESTADOS DE AUDITORÍA Y TRAZABILIDAD
+' ==============================================================================
+note as auditoria_completa
+  **🔍 TRAZABILIDAD COMPLETA DEL FLUJO:**
+  
+  **Tabla: hora_compensacion**
+  • id_hora_compensacion: PK único
+  • estado: 'pendiente' → 'aprobada'/'rechazada'
+  • solicitado_por_id: Jefatura que carga
+  • aprobado_por_id: Director que decide
+  • fecha_solicitud: timestamp creación
+  • fecha_aprobacion: timestamp decisión
+  
+  **Tabla: auditoria (registros automáticos)**
+  1. CREAR_COMPENSACION (al cargar exceso)
+  2. APROBAR_COMPENSACION (al aprobar)
+  3. RECHAZAR_COMPENSACION (al rechazar)
+  
+  **Impacto en Plus Mensual:**
+  • función: calcular_plus_simplificado()
+  • incluye: compensaciones con estado='aprobada'
+  • suma: horas_extra al total mensual
+  • puede elevar: plus de 20% a 40%
+  
+  **Reportes Disponibles:**
+  • Compensaciones por agente/mes
+  • Resumen de aprobaciones/rechazos
+  • Impacto en plus mensual
+  • Estadísticas de emergencias
+end note
+
+@enduml

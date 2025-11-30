@@ -1,0 +1,391 @@
+@startuml Marcacion_Asistencia_Seguridad_Anti_Fraude_GIGA
+!define SEQUENCE_DIAGRAM
+
+title Sistema GIGA - Diagrama de Secuencia\nMarcación de Asistencia con Seguridad Anti-Fraude\nDetección y Registro de Intentos Fraudulentos
+
+' ==============================================================================
+' ACTORES Y PARTICIPANTES
+' ==============================================================================
+actor "👤 Agente" as agente #E3F2FD
+participant "🎨 Frontend\n(Asistencia)" as frontend #FFF3E0
+participant "⚙️ Backend\n(Django API)" as backend #FFEBEE
+participant "🔒 Sistema\nAnti-Fraude" as seguridad #F3E5F5
+participant "🗄️ Base de Datos\n(PostgreSQL)" as db #F0F4C3
+
+' ==============================================================================
+' CONFIGURACIÓN DE ESTILOS
+' ==============================================================================
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+skinparam sequenceReferenceAlign center
+
+' ==============================================================================
+' FLUJO 1: AGENTE INGRESA DNI EN LA INTERFAZ
+' ==============================================================================
+group Inicio del Proceso de Marcación
+
+    agente -> frontend : 1. Accede a "/asistencia"
+    note right of agente
+        **Página de Asistencia:**
+        • Formulario con campo DNI
+        • Estado actual (entrada/salida)
+        • Horario asignado del agente
+        • Validación de día laborable
+    end note
+    
+    frontend -> backend : GET /api/asistencia/estado/
+    note right of frontend
+        **Verificación Inicial:**
+        • Obtener estado de asistencia del día
+        • Verificar si ya marcó entrada/salida
+        • Validar si es día laborable
+    end note
+    
+    backend -> backend : es_dia_laborable(fecha_actual)
+    note right of backend
+        **Validación Día Laborable:**
+        1. ✅ No es sábado (weekday != 5)
+        2. ✅ No es domingo (weekday != 6) 
+        3. ✅ No es feriado (Feriado.es_feriado())
+    end note
+    
+    backend -> db : SELECT * FROM feriado WHERE fecha_inicio <= CURRENT_DATE
+    db --> backend : feriados_activos[]
+    
+    backend --> frontend : HTTP 200 + estado_asistencia
+    note right of backend
+        **Response Estado:**
+        {
+          "success": true,
+          "data": {
+            "tiene_entrada": false,
+            "tiene_salida": false,
+            "puede_marcar_entrada": true,
+            "es_dia_laborable": true,
+            "motivo_no_laborable": null
+          }
+        }
+    end note
+    
+    frontend --> agente : 📋 Interfaz con estado actual
+    note right of frontend
+        • Vista Agente:
+        • Estado: "Sin entrada marcada"
+        • Horario: 08:00 - 16:00
+        • Campo DNI habilitado
+        • Botón "Marcar Asistencia"
+    end note
+
+end
+
+' ==============================================================================
+' FLUJO 2: CAPTURA DE DNI E IP DEL CLIENTE
+' ==============================================================================
+group Captura de Datos de Seguridad
+
+    agente -> frontend : 2. Ingresa DNI "12345678" + Click "Marcar"
+    note right of agente
+        **Datos Ingresados:**
+        • DNI: "12345678" (incorrecto)
+        • Usuario logueado: Juan Pérez
+        • DNI real del usuario: "87654321"
+        • IP del cliente: capturada automáticamente
+    end note
+    
+    frontend -> frontend : Capturar datos del cliente
+    note right of frontend
+        **Captura Automática:**
+        • DNI ingresado: del formulario
+        • IP Address: HTTP headers
+        • Timestamp: fecha/hora actual
+        • User Agent: navegador del cliente
+        • Session ID: de la sesión activa
+    end note
+    
+    frontend -> backend : POST /api/asistencia/marcar/
+    note right of frontend
+        **Request Payload:**
+        {
+          "dni": "12345678",
+          "tipo_marcacion": null // auto-detect
+        }
+        
+        **Headers Automáticos:**
+        • HTTP_X_FORWARDED_FOR: IP real
+        • HTTP_REMOTE_ADDR: IP del proxy
+        • HTTP_USER_AGENT: navegador
+        • Session Cookie: autenticación
+    end note
+
+end
+
+' ==============================================================================
+' FLUJO 3: VALIDACIONES DE SEGURIDAD DEL BACKEND
+' ==============================================================================
+group Validaciones de Seguridad Anti-Fraude
+
+    backend -> backend : Obtener agente de sesión activa
+    note right of backend
+        **Extracción Sesión:**
+        agente_sesion_id = request.session.get('user_id')
+        agente_sesion = Agente.objects.get(id_agente=agente_sesion_id)
+        
+        **Datos del Usuario:**
+        • ID: 101 (Juan Pérez)
+        • DNI Real: "87654321"
+        • Rol: "Agente"
+    end note
+    
+    backend -> seguridad : Verificar coincidencia de DNI
+    note right of seguridad
+        **Validación Anti-Fraude:**
+        DNI_ingresado: "12345678"
+        DNI_usuario_sesion: "87654321"
+        
+        **Resultado:** ❌ NO COINCIDEN
+        Detectado intento fraudulento!
+    end note
+    
+    ' CAMINO ALTERNATIVO - FRAUDE DETECTADO
+    alt DNI No Coincide (FRAUDE)
+        
+        seguridad -> backend : ⚠️ Fraude detectado
+        
+        backend -> backend : get_client_ip(request)
+        note right of backend
+            **Captura IP Cliente:**
+            • HTTP_X_FORWARDED_FOR: "192.168.1.100"
+            • Fallback REMOTE_ADDR: "127.0.0.1"
+            • IP final: "192.168.1.100"
+        end note
+        
+        backend -> db : BEGIN TRANSACTION (Registro Fraude)
+        
+        backend -> db : SELECT * FROM agente WHERE dni = '12345678'
+        note right of db
+            **Buscar Agente del DNI:**
+            • Verificar si existe agente con DNI ingresado
+            • Para mayor detalle en auditoría
+        end note
+        
+        db --> backend : agente_dni_objetivo (o null si no existe)
+        
+        backend -> db : INSERT INTO intento_marcacion_fraudulenta
+        note right of db
+            **Registro Completo del Intento:**
+            INSERT INTO intento_marcacion_fraudulenta (
+                fecha, hora, dni_ingresado,
+                id_agente_sesion, id_agente_dni,
+                tipo_intento, ip_address, creado_en
+            ) VALUES (
+                CURRENT_DATE, CURRENT_TIME, '12345678',
+                101, agente_dni_id, 'entrada_salida',
+                '192.168.1.100', NOW()
+            )
+        end note
+        
+        db --> backend : intento_id: 501
+        
+        backend -> db : COMMIT TRANSACTION
+        
+        backend -> backend : Logging de seguridad
+        note right of backend
+            **Log de Seguridad:**
+            logger.warning(
+              'Intento fraudulento: Agente 101 (Juan Pérez)'
+              'intentó usar DNI 12345678 desde IP 192.168.1.100'
+            )
+        end note
+        
+        backend --> frontend : HTTP 403 Forbidden
+        note right of backend
+            **Response Error:**
+            {
+              "success": false,
+              "message": "El DNI ingresado no corresponde a su usuario",
+              "tipo": "error_dni",
+              "registrado_en_auditoria": true
+            }
+        end note
+        
+        frontend --> agente : ❌ Error de seguridad + Notificación auditoría
+        note right of agente
+            **Mensaje de Error:**
+            "⚠️ El DNI ingresado no corresponde a su usuario - 
+            Este intento ha sido registrado en auditoría"
+            
+            **Efectos:**
+            • Campo DNI se limpia
+            • Mensaje de error por 5 segundos
+            • Intento registrado para revisión
+        end note
+        
+    ' CAMINO PRINCIPAL - ÉXITO
+    else DNI Coincide (VÁLIDO)
+        
+        seguridad -> backend : ✅ DNI válido, continuar
+        
+        backend -> backend : Verificación día laborable
+        note right of backend
+            **Re-validación en Backend:**
+            fecha_actual = date.today()
+            es_laborable = es_dia_laborable(fecha_actual)
+            
+            **Si no es laborable:**
+            motivo = get_motivo_no_laborable(fecha_actual)
+            • "sábado", "domingo", "feriado (Año Nuevo)"
+        end note
+        
+        alt Es Día No Laborable
+            backend --> frontend : HTTP 400 Bad Request
+            note right of backend
+                **Error Día No Laborable:**
+                {
+                  "success": false,
+                  "message": "No se puede registrar asistencia en sábado",
+                  "tipo": "dia_no_laborable",
+                  "motivo": "sábado"
+                }
+            end note
+            
+            frontend --> agente : 📅 "No se puede registrar asistencia en sábado"
+            
+        else Es Día Laborable - Proceder con Marcación
+            
+            backend -> db : BEGIN TRANSACTION (Marcación Válida)
+            
+            ' Buscar o crear registro de asistencia
+            backend -> db : SELECT * FROM asistencia WHERE id_agente=101 AND fecha=CURRENT_DATE
+            
+            alt Registro Existe
+                db --> backend : asistencia_existente
+            else Crear Nuevo Registro
+                backend -> db : INSERT INTO asistencia (id_agente, fecha, id_area)
+                note right of db
+                    **Nuevo Registro:**
+                    INSERT INTO asistencia (
+                        id_agente, fecha, id_area,
+                        hora_entrada, hora_salida,
+                        creado_en, actualizado_en
+                    ) VALUES (
+                        101, CURRENT_DATE, 3,
+                        NULL, NULL, NOW(), NOW()
+                    )
+                end note
+                
+                db --> backend : asistencia_id: 301
+            end
+            
+            ' Determinar tipo de marcación
+            backend -> backend : Lógica de marcación automática
+            note right of backend
+                **Determinación Automática:**
+                if (asistencia.hora_entrada == NULL):
+                    tipo = "ENTRADA"
+                    hora_entrada = CURRENT_TIME
+                elif (asistencia.hora_salida == NULL):
+                    tipo = "SALIDA" 
+                    hora_salida = CURRENT_TIME
+                    calcular_horas_efectivas()
+                else:
+                    ERROR: "Ya completó entrada y salida"
+            end note
+            
+            ' Registrar marcación de entrada
+            backend -> db : UPDATE asistencia SET hora_entrada = CURRENT_TIME
+            note right of db
+                **Marcación Entrada:**
+                UPDATE asistencia SET 
+                    hora_entrada = '08:15:32',
+                    actualizado_en = NOW()
+                WHERE id_asistencia = 301
+            end note
+            
+            ' Auditoría de la marcación exitosa
+            backend -> db : INSERT INTO auditoria
+            note right of db
+                **Auditoría Marcación:**
+                INSERT INTO auditoria (
+                    pk_afectada, nombre_tabla, accion,
+                    valor_previo, valor_nuevo,
+                    id_agente, creado_en
+                ) VALUES (
+                    301, 'asistencia', 'MARCAR_ENTRADA',
+                    NULL,
+                    '{"hora_entrada": "08:15:32", "agente_dni": "87654321", "marcacion_normal": true}',
+                    101, NOW()
+                )
+            end note
+            
+            backend -> db : COMMIT TRANSACTION
+            
+            backend --> frontend : HTTP 200 Success
+            note right of backend
+                **Response Exitosa:**
+                {
+                  "success": true,
+                  "message": "Entrada registrada a las 08:15",
+                  "tipo": "entrada",
+                  "data": {
+                    "fecha": "2025-11-30",
+                    "hora_entrada": "08:15:32",
+                    "agente": "Juan Pérez"
+                  }
+                }
+            end note
+            
+            frontend --> agente : ✅ "Entrada registrada a las 08:15"
+            note right of agente
+                **Confirmación Visual:**
+                • Mensaje de éxito
+                • Estado actualizado: "Entrada: 08:15"
+                • Campo DNI se limpia
+                • Próxima acción: "Marcar Salida"
+            end note
+            
+        end
+        
+    end
+
+end
+
+' ==============================================================================
+' EFECTOS Y SEGUIMIENTO DE SEGURIDAD
+' ==============================================================================
+note over agente, db
+    **CARACTERÍSTICAS DEL SISTEMA ANTI-FRAUDE:**
+    
+    **🔒 DETECCIÓN EN TIEMPO REAL:**
+    ✅ Validación inmediata DNI vs Usuario de sesión
+    ✅ Captura automática de IP del cliente
+    ✅ Registro completo del intento fraudulento
+    ✅ Logging de seguridad para monitoreo
+    
+    **📊 REGISTRO DETALLADO (tabla: intento_marcacion_fraudulenta):**
+    • Fecha y hora exacta del intento
+    • DNI ingresado vs DNI real del usuario
+    • IP address del cliente (anti-bypass)
+    • Tipo de intento (entrada/salida)
+    • Referencias cruzadas entre agentes
+    
+    **🛡️ VALIDACIONES MÚLTIPLES:**
+    1. Sesión activa válida
+    2. DNI coincide con usuario logueado
+    3. Día laborable (no sábados/domingos/feriados)
+    4. No duplicar marcaciones del mismo tipo
+    5. Horarios lógicos (entrada antes que salida)
+    
+    **⚡ FLUJOS DE RESPUESTA:**
+    • Fraude → HTTP 403 + registro en BD + logging
+    • Día no laborable → HTTP 400 + mensaje explicativo  
+    • Éxito → HTTP 200 + cálculo automático de horas
+    • Duplicado → HTTP 400 + estado actual
+    
+    **🔍 AUDITORÍA COMPLETA:**
+    • Intentos fraudulentos: tabla específica
+    • Marcaciones exitosas: tabla auditoria general
+    • Trazabilidad completa por agente y fecha
+    • Reportes de seguridad disponibles
+end note
+
+@enduml

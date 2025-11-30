@@ -1,0 +1,65 @@
+@startuml Calculo_Plus_Logica_Actualizada_GIGA
+
+title Sistema GIGA - Diagrama de Decision\nCalculo de Plus: Logica Actualizada segun Convenio Colectivo\nOperativos >= 8h vs Administrativos >= 32h
+
+start
+
+:INICIAR CALCULO PLUS\nAgente + Mes + Anio;
+
+:OBTENER DATOS COMPLETOS\n- Informacion del agente\n- Area de trabajo\n- Guardias del mes\n- Compensaciones aprobadas;
+
+if (Es Area Operativa?) then (SI - OPERATIVA)
+  
+  if (Total Horas >= 8?) then (SI)
+    
+    :PLUS 40% - OPERATIVO\nPlus maximo por area estrategica;
+    
+    stop
+    
+  else (NO - Entre 1-7 horas)
+    
+    if (Tiene Alguna Hora?) then (SI)
+      
+      :PLUS 20% - OPERATIVO BASICO\nPlus por actividad minima operativa;
+      
+      stop
+      
+    else (NO - 0 horas)
+      
+      :SIN PLUS (0%)\nSolo trabajo regular;
+      
+      stop
+      
+    endif
+    
+  endif
+
+else (NO - AREA ADMINISTRATIVA)
+  
+  if (Total Horas >= 32?) then (SI)
+    
+    :PLUS 40% - ADMINISTRATIVO ALTO\nPlus maximo por alto volumen;
+    
+    stop
+    
+  else (NO - Entre 1-31 horas)
+    
+    if (Tiene Alguna Hora?) then (SI)
+      
+      :PLUS 20% - ACTIVIDAD BASICA\nPlus estandar por trabajo extra;
+      
+      stop
+      
+    else (NO - Sin actividad)
+      
+      :SIN PLUS (0%)\nSolo trabajo regular;
+      
+      stop
+      
+    endif
+    
+  endif
+  
+endif
+
+@enduml

@@ -1,529 +1,385 @@
-@startuml diagrama_clases_backend
-!theme plain
-title Sistema GIGA - Diagrama de Clases Backend\nDjango REST Framework + Python
+@startuml Sistema_GIGA_Diagrama_Clases_Backend
+!define RECTANGLE class
 
-' ========== PAQUETE PERSONAS ==========
+title Sistema GIGA - Diagrama de Clases Backend (Database First)\nEstructura Principal de Datos - 4 Módulos Funcionales
 
-package "personas" <<Rectangle>> {
-  
-  class Area {
-    +id_area: BigAutoField
-    +nombre: CharField(100)
-    +descripcion: TextField
-    +id_area_padre: ForeignKey
-    +jefe_area: ForeignKey
-    +nivel: IntegerField
-    +orden_visualizacion: IntegerField
-    +activo: BooleanField
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +nombre_completo(): str
-    +es_raiz(): bool
-    +hijos(): QuerySet
-    +total_agentes(): int
-    +total_agentes_jerarquico(): int
-    +__str__(): str
-  }
-  
-  class Rol {
-    +id_rol: BigAutoField
-    +nombre: CharField(100)
-    +descripcion: TextField
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +__str__(): str
-  }
-  
-  class Agente {
-    +id_agente: BigAutoField
-    +email: EmailField(100)
-    +dni: CharField(20)
-    +cuil: CharField(20)
-    +legajo: CharField(50)
-    +nombre: CharField(100)
-    +apellido: CharField(100)
-    +password_hash: CharField(255)
-    +telefono: CharField(15)
-    +fecha_nacimiento: DateField
-    +provincia: CharField(100)
-    +ciudad: CharField(100)
-    +calle: CharField(150)
-    +numero: CharField(10)
-    +horario_entrada: TimeField
-    +horario_salida: TimeField
-    +agrupacion: CharField(100)
-    +activo: BooleanField
-    +id_area: ForeignKey
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +id @property: int
-    +username @property: str
-    +area @property: Area
-    +is_active @property: bool
-    +direccion @property: str
-    +fecha_ingreso @property: date
-    +categoria_revista @property: str
-    +check_password(raw_password): bool
-    +set_password(raw_password): void
-    +__str__(): str
-  }
-  
-  class AgenteRol {
-    +id_agente_rol: BigAutoField
-    +id_agente: ForeignKey
-    +id_rol: ForeignKey
-    +asignado_en: DateTimeField
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +id @property: int
-    +agente @property: Agente
-    +rol @property: Rol
-    +activo @property: bool
-    +__str__(): str
-  }
-  
-  class Agrupacion {
-    +id_agrupacion: BigAutoField
-    +nombre: CharField(100)
-    +descripcion: TextField
-    +color: CharField(7)
-    +id_area: ForeignKey
-    +activo: BooleanField
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +__str__(): str
-  }
+' ==============================================================================
+' ESTILOS Y CONFIGURACIÓN
+' ==============================================================================
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+
+skinparam class {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontSize 10
+    AttributeFontSize 9
 }
 
-' ========== PAQUETE GUARDIAS ==========
-
-package "guardias" <<Rectangle>> {
-  
-  class Cronograma {
-    +id_cronograma: BigAutoField
-    +fecha_aprobacion: DateField
-    +tipo: CharField(50)
-    +hora_fin: TimeField
-    +hora_inicio: TimeField
-    +estado: CharField(50)
-    +fecha_creacion: DateField
-    +activa: BooleanField
-    +id_jefe: ForeignKey
-    +id_director: ForeignKey
-    +id_area: ForeignKey
-    +creado_por_rol: CharField(50)
-    +creado_por_id: ForeignKey
-    +aprobado_por_id: ForeignKey
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +requiere_aprobacion(): bool
-    +puede_aprobar_rol(): list
-    +__str__(): str
-  }
-  
-  class Guardia {
-    +id_guardia: BigAutoField
-    +fecha: DateField
-    +hora_inicio: TimeField
-    +hora_fin: TimeField
-    +tipo: CharField(50)
-    +estado: CharField(50)
-    +activa: BooleanField
-    +horas_planificadas: IntegerField
-    +horas_efectivas: IntegerField
-    +observaciones: TextField
-    +id_cronograma: ForeignKey
-    +id_agente: ForeignKey
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +duracion_horas(): Decimal
-    +esta_confirmada(): bool
-    +puede_cancelar(): bool
-    +incluye_fecha(fecha): bool
-    +get_fechas_incluidas(): list
-    +guardias_en_fecha(fecha) <<classmethod>>: QuerySet
-    +__str__(): str
-  }
-  
-  class NotaGuardia {
-    +id_nota: BigAutoField
-    +id_guardia: ForeignKey
-    +id_agente: ForeignKey
-    +nota: TextField
-    +fecha_nota: DateTimeField
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +__str__(): str
-  }
-  
-  class HoraCompensacion {
-    +id_hora_compensacion: BigAutoField
-    +id_agente: ForeignKey
-    +id_guardia: ForeignKey
-    +id_cronograma: ForeignKey
-    +fecha_servicio: DateField
-    +hora_inicio_programada: TimeField
-    +hora_fin_programada: TimeField
-    +hora_fin_real: TimeField
-    +horas_programadas: DecimalField(4,2)
-    +horas_efectivas: DecimalField(4,2)
-    +horas_extra: DecimalField(4,2)
-    +motivo: CharField(20)
-    +descripcion_motivo: TextField
-    +numero_acta: CharField(50)
-    +estado: CharField(20)
-    +tipo_compensacion: CharField(20)
-    +solicitado_por: ForeignKey
-    +aprobado_por: ForeignKey
-    +valor_hora_extra: DecimalField(10,2)
-    +monto_total: DecimalField(10,2)
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    {static} MOTIVO_CHOICES: tuple
-    {static} TIPO_COMPENSACION_CHOICES: tuple
-    +crear_desde_guardia_extendida(...) <<classmethod>>: HoraCompensacion
-    +calcular_monto(): Decimal
-    +resumen_mensual_agente(agente, mes, anio) <<classmethod>>: dict
-    +__str__(): str
-  }
-  
-  class Feriado {
-    +id_feriado: BigAutoField
-    +nombre: CharField(200)
-    +descripcion: TextField
-    +fecha_inicio: DateField
-    +fecha_fin: DateField
-    +es_nacional: BooleanField
-    +es_provincial: BooleanField
-    +es_local: BooleanField
-    +activo: BooleanField
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +clean(): void
-    +es_multiples_dias(): bool
-    +duracion_dias(): int
-    +tipo_feriado(): str
-    +incluye_fecha(fecha): bool
-    +feriados_en_fecha(fecha) <<classmethod>>: QuerySet
-    +feriados_en_rango(inicio, fin) <<classmethod>>: QuerySet
-    +es_feriado(fecha) <<classmethod>>: bool
-    +get_fechas_incluidas(): list
-    +__str__(): str
-  }
-  
-  class ParametrosArea {
-    +id_parametros_area: BigAutoField
-    +id_area: ForeignKey
-    +ventana_entrada_inicio: TimeField
-    +ventana_entrada_fin: TimeField
-    +ventana_salida_inicio: TimeField
-    +ventana_salida_fin: TimeField
-    +tolerancia_entrada_min: IntegerField
-    +tolerancia_salida_min: IntegerField
-    +horas_trabajo_dia: DecimalField(4,2)
-    +vigente_desde: DateField
-    +vigente_hasta: DateField
-    +activo: BooleanField
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +esta_vigente(): bool
-    +__str__(): str
-  }
-  
-  class ReglaPlus {
-    +id_regla_plus: BigAutoField
-    +nombre: CharField(100)
-    +horas_minimas_diarias: DecimalField(5,2)
-    +horas_minimas_mensuales: DecimalField(6,2)
-    +porcentaje_plus: DecimalField(5,2)
-    +aplica_areas_operativas: BooleanField
-    +aplica_areas_administrativas: BooleanField
-    +vigente_desde: DateField
-    +vigente_hasta: DateField
-    +activa: BooleanField
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +esta_vigente(): bool
-    +__str__(): str
-  }
-  
-  class ResumenGuardiaMes {
-    +id_resumen_guardia_mes: BigAutoField
-    +id_agente: ForeignKey
-    +mes: IntegerField
-    +anio: IntegerField
-    +plus20: BooleanField
-    +plus40: BooleanField
-    +total_horas_guardia: IntegerField
-    +horas_efectivas: DecimalField(6,2)
-    +porcentaje_plus: DecimalField(5,2)
-    +monto_calculado: DecimalField(10,2)
-    +estado_plus: CharField(30)
-    +fecha_calculo: DateTimeField
-    +aprobado_en: DateTimeField
-    --
-    +calcular_plus_automatico(): bool
-    +__str__(): str
-  }
+skinparam packageStyle rectangle
+skinparam package {
+    BackgroundColor #F5F5F5
+    BorderColor #757575
+    FontSize 12
 }
 
-' ========== PAQUETE ASISTENCIA ==========
-
-package "asistencia" <<Rectangle>> {
-  
-  class TipoLicencia {
-    +id_tipo_licencia: BigAutoField
-    +codigo: CharField(50)
-    +descripcion: TextField
-    --
-    +__str__(): str
-  }
-  
-  class ParteDiario {
-    +id_parte_diario: BigAutoField
-    +fecha_parte: DateField
-    +id_agente: ForeignKey
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +__str__(): str
-  }
-  
-  class Asistencia {
-    +id_asistencia: BigAutoField
-    +fecha: DateField
-    +hora_entrada: TimeField
-    +hora_salida: TimeField
-    +marcacion_entrada_automatica: BooleanField
-    +marcacion_salida_automatica: BooleanField
-    +es_correccion: BooleanField
-    +corregido_por: ForeignKey
-    +observaciones: TextField
-    +id_agente: ForeignKey
-    +id_area: ForeignKey
-    +id_parte_diario: ForeignKey
-    +created_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +estado @property: str
-    +__str__(): str
-  }
-  
-  class IntentoMarcacionFraudulenta {
-    +id_intento: BigAutoField
-    +fecha: DateField
-    +hora: TimeField
-    +dni_ingresado: CharField(20)
-    +id_agente_sesion: ForeignKey
-    +id_agente_dni: ForeignKey
-    +tipo_intento: CharField(50)
-    +ip_address: CharField(45)
-    +creado_en: DateTimeField
-    --
-    +__str__(): str
-  }
-  
-  class Licencia {
-    +id_licencia: BigAutoField
-    +fecha_desde: DateField
-    +fecha_hasta: DateField
-    +estado: CharField(50)
-    +id_agente: ForeignKey
-    +id_tipo_licencia: ForeignKey
-    +observaciones: TextField
-    +justificacion: TextField
-    +aprobada_por: ForeignKey
-    +fecha_aprobacion: DateField
-    +observaciones_aprobacion: TextField
-    +rechazada_por: ForeignKey
-    +fecha_rechazo: DateField
-    +motivo_rechazo: TextField
-    +solicitada_por: ForeignKey
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +dias_licencia @property: int
-    +__str__(): str
-  }
-  
-  class Novedad {
-    +id_novedad: BigAutoField
-    +fecha: DateField
-    +tipo: CharField(100)
-    +descripcion: TextField
-    +observaciones: TextField
-    +id_agente: ForeignKey
-    +creado_en: DateTimeField
-    +actualizado_en: DateTimeField
-    --
-    +__str__(): str
-  }
+' ==============================================================================
+' MÓDULO 1: PERSONAS (Estructura Organizacional)
+' ==============================================================================
+package "📋 MÓDULO PERSONAS" #E8F5E8 {
+    
+    class Area {
+        + id_area : BigAutoField <<PK>>
+        + nombre : CharField(100)
+        + descripcion : TextField
+        + id_area_padre : ForeignKey(Area) <<nullable>>
+        + jefe_area : ForeignKey(Agente) <<nullable>>
+        + nivel : IntegerField
+        + activo : BooleanField
+        + creado_en : DateTimeField
+        + actualizado_en : DateTimeField
+        --
+        + nombre_completo : Property
+        + es_raiz : Property
+        + total_agentes : Property
+        + _obtener_ids_area_y_descendientes() : List
+    }
+    
+    class Rol {
+        + id_rol : BigAutoField <<PK>>
+        + nombre : CharField(100) <<unique>>
+        + descripcion : TextField
+        + creado_en : DateTimeField
+        + actualizado_en : DateTimeField
+    }
+    
+    class Agente {
+        + id_agente : BigAutoField <<PK>>
+        + email : CharField(100) <<unique>>
+        + dni : CharField(20) <<unique>>
+        + cuil : CharField(20) <<unique>>
+        + legajo : CharField(50) <<unique>>
+        + nombre : CharField(100)
+        + apellido : CharField(100)
+        + password_hash : CharField(255)
+        + telefono : CharField(15)
+        + fecha_nacimiento : DateField
+        + provincia : CharField(100)
+        + ciudad : CharField(100)
+        + calle : CharField(150)
+        + numero : CharField(10)
+        + horario_entrada : TimeField
+        + horario_salida : TimeField
+        + agrupacion : CharField(100)
+        + activo : BooleanField
+        + id_area : ForeignKey(Area)
+        + creado_en : DateTimeField
+        + actualizado_en : DateTimeField
+        --
+        + username : Property
+        + direccion : Property
+        + fecha_ingreso : Property
+        + check_password(raw_password) : Boolean
+        + set_password(raw_password) : void
+    }
+    
+    class AgenteRol {
+        + id_agente_rol : BigAutoField <<PK>>
+        + id_agente : ForeignKey(Agente)
+        + id_rol : ForeignKey(Rol)
+        + asignado_en : DateTimeField
+        + creado_en : DateTimeField
+        + actualizado_en : DateTimeField
+    }
+    
+    note right of Agente
+        **Database First Strategy**
+        • managed = False
+        • Estructura definida en BD
+        • Django solo CRUD datos
+        • No puede modificar esquema
+    end note
 }
 
-' ========== PAQUETE AUDITORÍA ==========
-
-package "auditoria" <<Rectangle>> {
-  
-  class Auditoria {
-    +id_auditoria: BigAutoField
-    +pk_afectada: BigIntegerField
-    +nombre_tabla: CharField(100)
-    +creado_en: DateTimeField
-    +valor_previo: JSONField
-    +valor_nuevo: JSONField
-    +accion: CharField(50)
-    +id_agente: ForeignKey
-    --
-    +get_cambios(): dict
-    +__str__(): str
-  }
+' ==============================================================================
+' MÓDULO 2: GUARDIAS (Cronogramas y Asignaciones)
+' ==============================================================================
+package "⏰ MÓDULO GUARDIAS" #FFF3E0 {
+    
+    class Cronograma {
+        + id_cronograma : BigAutoField <<PK>>
+        + fecha_aprobacion : DateField
+        + tipo : CharField(50)
+        + hora_inicio : TimeField
+        + hora_fin : TimeField
+        + **estado : CharField(50)**
+        + fecha_creacion : DateField
+        + id_jefe : ForeignKey(Agente)
+        + id_director : ForeignKey(Agente)
+        + id_area : ForeignKey(Area)
+        + creado_por_rol : CharField(50)
+        + creado_por_id : ForeignKey(Agente)
+        + aprobado_por_id : ForeignKey(Agente)
+        + creado_en : DateTimeField
+        + actualizado_en : DateTimeField
+        --
+        + requiere_aprobacion : Property
+        + puede_aprobar_rol : Property
+    }
+    
+    class Guardia {
+        + id_guardia : BigAutoField <<PK>>
+        + fecha : DateField
+        + hora_inicio : TimeField
+        + hora_fin : TimeField
+        + observaciones : TextField
+        + tipo : CharField(50)
+        + activa : BooleanField
+        + estado : CharField(50)
+        + horas_planificadas : IntegerField
+        + horas_efectivas : IntegerField
+        + id_cronograma : ForeignKey(Cronograma)
+        + id_agente : ForeignKey(Agente)
+        + creado_en : DateTimeField
+        + actualizado_en : DateTimeField
+        --
+        + es_multiples_dias : Property
+        + fecha_fin_real : Property
+        + duracion_dias : Property
+        + incluye_fecha(fecha) : Boolean
+        + get_fechas_incluidas() : List
+    }
+    
+    class Feriado {
+        + id_feriado : BigAutoField <<PK>>
+        + nombre : CharField(200)
+        + descripcion : TextField
+        + fecha_inicio : DateField
+        + fecha_fin : DateField
+        + es_nacional : BooleanField
+        + es_provincial : BooleanField
+        + es_local : BooleanField
+        + activo : BooleanField
+        + creado_en : DateTimeField
+        + actualizado_en : DateTimeField
+        --
+        + es_multiples_dias : Property
+        + duracion_dias : Property
+        + tipo_feriado : Property
+        + incluye_fecha(fecha) : Boolean
+    }
+    
+    note right of Cronograma
+        **Campo Clave: estado**
+        • 'borrador'
+        • 'pendiente_aprobacion'
+        • 'aprobado'
+        • 'publicado'
+        • 'rechazado'
+        
+        **Flujo de Aprobación:**
+        Jefatura → Director → Publicación
+        Administrador: Auto-aprobación
+    end note
 }
 
-' ========== CLASES UTILITARIAS ==========
-
-package "guardias.utils" <<Rectangle>> {
-  
-  class CalculadoraPlus <<utility>> {
-    {static} +calcular_plus_mensual(agente_id, mes, anio): Decimal
-    {static} +calcular_plus_simplificado(agente_id, mes, anio): Decimal
-    {static} +evaluar_reglas_plus(horas_efectivas, area_id): Decimal
-    {static} +generar_asignaciones_plus(mes, anio): dict
-  }
-  
-  class PlanificadorCronograma <<utility>> {
-    {static} +planificar_automatico(area_id, fecha_inicio, fecha_fin, agentes_ids): dict
-    {static} +validar_disponibilidad(agente_id, fecha_hora): tuple
-    {static} -_distribuir_guardias(cronograma, agentes, fecha_inicio, fecha_fin): int
-  }
-  
-  class ValidadorHorarios <<utility>> {
-    {static} +validar_ventana_horaria(agente_id, timestamp, tipo_marca): tuple
-    {static} +validar_fecha_guardia(fecha): tuple
-    {static} +validar_duracion_guardia(hora_inicio, hora_fin): tuple
-    {static} +es_feriado(fecha): bool
-    {static} +obtener_parametros_area(area_id, fecha_consulta): dict
-    {static} +validar_horas_compensacion(...): tuple
-    {static} +calcular_valor_hora_compensacion(agente, horas_extra): tuple
-    {static} +puede_solicitar_compensacion(agente, fecha_servicio): tuple
-  }
-  
-  class NotificacionManager <<utility>> {
-    {static} +notificar_cronograma_publicado(cronograma_id): bool
-    {static} +notificar_plus_calculado(resumen_id): bool
-    {static} +notificar_guardia_asignada(guardia_id): bool
-  }
+' ==============================================================================
+' MÓDULO 3: ASISTENCIA (Marcaciones y Licencias)
+' ==============================================================================
+package "📅 MÓDULO ASISTENCIA" #F3E5F5 {
+    
+    class Asistencia {
+        + id_asistencia : BigAutoField <<PK>>
+        + fecha : DateField
+        + hora_entrada : TimeField
+        + hora_salida : TimeField
+        + marcacion_entrada_automatica : BooleanField
+        + marcacion_salida_automatica : BooleanField
+        + **es_correccion : BooleanField**
+        + corregido_por : ForeignKey(Agente) <<nullable>>
+        + observaciones : TextField
+        + id_agente : ForeignKey(Agente)
+        + id_area : ForeignKey(Area)
+        + creado_en : DateTimeField
+        + actualizado_en : DateTimeField
+        --
+        + estado : Property
+    }
+    
+    class Licencia {
+        + id_licencia : BigAutoField <<PK>>
+        + **estado : CharField(50)**
+        + fecha_desde : DateField
+        + fecha_hasta : DateField
+        + observaciones : TextField
+        + justificacion : TextField
+        + id_agente : ForeignKey(Agente)
+        + id_tipo_licencia : ForeignKey(TipoLicencia)
+        + aprobada_por : ForeignKey(Agente) <<nullable>>
+        + fecha_aprobacion : DateField <<nullable>>
+        + observaciones_aprobacion : TextField
+        + rechazada_por : ForeignKey(Agente) <<nullable>>
+        + fecha_rechazo : DateField <<nullable>>
+        + motivo_rechazo : TextField
+        + solicitada_por : ForeignKey(Agente) <<nullable>>
+        + creado_en : DateTimeField
+        + actualizado_en : DateTimeField
+        --
+        + dias_licencia : Property
+    }
+    
+    class TipoLicencia {
+        + id_tipo_licencia : BigAutoField <<PK>>
+        + codigo : CharField(50) <<unique>>
+        + descripcion : TextField
+    }
+    
+    class IntentoMarcacionFraudulenta {
+        + id_intento : BigAutoField <<PK>>
+        + fecha : DateField
+        + hora : TimeField
+        + dni_ingresado : CharField(20)
+        + tipo_intento : CharField(50)
+        + ip_address : CharField(45)
+        + id_agente_sesion : ForeignKey(Agente)
+        + id_agente_dni : ForeignKey(Agente) <<nullable>>
+        + creado_en : DateTimeField
+    }
+    
+    note right of Asistencia
+        **Campo Clave: es_correccion**
+        • false: Marcación normal
+        • true: Corrección manual
+        
+        **Estados Calculados:**
+        • 'completa': entrada + salida
+        • 'sin_salida': solo entrada
+        • 'sin_entrada': sin marcaciones
+    end note
+    
+    note right of Licencia
+        **Campo Clave: estado**
+        • 'pendiente'
+        • 'aprobada'
+        • 'rechazada'
+        
+        **Flujo de Aprobación:**
+        Solicitud → Jefe/Director → Estado Final
+    end note
 }
 
-package "guardias.utils - RBAC" <<Rectangle>> {
-  
-  class "<<function>>" as rbac_functions {
-    +get_approval_hierarchy(creado_por_rol): list
-    +puede_aprobar(cronograma, rol_aprobador): bool
-    +get_agente_rol(agente): str
-    +requiere_aprobacion_rol(creado_por_rol): bool
-  }
+' ==============================================================================
+' MÓDULO 4: AUDITORÍA (Registro de Operaciones)
+' ==============================================================================
+package "🔍 MÓDULO AUDITORÍA" #FFEBEE {
+    
+    class Auditoria {
+        + id_auditoria : BigAutoField <<PK>>
+        + pk_afectada : BigIntegerField <<nullable>>
+        + nombre_tabla : CharField(100) <<nullable>>
+        + **accion : CharField(50)**
+        + valor_previo : JSONField <<nullable>>
+        + valor_nuevo : JSONField <<nullable>>
+        + id_agente : ForeignKey(Agente) <<nullable>>
+        + creado_en : DateTimeField
+        --
+        + id : Property
+    }
+    
+    note right of Auditoria
+        **Campo Clave: accion**
+        • 'CREATE' - Inserción
+        • 'UPDATE' - Modificación
+        • 'DELETE' - Eliminación
+        • 'LOGIN' - Inicio sesión
+        • 'LOGOUT' - Cierre sesión
+        
+        **Sin Relaciones Fuertes:**
+        Solo referencial via pk_afectada
+        Todos los cambios se registran
+    end note
 }
 
-package "asistencia.views - Helpers" <<Rectangle>> {
-  
-  class "<<function>>" as asistencia_functions {
-    +es_dia_laborable(fecha): bool
-    +get_motivo_no_laborable(fecha): str
-  }
-}
+' ==============================================================================
+' RELACIONES PRINCIPALES ENTRE MÓDULOS
+' ==============================================================================
 
-' ========== RELACIONES PRINCIPALES ==========
+' Relaciones Personas
+Area ||--o{ Area : "jerarquía"
+Area ||--o{ Agente : "pertenece"
+Area ||--o| Agente : "jefe_area"
+Agente ||--o{ AgenteRol : "tiene"
+Rol ||--o{ AgenteRol : "asigna"
 
-' Módulo Personas
-Area "1" *-- "0..*" Area : jerarquía
-Area "1" o-- "0..1" Agente : jefe_area
-Area "1" *-- "0..*" Agente : pertenece
-Area "1" *-- "0..*" Agrupacion
-Area "1" *-- "0..*" ParametrosArea
-Agente "1" *-- "0..*" AgenteRol
-Rol "1" *-- "0..*" AgenteRol
+' Relaciones Guardias
+Cronograma ||--o{ Guardia : "contiene"
+Agente ||--o{ Guardia : "asignado"
+Agente ||--o{ Cronograma : "jefe"
+Agente ||--o{ Cronograma : "director"
+Area ||--o{ Cronograma : "area"
 
-' Módulo Guardias
-Area "1" *-- "0..*" Cronograma
-Agente "1" o-- "0..*" Cronograma : jefe
-Agente "1" o-- "0..*" Cronograma : director
-Agente "1" o-- "0..*" Cronograma : creado_por
-Agente "1" o-- "0..*" Cronograma : aprobado_por
-Cronograma "1" *-- "0..*" Guardia
-Agente "1" *-- "0..*" Guardia : asignado
-Guardia "1" *-- "0..*" NotaGuardia
-Agente "1" *-- "0..*" NotaGuardia : escribe
-Agente "1" *-- "0..*" HoraCompensacion : recibe
-Guardia "0..1" o-- "0..*" HoraCompensacion
-Cronograma "1" *-- "0..*" HoraCompensacion
-Agente "1" o-- "0..*" HoraCompensacion : solicitado_por
-Agente "1" o-- "0..*" HoraCompensacion : aprobado_por
-Agente "1" *-- "0..*" ResumenGuardiaMes
+' Relaciones Asistencia  
+Agente ||--o{ Asistencia : "marca"
+Agente ||--o{ Licencia : "solicita"
+TipoLicencia ||--o{ Licencia : "tipo"
+Area ||--o{ Asistencia : "area"
+Agente ||--o{ IntentoMarcacionFraudulenta : "sesion"
 
-' Módulo Asistencia
-Agente "1" *-- "0..*" Asistencia : registra
-Area "1" o-- "0..*" Asistencia
-Agente "0..1" o-- "0..*" Asistencia : corregido_por
-ParteDiario "0..1" o-- "0..*" Asistencia
-Agente "1" *-- "0..*" ParteDiario
-TipoLicencia "1" *-- "0..*" Licencia
-Agente "1" *-- "0..*" Licencia : solicita
-Agente "0..1" o-- "0..*" Licencia : aprobada_por
-Agente "0..1" o-- "0..*" Licencia : rechazada_por
-Agente "0..1" o-- "0..*" Licencia : solicitada_por
-Agente "1" *-- "0..*" Novedad
-Agente "1" *-- "0..*" IntentoMarcacionFraudulenta : sesion
-Agente "0..1" o-- "0..*" IntentoMarcacionFraudulenta : dni
+' Relaciones Auditoría (referenciales)
+Agente ||..o{ Auditoria : "registra"
 
-' Módulo Auditoría
-Agente "0..1" o-- "0..*" Auditoria
+' ==============================================================================
+' CARDINALIDADES Y RESTRICCIONES CLAVE
+' ==============================================================================
 
-' Utilidades
-CalculadoraPlus ..> Agente : usa
-CalculadoraPlus ..> Guardia : usa
-CalculadoraPlus ..> ReglaPlus : usa
-PlanificadorCronograma ..> Cronograma : crea
-PlanificadorCronograma ..> Guardia : crea
-ValidadorHorarios ..> ParametrosArea : usa
-ValidadorHorarios ..> Feriado : usa
-rbac_functions ..> AgenteRol : consulta
-rbac_functions ..> Cronograma : evalúa
-asistencia_functions ..> Feriado : consulta
-
-note top of Area
-  Estructura jerárquica
-  con auto-referencia
+note as cardinalidades
+    **CARDINALIDADES IMPORTANTES:**
+    
+    **Personas:**
+    • 1 Area → N Agentes (pertenencia)
+    • 1 Area → 1 Agente (jefe_area) [opcional]
+    • N Agente → M Rol (via AgenteRol)
+    
+    **Guardias:**
+    • 1 Cronograma → N Guardias
+    • 1 Agente → N Guardias
+    • 1 Area → N Cronogramas
+    
+    **Asistencia:**
+    • 1 Agente → N Asistencias (unique por fecha)
+    • 1 Agente → N Licencias
+    • 1 TipoLicencia → N Licencias
+    
+    **Auditoría:**
+    • Sin FK estrictas, solo referencial
+    • Todos los módulos generan auditoría
 end note
 
-note top of Cronograma
-  Workflow de aprobación
-  jerárquica según rol
-end note
+' ==============================================================================
+' CONFIGURACIÓN DATABASE FIRST
+' ==============================================================================
 
-note top of HoraCompensacion
-  Gestión de horas extra
-  con validaciones de
-  CCT (Convenio Colectivo)
-end note
-
-note bottom of CalculadoraPlus
-  Lógica de cálculo de
-  plus salarial:
-  - Área operativa + guardia = 40%
-  - Otras áreas + 32h = 40%
-  - Otros casos = 20%
+note as database_first
+    **ESTRATEGIA DATABASE FIRST:**
+    
+    **Todos los modelos:**
+    • managed = False en Meta
+    • Estructura definida en PostgreSQL
+    • Django NO puede alterar esquemas
+    • Scripts SQL en bd/init-scripts/
+    
+    **Beneficios:**
+    • Control total de BD por DBA
+    • Optimizaciones específicas de PostgreSQL
+    • Integridad referencial en BD
+    • Django solo para CRUD y lógica
+    
+    **Ubicación Esquemas:**
+    • /home/micaela/giga/bd/init-scripts/
+    • Tablas: agente, area, rol, cronograma, 
+      guardia, asistencia, licencia, auditoria
 end note
 
 @enduml

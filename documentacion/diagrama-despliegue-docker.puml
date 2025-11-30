@@ -1,0 +1,365 @@
+@startuml Sistema_GIGA_Diagrama_Despliegue
+!define RECTANGLE class
+
+title Sistema GIGA - Diagrama de Despliegue (Arquitectura Docker)\nModularización con Contenedores - Configuración Real del Proyecto
+
+' ==============================================================================
+' ESTILOS Y CONFIGURACIÓN
+' ==============================================================================
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+
+skinparam node {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontSize 11
+}
+
+skinparam component {
+    BackgroundColor #F3E5F5
+    BorderColor #7B1FA2
+    FontSize 10
+}
+
+skinparam database {
+    BackgroundColor #E8F5E8
+    BorderColor #388E3C
+    FontSize 10
+}
+
+skinparam artifact {
+    BackgroundColor #FFF3E0
+    BorderColor #F57C00
+    FontSize 10
+}
+
+skinparam cloud {
+    BackgroundColor #FFEBEE
+    BorderColor #D32F2F
+    FontSize 10
+}
+
+' ==============================================================================
+' NODO PRINCIPAL - SERVIDOR/HOST
+' ==============================================================================
+node "🖥️ Servidor Host (Docker Engine)" as host_server {
+    
+    ' ------------------------------------------------------------------------------
+    ' NGINX REVERSE PROXY (PUNTO DE ENTRADA)
+    ' ------------------------------------------------------------------------------
+    component "🌐 NGINX Gateway" as nginx_container #FFE0B2 {
+        artifact "nginx.conf" as nginx_conf
+        artifact "Health Check" as nginx_health
+        artifact "Static Files" as nginx_static
+        
+        note right of nginx_container
+            **Container:** giga-nginx
+            **Puertos Expuestos:**
+            • 80:80 (HTTP Principal)
+            • 8080:8080 (Monitoreo)
+            
+            **Upstreams:**
+            • giga_frontend:3000
+            • giga_backend:8000
+            
+            **Rutas:**
+            • / → Frontend (SvelteKit)
+            • /api/ → Backend (Django)
+            • /admin/ → Django Admin
+            • /static/ → Static Files
+            • /media/ → Media Files
+            • /api/n8n/ → n8n Workflows
+        end note
+    }
+    
+    ' ------------------------------------------------------------------------------
+    ' FRONTEND SVELTEKIT
+    ' ------------------------------------------------------------------------------
+    component "🎨 Frontend SvelteKit" as frontend_container #E1F5FE {
+        artifact "Vite Dev Server" as vite_server
+        artifact "HMR WebSocket" as hmr_ws
+        artifact "Proxy Config" as vite_proxy
+        
+        note right of frontend_container
+            **Container:** giga-frontend
+            **Puerto Interno:** 3000:3000
+            **Framework:** SvelteKit 2.47.1
+            **Build Tool:** Vite 7.1.10
+            
+            **Características:**
+            • Hot Module Reload (HMR)
+            • WebSocket support
+            • Proxy interno a backend
+            • File watcher con polling
+            
+            **Dependencias:**
+            • Depends on: backend (healthy)
+            • Health check via curl
+        end note
+    }
+    
+    ' ------------------------------------------------------------------------------
+    ' BACKEND DJANGO
+    ' ------------------------------------------------------------------------------
+    component "⚙️ Backend Django" as backend_container #F3E5F5 {
+        artifact "Django 4.2+" as django_app
+        artifact "REST API" as rest_api
+        artifact "Admin Interface" as django_admin
+        artifact "Static Handler" as static_handler
+        
+        note right of backend_container
+            **Container:** giga-django
+            **Puerto Interno:** 8000:8000
+            **Framework:** Django 4.2+
+            **WSGI Server:** Gunicorn
+            
+            **APIs Expuestas:**
+            • /api/personas/ (Usuarios)
+            • /api/guardias/ (Cronogramas)
+            • /api/asistencia/ (Marcaciones)
+            • /api/auditoria/ (Logs)
+            • /admin/ (Django Admin)
+            
+            **Dependencias:**
+            • Depends on: postgres (healthy)
+            • Health check: manage.py check
+        end note
+    }
+    
+    ' ------------------------------------------------------------------------------
+    ' BASE DE DATOS POSTGRESQL
+    ' ------------------------------------------------------------------------------
+    database "🗄️ PostgreSQL 16" as postgres_container #E8F5E8 {
+        artifact "giga Database" as giga_db
+        artifact "Init Scripts" as init_scripts
+        artifact "Health Monitor" as pg_health
+        
+        note right of postgres_container
+            **Container:** giga-postgres
+            **Puerto Expuesto:** 5432:5432
+            **Image:** postgres:16-alpine
+            **Database:** giga
+            **User:** giga_user
+            
+            **Volúmenes:**
+            • postgres_data:/var/lib/postgresql/data
+            • ./bd/init-scripts:/docker-entrypoint-initdb.d
+            
+            **Configuración:**
+            • PGDATA personalizado
+            • Scripts de inicialización automática
+            • Health check: pg_isready
+        end note
+    }
+    
+    ' ------------------------------------------------------------------------------
+    ' MINIO OBJECT STORAGE
+    ' ------------------------------------------------------------------------------
+    cloud "💾 MinIO Storage" as minio_container #FFF8E1 {
+        artifact "S3 API" as minio_s3
+        artifact "Web Console" as minio_console
+        artifact "convenio Bucket" as minio_bucket
+        
+        note right of minio_container
+            **Container:** giga-minio
+            **Puertos Expuestos:**
+            • 9000:9000 (API S3)
+            • 9090:9090 (Console)
+            
+            **Image:** minio/minio:latest
+            **Command:** server /data --console-address ":9090"
+            
+            **Credentials:**
+            • Root: giga-user / giga-password-change-me
+            
+            **Volumen:**
+            • minio_data:/data
+        end note
+    }
+    
+    ' ------------------------------------------------------------------------------
+    ' N8N WORKFLOW ENGINE
+    ' ------------------------------------------------------------------------------
+    cloud "🤖 n8n Workflows" as n8n_container #FFEBEE {
+        artifact "Workflow Engine" as n8n_engine
+        artifact "Webhook Handler" as n8n_webhook
+        artifact "LLM Integration" as n8n_llm
+        
+        note right of n8n_container
+            **Container:** giga-n8n
+            **Puerto Expuesto:** 5678:5678
+            **Image:** n8nio/n8n:latest
+            
+            **Configuración:**
+            • N8N_HOST=localhost
+            • N8N_PORT=5678
+            • WEBHOOK_URL=http://localhost:5678/
+            • TZ=America/Argentina/Buenos_Aires
+            • N8N_BASIC_AUTH_ACTIVE=false
+            
+            **Dependencias:**
+            • Depends on: minio
+            
+            **Volumen:**
+            • n8n_data:/home/node/.n8n
+        end note
+    }
+    
+    ' ------------------------------------------------------------------------------
+    ' RED DOCKER INTERNA
+    ' ------------------------------------------------------------------------------
+    component "🔗 giga-network" as docker_network #F5F5F5 {
+        note bottom of docker_network
+            **Tipo:** bridge
+            **Nombre:** giga-network
+            **Driver:** local
+            
+            **Comunicación Interna:**
+            • Todos los servicios conectados
+            • Resolución DNS por nombre de container
+            • Aislamiento de red completo
+        end note
+    }
+    
+    ' ------------------------------------------------------------------------------
+    ' VOLÚMENES PERSISTENTES
+    ' ------------------------------------------------------------------------------
+    artifact "📦 Volúmenes Docker" as docker_volumes #F0F0F0 {
+        note bottom of docker_volumes
+            **Volúmenes Persistentes:**
+            • postgres_data (BD)
+            • static_volume (archivos estáticos)
+            • media_volume (archivos media)
+            • frontend_node_modules (deps NPM)
+            • minio_data (storage S3)
+            • n8n_data (workflows)
+            
+            **Driver:** local
+            **Ubicación:** /var/lib/docker/volumes/
+        end note
+    }
+}
+
+' ==============================================================================
+' USUARIO EXTERNO
+' ==============================================================================
+actor "👤 Usuario" as user
+
+' ==============================================================================
+' FLUJOS DE COMUNICACIÓN PRINCIPALES
+' ==============================================================================
+
+' FLUJO 1: Usuario accede al sistema
+user -right-> nginx_container : "HTTP Request\n**:80**"
+note on link : Puerto Principal\nPunto de Entrada
+
+' FLUJO 2: NGINX enruta al Frontend
+nginx_container -down-> frontend_container : "Proxy /\n**:3000**"
+note on link : SvelteKit App\nHMR WebSocket
+
+' FLUJO 3: NGINX enruta al Backend
+nginx_container -down-> backend_container : "Proxy /api/\n**:8000**"
+note on link : Django REST API\nAdmin Interface
+
+' FLUJO 4: NGINX enruta a n8n
+nginx_container -right-> n8n_container : "Proxy /api/n8n/\n**:5678**"
+note on link : Webhooks IA\nWorkflow Engine
+
+' FLUJO 5: Backend conecta a BD
+backend_container -down-> postgres_container : "Django ORM\npsycopg2\n**:5432**"
+note on link : Database First\nPostgreSQL 16
+
+' FLUJO 6: n8n conecta a MinIO
+n8n_container -down-> minio_container : "S3 API\n**:9000**"
+note on link : convenio.pdf\nDocument Storage
+
+' FLUJO 7: Frontend proxy directo (desarrollo)
+frontend_container ..> backend_container : "Vite Proxy\n/api, /admin, /static"
+note on link : Desarrollo\nProxy Interno
+
+' FLUJO 8: Red Docker interna
+nginx_container -.-> docker_network
+frontend_container -.-> docker_network
+backend_container -.-> docker_network
+postgres_container -.-> docker_network
+minio_container -.-> docker_network
+n8n_container -.-> docker_network
+
+' FLUJO 9: Volúmenes persistentes
+postgres_container -.-> docker_volumes : "postgres_data"
+backend_container -.-> docker_volumes : "static_volume\nmedia_volume"
+frontend_container -.-> docker_volumes : "node_modules"
+minio_container -.-> docker_volumes : "minio_data"
+n8n_container -.-> docker_volumes : "n8n_data"
+
+' ==============================================================================
+' PUERTOS Y CONFIGURACIÓN DETALLADA
+' ==============================================================================
+
+note as puertos_config
+    **CONFIGURACIÓN DE PUERTOS REAL:**
+    
+    **Puertos Expuestos al Host:**
+    • 80:80 → NGINX (Punto de entrada principal)
+    • 8080:8080 → NGINX (Monitoreo y status)
+    • 3000:3000 → Frontend (Desarrollo directo)
+    • 8000:8000 → Backend (Desarrollo directo)
+    • 5432:5432 → PostgreSQL (Acceso externo BD)
+    • 9000:9000 → MinIO API (S3 compatible)
+    • 9090:9090 → MinIO Console (Web UI)
+    • 5678:5678 → n8n (Workflow management)
+    
+    **Comunicación Interna (Docker Network):**
+    • giga-frontend:3000
+    • giga-django:8000
+    • giga-postgres:5432
+    • giga-minio:9000
+    • giga-n8n:5678
+    
+    **Health Checks Configurados:**
+    ✅ PostgreSQL: pg_isready
+    ✅ Django: manage.py check --database
+    ✅ Frontend: curl localhost:3000
+    ✅ NGINX: custom healthcheck script
+    ✅ MinIO: curl health endpoint
+end note
+
+' ==============================================================================
+' JUSTIFICACIÓN MODULARIZACIÓN
+' ==============================================================================
+
+note as modularizacion
+    **JUSTIFICACIÓN DE MODULARIZACIÓN:**
+    
+    **✅ Separación de Responsabilidades:**
+    • Frontend: UI/UX (SvelteKit + Vite)
+    • Backend: API + Lógica de negocio (Django)
+    • Base de Datos: Persistencia (PostgreSQL)
+    • Proxy: Routing + Load balancing (NGINX)
+    • Storage: Archivos + Documentos (MinIO)
+    • Automation: Workflows + IA (n8n)
+    
+    **✅ Escalabilidad Independiente:**
+    • Cada servicio puede escalar por separado
+    • Recursos asignados específicamente
+    • Health checks individuales
+    
+    **✅ Desarrollo Independiente:**
+    • Equipos pueden trabajar en paralelo
+    • Tecnologías específicas por módulo
+    • Deploy independiente de cada servicio
+    
+    **✅ Mantenimiento Simplificado:**
+    • Actualizaciones sin afectar otros servicios
+    • Rollback selectivo por componente
+    • Monitoreo granular
+    
+    **✅ Reutilización:**
+    • Servicios pueden ser consumidos por otros sistemas
+    • APIs bien definidas entre componentes
+    • Configuración via variables de entorno
+end note
+
+@enduml

@@ -1,0 +1,406 @@
+@startuml Flujo_Aprobacion_Guardias_Sistema_GIGA
+!define SEQUENCE_DIAGRAM
+
+title Sistema GIGA - Diagrama de Secuencia\nFlujo de Aprobación de Guardias (Corazón del Negocio)\nJerarquía de Roles y Validaciones Implementadas
+
+' ==============================================================================
+' ACTORES Y PARTICIPANTES
+' ==============================================================================
+actor "👨‍💼 Jefatura" as jefe #E3F2FD
+actor "👩‍💼 Director" as director #F3E5F5
+actor "⚙️ Administrador" as admin #E8F5E8
+
+participant "🎨 Frontend\n(SvelteKit)" as frontend #FFF3E0
+participant "⚙️ Backend\n(Django API)" as backend #FFEBEE
+participant "🗄️ Base de Datos\n(PostgreSQL)" as db #F0F4C3
+
+' ==============================================================================
+' CONFIGURACIÓN DE ESTILOS
+' ==============================================================================
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+skinparam sequenceReferenceAlign center
+
+' ==============================================================================
+' FLUJO 1: JEFATURA CREA CRONOGRAMA
+' ==============================================================================
+group Creación de Cronograma por Jefatura
+    
+    jefe -> frontend : 1. Accede a "Crear Cronograma"
+    note right of jefe
+        **Datos del Cronograma:**
+        • Tipo: "Mensual"
+        • Área: ID del área
+        • Fecha: 2025-01-01
+        • Hora inicio: 08:00
+        • Hora fin: 16:00
+        • Guardias: [agentes asignados]
+    end note
+    
+    frontend -> backend : POST /api/guardias/cronogramas/crear_con_guardias/
+    note right of frontend
+        **Request Body:**
+        {
+          "tipo": "Mensual",
+          "id_area": 3,
+          "hora_inicio": "08:00",
+          "hora_fin": "16:00",
+          "fecha": "2025-01-01",
+          "agente_id": 101,
+          "guardias": [
+            {"id_agente": 201, "fecha": "2025-01-01"},
+            {"id_agente": 202, "fecha": "2025-01-02"}
+          ]
+        }
+    end note
+    
+    backend -> backend : get_agente_rol(agente_creador)
+    note right of backend
+        **Validación de Rol:**
+        • Obtiene rol desde AgenteRol
+        • Mapea: "jefe" → "jefatura"
+        • Determina permisos de creación
+    end note
+    
+    backend -> backend : Determinar estado inicial
+    note right of backend
+        **Lógica de Estado:**
+        if (rol == 'administrador'):
+            estado = 'publicada'
+            aprobado_por = agente_id
+        else:
+            estado = 'pendiente'
+            aprobado_por = null
+    end note
+    
+    ' Validaciones del sistema
+    alt Validaciones Exitosas
+        
+        backend -> backend : ValidadorHorarios.validar_fecha_guardia()
+        note right of backend
+            **Validaciones Implementadas:**
+            1. ✅ Fecha no sea día feriado
+            2. ✅ Horarios no se solapen
+            3. ✅ Agentes disponibles
+            4. ✅ No exceder topes mensuales
+        end note
+        
+        backend -> db : BEGIN TRANSACTION
+        
+        ' Crear cronograma
+        backend -> db : INSERT INTO cronograma
+        note right of db
+            **Campos Cronograma:**
+            • estado: 'pendiente'
+            • creado_por_rol: 'jefatura'  
+            • creado_por_id: 101
+            • aprobado_por_id: null
+            • fecha_aprobacion: null
+            • id_jefe: 101
+            • id_director: 101
+        end note
+        
+        db --> backend : cronograma_id: 501
+        
+        ' Crear guardias asociadas
+        backend -> db : INSERT INTO guardia (múltiples)
+        note right of db
+            **Estado Guardias:**
+            • estado: 'pendiente_aprobacion'
+            • activa: false
+            • id_cronograma: 501
+            • horas_planificadas: calculadas
+        end note
+        
+        db --> backend : guardias_ids: [601, 602]
+        
+        ' Registrar auditoría
+        backend -> db : INSERT INTO auditoria
+        note right of db
+            **Registro Auditoría:**
+            • accion: 'CREAR'
+            • nombre_tabla: 'cronograma'
+            • valor_nuevo: datos_cronograma
+            • id_agente: 101
+        end note
+        
+        backend -> db : COMMIT TRANSACTION
+        
+        backend --> frontend : HTTP 201 Created
+        note right of backend
+            **Response:**
+            {
+              "id_cronograma": 501,
+              "estado": "pendiente",
+              "requiere_aprobacion": true,
+              "guardias_creadas": 2,
+              "mensaje": "Cronograma creado, pendiente aprobación"
+            }
+        end note
+        
+        frontend --> jefe : ✅ "Cronograma creado exitosamente\nPendiente de aprobación del Director"
+        
+    else Validaciones Fallidas
+        
+        backend --> frontend : HTTP 400 Bad Request
+        note right of backend
+            **Errores Comunes:**
+            • "Fecha no válida para guardia: Es feriado nacional"
+            • "Agente no disponible en horario solicitado"
+            • "Horarios se solapan con guardia existente"
+        end note
+        
+        frontend --> jefe : ❌ Error: [mensaje específico]
+        
+    end
+    
+end
+
+' ==============================================================================
+' FLUJO 2: DIRECTOR CONSULTA CRONOGRAMAS PENDIENTES
+' ==============================================================================
+group Consulta de Cronogramas Pendientes por Director
+
+    director -> frontend : 2. Accede a "Cronogramas Pendientes"
+    
+    frontend -> backend : GET /api/guardias/cronogramas/pendientes/?agente_id=102
+    note right of frontend
+        **Filtros Aplicados:**
+        • estado: 'pendiente' o 'generada'
+        • puede_aprobar_rol: ['director', 'administrador']
+    end note
+    
+    backend -> backend : puede_aprobar(cronograma, 'director')
+    note right of backend
+        **Validación Jerárquica:**
+        • Cronograma creado por 'jefatura'
+        • Roles que pueden aprobar: ['director', 'administrador']  
+        • Director tiene permisos: ✅ true
+    end note
+    
+    backend -> db : SELECT cronogramas WHERE estado IN ('pendiente', 'generada')
+    note right of db
+        **Query SQL:**
+        SELECT c.*, a.nombre, a.apellido 
+        FROM cronograma c
+        JOIN agente a ON c.creado_por_id = a.id_agente
+        WHERE c.estado IN ('pendiente', 'generada')
+        AND c.creado_por_rol = 'jefatura'
+    end note
+    
+    db --> backend : cronogramas_pendientes[]
+    
+    backend --> frontend : HTTP 200 OK + cronogramas_data
+    note right of backend
+        **Response:**
+        [
+          {
+            "id_cronograma": 501,
+            "estado": "pendiente", 
+            "creado_por": "Juan Pérez (Jefatura)",
+            "fecha_creacion": "2025-01-15",
+            "guardias_count": 2,
+            "puede_aprobar": true
+          }
+        ]
+    end note
+    
+    frontend --> director : 📋 Lista de cronogramas pendientes
+    note right of director
+        **Vista Director:**
+        • Cronograma #501 - Enero 2025
+        • Creado por: Juan Pérez (Jefatura)
+        • Estado: Pendiente aprobación
+        • [Botón: Aprobar] [Botón: Rechazar]
+    end note
+
+end
+
+' ==============================================================================
+' FLUJO 3: DIRECTOR APRUEBA CRONOGRAMA
+' ==============================================================================
+group Aprobación y Publicación por Director
+
+    director -> frontend : 3. Click "Aprobar Cronograma #501"
+    
+    frontend -> backend : PATCH /api/guardias/cronogramas/501/aprobar/
+    note right of frontend
+        **Request Body:**
+        {
+          "agente_id": 102,
+          "observaciones": "Aprobado según plan mensual"
+        }
+    end note
+    
+    ' Validaciones de aprobación
+    backend -> backend : Validar estado actual
+    alt Estado Válido (pendiente/generada)
+        
+        backend -> backend : get_agente_rol(agente_aprobador)
+        note right of backend
+            **Validación Rol Aprobador:**
+            • Agente ID: 102
+            • Rol encontrado: 'director'
+            • Permisos: ✅ puede aprobar cronogramas de jefatura
+        end note
+        
+        backend -> backend : puede_aprobar(cronograma, 'director')
+        note right of backend
+            **Lógica de Aprobación:**
+            • Cronograma creado_por_rol: 'jefatura'
+            • Director en roles permitidos: ✅ true
+            • Administrador SIEMPRE puede aprobar: ✅
+        end note
+        
+        backend -> db : BEGIN TRANSACTION
+        
+        ' Aprobar y publicar cronograma
+        backend -> db : UPDATE cronograma SET estado='publicada'
+        note right of db
+            **Cambios en Cronograma:**
+            UPDATE cronograma SET 
+              estado = 'publicada',
+              fecha_aprobacion = CURRENT_DATE,
+              aprobado_por_id = 102
+            WHERE id_cronograma = 501
+        end note
+        
+        ' Activar guardias asociadas
+        backend -> db : UPDATE guardias SET activa=true, estado='planificada'
+        note right of db
+            **Activación de Guardias:**
+            UPDATE guardia SET 
+              estado = 'planificada',
+              activa = true
+            WHERE id_cronograma = 501
+            AND estado = 'pendiente_aprobacion'
+        end note
+        
+        db --> backend : guardias_activadas: 2
+        
+        ' Registrar auditoría de aprobación
+        backend -> db : INSERT INTO auditoria
+        note right of db
+            **Auditoría Aprobación:**
+            • accion: 'APROBAR_Y_PUBLICAR'
+            • valor_previo: {'estado': 'pendiente'}
+            • valor_nuevo: {'estado': 'publicada', 'guardias_activadas': 2}
+            • id_agente: 102 (Director)
+        end note
+        
+        backend -> db : COMMIT TRANSACTION
+        
+        backend --> frontend : HTTP 200 OK
+        note right of backend
+            **Response Exitosa:**
+            {
+              "mensaje": "Cronograma aprobado y publicado exitosamente",
+              "cronograma_id": 501,
+              "aprobado_por": "María González (Director)",
+              "fecha_aprobacion": "2025-01-16", 
+              "guardias_activadas": 2,
+              "estado_final": "publicada"
+            }
+        end note
+        
+        frontend --> director : ✅ "Cronograma #501 aprobado y publicado\n2 guardias activadas para los agentes"
+        
+        ' Notificación al área sobre cronograma publicado
+        note across
+            **EFECTOS DE LA PUBLICACIÓN:**
+            ✅ Guardias visibles en calendario de agentes
+            ✅ Plus salarial calculable para el mes
+            ✅ Cronograma inmutable (no editable)
+            ✅ Reportes mensuales disponibles
+        end note
+        
+    else Estado Inválido
+        
+        backend --> frontend : HTTP 400 Bad Request
+        note right of backend
+            **Error de Estado:**
+            {
+              "error": "Solo se pueden aprobar cronogramas en estado pendiente o generada",
+              "estado_actual": "publicada"
+            }
+        end note
+        
+        frontend --> director : ❌ "Error: Cronograma ya fue procesado"
+        
+    end
+
+end
+
+' ==============================================================================
+' FLUJO ALTERNATIVO: ADMINISTRADOR (AUTO-APROBACIÓN)
+' ==============================================================================
+group Flujo Administrador (Auto-aprobación)
+
+    admin -> frontend : Crear Cronograma (como Administrador)
+    frontend -> backend : POST /api/guardias/cronogramas/crear_con_guardias/
+    
+    backend -> backend : get_agente_rol() → 'administrador'
+    note right of backend
+        **Lógica Administrador:**
+        if (rol == 'administrador'):
+            estado_inicial = 'publicada'
+            fecha_aprobacion = HOY
+            aprobado_por_id = agente_id
+            guardias_estado = 'planificada' 
+            guardias_activas = true
+    end note
+    
+    backend -> db : INSERT cronograma (estado='publicada')
+    backend -> db : INSERT guardias (activa=true, estado='planificada')
+    
+    backend --> frontend : HTTP 201 - Cronograma publicado directamente
+    frontend --> admin : ✅ "Cronograma creado y publicado automáticamente"
+    
+    note right of admin
+        **Privilegio Administrador:**
+        • No requiere aprobación
+        • Cronograma publicado inmediatamente  
+        • Guardias activas desde creación
+        • Puede aprobar cualquier cronograma
+    end note
+
+end
+
+' ==============================================================================
+' JERARQUÍA DE ROLES Y REGLAS DE NEGOCIO
+' ==============================================================================
+note across
+    **JERARQUÍA DE APROBACIONES IMPLEMENTADA:**
+    
+    **👨‍💼 Jefatura:**
+    • Crea cronogramas → estado 'pendiente'
+    • Requiere aprobación de Director o Administrador
+    • No puede auto-aprobar
+    
+    **👩‍💼 Director:**  
+    • Puede aprobar cronogramas de Jefatura
+    • Si crea cronograma → requiere aprobación de Administrador
+    • Acceso a cronogramas pendientes de su jerarquía
+    
+    **⚙️ Administrador:**
+    • Puede aprobar CUALQUIER cronograma
+    • Sus cronogramas son auto-aprobados (publicados inmediatamente)
+    • Acceso completo al sistema
+    
+    **REGLAS DE VALIDACIÓN:**
+    ✅ Fechas no pueden ser feriados (tabla 'feriado')
+    ✅ Agentes no pueden tener guardias solapadas
+    ✅ Validación de disponibilidad por horarios
+    ✅ Registro completo de auditoría en cada operación
+    ✅ Guardias solo se activan después de aprobación
+    
+    **ESTADOS DEL CRONOGRAMA:**
+    • 'pendiente' → Creado, esperando aprobación
+    • 'publicada' → Aprobado y visible para agentes
+    • 'rechazada' → Rechazado por superior jerárquico
+    
+    **FLUJO DE DATOS:**
+    Creación → Validaciones → Persistencia → Aprobación → Activación → Auditoría
+end note
+
+@enduml
