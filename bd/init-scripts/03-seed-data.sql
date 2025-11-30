@@ -234,10 +234,10 @@ WHERE nombre = 'Secretaría de Protección Civil'
 AND NOT EXISTS (SELECT 1 FROM parametros_area WHERE id_area = area.id_area);
 
 -- Reglas de plus
-INSERT INTO reglas_plus (horas_minimas_mensuales, porcentaje_plus) 
+INSERT INTO reglas_plus (horas_minimas_mensuales, porcentaje_plus, vigente_desde) 
 VALUES 
-    (32, 20.0),
-    (40, 40.0)
+    (32, 20.0, NOW()),
+    (40, 40.0, NOW())
 ON CONFLICT DO NOTHING;
 
 -- Actualizar secuencias
