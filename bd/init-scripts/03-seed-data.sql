@@ -226,17 +226,18 @@ INSERT INTO feriado (nombre, fecha_inicio, fecha_fin, descripcion, es_nacional) 
 ON CONFLICT DO NOTHING;
 
 -- Parámetros de área
-INSERT INTO parametros_area (id_area, ventana_entrada_inicio, ventana_entrada_fin, ventana_salida_inicio, ventana_salida_fin)
+INSERT INTO parametros_area (id_area, ventana_entrada_inicio, ventana_entrada_fin, ventana_salida_inicio, ventana_salida_fin, vigente_desde)
 SELECT 
-    id_area, '07:30:00'::TIME, '09:00:00'::TIME, '16:00:00'::TIME, '18:30:00'::TIME
+    id_area, '07:30:00'::TIME, '09:00:00'::TIME, '16:00:00'::TIME, '18:30:00'::TIME, '2025-01-01'::DATE
 FROM area 
 WHERE nombre = 'Secretaría de Protección Civil'
 AND NOT EXISTS (SELECT 1 FROM parametros_area WHERE id_area = area.id_area);
 
 -- Reglas de plus
-INSERT INTO reglas_plus (horas_minimas_mensuales, porcentaje_plus, descripcion) VALUES 
-    (32, 20.0, 'Plus 20% - Mínimo 32 horas mensuales'),
-    (40, 40.0, 'Plus 40% - Mínimo 40 horas mensuales o área operativa')
+INSERT INTO reglas_plus (horas_minimas_mensuales, porcentaje_plus) 
+VALUES 
+    (32, 20.0),
+    (40, 40.0)
 ON CONFLICT DO NOTHING;
 
 -- Actualizar secuencias
