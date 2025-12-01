@@ -1,0 +1,337 @@
+@startuml Sistema_GIGA_Arquitectura_Completa
+!define RECTANGLE class
+
+title Sistema GIGA - Arquitectura de Comunicaciones Completa\nContenedores Docker, Puertos y Flujos de Datos
+
+' ==============================================================================
+' ESTILOS Y COLORES
+' ==============================================================================
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+
+skinparam rectangle {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontSize 12
+}
+
+skinparam component {
+    BackgroundColor #F3E5F5
+    BorderColor #7B1FA2
+    FontSize 11
+}
+
+skinparam database {
+    BackgroundColor #E8F5E8
+    BorderColor #388E3C
+    FontSize 11
+}
+
+skinparam cloud {
+    BackgroundColor #FFF3E0
+    BorderColor #F57C00
+    FontSize 11
+}
+
+skinparam node {
+    BackgroundColor #FFEBEE
+    BorderColor #D32F2F
+    FontSize 11
+}
+
+' ==============================================================================
+' DEFINICIÓN DE COMPONENTES PRINCIPALES
+' ==============================================================================
+
+' NGINX - PUERTA DE ENTRADA
+node "🌐 NGINX Gateway" as nginx #FFE0B2 {
+    rectangle "Reverse Proxy" as nginx_proxy
+    rectangle "Load Balancer" as nginx_lb
+    rectangle "SSL Termination" as nginx_ssl
+    
+    note right of nginx_proxy
+        **Puertos Expuestos:**
+        • 80:80 (HTTP Principal)
+        • 8080:8080 (Monitoreo)
+        
+        **Configuración:**
+        • /etc/nginx/nginx.conf
+        • Upstreams: frontend, backend
+        • CORS habilitado
+        • Compresión gzip
+    end note
+}
+
+' FRONTEND SVELTE
+rectangle "🎨 Frontend SvelteKit" as frontend #E1F5FE {
+    component "Svelte 5.41.0" as svelte
+    component "Vite 7.1.10" as vite
+    component "SvelteKit 2.47.1" as sveltekit
+    component "TypeScript/JS" as typescript
+    component "Axios 1.13.1" as axios_front
+    
+    note bottom of frontend
+        **Puerto:** 3000 (interno)
+        **Modo:** Development/SSR
+        **Proxy Config:**
+        • /api → backend:8000
+        • /admin → backend:8000
+        • /static → backend:8000
+        
+        **Características:**
+        • HMR (Hot Module Reload)
+        • SSR/CSR híbrido
+        • WebSocket para desarrollo
+    end note
+}
+
+' BACKEND DJANGO
+rectangle "⚙️ Backend Django" as backend #F3E5F5 {
+    component "Django 4.2.0" as django
+    component "Django REST Framework" as drf
+    component "Gunicorn WSGI" as gunicorn
+    component "Auth System" as auth
+    
+    rectangle "Apps Django" as django_apps {
+        component "personas/" as app_personas
+        component "guardias/" as app_guardias
+        component "asistencia/" as app_asistencia
+        component "auditoria/" as app_auditoria
+    }
+    
+    note bottom of backend
+        **Puerto:** 8000 (interno)
+        **Database:** PostgreSQL (giga-postgres:5432)
+        **Estrategia:** Database First
+        **Modelos:** managed = False
+        
+        **APIs Expuestas:**
+        • /api/personas/ (usuarios, áreas, roles)
+        • /api/guardias/ (cronogramas, reportes)
+        • /api/asistencia/ (marcas, licencias)
+        • /api/auditoria/ (logs del sistema)
+        • /admin/ (Django Admin)
+    end note
+}
+
+' BASE DE DATOS POSTGRESQL
+database "🗄️ PostgreSQL 16" as postgres #E8F5E8 {
+    rectangle "Esquemas BD" as schemas {
+        component "public" as schema_public
+        component "giga_user" as db_user
+    }
+    
+    rectangle "Tablas Principales" as tables {
+        component "personas_agente" as tbl_agentes
+        component "personas_area" as tbl_areas  
+        component "guardias_cronograma" as tbl_guardias
+        component "asistencia_marca" as tbl_asistencia
+        component "auditoria_registro" as tbl_auditoria
+    }
+    
+    note bottom of postgres
+        **Puerto:** 5432 (expuesto)
+        **Base de Datos:** giga
+        **Usuario:** giga_user
+        **Ubicación:** /var/lib/postgresql/data
+        
+        **Características:**
+        • Init Scripts en /docker-entrypoint-initdb.d
+        • Configuración personalizada (pg_hba.conf)
+        • Health checks automáticos
+        • Timezone: America/Argentina/Buenos_Aires
+    end note
+}
+
+' MINIO OBJECT STORAGE
+cloud "💾 MinIO Object Storage" as minio #FFF8E1 {
+    component "API S3" as minio_api
+    component "Console Web" as minio_console
+    component "Bucket: convenio" as minio_bucket
+    
+    note right of minio
+        **Puertos:**
+        • 9000:9000 (API S3)
+        • 9090:9090 (Console Web)
+        
+        **Credenciales:**
+        • Root: giga-user / giga-password-change-me
+        • N8N: n8n-user / n8n12345
+        
+        **Buckets:**
+        • convenio/ (público, PDFs del convenio)
+    end note
+}
+
+' N8N WORKFLOW AUTOMATION
+cloud "🤖 n8n Workflow Engine" as n8n #FFEBEE {
+    component "Workflow Engine" as n8n_engine
+    component "Webhook Handler" as n8n_webhook
+    component "LLM Integration" as n8n_llm
+    component "MinIO Connector" as n8n_minio_conn
+    
+    note right of n8n
+        **Puerto:** 5678:5678
+        **Usuario:** admin@giga.com / Admin123
+        
+        **Webhooks:**
+        • TEST: /webhook-test/3ebdf75e...
+        • PROD: /webhook/3ebdf75e...
+        
+        **Integraciones:**
+        • Google Gemini LLM (API Key)
+        • MinIO S3 (convenio.pdf)
+        • JSON Input/Output
+    end note
+}
+
+' SERVICIOS AUXILIARES
+rectangle "🔧 Servicios de Desarrollo" as dev_services #F5F5F5 {
+    component "pgAdmin 4" as pgadmin
+    component "Docker Network" as docker_net
+    component "Health Checks" as health_checks
+    
+    note bottom of dev_services
+        **pgAdmin:** localhost:8081
+        **Network:** giga-network (bridge)
+        **Health Checks:** Todos los servicios
+        **Volumes:** Persistencia de datos
+    end note
+}
+
+' ==============================================================================
+' FLUJOS DE COMUNICACIÓN PRINCIPALES
+' ==============================================================================
+
+' Usuario accede al sistema
+actor "👤 Usuario" as user
+
+' FLUJO 1: Acceso Principal del Usuario
+user -down-> nginx : "HTTP Request\n:80"
+nginx_proxy -down-> frontend : "Proxy /\n→ :3000"
+
+' FLUJO 2: Comunicación Frontend-Backend via NGINX
+frontend -right-> nginx_proxy : "API Calls\n/api/*"
+nginx_proxy -down-> backend : "Proxy /api/\n→ :8000"
+
+' FLUJO 3: Comunicación Frontend-Backend Directa (Desarrollo)
+frontend ..> backend : "Direct API\n(desarrollo)\nvite proxy"
+
+' FLUJO 4: Backend-Database
+backend -down-> postgres : "Django ORM\npsycopg2\n:5432"
+
+' FLUJO 5: Static/Media Files
+backend -up-> nginx_proxy : "Static Files\n/static/, /media/"
+
+' FLUJO 6: Admin Interface  
+nginx_proxy -down-> backend : "Django Admin\n/admin/"
+
+' FLUJO 7: Consultas IA via N8N
+user -right-> nginx : "Consulta IA"
+nginx -right-> n8n : "Webhook /api/n8n/\n→ :5678"
+n8n_webhook -down-> n8n_llm : "Procesar\nconsulta"
+n8n_minio_conn -left-> minio : "Acceso convenio.pdf\n:9000"
+n8n_engine -up-> nginx : "Respuesta IA\nJSON"
+
+' FLUJO 8: Administración de Base de Datos
+pgadmin -down-> postgres : "Admin DB\n:5432"
+
+' FLUJO 9: Health Checks
+health_checks ..> nginx : "Health :80"
+health_checks ..> frontend : "Health :3000"  
+health_checks ..> backend : "Health :8000"
+health_checks ..> postgres : "pg_isready :5432"
+health_checks ..> minio : "Health :9000"
+
+' ==============================================================================
+' COMUNICACIONES INTERNAS DOCKER
+' ==============================================================================
+
+rectangle "🐳 Docker Network: giga-network" as docker_network #E0F2F1 {
+    note as docker_note
+        **Comunicación Interna por Hostname:**
+        • giga-frontend:3000
+        • giga-django:8000  
+        • giga-postgres:5432
+        • giga-nginx:80
+        • giga-minio:9000
+        • giga-n8n:5678
+        
+        **Volumes Compartidos:**
+        • static_volume (nginx ↔ backend)
+        • media_volume (nginx ↔ backend)
+        • postgres_data (persistencia BD)
+        • minio_data (almacenamiento S3)
+        • n8n_data (workflows)
+    end note
+}
+
+' Conexiones de red interna
+nginx -.-> docker_network
+frontend -.-> docker_network
+backend -.-> docker_network
+postgres -.-> docker_network
+minio -.-> docker_network
+n8n -.-> docker_network
+
+' ==============================================================================
+' CONFIGURACIONES ESPECÍFICAS
+' ==============================================================================
+
+rectangle "⚙️ Configuraciones Clave" as configs #FFF3E0 {
+    note as config_note
+        **NGINX (nginx.conf):**
+        • upstream giga_frontend { server giga-frontend:3000; }
+        • upstream giga_backend { server giga-django:8000; }
+        • CORS headers habilitados
+        • Compresión gzip activada
+        • WebSocket support para HMR
+        
+        **Django (settings.py):**
+        • CORS_ALLOWED_ORIGINS = ["http://localhost:3000", "http://localhost"]
+        • DATABASES = {'HOST': 'giga-postgres'}
+        • REST_FRAMEWORK con autenticación por sesión/token
+        
+        **Svelte (vite.config.js):**
+        • server.proxy: { '/api': 'http://backend:8000' }
+        • HMR habilitado con polling
+        
+        **Docker Compose:**
+        • Network: giga-network (bridge)
+        • Depends_on con health checks
+        • Environment variables para configuración
+    end note
+}
+
+' ==============================================================================
+' FLUJOS DE DATOS ESPECÍFICOS
+' ==============================================================================
+
+rectangle "📊 Flujos de Datos Específicos" as data_flows #E8EAF6 {
+    note as flows_note
+        **1. Autenticación de Usuario:**
+        Frontend → /api/personas/auth/login/ → Backend
+        Backend → Session/Token → Frontend (cookies)
+        
+        **2. Gestión de Guardias:**
+        Frontend → /api/guardias/cronogramas/ → Backend
+        Backend → PostgreSQL (guardias_cronograma) → Response
+        
+        **3. Reportes PDF:**
+        Frontend → /api/guardias/exportar_pdf/ → Backend
+        Backend → Generación PDF → Response (blob)
+        
+        **4. Consulta IA Convenio:**
+        Frontend → NGINX (/api/n8n/) → n8n (:5678)
+        n8n → MinIO (convenio.pdf) → Google Gemini LLM
+        LLM → Respuesta → n8n → Frontend (JSON)
+        
+        **5. Auditoría del Sistema:**
+        Todas las acciones → Backend → auditoria_registro
+        Frontend → /api/auditoria/registros/ → Visualización
+    end note
+}
+
+@enduml
