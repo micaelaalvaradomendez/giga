@@ -27,6 +27,13 @@ from .serializers import (
     AgrupacionSerializer
 )
 
+# RBAC Permissions
+from common.permissions import (
+    IsAuthenticatedGIGA, IsAdministrador, IsJefaturaOrAbove,
+    obtener_agente_sesion, obtener_rol_agente, obtener_areas_jerarquia
+)
+
+
 
 class StandardResultsSetPagination(PageNumberPagination):
     """Paginación estándar para las vistas."""
@@ -53,10 +60,17 @@ def get_authenticated_agente(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def get_agentes(request):
     """
     Obtener lista de todos los agentes con paginación y filtros.
+    
+    RBAC - Lógica Correcta:
+    - Administrador: Todos los agentes de todas las áreas
+    - Director: Agentes, agente_avanzado, jefatura de su área + sub-áreas
+    - Jefatura: Agentes y agentes_avanzados de su área (sin sub-áreas)
+    - Agente Avanzado: Su info + otros agentes (NO jefatura/director) de su área
+    - Agente: Solo su propia información
     """
     # Verificar autenticación (COMENTADO TEMPORALMENTE PARA TESTING)
     # if not is_authenticated(request):
@@ -66,6 +80,16 @@ def get_agentes(request):
     #     }, status=status.HTTP_401_UNAUTHORIZED)
     
     try:
+        # RBAC: Obtener agente y rol de sesión
+        agente_sesion = obtener_agente_sesion(request)
+        if not agente_sesion:
+            return Response({
+                'success': False,
+                'message': 'No hay sesión activa'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        rol_sesion = obtener_rol_agente(agente_sesion)
+        
         # Obtener parámetros de filtro
         search = request.GET.get('search', '').strip()
         agrupacion = request.GET.get('agrupacion', '').strip()
@@ -77,6 +101,45 @@ def get_agentes(request):
         queryset = Agente.objects.all().select_related('id_area').prefetch_related(
             'agenterol_set__id_rol'
         ).order_by('apellido', 'nombre')
+        
+        # RBAC: Filtrar por rol del usuario
+        if rol_sesion == 'administrador':
+            # Admin ve todos
+            pass
+        
+        elif rol_sesion == 'director':
+            # Director ve agentes, agente_avanzado, jefatura de su área + sub-áreas
+            areas_permitidas = obtener_areas_jerarquia(agente_sesion)
+            area_ids = [a.id_area for a in areas_permitidas]
+            queryset = queryset.filter(id_area__id_area__in=area_ids)
+        
+        elif rol_sesion == 'jefatura':
+            # Jefatura ve agentes y agentes_avanzados de su área (sin sub-áreas)
+            areas_permitidas = obtener_areas_jerarquia(agente_sesion)
+            area_ids = [a.id_area for a in areas_permitidas]
+            queryset = queryset.filter(id_area__id_area__in=area_ids)
+        
+        elif rol_sesion == 'agente_avanzado':
+            # Agente Avanzado: su info + otros agentes (no jefatura/director) de su área
+            areas_permitidas = obtener_areas_jerarquia(agente_sesion)
+            area_ids = [a.id_area for a in areas_permitidas]
+            
+            # Filtrar por área Y excluir roles superiores
+            from personas.models import Rol
+            queryset = queryset.filter(id_area__id_area__in=area_ids)
+            
+            # Excluir Jefatura, Director, Administrador (solo ve agentes y agentes_avanzados)
+            roles_excluir = Rol.objects.filter(
+                nombre__in=['Jefatura', 'Director', 'Administrador']
+            ).values_list('id_rol', flat=True)
+            
+            queryset = queryset.exclude(
+                agenterol__id_rol__in=roles_excluir
+            ).distinct()
+        
+        else:  # agente
+            # Agente: solo ve su propia información
+            queryset = queryset.filter(id_agente=agente_sesion.id_agente)
         
         # Aplicar filtros
         if search:
@@ -135,7 +198,7 @@ def get_agentes(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def get_agente(request, agente_id):
     """
     Obtener detalles completos de un agente específico.
@@ -165,7 +228,7 @@ def get_agente(request, agente_id):
 
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdministrador])  # CRÍTICO: Solo admin puede crear agentes
 def create_agente(request):
     """
     Crear un nuevo agente.
@@ -217,8 +280,8 @@ def create_agente(request):
 
 
 @csrf_exempt
-@api_view(['PUT', 'PATCH'])
-@permission_classes([AllowAny])
+@api_view(['PATCH'])
+@permission_classes([IsAdministrador])  #CRÍTICO: Solo admin puede editar agentes
 def update_agente(request, agente_id):
     """
     Actualizar un agente existente.
@@ -278,7 +341,7 @@ def update_agente(request, agente_id):
 
 @csrf_exempt
 @api_view(['DELETE'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdministrador])  # CRÍTICO: Solo admin puede eliminar agentes
 def delete_agente(request, agente_id):
     """
     Eliminar un agente y todos los datos relacionados según reglas de negocio:
@@ -328,7 +391,7 @@ def delete_agente(request, agente_id):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def get_areas(request):
     """
     Obtener todas las áreas del sistema con información jerárquica
@@ -402,7 +465,7 @@ def get_areas(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def get_roles(request):
     """
     Obtener lista de todos los roles disponibles.
@@ -427,7 +490,7 @@ def get_roles(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def get_asignaciones(request):
     """
     Obtener todas las asignaciones de roles a agentes.
@@ -467,7 +530,7 @@ def get_asignaciones(request):
 
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def create_asignacion(request):
     """
     Crear nueva asignación de rol a agente.
@@ -526,7 +589,7 @@ def create_asignacion(request):
 
 @csrf_exempt
 @api_view(['DELETE'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def delete_asignacion(request, asignacion_id):
     """
     Eliminar asignación de rol.
@@ -569,7 +632,7 @@ def delete_asignacion(request, asignacion_id):
 
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def cambiar_rol_agente(request):
     """
     Cambia el rol de un agente eliminando todos los roles previos y asignando uno nuevo.
@@ -654,7 +717,7 @@ def cambiar_rol_agente(request):
 
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def limpiar_roles_duplicados(request):
     """
     Limpia roles duplicados dejando solo el más reciente por agente.
@@ -738,7 +801,7 @@ def limpiar_roles_duplicados(request):
 
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def create_area(request):
     """
     Crear nueva área con soporte para jerarquía, descripción y jefe.
@@ -872,7 +935,7 @@ def create_area(request):
 
 @csrf_exempt
 @api_view(['PUT', 'PATCH'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def update_area(request, area_id):
     """
     Actualizar área existente con soporte para jerarquía, descripción y jefe.
@@ -1060,7 +1123,7 @@ def update_area(request, area_id):
 
 @csrf_exempt
 @api_view(['DELETE'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def delete_area(request, area_id):
     """
     Eliminar área (soft delete) y reasignar agentes a área por defecto.
@@ -1159,7 +1222,7 @@ def delete_area(request, area_id):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def update_global_schedule(request):
     """
     Actualizar horarios de TODOS los agentes activos del sistema.
@@ -1219,7 +1282,7 @@ def update_global_schedule(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def update_area_schedule(request, area_id):
     """
     Actualizar horarios de todos los agentes de un área.
@@ -1265,7 +1328,7 @@ def update_area_schedule(request, area_id):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def get_agrupaciones(request):
     """
     Obtener lista de todas las agrupaciones organizacionales.
@@ -1292,7 +1355,7 @@ def get_agrupaciones(request):
 
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def create_agrupacion(request):
     """
     Crear nueva agrupación organizacional.
@@ -1325,7 +1388,7 @@ def create_agrupacion(request):
 
 @csrf_exempt
 @api_view(['PUT', 'PATCH'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def update_agrupacion(request, agrupacion_id):
     """
     Actualizar agrupación existente.
@@ -1370,7 +1433,7 @@ def update_agrupacion(request, agrupacion_id):
 
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def update_agrupacion_schedule(request):
     """
     Actualizar horarios de todos los agentes de una agrupación.
@@ -1422,7 +1485,7 @@ def update_agrupacion_schedule(request):
 
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def rename_agrupacion(request):
     """
     Renombrar una agrupación organizacional.
@@ -1473,7 +1536,7 @@ def rename_agrupacion(request):
 
 @csrf_exempt
 @api_view(['DELETE'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def delete_agrupacion(request, agrupacion_id):
     """
     Eliminar una agrupación organizacional (reasignar agentes a otra agrupación o desasignar).
@@ -1862,7 +1925,7 @@ def sincronizar_organigrama_areas(usuario_logueado_id=None):
 # ============================================================================
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def get_organigrama(request):
     """
     Obtener la estructura del organigrama activa.
@@ -1908,7 +1971,7 @@ def get_organigrama(request):
 
 @csrf_exempt
 @api_view(['POST', 'PUT'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def save_organigrama(request):
     """
     Guardar o actualizar la estructura del organigrama.
@@ -1991,7 +2054,7 @@ def save_organigrama(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def get_organigrama_historial(request):
     """
     Obtener historial de versiones del organigrama.
@@ -2047,7 +2110,7 @@ def _contar_nodos_recursivo(nodos):
 
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def restore_organigrama(request, organigrama_id):
     """
     Restaurar una versión específica del organigrama.
@@ -2123,7 +2186,7 @@ def restore_organigrama(request, organigrama_id):
 
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC actualizado
 def sincronizar_organigrama_manual(request):
     """
     Sincronizar manualmente el organigrama con la estructura de áreas.

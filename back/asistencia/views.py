@@ -21,6 +21,13 @@ from personas.models import Agente, Area
 from guardias.models import Feriado
 from auditoria.models import Auditoria
 
+# RBAC Permissions
+from common.permissions import (
+    IsAuthenticatedGIGA, IsAdministrador, IsJefaturaOrAbove,
+    CanApprove, obtener_agente_sesion, obtener_rol_agente,
+    obtener_areas_jerarquia
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -170,11 +177,16 @@ def get_client_ip(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # ✅ SEGURIDAD: Solo usuarios autenticados
 def marcar_asistencia(request):
     """
     Marcar entrada o salida de un agente con DNI.
     Los administradores pueden marcar asistencia de otros agentes.
+    
+    SEGURIDAD:
+    - Requiere sesión GIGA válida (IsAuthenticatedGIGA)
+    - Anti-fraude implementado: valida que DNI coincida con sesión
+    - Registra intentos fraudulentos en tabla de auditoría
     """
     try:
         dni_ingresado = request.data.get('dni', '').strip()
@@ -537,7 +549,7 @@ def marcar_asistencia(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])
 def obtener_estado_asistencia(request):
     """
     Obtener el estado de asistencia del agente logueado para hoy.
@@ -609,7 +621,7 @@ def obtener_estado_asistencia(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])
 def listar_tipos_licencia(request):
     """
     Listar todos los tipos de licencia disponibles.
@@ -636,7 +648,7 @@ def listar_tipos_licencia(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdministrador])
 def crear_tipo_licencia(request):
     """
     Crear un nuevo tipo de licencia (solo administradores).
@@ -691,7 +703,7 @@ def crear_tipo_licencia(request):
 
 
 @api_view(['PUT', 'PATCH'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC: Requiere autenticación
 def actualizar_tipo_licencia(request, tipo_licencia_id):
     """
     Actualizar un tipo de licencia existente (solo administradores).
@@ -754,7 +766,7 @@ def actualizar_tipo_licencia(request, tipo_licencia_id):
 
 
 @api_view(['DELETE'])
-@permission_classes([AllowAny])
+@permission_classes([IsAdministrador])
 def eliminar_tipo_licencia(request, tipo_licencia_id):
     """
     Eliminar un tipo de licencia (solo administradores).
@@ -806,31 +818,28 @@ def eliminar_tipo_licencia(request, tipo_licencia_id):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
-def listar_asistencias(request):
+@permission_classes([IsJefaturaOrAbove])
+def listar_asistencias_admin(request):
     """
     Listar asistencias con filtros por fecha, área, estado.
-    Solo para administradores.
+    
+    RBAC - Lógica Correcta:
+    - Administrador: Todas las asistencias
+    - Director: Asistencias de agentes de su área + sub-áreas
+    - Jefatura: Asistencias de agentes de su área (sin sub-áreas)
     """
     try:
-        # Verificar que el usuario sea administrador
-        agente_id = request.session.get('user_id')
-        if not agente_id:
+        # RBAC: Obtener agente y rol
+        agente_sesion = obtener_agente_sesion(request)
+        if not agente_sesion:
             return Response({
                 'success': False,
                 'message': 'No hay sesión activa'
             }, status=status.HTTP_401_UNAUTHORIZED)
         
-        agente = Agente.objects.get(id_agente=agente_id)
-        rol = agente.agenterol_set.first()
+        rol_sesion = obtener_rol_agente(agente_sesion)
         
-        if not rol or rol.id_rol.nombre not in ['Administrador', 'Director', 'Jefatura']:
-            return Response({
-                'success': False,
-                'message': 'No tiene permisos para ver asistencias'
-            }, status=status.HTTP_403_FORBIDDEN)
-        
-        # Filtros
+        # Filtros de consulta
         fecha_desde = request.GET.get('fecha_desde', date.today().isoformat())
         fecha_hasta = request.GET.get('fecha_hasta', date.today().isoformat())
         area_id = request.GET.get('area_id')
@@ -849,13 +858,19 @@ def listar_asistencias(request):
                     'message': f'No se registra asistencia en {get_motivo_no_laborable(fecha_consulta)}'
                 })
             
-            # Obtener agentes activos según permisos
+            # Obtener agentes activos
             agentes_query = Agente.objects.filter(activo=True)
             
+            # RBAC: Filtrar agentes por áreas permitidas
+            # La lógica es la misma: Admin ve todos, Director área+sub, Jefatura solo área
+            if rol_sesion != 'administrador':
+                areas_permitidas = obtener_areas_jerarquia(agente_sesion)
+                area_ids_permitidas = [a.id_area for a in areas_permitidas]
+                agentes_query = agentes_query.filter(id_area__id_area__in=area_ids_permitidas)
+            
+            # Filtro adicional por área específica (si se proporciona)
             if area_id:
                 agentes_query = agentes_query.filter(id_area_id=area_id)
-            elif rol.id_rol.nombre == 'Jefatura':
-                agentes_query = agentes_query.filter(id_area=agente.id_area)
             
             # Obtener IDs de agentes que SÍ tienen asistencia en ese rango de fechas
             agentes_con_asistencia = Asistencia.objects.filter(
@@ -936,7 +951,7 @@ def listar_asistencias(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC: Requiere autenticación
 def resumen_asistencias(request):
     """
     Obtener resumen de asistencias por fecha y área.
@@ -1019,7 +1034,7 @@ def resumen_asistencias(request):
 
 
 @api_view(['PUT', 'PATCH'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC: Requiere autenticación
 def corregir_asistencia(request, asistencia_id):
     """
     Corregir una asistencia (solo administradores).
@@ -1149,7 +1164,7 @@ def corregir_asistencia(request, asistencia_id):
 
 
 @api_view(['GET', 'POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC: Requiere autenticación
 def gestionar_licencias(request):
     """
     GET: Listar licencias con filtros y permisos jerárquicos.
@@ -1444,7 +1459,7 @@ def crear_licencia_impl(request):
 
 
 @api_view(['PATCH'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC: Requiere autenticación
 def aprobar_licencia(request, licencia_id):
     """
     Aprobar una licencia pendiente.
@@ -1560,7 +1575,7 @@ def aprobar_licencia(request, licencia_id):
 
 
 @api_view(['PATCH'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC: Requiere autenticación
 def rechazar_licencia(request, licencia_id):
     """
     Rechazar una licencia pendiente.
@@ -1680,7 +1695,7 @@ def rechazar_licencia(request, licencia_id):
 
 
 @api_view(['DELETE'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC: Requiere autenticación
 def eliminar_licencia(request, licencia_id):
     """
     Eliminar una licencia (solo administradores).
@@ -1760,7 +1775,7 @@ def eliminar_licencia(request, licencia_id):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC: Requiere autenticación
 def ejecutar_marcacion_automatica(request):
     """
     Ejecutar marcación automática de salidas a las 22:00.
@@ -1806,7 +1821,7 @@ def ejecutar_marcacion_automatica(request):
 
 
 @api_view(['PATCH'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])  # RBAC: Requiere autenticación
 def marcar_como_ausente(request, asistencia_id):
     """
     Marcar un agente como ausente (eliminar su presentismo).

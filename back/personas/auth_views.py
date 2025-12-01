@@ -22,6 +22,9 @@ from .models import Agente, AgenteRol, Rol, Area
 from auditoria.models import Auditoria
 import logging
 
+# RBAC Permissions
+from common.permissions import IsAuthenticatedGIGA
+
 logger = logging.getLogger(__name__)
 
 def registrar_auditoria(agente_id, accion, detalle=""):
@@ -220,7 +223,7 @@ def logout_view(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET', 'OPTIONS'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])
 def check_session(request):
     """
     Verificar si el usuario tiene una sesión activa
@@ -413,7 +416,7 @@ Sistema GIGA - Protección Civil
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST', 'OPTIONS'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])
 def update_email(request):
     """
     Actualizar email del usuario autenticado
@@ -500,7 +503,7 @@ def update_email(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST', 'OPTIONS'])
-@permission_classes([AllowAny])  # Verificaremos sesión manualmente
+@permission_classes([IsAuthenticatedGIGA])  # Requiere sesión válida
 def change_password(request):
     """
     Cambiar contraseña del usuario autenticado

@@ -7,6 +7,9 @@ from django.db.models import Q
 from .models import Auditoria
 from .serializers import AuditoriaSerializer
 
+# RBAC Permissions
+from common.permissions import IsAuthenticatedGIGA
+
 
 class AuditoriaViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet para consulta de registros de auditoría (solo lectura)"""
@@ -45,7 +48,7 @@ class AuditoriaViewSet(viewsets.ReadOnlyModelViewSet):
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([AllowAny])  # Usamos AllowAny y verificamos manualmente
+@permission_classes([IsAuthenticatedGIGA])  # RBAC: Solo usuarios autenticados
 def registros_auditoria(request):
     """API endpoint para obtener registros de auditoría"""
     try:

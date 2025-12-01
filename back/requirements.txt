@@ -8,3 +8,4 @@ reportlab>=4.0.0
 openpyxl>=3.1.0
 django-extensions
 django-filter
+django-ratelimit==4.1.0

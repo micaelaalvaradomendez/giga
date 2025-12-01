@@ -56,6 +56,9 @@ INSTALLED_APPS = [
     'django_extensions',
     'django_filters',
     
+    # Common utilities - RBAC System
+    'common',
+    
     # Local apps - GIGA System Apps
     'personas',
     'auditoria', 
@@ -233,17 +236,9 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
-# Configuraciones de desarrollo vs producción
-if DEBUG:
-    # Configuraciones de desarrollo
-    CORS_ALLOW_ALL_ORIGINS = True
-    ALLOWED_HOSTS = ['*']
-else:
-    # Configuraciones de producción
-    SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
 # ============================================================================
 # CONFIGURACIÓN PARA MODELOS NO GESTIONADOS (DATABASE FIRST STRATEGY)

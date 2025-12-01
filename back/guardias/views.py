@@ -25,6 +25,12 @@ from .serializers import (
 )
 from .utils import CalculadoraPlus, PlanificadorCronograma, ValidadorHorarios
 
+# RBAC Permissions
+from common.permissions import (
+    IsAuthenticatedGIGA, obtener_agente_sesion, obtener_rol_agente,
+    obtener_areas_jerarquia
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -452,15 +458,40 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             
             if not agente_id and hasattr(request.user, 'agente'):
                 agente_id = request.user.agente.id_agente
-                print(f"🔍 agente_id de request.user: {agente_id}")
+            
+            # Si no se proporciona agente_id, usar el de la sesión
+            if not agente_id:
+                agente_id = request.session.get('user_id')
+                print(f"📌 agente_id desde sesión: {agente_id}")
             
             if not agente_id:
-                print("❌ No se pudo determinar agente_id")
-                return Response(
-                    {'error': 'No se pudo determinar el agente creador'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({'error': 'No se pudo determinar el agente creador'}, status=status.HTTP_400_BAD_REQUEST)
             
+            # RBAC: Validación de área permitida según rol
+            agente_creador = obtener_agente_sesion(request)
+            if agente_creador:
+                rol_creador = obtener_rol_agente(agente_creador)
+                id_area_cronograma = data.get('id_area')
+                
+                if rol_creador == 'jefatura':
+                    # Jefatura solo puede crear para su propia área
+                    if agente_creador.id_area and agente_creador.id_area.id_area != id_area_cronograma:
+                        return Response({
+                            'error': f'Jefatura solo puede crear cronogramas para su propia área (Área: {agente_creador.id_area.nombre})'
+                        }, status=status.HTTP_403_FORBIDDEN)
+                
+                elif rol_creador == 'director':
+                    # Director solo para áreas bajo su dirección
+                    areas_permitidas = obtener_areas_jerarquia(agente_creador)
+                    area_ids = [a.id_area for a in areas_permitidas]
+                    if id_area_cronograma not in area_ids:
+                        return Response({
+                            'error': 'Director solo puede crear cronogramas para áreas bajo su dirección'
+                        }, status=status.HTTP_403_FORBIDDEN)
+                
+                # Admin: sin restricción
+            
+            # Obtener el agente
             print(f"✅ Usando agente_id: {agente_id}")
             
             # Obtener agente completo
