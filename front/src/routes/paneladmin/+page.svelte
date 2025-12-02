@@ -1,6 +1,9 @@
 <script>
 	import { onMount } from "svelte";
-	const modules = [
+	import { goto } from "$app/navigation";
+	import AuthService from "$lib/login/authService.js";
+    
+	const allModules = [
 		{
 			name: "Usuarios",
 			path: "/paneladmin/usuarios",
@@ -54,21 +57,69 @@
 		},
 	];
 
-	onMount(() => {
-		const cards = document.querySelectorAll(".module-card");
-		const container = document.querySelector(".modules-space");
+	// Modulos visibles segun rol
+	let modules = [];
 
-		// Mueve las variables en cada card según la posición del mouse
-		container.addEventListener("mousemove", (e) => {
-			for (const card of cards) {
-				const rect = card.getBoundingClientRect();
-				const x = e.clientX - rect.left;
-				const y = e.clientY - rect.top;
-				card.style.setProperty("--mouse-x", `${x}px`);
-				card.style.setProperty("--mouse-y", `${y}px`);
+	onMount(async () => {
+		try {
+			const userResponse = await AuthService.getCurrentUserData();
+
+			// No autenticado -> mostrar mensaje y redirigir a /
+			if (!userResponse?.success || !userResponse.data?.success) {
+				alert("usuario no autorizado");
+				goto("/");
+				return;
 			}
-		});
+
+			const userInfo = userResponse.data.data;
+
+			// Determinar roles
+			const userRoles = Array.isArray(userInfo.roles)
+				? userInfo.roles.map((rol) => (typeof rol === "string" ? rol : rol.nombre)).filter(Boolean).map(r => r.toLowerCase())
+				: [];
+
+			const isAdmin = userRoles.includes("administrador");
+			const isJefatura = userRoles.includes("jefatura") || userRoles.includes("director");
+
+			if (isAdmin) {
+				modules = allModules;
+			} else if (isJefatura) {
+				const allowedPaths = [
+					"/paneladmin/asistencias",
+					"/paneladmin/licencias",
+					"/paneladmin/guardias",
+					"/paneladmin/reportes",
+					"/paneladmin/auditoria",
+				];
+				modules = allModules.filter(m => allowedPaths.includes(m.path));
+			} else {
+				alert("usuario no autorizado");
+				goto("/inicio");
+				return;
+			}
+
+			// Inicializar animaciones si hay módulos visibles
+			const cards = document.querySelectorAll(".module-card");
+			const container = document.querySelector(".modules-space");
+
+			if (container && cards.length) {
+				container.addEventListener("mousemove", (e) => {
+					for (const card of cards) {
+						const rect = card.getBoundingClientRect();
+						const x = e.clientX - rect.left;
+						const y = e.clientY - rect.top;
+						card.style.setProperty("--mouse-x", `${x}px`);
+						card.style.setProperty("--mouse-y", `${y}px`);
+					}
+				});
+			}
+		} catch (error) {
+			console.error("Error de autenticación:", error);
+			alert("usuario no autorizado");
+			goto("/");
+		}
 	});
+
 </script>
 
 <div class="dashboard-welcome">

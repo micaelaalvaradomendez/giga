@@ -146,7 +146,7 @@
                         </div>
                     </a>
 
-                    {#if isAgenteAvanzado}
+                    {#if isAuth}
                         <a
                             href="/licencias"
                             class="menu-item"
@@ -204,7 +204,21 @@
                             </div>
                         </a>
 
-                        {#if isDirector}
+                        {#if isJefatura || isAdmin}
+                            <a
+                                href="/paneladmin/licencias"
+                                class="menu-item"
+                                class:active={currentPath === "/paneladmin/licencias"}
+                                on:click={closeMenu}
+                            >
+                                <span class="menu-item-icon">🏷️</span>
+                                <div class="menu-item-text">
+                                    <div class="menu-item-title">Gestión de Licencias</div>
+                                </div>
+                            </a>
+                        {/if}
+
+                        {#if isAdmin}
                             <a
                                 href="/paneladmin/parametros"
                                 class="menu-item"
