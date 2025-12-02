@@ -29,7 +29,8 @@ export const licenciasFiltradas = derived(
         // 🔒 FILTRO JERÁRQUICO: Solo mostrar licencias de roles inferiores
         if ($usuario) {
             const usuarioRol = $usuario.roles?.[0]?.nombre || $usuario.rol_nombre || 'Agente';
-            console.log('🔍 Filtrando licencias para rol:', usuarioRol);
+            const usuarioId = $usuario.id_agente;
+            console.log('🔍 Filtrando licencias para rol:', usuarioRol, 'ID:', usuarioId);
             
             resultado = resultado.filter(licencia => {
                 const puedeVer = puedeVerLicenciaDeRol(licencia.agente_rol, usuarioRol);
@@ -38,6 +39,18 @@ export const licenciasFiltradas = derived(
                 }
                 return puedeVer;
             });
+            
+            // FILTRO ADICIONAL: Agente y Agente Avanzado solo ven sus propias licencias
+            if (usuarioRol.toLowerCase() === 'agente' || usuarioRol.toLowerCase() === 'agente avanzado') {
+                console.log('🔒 Aplicando filtro restricto: solo licencias del usuario actual');
+                resultado = resultado.filter(licencia => {
+                    const esPropia = licencia.id_agente === usuarioId;
+                    if (!esPropia) {
+                        console.log(`🚫 Agente no puede ver licencia de otro agente:`, licencia.id_agente, 'vs', usuarioId);
+                    }
+                    return esPropia;
+                });
+            }
             
             console.log(`✅ Licencias filtradas: ${resultado.length} de ${$licencias.length} totales`);
         }
@@ -126,8 +139,7 @@ export function obtenerPermisos(rolUsuario, areaUsuario) {
         
         case 'Agente Avanzado':
             permisos.puedeCrear = true; // Solo puede solicitar licencia
-            permisos.puedeAsignar = true; // Solo puede asignar licencias a Agentes de su área
-            permisos.puedeAsignarSoloAgentes = true; // Solo puede asignar a rol "Agente"
+            permisos.puedeAsignar = false; // NO puede asignar licencias
             permisos.soloSuArea = true;
             break;
             

@@ -35,15 +35,17 @@
 	import ModalAprobar from "$lib/componentes/admin/licencias/ModalAprobar.svelte";
 	import ModalRechazar from "$lib/componentes/admin/licencias/ModalRechazar.svelte";
 
-	// Estado principal - alternar entre gestión de licencias y tipos
-	let vistaActual = "licencias"; // 'licencias' o 'tipos'
+	let vistaActual = "licencias"; 
 
-	// Variables principales para gestión de licencias
 	let userInfo = null;
 	let permisos = {};
 	let areas = [];
+	let isAdmin = false;
+	let userRol = null; 
+	let userArea = null; 
+	let esAgente = false; 
+	let esJefaturaODirector = false; 
 
-	// Estados de modales - usando componentes
 	let showModalSolicitar = false;
 	let showModalCrear = false;
 	let showModalAsignar = false;
@@ -51,7 +53,6 @@
 	let showModalRechazar = false;
 	let licenciaSeleccionada = null;
 
-	// Variables para asignación de licencias
 	let areaSeleccionada = null;
 	let agentesDelArea = [];
 	let cargandoAgentes = false;
@@ -68,13 +69,11 @@
 
 	let saving = false;
 
-	// Variables para gestión de tipos de licencia
 	let tipos = [];
 	let loadingTipos = false;
 	let errorTipos = null;
 	let searchTerm = "";
 
-	// Modal / form para tipos
 	let showForm = false;
 	let isEditing = false;
 	let editingId = null;
@@ -83,11 +82,9 @@
 		descripcion: "",
 	};
 
-	// Modal de confirmación para tipos
 	let showConfirmDelete = false;
 	let tipoAEliminar = null;
 
-	// Modal de confirmación para eliminar licencias
 	let showConfirmDeleteLicencia = false;
 	let licenciaAEliminar = null;
 	let eliminandoLicencia = false;
@@ -100,10 +97,8 @@
 	async function inicializar() {
 		console.log("Inicializando datos...");
 
-		// Primero cargar datos básicos
 		await cargarDatosIniciales();
 
-		// Luego intentar autenticación
 		try {
 			const userResponse = await AuthService.getCurrentUserData();
 			console.log("Respuesta de usuario:", userResponse);
@@ -113,26 +108,40 @@
 				usuario.set(userInfo);
 				console.log("Usuario cargado:", userInfo);
 
-				// Verificar si el usuario tiene rol de administrador
+				const primerRol =
+					userInfo.roles && userInfo.roles.length > 0
+						? typeof userInfo.roles[0] === "string"
+							? userInfo.roles[0]
+							: userInfo.roles[0].nombre || "Agente"
+						: "Agente";
+
+				userRol = primerRol;
+				userArea = userInfo.id_area || null;
 				const tieneRolAdmin =
 					userInfo.roles &&
 					userInfo.roles.length > 0 &&
 					userInfo.roles.some(
 						(rol) =>
 							(typeof rol === "string" &&
-								rol === "Administrador") ||
+								rol.toLowerCase() === "administrador") ||
 							(typeof rol === "object" &&
-								rol.nombre === "Administrador"),
+								rol.nombre &&
+								rol.nombre.toLowerCase() === "administrador"),
 					);
 
-				if (!tieneRolAdmin) {
-					console.warn(
-						"Usuario sin rol de administrador accediendo al panel. Roles:",
-						userInfo.roles,
-					);
-				} else {
-					console.log("✅ Usuario administrador verificado");
-				}
+				isAdmin = !!tieneRolAdmin;
+				esAgente =
+					userRol.toLowerCase() === "agente" ||
+					userRol.toLowerCase() === "agente avanzado";
+				esJefaturaODirector =
+					userRol.toLowerCase() === "jefatura" ||
+					userRol.toLowerCase() === "director";
+				permisos = obtenerPermisos(userRol, userArea);
+
+				console.log(
+					`✅ Usuario: ${primerRol} | Área: ${userArea} | Permisos:`,
+					permisos,
+				);
 			} else {
 				console.warn(
 					"No se pudo obtener información del usuario, continuando sin autenticación",
@@ -145,16 +154,12 @@
 
 	async function cargarDatosIniciales() {
 		console.log("🚀 Cargando datos iniciales...");
-
-		// Cargar tipos de licencia para los selectores
 		try {
 			console.log("📋 Cargando tipos de licencia...");
 			await cargarTiposLicencia();
 		} catch (err) {
 			console.error("❌ Error cargando tipos de licencia:", err);
 		}
-
-		// Cargar todas las áreas para filtros
 		try {
 			console.log("🏢 Cargando áreas...");
 			const areasResponse = await personasService.getAreas();
@@ -183,8 +188,6 @@
 			console.error("❌ Error cargando áreas:", err);
 			areas = [];
 		}
-
-		// Cargar licencias inicialmente
 		try {
 			console.log("Cargando licencias...");
 			await cargarLicencias();
@@ -192,8 +195,6 @@
 		} catch (err) {
 			console.error("Error cargando licencias:", err);
 		}
-
-		// Cargar tipos para gestión (vista de tipos)
 		try {
 			console.log("Cargando tipos para gestión...");
 			await cargarTipos();
@@ -204,8 +205,6 @@
 
 		console.log("Carga de datos iniciales completada");
 	}
-
-	// Funciones para carga de agentes por área
 	async function cargarAgentesPorArea(areaId) {
 		console.log("🔄 Cargando agentes para área:", areaId);
 		if (!areaId) {
@@ -234,8 +233,6 @@
 			cargandoAgentes = false;
 		}
 	}
-
-	// Funciones para modales de licencias
 	function abrirModalCrear() {
 		console.log("🆕 Abriendo modal crear licencia");
 		console.log("🧑 Usuario actual:", userInfo);
@@ -253,6 +250,11 @@
 	}
 
 	function abrirModalAsignar() {
+		if (!permisos.puedeAsignar) {
+			mostrarAlerta("❌ No tienes permiso para asignar licencias", "error");
+			return;
+		}
+
 		console.log("📝 Abriendo modal asignar licencia");
 		console.log("🏢 Áreas disponibles:", areas.length);
 		console.log("📋 Tipos disponibles:", $tiposLicencia.length);
@@ -279,7 +281,6 @@
 		showModalRechazar = true;
 	}
 
-	// Funciones para modal de eliminar licencia
 	function abrirModalEliminarLicencia(licencia) {
 		licenciaAEliminar = licencia;
 		showConfirmDeleteLicencia = true;
@@ -303,7 +304,6 @@
 
 			if (resultado.success) {
 				mostrarAlerta("✅ Licencia eliminada correctamente", "success");
-				// Recargar la lista de licencias
 				await cargarLicencias();
 			} else {
 				mostrarAlerta(`❌ Error: ${resultado.error}`, "error");
@@ -316,7 +316,6 @@
 		}
 	}
 
-	// Handlers para eventos de los componentes
 	function handleAsignarEvent(event) {
 		console.log("Asignar licencia event:", event.detail);
 		showModalAsignar = false;
@@ -371,7 +370,6 @@
 		agentesDelArea = [];
 	}
 
-	// Funciones para manejar las acciones de licencias
 	async function handleCrearLicencia() {
 		if (
 			!formLicencia.id_tipo_licencia ||
@@ -396,7 +394,6 @@
 			return;
 		}
 
-		// Verificar que tenemos el ID del agente (usuario actual)
 		if (!userInfo?.id_agente) {
 			mostrarAlerta(
 				"No se puede crear la licencia: información de usuario no disponible",
@@ -408,7 +405,7 @@
 		saving = true;
 		const resultado = await crearLicencia({
 			...formLicencia,
-			id_agente: userInfo.id_agente, // Usar el ID del usuario actual
+			id_agente: userInfo.id_agente, 
 			estado: "pendiente",
 		});
 
@@ -424,7 +421,6 @@
 		saving = false;
 	}
 
-	// Funciones para filtros
 	function aplicarFiltros() {
 		console.log("🔍 Aplicando filtros:", $filtros);
 		console.log(
@@ -441,13 +437,27 @@
 		cargarLicencias();
 	}
 
-	// Funciones de utilidad
-	function puedeAprobar(licencia) {
-		// Como es administrador, siempre puede aprobar
-		return licencia.estado === "pendiente";
+	function puedeAprobarLicenciaEspecifica(licencia) {
+		if (esAgente) {
+			return false;
+		}
+
+		if (licencia.estado !== "pendiente") {
+			return false;
+		}
+
+		if (isAdmin) {
+			return true;
+		}
+
+		if (esJefaturaODirector) {
+			const licenciaDelArea = licencia.id_agente_area === userArea;
+			return licenciaDelArea;
+		}
+
+		return false;
 	}
 
-	// Función para cambiar entre vistas
 	function cambiarVista(vista) {
 		vistaActual = vista;
 		if (vista === "tipos") {
@@ -455,7 +465,6 @@
 		}
 	}
 
-	// Funciones para gestión de tipos de licencia
 	async function cargarTipos() {
 		loadingTipos = true;
 		errorTipos = null;
@@ -510,7 +519,6 @@
 					form,
 				);
 				if (resp?.data?.success) {
-					// actualizar en lista
 					tipos = tipos.map((t) =>
 						t.id_tipo_licencia === editingId || t.id === editingId
 							? resp.data.data
@@ -569,7 +577,6 @@
 		tipoAEliminar = null;
 	}
 
-	// Variables reactivas
 	$: diasLicencia = calcularDiasLicencia(
 		formLicencia.fecha_desde,
 		formLicencia.fecha_hasta,
@@ -596,12 +603,14 @@
 		</div>
 		{#if vistaActual === "licencias"}
 			<div class="header-actions">
-				<button
-					class="btn-secondary"
-					on:click={() => (showModalAsignar = true)}
-				>
-					📝 Asignar Licencia
-				</button>
+				{#if permisos.puedeAsignar}
+					<button
+						class="btn-secondary"
+						on:click={abrirModalAsignar}
+					>
+						📝 Asignar Licencia
+					</button>
+				{/if}
 				<button class="btn-refresh" on:click={() => cargarLicencias()}>
 					🔄 Actualizar
 				</button>
@@ -634,18 +643,18 @@
 		>
 			📋 Gestión de Licencias
 		</button>
-		<button
-			class="btn-toggle {vistaActual === 'tipos' ? 'active' : ''}"
-			on:click={() => cambiarVista("tipos")}
-		>
-			⚙️ Tipos de Licencia
-		</button>
+		{#if isAdmin}
+			<button
+				class="btn-toggle {vistaActual === 'tipos' ? 'active' : ''}"
+				on:click={() => cambiarVista("tipos")}
+			>
+				⚙️ Tipos de Licencia
+			</button>
+		{/if}
 	</div>
 
-	<!-- Contenido principal con vista condicional -->
 	<div class="page-content">
 		{#if vistaActual === "licencias"}
-			<!-- Estadísticas -->
 			{#if $estadisticas.total > 0}
 				<div class="stats-container">
 					<div class="stat-card">
@@ -671,7 +680,6 @@
 				</div>
 			{/if}
 
-			<!-- Filtros -->
 			<div class="filtros-container">
 				<div class="filtros-row">
 					<div class="filtro-group">
@@ -692,23 +700,25 @@
 							on:change={aplicarFiltros}
 						/>
 					</div>
-					<div class="filtro-group">
-						<label for="area_filter"
-							>🗂️ Área ({areas.length} áreas)</label
-						>
-						<select
-							id="area_filter"
-							bind:value={$filtros.area_id}
-							on:change={aplicarFiltros}
-						>
-							<option value={null}>Todas las áreas</option>
-							{#each areas as area}
-								<option value={area.id_area}
-									>{area.nombre}</option
-								>
-							{/each}
-						</select>
-					</div>
+					{#if !esAgente}
+						<div class="filtro-group">
+							<label for="area_filter"
+								>🗂️ Área ({areas.length} áreas)</label
+							>
+							<select
+								id="area_filter"
+								bind:value={$filtros.area_id}
+								on:change={aplicarFiltros}
+							>
+								<option value={null}>Todas las áreas</option>
+								{#each areas as area}
+									<option value={area.id_area}
+										>{area.nombre}</option
+									>
+								{/each}
+							</select>
+						</div>
+					{/if}
 					<div class="filtro-group">
 						<label for="estado_filter">✨ Estado</label>
 						<select
@@ -750,7 +760,6 @@
 				</div>
 			</div>
 
-			<!-- Tabla de licencias -->
 			{#if $error}
 				<div class="alert alert-error">
 					<strong>❌ Error:</strong>
@@ -834,7 +843,7 @@
 									>
 									<td>
 										<div class="acciones">
-											{#if puedeAprobar(licencia)}
+											{#if puedeAprobarLicenciaEspecifica(licencia)}
 												<button
 													class="btn-sm btn-success"
 													on:click={() =>
@@ -856,18 +865,20 @@
 													❌
 												</button>
 											{/if}
-											<!-- Botón eliminar - siempre disponible para administradores -->
-											<button
-												class="btn-sm btn-warning"
-												on:click={() =>
-													abrirModalEliminarLicencia(
-														licencia,
-													)}
-												title="Eliminar licencia"
-												style="margin-left: 4px;"
-											>
-												🗑️
-											</button>
+
+											{#if isAdmin}
+												<button
+													class="btn-sm btn-warning"
+													on:click={() =>
+														abrirModalEliminarLicencia(
+															licencia,
+														)}
+													title="Eliminar licencia"
+													style="margin-left: 4px;"
+												>
+													🗑️
+												</button>
+											{/if}
 										</div>
 									</td>
 								</tr>
@@ -877,7 +888,7 @@
 				</div>
 			{/if}
 		{:else}
-			<!-- Vista de Tipos de Licencia -->
+
 			{#if errorTipos}
 				<div class="alert alert-error">
 					<strong>❌ Error:</strong>
@@ -971,9 +982,7 @@
 	</div>
 </div>
 
-<!-- Modales para gestión de licencias -->
 
-<!-- Modal de Crear Licencia -->
 {#if showModalCrear}
 	<div class="modal-backdrop">
 		<div class="modal-contenido">
@@ -1056,16 +1065,16 @@
 	</div>
 {/if}
 
-<!-- Modal de Asignar Licencia -->
 <ModalAsignar
 	bind:show={showModalAsignar}
 	{areas}
+	{userRol}
+	{userArea}
 	tiposLicencia={$tiposLicencia}
 	on:asignar={handleAsignarEvent}
 	on:cancelar={() => (showModalAsignar = false)}
 />
 
-<!-- Modal de Aprobar Licencia -->
 <ModalAprobar
 	bind:show={showModalAprobar}
 	licencia={licenciaSeleccionada}
@@ -1073,7 +1082,6 @@
 	on:cancelar={() => (showModalAprobar = false)}
 />
 
-<!-- Modal de Rechazar Licencia -->
 <ModalRechazar
 	bind:show={showModalRechazar}
 	licencia={licenciaSeleccionada}
@@ -1081,7 +1089,6 @@
 	on:cancelar={() => (showModalRechazar = false)}
 />
 
-<!-- Modal de confirmación para eliminar licencia -->
 {#if showConfirmDeleteLicencia && licenciaAEliminar}
 	<div class="modal-overlay">
 		<div class="modal-confirm">
@@ -1136,7 +1143,6 @@
 	</div>
 {/if}
 
-<!-- Modal para gestión de tipos de licencia -->
 {#if showForm}
 	<div class="modal-overlay">
 		<div class="modal">
@@ -1178,7 +1184,6 @@
 	</div>
 {/if}
 
-<!-- Modal de confirmación para eliminar tipos -->
 {#if showConfirmDelete && tipoAEliminar}
 	<div class="modal-overlay">
 		<div class="modal-confirm">
