@@ -87,7 +87,7 @@
 			const isJefatura =
 				userRoles.includes("jefatura") ||
 				userRoles.includes("director");
-			const isAgenteAvanzado = userRoles.includes("agente avanzado"); // ✅ NUEVO
+			const isAgenteAvanzado = userRoles.includes("agente avanzado");
 
 			if (isAdmin) {
 				// Administrador: TODO

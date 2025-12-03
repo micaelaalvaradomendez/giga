@@ -24,7 +24,7 @@
 		modalEditarAgente,
 		modalEliminarAgente,
 		modalAgregarAgente,
-		usuarioActual, // ✅ NUEVO: Para verificar permisos
+		usuarioActual, 
 	} = usuariosController;
 
 	// Funciones para abrir modales (delegadas al controlador)

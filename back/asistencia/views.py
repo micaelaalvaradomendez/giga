@@ -177,7 +177,7 @@ def get_client_ip(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticatedGIGA])  # ✅ SEGURIDAD: Solo usuarios autenticados
+@permission_classes([IsAuthenticatedGIGA])  
 def marcar_asistencia(request):
     """
     Marcar entrada o salida de un agente con DNI.
