@@ -36,6 +36,7 @@ agentes_patterns = [
 # URLs de áreas y roles
 catalog_patterns = [
     path('areas/', views.get_areas, name='get_areas'),
+    path('areas/<int:area_id>/subareas/', views.get_subareas, name='get_subareas'),  # ✅ NUEVO
     path('roles/', views.get_roles, name='get_roles'),
 ]
 

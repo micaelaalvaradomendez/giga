@@ -24,6 +24,7 @@
 		modalEditarAgente,
 		modalEliminarAgente,
 		modalAgregarAgente,
+		usuarioActual, // ✅ NUEVO: Para verificar permisos
 	} = usuariosController;
 
 	// Funciones para abrir modales (delegadas al controlador)
@@ -156,9 +157,16 @@
 	<div class="page-header-title">
 		<h1>Gestión de Agentes</h1>
 	</div>
-	<button class="btn-primary" on:click={agregarAgente}>
-		+ Añadir Agente
-	</button>
+	{#if $usuarioActual && $usuarioActual.rol && $usuarioActual.rol.toLowerCase() === "administrador"}
+		<button class="btn-primary" on:click={agregarAgente}>
+			+ Añadir Agente
+		</button>
+	{:else}
+		<!-- Director/Jefatura NO pueden agregar usuarios -->
+		<div class="info-message">
+			📝 Solo puedes editar agentes que estén bajo tu jerarquía
+		</div>
+	{/if}
 </div>
 
 <!-- Controles de filtrado -->
@@ -282,12 +290,18 @@
 									title="No puedes eliminarte a ti mismo"
 									disabled>🔒</button
 								>
-							{:else}
+							{:else if $usuarioActual && $usuarioActual.rol && $usuarioActual.rol.toLowerCase() === "administrador"}
 								<button
 									class="btn-icon-danger"
-									title="Eliminar"
+									title="Eliminar usuario"
 									on:click={() => eliminarAgente(agente)}
 									>🗑️</button
+								>
+							{:else}
+								<button
+									class="btn-icon-disabled"
+									title="Solo administradores pueden eliminar usuarios"
+									disabled>🔒</button
 								>
 							{/if}
 						</td>
@@ -889,6 +903,17 @@
 
 		.table-container {
 			overflow-x: auto;
+		}
+
+		.info-message {
+			padding: 12px 20px;
+			background: linear-gradient(135deg, #fff8e1, #fff3cd);
+			border: 2px solid #ffc107;
+			border-radius: 10px;
+			color: #856404;
+			font-weight: 500;
+			font-size: 14px;
+			box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
 		}
 
 		table {

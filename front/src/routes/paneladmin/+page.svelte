@@ -1,8 +1,8 @@
 <script>
-	import { onMount } from "svelte";
+	import { onMount, tick } from "svelte";
 	import { goto } from "$app/navigation";
 	import AuthService from "$lib/login/authService.js";
-    
+
 	const allModules = [
 		{
 			name: "Usuarios",
@@ -75,51 +75,88 @@
 
 			// Determinar roles
 			const userRoles = Array.isArray(userInfo.roles)
-				? userInfo.roles.map((rol) => (typeof rol === "string" ? rol : rol.nombre)).filter(Boolean).map(r => r.toLowerCase())
+				? userInfo.roles
+						.map((rol) =>
+							typeof rol === "string" ? rol : rol.nombre,
+						)
+						.filter(Boolean)
+						.map((r) => r.toLowerCase())
 				: [];
 
 			const isAdmin = userRoles.includes("administrador");
-			const isJefatura = userRoles.includes("jefatura") || userRoles.includes("director");
+			const isJefatura =
+				userRoles.includes("jefatura") ||
+				userRoles.includes("director");
+			const isAgenteAvanzado = userRoles.includes("agente avanzado"); // ✅ NUEVO
 
 			if (isAdmin) {
+				// Administrador: TODO
 				modules = allModules;
 			} else if (isJefatura) {
+				// Director/Jefatura: TODO menos Auditoría, Roles, Feriados, Parámetros y Reportes
 				const allowedPaths = [
+					"/paneladmin/usuarios",
+					"/paneladmin/organigrama",
 					"/paneladmin/asistencias",
 					"/paneladmin/licencias",
 					"/paneladmin/guardias",
-					"/paneladmin/reportes",
-					"/paneladmin/auditoria",
+					// Excluidos: auditoria, roles, feriados, parametros, reportes
 				];
-				modules = allModules.filter(m => allowedPaths.includes(m.path));
+				modules = allModules.filter((m) =>
+					allowedPaths.includes(m.path),
+				);
+			} else if (isAgenteAvanzado) {
+				// Agente Avanzado: solo Usuarios, Licencias y Asistencias
+				const allowedPaths = [
+					"/paneladmin/usuarios",
+					"/paneladmin/licencias",
+					"/paneladmin/asistencias",
+				];
+				modules = allModules.filter((m) =>
+					allowedPaths.includes(m.path),
+				);
 			} else {
+				// Agente: sin acceso
 				alert("usuario no autorizado");
 				goto("/inicio");
 				return;
 			}
 
-			// Inicializar animaciones si hay módulos visibles
-			const cards = document.querySelectorAll(".module-card");
-			const container = document.querySelector(".modules-space");
+			// Esperar a que Svelte actualice el DOM con los módulos
+			await tick();
 
-			if (container && cards.length) {
-				container.addEventListener("mousemove", (e) => {
-					for (const card of cards) {
-						const rect = card.getBoundingClientRect();
-						const x = e.clientX - rect.left;
-						const y = e.clientY - rect.top;
-						card.style.setProperty("--mouse-x", `${x}px`);
-						card.style.setProperty("--mouse-y", `${y}px`);
-					}
+			// Usar setTimeout para asegurar que el DOM esté completamente renderizado
+			setTimeout(() => {
+				// Inicializar animaciones si hay módulos visibles
+				const cards = document.querySelectorAll(".module-card");
+				const container = document.querySelector(".modules-space");
+
+				console.log("🎨 Inicializando animaciones:", {
+					cards: cards.length,
+					container: !!container,
 				});
-			}
+
+				if (container && cards.length) {
+					container.addEventListener("mousemove", (e) => {
+						for (const card of cards) {
+							const rect = card.getBoundingClientRect();
+							const x = e.clientX - rect.left;
+							const y = e.clientY - rect.top;
+							card.style.setProperty("--mouse-x", `${x}px`);
+							card.style.setProperty("--mouse-y", `${y}px`);
+						}
+					});
+					console.log("✅ Animaciones inicializadas correctamente");
+				} else {
+					console.warn("⚠️ No se encontraron elementos para animar");
+				}
+			}, 100);
 		} catch (error) {
 			console.error("Error de autenticación:", error);
 			alert("usuario no autorizado");
 			goto("/");
 		}
 	});
-
 </script>
 
 <div class="dashboard-welcome">
