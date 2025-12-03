@@ -2,6 +2,7 @@
 	import { onMount, tick } from "svelte";
 	import { goto } from "$app/navigation";
 	import AuthService from "$lib/login/authService.js";
+	import AuditService from "$lib/services/auditService.js";
 
 	const allModules = [
 		{
@@ -66,6 +67,13 @@
 
 			// No autenticado -> mostrar mensaje y redirigir a /
 			if (!userResponse?.success || !userResponse.data?.success) {
+				// Registrar intento sin autenticación
+				await AuditService.logUnauthorizedAccess({
+					ruta: "/paneladmin",
+					accion: "acceso_sin_autenticacion",
+					rol: "desconocido",
+					userId: 0,
+				});
 				alert("usuario no autorizado");
 				goto("/");
 				return;
@@ -116,11 +124,24 @@
 					allowedPaths.includes(m.path),
 				);
 			} else {
-				// Agente: sin acceso
+				// Agente: sin acceso - registrar en auditoría
+				await AuditService.logUnauthorizedAccess({
+					ruta: "/paneladmin",
+					accion: "acceso_denegado_rol_insuficiente",
+					rol: userRoles[0] || "agente",
+					userId: userInfo.id,
+				});
 				alert("usuario no autorizado");
 				goto("/inicio");
 				return;
 			}
+
+			// Registrar acceso exitoso
+			await AuditService.logSuccessfulAccess({
+				ruta: "/paneladmin",
+				rol: userRoles[0] || "desconocido",
+				userId: userInfo.id,
+			});
 
 			// Esperar a que Svelte actualice el DOM con los módulos
 			await tick();
