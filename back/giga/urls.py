@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/guardias/', include('guardias.urls')),
     path('api/auditoria/', include('auditoria.urls')),
     path('api/asistencia/', include('asistencia.urls')),
+    path('api/incidencias/', include('incidencias.urls')),
     # Health check endpoints
     path('health/', simple_health, name='health'),
     path('api/health/', health_check, name='api_health'),

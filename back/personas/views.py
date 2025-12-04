@@ -44,7 +44,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 def is_authenticated(request):
     """Verificar si el usuario está autenticado usando sesiones Django."""
-    return hasattr(request, 'session') and 'agente_id' in request.session
+    return hasattr(request, 'session') and 'user_id' in request.session
 
 
 def get_authenticated_agente(request):
@@ -53,7 +53,7 @@ def get_authenticated_agente(request):
         return None
     
     try:
-        agente_id = request.session.get('agente_id')
+        agente_id = request.session.get('user_id')
         return Agente.objects.get(id_agente=agente_id, activo=True)
     except Agente.DoesNotExist:
         return None

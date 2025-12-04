@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'auditoria', 
     'guardias',
     'asistencia',
+    'incidencias',
 ]
 
 MIDDLEWARE = [
@@ -82,7 +83,7 @@ ROOT_URLCONF = 'giga.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -267,3 +268,23 @@ LOGGING = {
         },
     },
 }
+
+# ============================================================================
+# CONFIGURACIÓN DE EMAIL
+# ============================================================================
+
+# Configuración para Gmail (desarrollo)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='tu-email@gmail.com')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='tu-app-password')
+
+# Email por defecto para envío (remitente)
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# Para desarrollo: mostrar emails en consola si no hay credenciales
+if not EMAIL_HOST_USER or EMAIL_HOST_USER == 'tu-email@gmail.com':
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
