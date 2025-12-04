@@ -160,6 +160,33 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
+# ============================================================================
+# SESSION CONFIGURATION - Control de Sesiones
+# ============================================================================
+
+# Sesión NO PERSISTENTE: Se cierra al cerrar el navegador
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Tiempo de expiración: 1 hora de inactividad
+SESSION_COOKIE_AGE = 3600  # 1 hora en segundos
+
+# Renovar cookie en cada request para mantener sesión activa
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Nombre de la cookie de sesión
+SESSION_COOKIE_NAME = 'sessionid'
+
+# Cookie solo HTTPS en producción
+SESSION_COOKIE_SECURE = not DEBUG
+
+# Cookie no accesible desde JavaScript (seguridad)
+SESSION_COOKIE_HTTPONLY = True
+
+# SameSite para CSRF protection
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+
 # =============================================================================
 # CONFIGURACIÓN DATABASE FIRST - MODELOS NO GESTIONADOS
 # =============================================================================
@@ -267,3 +294,30 @@ LOGGING = {
         },
     },
 }
+
+# ============================================================================
+# EMAIL CONFIGURATION - Gmail SMTP
+# ============================================================================
+
+# Backend de email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# Configuración Gmail SMTP
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+# Credenciales (usar variables de entorno en producción)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='giga.sistema.untdf.25@gmail.com')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')  # App password de Gmail
+
+# Remitente por defecto
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Sistema GIGA <giga.sistema.untdf.25@gmail.com>')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# Para desarrollo: mostrar emails en consola si no hay password configurada
+if not EMAIL_HOST_PASSWORD and DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# URL del frontend para links en emails
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')

@@ -248,3 +248,43 @@ class Organigrama(models.Model):
         
     def __str__(self):
         return f"Organigrama {self.nombre} v{self.version}"
+
+
+class SesionActiva(models.Model):
+    """
+    Tracking de sesiones activas por usuario.
+    Permite controlar límite de sesiones concurrentes (máximo 2).
+    """
+    id_sesion_activa = models.BigAutoField(primary_key=True)
+    id_agente = models.ForeignKey(
+        'Agente', 
+        on_delete=models.CASCADE,
+        db_column='id_agente',
+        related_name='sesiones_activas'
+    )
+    session_key = models.CharField(max_length=40, unique=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    dispositivo = models.CharField(max_length=100, null=True, blank=True)
+    navegador = models.CharField(max_length=100, null=True, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    ultimo_acceso = models.DateTimeField(auto_now=True)
+    activa = models.BooleanField(default=True)
+    
+    class Meta:
+        managed = False  
+        db_table = 'sesion_activa'
+        ordering = ['creado_en'] 
+        indexes = [
+            models.Index(fields=['id_agente', 'activa']),
+            models.Index(fields=['session_key']),
+        ]
+    
+    @property
+    def id(self):
+        """Alias para compatibilidad"""
+        return self.id_sesion_activa
+    
+    def __str__(self):
+        agente_nombre = f"{self.id_agente.nombre} {self.id_agente.apellido}" if self.id_agente else "Unknown"
+        return f"Sesión de {agente_nombre} - {self.session_key[:10]}..."
