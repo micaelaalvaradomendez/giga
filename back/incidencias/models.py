@@ -45,21 +45,24 @@ class Incidencia(models.Model):
     creado_por = models.ForeignKey(
         'personas.Agente', 
         on_delete=models.CASCADE, 
-        related_name='incidencias_creadas'
+        related_name='incidencias_creadas',
+        db_column='creado_por'  # Nombre exacto en BD
     )
     asignado_a = models.ForeignKey(
         'personas.Agente', 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
-        related_name='incidencias_asignadas'
+        related_name='incidencias_asignadas',
+        db_column='asignado_a'  # Nombre exacto en BD
     )
     
     # Área involucrada (para filtros de jefatura)
     area_involucrada = models.ForeignKey(
         'personas.Area',
         on_delete=models.CASCADE,
-        related_name='incidencias'
+        related_name='incidencias',
+        db_column='area_involucrada'  # Nombre exacto en BD
     )
     
     # Fechas importantes
@@ -74,7 +77,7 @@ class Incidencia(models.Model):
     comentarios_seguimiento = models.JSONField(default=list, blank=True)
     
     class Meta:
-        managed = True
+        managed = False  # Database First - tabla gestionada por SQL scripts
         db_table = 'incidencia'
         ordering = ['-fecha_creacion']
         indexes = [

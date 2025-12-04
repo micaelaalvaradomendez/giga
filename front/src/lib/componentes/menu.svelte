@@ -148,16 +148,14 @@
 
                     {#if isAuth}
                         <a
-                            href="/novedades"
+                            href="/licencias"
                             class="menu-item"
-                            class:active={currentPath === "/novedades"}
+                            class:active={currentPath === "/licencias"}
                             on:click={closeMenu}
                         >
                             <span class="menu-item-icon">🏥</span>
                             <div class="menu-item-text">
-                                <div class="menu-item-title">
-                                    Licencias
-                                </div>
+                                <div class="menu-item-title">Licencias</div>
                             </div>
                         </a>
                     {/if}
@@ -210,12 +208,15 @@
                             <a
                                 href="/paneladmin/licencias"
                                 class="menu-item"
-                                class:active={currentPath === "/paneladmin/licencias"}
+                                class:active={currentPath ===
+                                    "/paneladmin/licencias"}
                                 on:click={closeMenu}
                             >
                                 <span class="menu-item-icon">🏷️</span>
                                 <div class="menu-item-text">
-                                    <div class="menu-item-title">Gestión de Licencias</div>
+                                    <div class="menu-item-title">
+                                        Gestión de Licencias
+                                    </div>
                                 </div>
                             </a>
                         {/if}
@@ -223,13 +224,19 @@
                         <a
                             href="/paneladmin/guardias/compensaciones"
                             class="menu-item"
-                            class:active={currentPath.includes("/compensaciones")}
+                            class:active={currentPath.includes(
+                                "/compensaciones",
+                            )}
                             on:click={closeMenu}
                         >
                             <span class="menu-item-icon">⏱️</span>
                             <div class="menu-item-text">
-                                <div class="menu-item-title">Compensaciones</div>
-                                <div class="menu-item-subtitle">Horas de emergencia</div>
+                                <div class="menu-item-title">
+                                    Compensaciones
+                                </div>
+                                <div class="menu-item-subtitle">
+                                    Horas de emergencia
+                                </div>
                             </div>
                         </a>
 

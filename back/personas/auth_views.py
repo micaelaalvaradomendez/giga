@@ -171,6 +171,10 @@ def login_view(request):
         request.session['user_id'] = agente.id_agente
         request.session['is_authenticated'] = True
         
+        # ✅ FORZAR CREACIÓN DE SESSION_KEY antes de usarlo
+        if not request.session.session_key:
+            request.session.create()
+        
         # ✅ CONTROL DE SESIONES CONCURRENTES (Máximo 2)
         from .models import SesionActiva
         from django.contrib.sessions.models import Session
