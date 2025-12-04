@@ -24,6 +24,8 @@ from .serializers import (
     HoraCompensacionSerializer, CrearCompensacionSerializer, AprobacionCompensacionSerializer, ResumenCompensacionSerializer
 )
 from .utils import CalculadoraPlus, PlanificadorCronograma, ValidadorHorarios
+from .services.reportes import obtener_datos_reporte, ReporteError
+from .services.reportes import obtener_datos_reporte, ReporteError
 
 # RBAC Permissions
 from common.permissions import (
@@ -1610,270 +1612,64 @@ class GuardiaViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def reporte_individual(self, request):
         """Genera reporte individual según documentación - Planilla Individual de Guardias"""
-        agente_id = request.query_params.get('agente')
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
-        
-        if not all([agente_id, fecha_desde, fecha_hasta]):
-            return Response(
-                {'error': 'Se requieren parámetros: agente, fecha_desde, fecha_hasta'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            from personas.models import Agente
-            from asistencia.models import Asistencia
-            from datetime import datetime, timedelta
-            import calendar
-            
-            agente = Agente.objects.get(id_agente=agente_id)
-            fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
-            fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
-            
-            # Obtener guardias del agente en el período
-            guardias = self.get_queryset().filter(
-                id_agente=agente_id,
-                fecha__range=[fecha_inicio, fecha_fin],
-                activa=True,
-                estado='planificada',
-                id_cronograma__estado__in=['aprobada', 'publicada']
-            ).order_by('fecha')
-            
-            # Crear mapa de guardias por fecha
-            guardias_map = {g.fecha.strftime('%Y-%m-%d'): g for g in guardias}
+        filtros = {
+            'agente': request.query_params.get('agente'),
+            'area': request.query_params.get('area'),
+            'fecha_desde': request.query_params.get('fecha_desde'),
+            'fecha_hasta': request.query_params.get('fecha_hasta'),
+            'tipo_guardia': request.query_params.get('tipo_guardia')
+        }
 
-            
-            # Generar días del mes
-            dias_reporte = []
-            current_date = fecha_inicio
-            
-            while current_date <= fecha_fin:
-                fecha_str = current_date.strftime('%Y-%m-%d')
-                guardia = guardias_map.get(fecha_str)
-                
-                # Obtener registro de asistencia si existe
-                registro_asistencia = None
-                if guardia:
-                    try:
-                        registro_asistencia = Asistencia.objects.filter(
-                            id_agente=agente_id,
-                            fecha=current_date
-                        ).first()
-                    except:
-                        pass
-                
-                # Determinar horario habitual (jornada normal 8hs)
-                horario_habitual_inicio = "08:00"
-                horario_habitual_fin = "16:00"
-                
-                # Calcular horas si hay guardia
-                horas_planificadas = 0
-                if guardia and guardia.hora_inicio and guardia.hora_fin:
-                    inicio = datetime.combine(current_date, guardia.hora_inicio)
-                    fin = datetime.combine(current_date, guardia.hora_fin)
-                    if fin < inicio:  # Si termina al día siguiente
-                        fin += timedelta(days=1)
-                    horas_planificadas = (fin - inicio).total_seconds() / 3600
-                
-                # Determinar novedad/estado del día
-                novedad = ""
-                if not guardia:
-                    # Verificar si es día laboral normal
-                    if current_date.weekday() < 5:  # Lunes a Viernes
-                        novedad = "Jornada habitual"
-                    else:
-                        novedad = "Fin de semana"
-                elif guardia:
-                    novedad = "Guardia operativa"
-                
-                dia_info = {
-                    'fecha': fecha_str,
-                    'dia_semana': calendar.day_name[current_date.weekday()],
-                    'horario_habitual_inicio': horario_habitual_inicio if current_date.weekday() < 5 else "",
-                    'horario_habitual_fin': horario_habitual_fin if current_date.weekday() < 5 else "",
-                    'novedad': novedad,
-                    'horario_guardia_inicio': guardia.hora_inicio.strftime('%H:%M') if guardia and guardia.hora_inicio else "",
-                    'horario_guardia_fin': guardia.hora_fin.strftime('%H:%M') if guardia and guardia.hora_fin else "",
-                    'horas_planificadas': round(horas_planificadas, 2) if horas_planificadas > 0 else "",
-                    'horas_efectivas': guardia.horas_efectivas if guardia and guardia.horas_efectivas else "",
-                    'motivo_guardia': "Operativas" if guardia else "",
-                    'tiene_guardia': bool(guardia),
-                    'estado_asistencia': registro_asistencia.estado if registro_asistencia else "Sin registro"
-                }
-                
-                dias_reporte.append(dia_info)
-                current_date += timedelta(days=1)
-            
-            # Calcular totales
-            total_horas = sum(float(dia['horas_planificadas']) for dia in dias_reporte if dia['horas_planificadas'])
-            total_dias_guardia = len([dia for dia in dias_reporte if dia['tiene_guardia']])
-            
-            resultado = {
-                'agente': {
-                    'nombre_completo': f"{agente.apellido}, {agente.nombre}",
-                    'legajo': agente.legajo,
-                    'dependencia': agente.area.nombre if agente.area else "Sin área",
-                    'categoria': agente.categoria if hasattr(agente, 'categoria') else "Agente",
-                    'turno': "Rotativo"  # Por defecto
-                },
-                'periodo': {
-                    'mes': fecha_inicio.strftime('%B %Y'),
-                    'fecha_desde': fecha_desde,
-                    'fecha_hasta': fecha_hasta
-                },
-                'dias': dias_reporte,
-                'totales': {
-                    'total_horas': round(total_horas, 2),
-                    'total_dias_guardia': total_dias_guardia,
-                    'promedio_horas_dia': round(total_horas / max(total_dias_guardia, 1), 2)
-                }
-            }
-            
-            return Response(resultado)
-            
-        except Agente.DoesNotExist:
-            return Response(
-                {'error': 'Agente no encontrado'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+        agente_sesion = obtener_agente_sesion(request)
+        if not agente_sesion:
+            return Response({'error': 'Sesión inválida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user_ctx = {
+            'agente': agente_sesion,
+            'rol': obtener_rol_agente(agente_sesion)
+        }
+
+        try:
+            data = obtener_datos_reporte(filtros, 'individual', user_ctx)
+            return Response(data)
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            logger.error(f"Error generando reporte individual: {e}")
             return Response(
-                {'error': f'Error generando reporte: {str(e)}'}, 
+                {'error': f'Error generando reporte: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     @action(detail=False, methods=['get'])
     def reporte_general(self, request):
         """Genera reporte general según documentación - Planilla General/Preventiva"""
-        area_id = request.query_params.get('area')
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
-        
-        if not all([area_id, fecha_desde, fecha_hasta]):
-            return Response(
-                {'error': 'Se requieren parámetros: area, fecha_desde, fecha_hasta'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
+        filtros = {
+            'agente': request.query_params.get('agente'),
+            'area': request.query_params.get('area'),
+            'fecha_desde': request.query_params.get('fecha_desde'),
+            'fecha_hasta': request.query_params.get('fecha_hasta'),
+            'tipo_guardia': request.query_params.get('tipo_guardia')
+        }
+
+        agente_sesion = obtener_agente_sesion(request)
+        if not agente_sesion:
+            return Response({'error': 'Sesión inválida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user_ctx = {
+            'agente': agente_sesion,
+            'rol': obtener_rol_agente(agente_sesion)
+        }
+
         try:
-            from personas.models import Area, Agente
-            from datetime import datetime, timedelta
-            import calendar
-            
-            area = Area.objects.get(id_area=area_id)
-            fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
-            fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
-            
-            # Obtener todos los agentes del área
-            agentes = Agente.objects.filter(id_area=area_id, activo=True)
-            
-            # Obtener todas las guardias del área en el período
-            guardias = self.get_queryset().filter(
-                id_cronograma__id_area=area_id,
-                fecha__range=[fecha_inicio, fecha_fin],
-                activa=True,
-                estado='planificada',
-                id_cronograma__estado__in=['aprobada', 'publicada']
-            ).select_related('id_agente').order_by('fecha', 'id_agente')
-            
-            # Generar días del período para columnas
-            dias_periodo = []
-            current_date = fecha_inicio
-            while current_date <= fecha_fin:
-                dias_periodo.append({
-                    'fecha': current_date.strftime('%Y-%m-%d'),
-                    'dia': current_date.day,
-                    'dia_semana': current_date.strftime('%a')
-                })
-                current_date += timedelta(days=1)
-            
-            # Procesar datos por agente
-            agentes_data = []
-            for agente in agentes:
-                # Guardias del agente en el período
-                guardias_agente = [g for g in guardias if g.id_agente == agente.id_agente]
-                guardias_por_fecha = {g.fecha.strftime('%Y-%m-%d'): g for g in guardias_agente}
-                
-                # Generar columnas de días
-                dias_agente = []
-                total_horas_agente = 0
-                
-                for dia_info in dias_periodo:
-                    fecha_str = dia_info['fecha']
-                    guardia = guardias_por_fecha.get(fecha_str)
-                    
-                    if guardia and guardia.hora_inicio and guardia.hora_fin:
-                        # Calcular horas de la guardia
-                        inicio = datetime.combine(datetime.strptime(fecha_str, '%Y-%m-%d').date(), guardia.hora_inicio)
-                        fin = datetime.combine(datetime.strptime(fecha_str, '%Y-%m-%d').date(), guardia.hora_fin)
-                        if fin < inicio:  # Si termina al día siguiente
-                            fin += timedelta(days=1)
-                        horas = (fin - inicio).total_seconds() / 3600
-                        total_horas_agente += horas
-                        
-                        dias_agente.append({
-                            'fecha': fecha_str,
-                            'valor': f"{horas:.1f}h",
-                            'tipo': 'guardia',
-                            'horas': horas
-                        })
-                    else:
-                        # Verificar si es día laboral (podría tener LAR, F/C, etc.)
-                        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-                        if fecha_obj.weekday() < 5:  # Lunes a Viernes
-                            dias_agente.append({
-                                'fecha': fecha_str,
-                                'valor': "-",
-                                'tipo': 'normal',
-                                'horas': 0
-                            })
-                        else:
-                            dias_agente.append({
-                                'fecha': fecha_str,
-                                'valor': "",
-                                'tipo': 'fin_semana',
-                                'horas': 0
-                            })
-                
-                agentes_data.append({
-                    'nombre_completo': f"{agente.apellido}, {agente.nombre}",
-                    'legajo': agente.legajo,
-                    'dias': dias_agente,
-                    'total_horas': round(total_horas_agente, 2)
-                })
-            
-            # Calcular totales generales
-            total_horas_direccion = sum(agente['total_horas'] for agente in agentes_data)
-            
-            resultado = {
-                'area': {
-                    'nombre': area.nombre,
-                    'nombre_completo': area.nombre_completo if hasattr(area, 'nombre_completo') else area.nombre
-                },
-                'periodo': {
-                    'mes': fecha_inicio.strftime('%B %Y'),
-                    'fecha_desde': fecha_desde,
-                    'fecha_hasta': fecha_hasta
-                },
-                'dias_columnas': dias_periodo,
-                'agentes': agentes_data,
-                'totales': {
-                    'total_agentes': len(agentes_data),
-                    'total_horas_direccion': round(total_horas_direccion, 2),
-                    'promedio_horas_agente': round(total_horas_direccion / max(len(agentes_data), 1), 2)
-                }
-            }
-            
-            return Response(resultado)
-            
-        except Area.DoesNotExist:
-            return Response(
-                {'error': 'Área no encontrada'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+            data = obtener_datos_reporte(filtros, 'general', user_ctx)
+            return Response(data)
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            logger.error(f"Error generando reporte general: {e}")
             return Response(
-                {'error': f'Error generando reporte general: {str(e)}'}, 
+                {'error': f'Error generando reporte general: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -2927,10 +2723,27 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             
             # Obtener datos de la request
             tipo_reporte = request.data.get('tipo_reporte', 'general')
-            datos_reporte = request.data.get('datos', {})
-            filtros = request.data.get('filtros', {})
+            filtros = {
+                'agente': request.data.get('agente'),
+                'area': request.data.get('area'),
+                'fecha_desde': request.data.get('fecha_desde'),
+                'fecha_hasta': request.data.get('fecha_hasta'),
+                'tipo_guardia': request.data.get('tipo_guardia')
+            }
             configuracion = request.data.get('configuracion', {})
             metadatos = request.data.get('metadatos', {})
+
+            # Obtener contexto de usuario y datos del reporte
+            agente_sesion = obtener_agente_sesion(request)
+            if not agente_sesion:
+                return Response({'error': 'Sesión inválida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user_ctx = {
+                'agente': agente_sesion,
+                'rol': obtener_rol_agente(agente_sesion)
+            }
+
+            datos_reporte = obtener_datos_reporte(filtros, tipo_reporte, user_ctx)
             
             # Configurar el documento
             buffer = BytesIO()
@@ -3015,7 +2828,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             # CUERPO DEL REPORTE 
             # ========================================
             
-            # Generar tabla según tipo de reporte
+            # Generar tabla según tipo de reporte usando datos reales
             tabla_data = self._generar_tabla_pdf(tipo_reporte, datos_reporte, filtros)
             
             if tabla_data and len(tabla_data) > 0:
@@ -3090,6 +2903,8 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             
             return response
             
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except ImportError:
             logger.error("ReportLab no está instalado. Instale con: pip install reportlab")
             return Response(
@@ -3104,54 +2919,54 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             )
     
     def _generar_tabla_pdf(self, tipo_reporte, datos, filtros):
-        """Genera datos de tabla específicos para cada tipo de reporte"""
-        
+        """Genera datos de tabla específicos para cada tipo de reporte usando los datos reales."""
         if tipo_reporte == 'individual':
-            headers = ['Fecha', 'Día', 'Horario Guardia', 'Horas', 'Motivo']
+            headers = ['Fecha', 'Día Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad']
             rows = [headers]
-            
-            # Datos de ejemplo si no hay datos reales
-            dias_ejemplo = [
-                ['01/11/2025', 'Viernes', '08:00-16:00', '8h', 'Guardia operativa'],
-                ['02/11/2025', 'Sábado', '22:00-06:00', '8h', 'Guardia nocturna'],
-                ['03/11/2025', 'Domingo', '-', '0h', 'Descanso'],
-            ]
-            rows.extend(dias_ejemplo)
-            
-        elif tipo_reporte == 'calculo_plus':
-            headers = ['Agente', 'Legajo', 'Área', 'Horas Guardia', 'Plus %', 'Motivo']
+
+            for dia in datos.get('dias', []):
+                horario_guardia = ""
+                if dia.get('horario_guardia_inicio') and dia.get('horario_guardia_fin'):
+                    horario_guardia = f"{dia['horario_guardia_inicio']}-{dia['horario_guardia_fin']}"
+
+                rows.append([
+                    dia.get('fecha', ''),
+                    dia.get('dia_semana', ''),
+                    horario_guardia,
+                    dia.get('horas_planificadas', ''),
+                    dia.get('horas_efectivas', ''),
+                    dia.get('motivo_guardia', ''),
+                    dia.get('novedad', ''),
+                ])
+            return rows
+
+            # Reporte general: se arma como grilla Agente x Día
+        if tipo_reporte == 'general':
+            dias = datos.get('dias_columnas', [])
+            headers = ['Agente', 'Legajo'] + [d.get('fecha', '') for d in dias] + ['Total Horas']
             rows = [headers]
-            
-            # Datos de ejemplo
-            plus_ejemplo = [
-                ['Aguila, Tayra', '001', 'Protección Civil', '48h', '40%', 'Área operativa'],
-                ['Rodriguez, Carlos', '002', 'Administración', '36h', '40%', '+32h guardias'],
-                ['Lopez, Ana', '003', 'Planificación', '24h', '20%', 'Guardias <32h'],
-            ]
-            rows.extend(plus_ejemplo)
-            
-        elif tipo_reporte == 'parte_diario':
-            headers = ['Fecha', 'Agente', 'Ingreso', 'Egreso', 'Horas', 'Novedades']
-            rows = [headers]
-            
-            # Datos de ejemplo
-            asistencia_ejemplo = [
-                ['22/11/2025', 'Aguila, Tayra', '08:00', '16:00', '8h', 'Jornada habitual'],
-                ['22/11/2025', 'Garcia, Cristian', '08:15', '16:00', '7h 45m', 'Llegada tarde'],
-                ['22/11/2025', 'Criniti, Teresa', '08:00', '14:30', '6h 30m', 'Comisión oficial'],
-            ]
-            rows.extend(asistencia_ejemplo)
-            
-        else:
-            # Tabla genérica
-            headers = ['Item', 'Descripción', 'Valor']
-            rows = [
-                headers,
-                ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), ''],
-                ['Período', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", ''],
-                ['Estado', 'Generado exitosamente', ''],
-            ]
-        
+
+            for agente in datos.get('agentes', []):
+                fila = [
+                    agente.get('nombre_completo', ''),
+                    agente.get('legajo', '')
+                ]
+                for d in dias:
+                    fecha = d.get('fecha')
+                    celda = next((dia for dia in agente.get('dias', []) if dia.get('fecha') == fecha), {})
+                    fila.append(celda.get('valor', ''))
+                fila.append(agente.get('total_horas', ''))
+                rows.append(fila)
+            return rows
+
+        # Fallback genérico
+        headers = ['Item', 'Descripción', 'Valor']
+        rows = [
+            headers,
+            ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), ''],
+            ['Período', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", ''],
+            ['Estado', 'Generado exitosamente', ''],
+        ]
         return rows
     
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
@@ -3166,9 +2981,25 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             
             # Obtener datos de la request
             tipo_reporte = request.data.get('tipo_reporte', 'general')
-            datos_reporte = request.data.get('datos', {})
-            filtros = request.data.get('filtros', {})
+            filtros = {
+                'agente': request.data.get('agente'),
+                'area': request.data.get('area'),
+                'fecha_desde': request.data.get('fecha_desde'),
+                'fecha_hasta': request.data.get('fecha_hasta'),
+                'tipo_guardia': request.data.get('tipo_guardia')
+            }
             configuracion = request.data.get('configuracion', {})
+
+            agente_sesion = obtener_agente_sesion(request)
+            if not agente_sesion:
+                return Response({'error': 'Sesión inválida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user_ctx = {
+                'agente': agente_sesion,
+                'rol': obtener_rol_agente(agente_sesion)
+            }
+
+            datos_reporte = obtener_datos_reporte(filtros, tipo_reporte, user_ctx)
             
             # Crear buffer para CSV
             output = StringIO()
@@ -3199,6 +3030,8 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             
             return response
             
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Error generando CSV: {e}")
             return Response(
@@ -3219,8 +3052,24 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             
             # Obtener datos de la request
             tipo_reporte = request.data.get('tipo_reporte', 'general')
-            datos_reporte = request.data.get('datos', {})
-            filtros = request.data.get('filtros', {})
+            filtros = {
+                'agente': request.data.get('agente'),
+                'area': request.data.get('area'),
+                'fecha_desde': request.data.get('fecha_desde'),
+                'fecha_hasta': request.data.get('fecha_hasta'),
+                'tipo_guardia': request.data.get('tipo_guardia')
+            }
+
+            agente_sesion = obtener_agente_sesion(request)
+            if not agente_sesion:
+                return Response({'error': 'Sesión inválida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user_ctx = {
+                'agente': agente_sesion,
+                'rol': obtener_rol_agente(agente_sesion)
+            }
+
+            datos_reporte = obtener_datos_reporte(filtros, tipo_reporte, user_ctx)
             
             # Crear workbook
             wb = openpyxl.Workbook()
@@ -3291,6 +3140,8 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             
             return response
             
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except ImportError:
             logger.error("openpyxl no está instalado. Instale con: pip install openpyxl")
             return Response(
@@ -3305,64 +3156,55 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             )
     
     def _generar_datos_csv(self, tipo_reporte, datos, filtros):
-        """Genera datos en formato de filas para CSV/Excel"""
-        
+        """Genera datos en formato de filas para CSV/Excel usando los datos reales."""
         if tipo_reporte == 'individual':
-            headers = ['Fecha', 'Día Semana', 'Horario Habitual', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Observaciones']
+            headers = ['Fecha', 'Día Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad', 'Estado Asistencia']
             rows = [headers]
-            
-            # Datos de ejemplo
-            dias_ejemplo = [
-                ['01/11/2025', 'Viernes', '08:00-16:00', '08:00-16:00', '8', '8', 'Guardia operativa', 'Presentismo OK'],
-                ['02/11/2025', 'Sábado', '-', '22:00-06:00', '8', '8', 'Guardia nocturna', 'Presentismo OK'],
-                ['03/11/2025', 'Domingo', '-', '-', '0', '0', 'Descanso', 'Sin guardia'],
-            ]
-            rows.extend(dias_ejemplo)
-            
-        elif tipo_reporte == 'calculo_plus':
-            headers = ['Agente', 'Legajo', 'CUIL', 'Área', 'Horas Normales', 'Horas Plus 20%', 'Horas Plus 40%', 'Total a Liquidar', 'Motivo Plus']
+
+            for dia in datos.get('dias', []):
+                horario_guardia = ""
+                if dia.get('horario_guardia_inicio') and dia.get('horario_guardia_fin'):
+                    horario_guardia = f"{dia['horario_guardia_inicio']}-{dia['horario_guardia_fin']}"
+
+                rows.append([
+                    dia.get('fecha', ''),
+                    dia.get('dia_semana', ''),
+                    horario_guardia,
+                    dia.get('horas_planificadas', ''),
+                    dia.get('horas_efectivas', ''),
+                    dia.get('motivo_guardia', ''),
+                    dia.get('novedad', ''),
+                    dia.get('estado_asistencia', ''),
+                ])
+            return rows
+
+        if tipo_reporte == 'general':
+            dias = datos.get('dias_columnas', [])
+            headers = ['Agente', 'Legajo'] + [d.get('fecha', '') for d in dias] + ['Total Horas']
             rows = [headers]
-            
-            plus_ejemplo = [
-                ['Aguila, Tayra', '001', '27-12345678-9', 'Secretaría de Protección Civil', '160', '0', '48', '208', 'Área operativa con guardias'],
-                ['Rodriguez, Carlos', '002', '27-87654321-0', 'Depto. Administrativo', '160', '0', '36', '196', 'Otras áreas con ≥32h guardias'],
-                ['Lopez, Ana', '003', '27-11223344-5', 'División de Planificación', '160', '24', '0', '184', 'Guardias con <32h mensuales'],
-            ]
-            rows.extend(plus_ejemplo)
-            
-        elif tipo_reporte == 'parte_diario':
-            headers = ['Fecha', 'Agente', 'Legajo', 'Área', 'Horario Entrada', 'Horario Salida', 'Horas Trabajadas', 'Tipo Novedad', 'Descripción Novedad']
-            rows = [headers]
-            
-            asistencia_ejemplo = [
-                ['22/11/2025', 'Aguila, Tayra', '001', 'Protección Civil', '08:00', '16:00', '8h 00m', 'Normal', 'Jornada habitual completa'],
-                ['22/11/2025', 'Garcia, Cristian', '002', 'Administración', '08:15', '16:00', '7h 45m', 'Llegada Tarde', 'Retraso de 15 minutos'],
-                ['22/11/2025', 'Criniti, Teresa', '003', 'Planificación', '08:00', '14:30', '6h 30m', 'Comisión', 'Comisión oficial autorizada'],
-            ]
-            rows.extend(asistencia_ejemplo)
-            
-        elif tipo_reporte == 'resumen_licencias':
-            headers = ['Agente', 'Legajo', 'Art. 32.1 Usados', 'Art. 32.1 Disponibles', 'Art. 32.2 Usados', 'Art. 32.2 Disponibles', 'Art. 33 Usados', 'Art. 33 Disponibles', 'Total Días Usados', 'Total Días Disponibles']
-            rows = [headers]
-            
-            licencias_ejemplo = [
-                ['Aguila, Tayra', '001', '15', '6', '3', '27', '2', '8', '20', '41'],
-                ['Rodriguez, Carlos', '002', '8', '13', '0', '30', '1', '9', '9', '52'],
-                ['Lopez, Ana', '003', '12', '9', '5', '25', '0', '10', '17', '44'],
-            ]
-            rows.extend(licencias_ejemplo)
-            
-        else:
-            # Formato genérico
-            headers = ['Descripción', 'Valor', 'Observaciones']
-            rows = [
-                headers,
-                ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), 'Generado automáticamente'],
-                ['Período Consultado', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", 'Rango de fechas seleccionado'],
-                ['Fecha de Generación', timezone.now().strftime("%d/%m/%Y %H:%M"), 'Momento de creación del reporte'],
-                ['Sistema', 'GIGA - UNTDF', 'Universidad Nacional de Tierra del Fuego'],
-            ]
-        
+
+            for agente in datos.get('agentes', []):
+                fila = [
+                    agente.get('nombre_completo', ''),
+                    agente.get('legajo', '')
+                ]
+                for d in dias:
+                    fecha = d.get('fecha')
+                    celda = next((dia for dia in agente.get('dias', []) if dia.get('fecha') == fecha), {})
+                    fila.append(celda.get('valor', ''))
+                fila.append(agente.get('total_horas', ''))
+                rows.append(fila)
+            return rows
+
+        # Formato genérico
+        headers = ['Descripción', 'Valor', 'Observaciones']
+        rows = [
+            headers,
+            ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), 'Generado automáticamente'],
+            ['Período Consultado', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", 'Rango de fechas seleccionado'],
+            ['Fecha de Generación', timezone.now().strftime("%d/%m/%Y %H:%M"), 'Momento de creación del reporte'],
+            ['Sistema', 'GIGA - UNTDF', 'Universidad Nacional de Tierra del Fuego'],
+        ]
         return rows
 
     @action(detail=True, methods=['patch'])
