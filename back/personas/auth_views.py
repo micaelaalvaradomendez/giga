@@ -170,16 +170,138 @@ def login_view(request):
         # Guardar en sesión (simulación de sesión para compatibilidad)
         request.session['user_id'] = agente.id_agente
         request.session['is_authenticated'] = True
+        
+        # ✅ CONTROL DE SESIONES CONCURRENTES (Máximo 2)
+        from .models import SesionActiva
+        from django.contrib.sessions.models import Session
+        from django.utils import timezone
+        
+        # Obtener sesiones activas del usuario
+        sesiones_activas = SesionActiva.objects.filter(
+            id_agente=agente,
+            activa=True
+        ).order_by('creado_en')  # Ordenar por antigüedad
+        
+        count_sesiones = sesiones_activas.count()
+        
+        # Obtener información del dispositivo
+        user_agent_string = request.META.get('HTTP_USER_AGENT', '')
+        dispositivo = 'Desktop'
+        navegador = 'Unknown'
+        
+        # Parseo simple de user agent
+        if 'Mobile' in user_agent_string:
+            dispositivo = 'Mobile'
+        elif 'Tablet' in user_agent_string or 'iPad' in user_agent_string:
+            dispositivo = 'Tablet'
+        
+        if 'Chrome' in user_agent_string:
+            navegador = 'Chrome'
+        elif 'Firefox' in user_agent_string:
+            navegador = 'Firefox'
+        elif 'Safari' in user_agent_string and 'Chrome' not in user_agent_string:
+            navegador = 'Safari'
+        elif 'Edge' in user_agent_string:
+            navegador = 'Edge'
+        
+        # Obtener IP del cliente
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip_address = x_forwarded_for.split(',')[0]
+        else:
+            ip_address = request.META.get('REMOTE_ADDR', 'unknown')
+        
+        # Si ya hay 2 o más sesiones, cerrar la más antigua
+        if count_sesiones >= 2:
+            sesion_mas_antigua = sesiones_activas.first()
+            
+            # Marcar sesión como inactiva
+            sesion_mas_antigua.activa = False
+            sesion_mas_antigua.save()
+            
+            # Eliminar de django_session
+            try:
+                Session.objects.filter(session_key=sesion_mas_antigua.session_key).delete()
+            except Session.DoesNotExist:
+                pass
+            
+            # Registrar cierre en auditoría
+            registrar_auditoria(
+                agente.id_agente,
+                "SESION_CERRADA_POR_LIMITE",
+                f"Sesión {sesion_mas_antigua.session_key[:10]}... cerrada. Límite de 2 sesiones excedido. Nueva sesión desde {ip_address}"
+            )
+            
+            logger.info(f"Sesión más antigua de agente {agente.id_agente} cerrada por límite (total: {count_sesiones})")
+        
+        elif count_sesiones == 1:
+            # Segunda sesión: Enviar email de alerta
+            try:
+                from django.core.mail import send_mail
+                from django.conf import settings
+                
+                # URL para cerrar todas las sesiones
+                close_sessions_url = f"{settings.FRONTEND_URL}/cerrar-sesiones?token={agente.id_agente}"
+                
+                send_mail(
+                    subject='🔔 GIGA - Nueva Sesión Detectada',
+                    message=f"""
+                        Estimado/a {agente.nombre} {agente.apellido},
 
-        # Registrar login exitoso
-        registrar_auditoria(agente.id_agente, "LOGIN_EXITOSO", f"Login desde IP: {request.META.get('REMOTE_ADDR', 'unknown')}")
+                        Se ha detectado un nuevo inicio de sesión en tu cuenta del Sistema GIGA:
+
+                        📍 Información del Nuevo Acceso:
+                        • Dispositivo: {dispositivo}
+                        • Navegador: {navegador}
+                        • Dirección IP: {ip_address}
+                        • Fecha y Hora: {timezone.now().strftime('%d/%m/%Y %H:%M:%S')}
+
+                        📱 Sesiones Activas Actuales: 2
+
+                        Si fuiste tú quien inició sesión, puedes ignorar este mensaje.
+
+                        ⚠️ Si NO reconoces este acceso:
+                        Por tu seguridad, te recomendamos cerrar todas las sesiones activas inmediatamente.
+
+                        👉 Cerrar todas mis sesiones: {close_sessions_url}
+
+                        Nota: Este sistema permite hasta 2 sesiones simultáneas. Si intentas abrir una tercera sesión, 
+                        la sesión más antigua se cerrará automáticamente.
+
+                        Saludos,
+                        Sistema GIGA - Protección Civil UNTDF
+                    """,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[agente.email],
+                    fail_silently=True  # No fallar si email falla
+                )
+                
+                logger.info(f"Email de alerta de sesión enviado a {agente.email}")
+                
+            except Exception as e:
+                logger.error(f"Error enviando email de alerta de sesión: {e}")
+                # No fallar el login si el email falla
+        
+        # Registrar nueva sesión activa
+        SesionActiva.objects.create(
+            id_agente=agente,
+            session_key=request.session.session_key,
+            ip_address=ip_address,
+            user_agent=user_agent_string,
+            dispositivo=dispositivo,
+            navegador=navegador
+        )
+
+        # Registrar login exitoso (auditoría existente)
+        registrar_auditoria(agente.id_agente, "LOGIN_EXITOSO", f"Login desde IP: {ip_address} ({dispositivo}/{navegador})")
 
         return Response({
             'success': True,
             'message': 'Login exitoso',
             'user': user_data,
             'requires_password_change': requires_password_change,
-            'password_reset_reason': password_reset_reason
+            'password_reset_reason': password_reset_reason,
+            'active_sessions': min(count_sesiones + 1, 2)  # Máximo 2
         })
 
     except json.JSONDecodeError:
@@ -205,8 +327,15 @@ def logout_view(request):
 
     try:
         user_id = request.session.get('user_id')
+        session_key = request.session.session_key
+        
         if user_id:
             registrar_auditoria(user_id, "LOGOUT", f"Logout desde IP: {request.META.get('REMOTE_ADDR', 'unknown')}")
+            
+            # ✅ Cerrar sesión en tracking
+            if session_key:
+                from .models import SesionActiva
+                SesionActiva.objects.filter(session_key=session_key).update(activa=False)
         
         # Limpiar sesión
         request.session.flush()

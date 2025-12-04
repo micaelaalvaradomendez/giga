@@ -12,6 +12,8 @@ from personas.auth_views import (
     update_profile,
     update_email
 )
+from personas.session_views import cerrar_todas_sesiones
+
 
 # URLs de autenticación
 auth_patterns = [
@@ -22,7 +24,9 @@ auth_patterns = [
     path('change-password/', change_password, name='change_password'),
     path('update-profile/', update_profile, name='update_profile'),
     path('update-email/', update_email, name='update_email'),
+    path('close-all-sessions/', cerrar_todas_sesiones, name='close_all_sessions'),  # Nuevo endpoint
 ]
+
 
 # URLs de gestión de agentes
 agentes_patterns = [
