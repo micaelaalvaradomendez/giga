@@ -286,14 +286,17 @@ def login_view(request):
                 logger.error(f"Error enviando email de alerta de sesión: {e}")
                 # No fallar el login si el email falla
         
-        # Registrar nueva sesión activa
-        SesionActiva.objects.create(
-            id_agente=agente,
+        # Registrar o actualizar sesión activa
+        SesionActiva.objects.update_or_create(
             session_key=request.session.session_key,
-            ip_address=ip_address,
-            user_agent=user_agent_string,
-            dispositivo=dispositivo,
-            navegador=navegador
+            defaults={
+                'id_agente': agente,
+                'ip_address': ip_address,
+                'user_agent': user_agent_string,
+                'dispositivo': dispositivo,
+                'navegador': navegador,
+                'activa': True
+            }
         )
 
         # Registrar login exitoso (auditoría existente)

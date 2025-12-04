@@ -108,14 +108,14 @@
                     </a>
                     <a
                         href="/incidencias"
-                        class="menu-item"
+                        class="menu-item menu-item-highlight"
                         class:active={currentPath.startsWith("/incidencias")}
                         on:click={closeMenu}
                     >
                         <span class="menu-item-icon">📧</span>
                         <div class="menu-item-text">
                             <div class="menu-item-title">
-                                Notificar Incidencia
+                                Incidencias
                             </div>
                         </div>
                     </a>
@@ -235,7 +235,7 @@
                                     Compensaciones
                                 </div>
                                 <div class="menu-item-subtitle">
-                                    Horas de emergencia
+                                    Horas extra
                                 </div>
                             </div>
                         </a>
@@ -258,19 +258,6 @@
                         {/if}
 
                         {#if isAdmin}
-                            <a
-                                href="/paneladmin"
-                                class="menu-item menu-item-admin"
-                                class:active={currentPath === "/paneladmin"}
-                                on:click={closeMenu}
-                            >
-                                <span class="menu-item-icon">👥</span>
-                                <div class="menu-item-text">
-                                    <div class="menu-item-title">
-                                        Panel Administrativo
-                                    </div>
-                                </div>
-                            </a>
                             <a
                                 href="/paneladmin/organigrama"
                                 class="menu-item"
@@ -296,6 +283,20 @@
                                 <span class="menu-item-icon">🛡️</span>
                                 <div class="menu-item-text">
                                     <div class="menu-item-title">Roles</div>
+                                </div>
+                            </a>
+
+                            <a
+                                href="/paneladmin"
+                                class="menu-item menu-item-admin"
+                                class:active={currentPath === "/paneladmin"}
+                                on:click={closeMenu}
+                            >
+                                <span class="menu-item-icon">👥</span>
+                                <div class="menu-item-text">
+                                    <div class="menu-item-title">
+                                        Panel Administrativo
+                                    </div>
                                 </div>
                             </a>
                         {/if}
@@ -696,7 +697,7 @@
     .menu-item-highlight {
         background: linear-gradient(
             135deg,
-            rgba(255, 240, 240, 0.95) 0%,
+            rgba(255, 224, 224, 0.815) 0%,
             rgba(254, 234, 234, 0.85) 100%
         );
         border: 1px solid rgba(239, 68, 68, 0.2);

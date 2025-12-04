@@ -1,8 +1,8 @@
 <script>
-  import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
-  import AuthService from '$lib/login/authService.js';
-  import { IncidenciasService } from '$lib/services/incidencias.js';
+  import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
+  import AuthService from "$lib/login/authService.js";
+  import { IncidenciasService } from "$lib/services/incidencias.js";
 
   let loading = true;
   let currentUser = null;
@@ -11,45 +11,45 @@
   let misIncidencias = [];
   let incidenciasAsignadas = [];
   let error = null;
-  let tabActiva = 'todas';
-  let busqueda = '';
+  let tabActiva = "todas";
+  let busqueda = "";
   let incluirCerradas = false;
   let incidenciasFiltradas = [];
-  
+
   // Modal para ver detalles
   let showDetalleModal = false;
   let incidenciaSeleccionada = null;
   let cargandoDetalle = false;
-  
+
   // Modal para cambiar estado
   let showCambiarEstadoModal = false;
   let cambiandoEstado = false;
-  let nuevoEstado = '';
-  let comentarioEstado = '';
+  let nuevoEstado = "";
+  let comentarioEstado = "";
   let estadosDisponibles = [
-    { value: 'abierta', label: 'Abierta' },
-    { value: 'en_proceso', label: 'En Proceso' },
-    { value: 'pendiente_informacion', label: 'Información Pendiente' },
-    { value: 'resuelta', label: 'Resuelta' },
-    { value: 'cerrada', label: 'Cerrada' }
+    { value: "abierta", label: "Abierta" },
+    { value: "en_proceso", label: "En Proceso" },
+    { value: "pendiente_informacion", label: "Información Pendiente" },
+    { value: "resuelta", label: "Resuelta" },
+    { value: "cerrada", label: "Cerrada" },
   ];
-  
+
   // Modal para crear incidencia
   let showModal = false;
   let creandoIncidencia = false;
-  
+
   // Modal para mensajes
   let showMensajeModal = false;
-  let mensajeModal = { titulo: '', mensaje: '', tipo: 'success' };
+  let mensajeModal = { titulo: "", mensaje: "", tipo: "success" };
   let jefesArea = [];
   let cargandoJefes = false;
   let nuevaIncidencia = {
-    titulo: '',
-    descripcion: '',
-    prioridad: 'media',
-    asignado_a_id: null
+    titulo: "",
+    descripcion: "",
+    prioridad: "media",
+    asignado_a_id: null,
   };
-  
+
   const incidenciasService = new IncidenciasService();
 
   onMount(async () => {
@@ -57,51 +57,54 @@
       // Verificar sesión
       const sessionCheck = await AuthService.checkSession();
       if (!sessionCheck.authenticated) {
-        goto('/');
+        goto("/");
         return;
       }
 
       currentUser = sessionCheck.user;
-      
+
       // Determinar si es agente (para simplicar lógica de UI)
-      const esAgente = !currentUser?.roles?.some(r => 
-        ['Administrador', 'Director', 'Jefe de Área', 'Jefatura'].includes(r.nombre)
+      const esAgente = !currentUser?.roles?.some((r) =>
+        ["Administrador", "Director", "Jefe de Área", "Jefatura"].includes(
+          r.nombre,
+        ),
       );
-      userRole = esAgente ? 'Agente' : 'Supervisor';
-      
+      userRole = esAgente ? "Agente" : "Supervisor";
+
       // Para agentes, mostrar primero sus incidencias
       if (esAgente) {
-        tabActiva = 'mias';
+        tabActiva = "mias";
       }
 
       await cargarDatos();
-
     } catch (error) {
-      console.error('Error inicializando página:', error);
+      console.error("Error inicializando página:", error);
       error = error.message;
     } finally {
       loading = false;
     }
   });
-  
+
   async function cargarDatos() {
     try {
       // Cargar datos en paralelo
       const promesas = [
         incidenciasService.obtenerIncidencias(),
         incidenciasService.obtenerMisIncidencias(),
-        incidenciasService.obtenerIncidenciasAsignadas()
+        incidenciasService.obtenerIncidenciasAsignadas(),
       ];
-      
-      const [todasIncidencias, misIncidenciasData, asignadasData] = await Promise.all(promesas);
-      
+
+      const [todasIncidencias, misIncidenciasData, asignadasData] =
+        await Promise.all(promesas);
+
       // Asignar datos recibidos
       incidencias = Array.isArray(todasIncidencias) ? todasIncidencias : [];
-      misIncidencias = Array.isArray(misIncidenciasData) ? misIncidenciasData : [];
+      misIncidencias = Array.isArray(misIncidenciasData)
+        ? misIncidenciasData
+        : [];
       incidenciasAsignadas = Array.isArray(asignadasData) ? asignadasData : [];
-      
     } catch (err) {
-      console.error('Error al cargar datos:', err);
+      console.error("Error al cargar datos:", err);
       error = err.message;
     }
   }
@@ -109,56 +112,65 @@
   function cambiarTab(nuevaTab) {
     tabActiva = nuevaTab;
   }
-  
+
   // Contadores reactivos que respetan el filtro de cerradas
-  $: todasCount = incluirCerradas ? incidencias.length : incidencias.filter(inc => inc.estado !== 'cerrada').length;
-  $: miasCount = incluirCerradas ? misIncidencias.length : misIncidencias.filter(inc => inc.estado !== 'cerrada').length;
-  $: asignadasCount = incluirCerradas ? incidenciasAsignadas.length : incidenciasAsignadas.filter(inc => inc.estado !== 'cerrada').length;
+  $: todasCount = incluirCerradas
+    ? incidencias.length
+    : incidencias.filter((inc) => inc.estado !== "cerrada").length;
+  $: miasCount = incluirCerradas
+    ? misIncidencias.length
+    : misIncidencias.filter((inc) => inc.estado !== "cerrada").length;
+  $: asignadasCount = incluirCerradas
+    ? incidenciasAsignadas.length
+    : incidenciasAsignadas.filter((inc) => inc.estado !== "cerrada").length;
 
   // Función reactiva para obtener incidencias según tab activa, búsqueda y filtro de cerradas
   $: incidenciasFiltradas = (() => {
     let incidenciasBase = [];
-    
-    switch(tabActiva) {
-      case 'mias':
+
+    switch (tabActiva) {
+      case "mias":
         incidenciasBase = misIncidencias || [];
         break;
-      case 'asignadas':
+      case "asignadas":
         incidenciasBase = incidenciasAsignadas || [];
         break;
       default: // 'todas'
         incidenciasBase = incidencias || [];
     }
-    
+
     // Filtrar incidencias cerradas si no están incluidas
     if (!incluirCerradas) {
-      incidenciasBase = incidenciasBase.filter(incidencia => 
-        incidencia && incidencia.estado !== 'cerrada'
+      incidenciasBase = incidenciasBase.filter(
+        (incidencia) => incidencia && incidencia.estado !== "cerrada",
       );
     }
-    
+
     // Si no hay búsqueda, devolver incidencias base filtradas
     if (!busqueda || !busqueda.trim()) {
       return incidenciasBase;
     }
-    
+
     // Aplicar filtro de búsqueda
     const busquedaLower = busqueda.toLowerCase().trim();
-    return incidenciasBase.filter(incidencia => {
+    return incidenciasBase.filter((incidencia) => {
       if (!incidencia) return false;
-      
+
       return (
-        (incidencia.titulo && incidencia.titulo.toLowerCase().includes(busquedaLower)) ||
-        (incidencia.descripcion && incidencia.descripcion.toLowerCase().includes(busquedaLower)) ||
-        (incidencia.numero && incidencia.numero.toLowerCase().includes(busquedaLower)) ||
-        (incidencia.creado_por_nombre && incidencia.creado_por_nombre.toLowerCase().includes(busquedaLower)) ||
-        (incidencia.asignado_a_nombre && incidencia.asignado_a_nombre.toLowerCase().includes(busquedaLower))
+        (incidencia.titulo &&
+          incidencia.titulo.toLowerCase().includes(busquedaLower)) ||
+        (incidencia.descripcion &&
+          incidencia.descripcion.toLowerCase().includes(busquedaLower)) ||
+        (incidencia.numero &&
+          incidencia.numero.toLowerCase().includes(busquedaLower)) ||
+        (incidencia.creado_por_nombre &&
+          incidencia.creado_por_nombre.toLowerCase().includes(busquedaLower)) ||
+        (incidencia.asignado_a_nombre &&
+          incidencia.asignado_a_nombre.toLowerCase().includes(busquedaLower))
       );
     });
   })();
-  
 
-  
   async function crearNuevaIncidencia() {
     showModal = true;
     await cargarJefesArea();
@@ -168,7 +180,7 @@
     cargandoJefes = true;
     try {
       // Si es agente, buscar jefes de área. Si es jefe/director/admin, buscar agentes
-      if (userRole === 'Agente') {
+      if (userRole === "Agente") {
         const response = await incidenciasService.obtenerJefesArea();
         jefesArea = response.jefes || [];
       } else {
@@ -177,7 +189,7 @@
         jefesArea = response.agentes || [];
       }
     } catch (error) {
-      console.error('Error cargando destinatarios:', error);
+      console.error("Error cargando destinatarios:", error);
       jefesArea = [];
     } finally {
       cargandoJefes = false;
@@ -187,44 +199,45 @@
   function cerrarModal() {
     showModal = false;
     nuevaIncidencia = {
-      titulo: '',
-      descripcion: '',
-      prioridad: 'media',
-      asignado_a_id: null
+      titulo: "",
+      descripcion: "",
+      prioridad: "media",
+      asignado_a_id: null,
     };
     jefesArea = [];
   }
 
-
-
   async function guardarIncidencia() {
     if (!nuevaIncidencia.titulo.trim() || !nuevaIncidencia.descripcion.trim()) {
-      alert('Por favor complete todos los campos obligatorios');
+      alert("Por favor complete todos los campos obligatorios");
       return;
     }
 
     if (!nuevaIncidencia.asignado_a_id) {
-      alert('Debe seleccionar un destinatario para asignar la incidencia');
+      alert("Debe seleccionar un destinatario para asignar la incidencia");
       return;
     }
 
     creandoIncidencia = true;
     try {
       await incidenciasService.crearIncidencia(nuevaIncidencia);
-      
+
       // Recargar datos
       await cargarDatos();
-      
+
       // Cerrar modal y mostrar mensaje
       cerrarModal();
-      mostrarMensaje('¡Éxito!', 'Incidencia creada exitosamente', 'success');
-      
+      mostrarMensaje("¡Éxito!", "Incidencia creada exitosamente", "success");
+
       // Cambiar a la tab de "mis incidencias" para mostrar la nueva
-      tabActiva = 'mias';
-      
+      tabActiva = "mias";
     } catch (err) {
-      console.error('Error al crear incidencia:', err);
-      mostrarMensaje('Error', `No se pudo crear la incidencia: ${err.message}`, 'error');
+      console.error("Error al crear incidencia:", err);
+      mostrarMensaje(
+        "Error",
+        `No se pudo crear la incidencia: ${err.message}`,
+        "error",
+      );
     } finally {
       creandoIncidencia = false;
     }
@@ -234,13 +247,15 @@
   async function verDetalles(incidencia) {
     cargandoDetalle = true;
     showDetalleModal = true;
-    
+
     try {
       // Obtener detalles completos de la incidencia
-      const detallesCompletos = await incidenciasService.obtenerIncidencia(incidencia.id);
+      const detallesCompletos = await incidenciasService.obtenerIncidencia(
+        incidencia.id,
+      );
       incidenciaSeleccionada = detallesCompletos;
     } catch (error) {
-      console.error('Error cargando detalles:', error);
+      console.error("Error cargando detalles:", error);
       incidenciaSeleccionada = incidencia; // Usar los datos que ya tenemos
     } finally {
       cargandoDetalle = false;
@@ -252,7 +267,7 @@
     incidenciaSeleccionada = null;
   }
 
-  function mostrarMensaje(titulo, mensaje, tipo = 'success') {
+  function mostrarMensaje(titulo, mensaje, tipo = "success") {
     mensajeModal = { titulo, mensaje, tipo };
     showMensajeModal = true;
   }
@@ -260,56 +275,59 @@
   function cerrarMensajeModal() {
     showMensajeModal = false;
   }
-  
+
   function abrirCambiarEstadoModal() {
     showCambiarEstadoModal = true;
-    nuevoEstado = incidenciaSeleccionada.estado || 'abierta';
-    comentarioEstado = '';
+    nuevoEstado = incidenciaSeleccionada.estado || "abierta";
+    comentarioEstado = "";
   }
-  
+
   function cerrarCambiarEstadoModal() {
     showCambiarEstadoModal = false;
-    nuevoEstado = '';
-    comentarioEstado = '';
+    nuevoEstado = "";
+    comentarioEstado = "";
   }
-  
+
   async function guardarCambioEstado() {
     if (!nuevoEstado) {
-      alert('Debe seleccionar un nuevo estado');
+      alert("Debe seleccionar un nuevo estado");
       return;
     }
-    
+
     if (nuevoEstado === incidenciaSeleccionada.estado) {
-      alert('Debe seleccionar un estado diferente al actual');
+      alert("Debe seleccionar un estado diferente al actual");
       return;
     }
-    
+
     cambiandoEstado = true;
     try {
       // Cambiar estado
       const incidenciaActualizada = await incidenciasService.cambiarEstado(
-        incidenciaSeleccionada.id, 
-        nuevoEstado, 
-        comentarioEstado
+        incidenciaSeleccionada.id,
+        nuevoEstado,
+        comentarioEstado,
       );
-      
+
       // Actualizar la incidencia seleccionada
       incidenciaSeleccionada = incidenciaActualizada;
-      
+
       // Recargar datos
       await cargarDatos();
-      
+
       // Cerrar modal y mostrar mensaje
       cerrarCambiarEstadoModal();
       mostrarMensaje(
-        '¡Estado actualizado!', 
-        `El estado de la incidencia ha sido cambiado exitosamente.`, 
-        'success'
+        "¡Estado actualizado!",
+        `El estado de la incidencia ha sido cambiado exitosamente.`,
+        "success",
       );
-      
     } catch (err) {
-      console.error('Error al cambiar estado:', err);
-      mostrarMensaje('Error', `No se pudo cambiar el estado: ${err.message}`, 'error');
+      console.error("Error al cambiar estado:", err);
+      mostrarMensaje(
+        "Error",
+        `No se pudo cambiar el estado: ${err.message}`,
+        "error",
+      );
     } finally {
       cambiandoEstado = false;
     }
@@ -340,31 +358,29 @@
           <button on:click={() => window.location.reload()}>Reintentar</button>
         </div>
       {:else}
-
-
         <!-- Navegación por tabs y búsqueda -->
         <div class="tabs-container">
           <div class="tabs">
-            <button 
+            <button
               class="tab {tabActiva === 'todas' ? 'active' : ''}"
-              on:click={() => cambiarTab('todas')}
+              on:click={() => cambiarTab("todas")}
             >
               Todas las Incidencias ({todasCount})
             </button>
-            <button 
+            <button
               class="tab {tabActiva === 'mias' ? 'active' : ''}"
-              on:click={() => cambiarTab('mias')}
+              on:click={() => cambiarTab("mias")}
             >
               Mis Incidencias ({miasCount})
             </button>
-            <button 
+            <button
               class="tab {tabActiva === 'asignadas' ? 'active' : ''}"
-              on:click={() => cambiarTab('asignadas')}
+              on:click={() => cambiarTab("asignadas")}
             >
               Asignadas a Mí ({asignadasCount})
             </button>
           </div>
-          
+
           <div class="controls">
             <div class="search-container">
               <input
@@ -373,11 +389,17 @@
                 bind:value={busqueda}
                 class="search-input"
               />
-              <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M21.71 20.29l-3.4-3.4A9 9 0 1 0 16 18l3.4 3.4a1 1 0 0 0 1.42 0 1 1 0 0 0-.11-1.41zM11 18a7 7 0 1 1 7-7 7 7 0 0 1-7 7z"/>
+              <svg
+                class="search-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M21.71 20.29l-3.4-3.4A9 9 0 1 0 16 18l3.4 3.4a1 1 0 0 0 1.42 0 1 1 0 0 0-.11-1.41zM11 18a7 7 0 1 1 7-7 7 7 0 0 1-7 7z"
+                />
               </svg>
             </div>
-            
+
             <div class="filter-container">
               <label class="checkbox-container">
                 <input
@@ -388,9 +410,11 @@
                 <span class="checkbox-label">Incluir cerradas</span>
               </label>
             </div>
-            
+
             <button class="btn-crear" on:click={crearNuevaIncidencia}>
-              + {userRole === 'Agente' ? 'Contactar Jefatura' : 'Contactar Agente'}
+              + {userRole === "Agente"
+                ? "Contactar Jefatura"
+                : "Contactar Agente"}
             </button>
           </div>
         </div>
@@ -407,13 +431,9 @@
                       {incidencia.estado_display || incidencia.estado}
                     </span>
                   {:else if incidencia.fecha_resolucion}
-                    <span class="badge badge-resuelto">
-                      Resuelta
-                    </span>
+                    <span class="badge badge-resuelto"> Resuelta </span>
                   {:else}
-                    <span class="badge badge-pendiente">
-                      Pendiente
-                    </span>
+                    <span class="badge badge-pendiente"> Pendiente </span>
                   {/if}
                   {#if incidencia.prioridad}
                     <span class="badge badge-prioridad-{incidencia.prioridad}">
@@ -422,32 +442,41 @@
                   {/if}
                 </div>
               </div>
-              
+
               <h3 class="incidencia-titulo">{incidencia.titulo}</h3>
               <p class="incidencia-descripcion">{incidencia.descripcion}</p>
-              
+
               <div class="incidencia-footer">
                 <div class="incidencia-meta">
                   <div class="meta-item">
-                    <strong>Creada por:</strong> {incidencia.creado_por_nombre}
+                    <strong>Creada por:</strong>
+                    {incidencia.creado_por_nombre}
                   </div>
                   <div class="meta-item">
-                    <strong>Fecha:</strong> {IncidenciasService.formatearFecha(incidencia.fecha_creacion)}
+                    <strong>Fecha:</strong>
+                    {IncidenciasService.formatearFecha(
+                      incidencia.fecha_creacion,
+                    )}
                   </div>
                   {#if incidencia.asignado_a_nombre}
                     <div class="meta-item">
-                      <strong>Asignada a:</strong> {incidencia.asignado_a_nombre}
+                      <strong>Asignada a:</strong>
+                      {incidencia.asignado_a_nombre}
                     </div>
                   {/if}
                   {#if incidencia.area_nombre}
                     <div class="meta-item">
-                      <strong>Área:</strong> {incidencia.area_nombre}
+                      <strong>Área:</strong>
+                      {incidencia.area_nombre}
                     </div>
                   {/if}
                 </div>
-                
+
                 <div class="incidencia-actions">
-                  <button class="btn-secondary" on:click={() => verDetalles(incidencia)}>
+                  <button
+                    class="btn-secondary"
+                    on:click={() => verDetalles(incidencia)}
+                  >
                     Ver Detalles
                   </button>
                 </div>
@@ -473,13 +502,17 @@
 
 <!-- Modal para crear nueva incidencia -->
 {#if showModal}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="modal-overlay" on:click={cerrarModal}>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="modal" on:click|stopPropagation>
       <div class="modal-header">
         <h2>Nueva Incidencia</h2>
         <button class="close-btn" on:click={cerrarModal}>×</button>
       </div>
-      
+
       <form on:submit|preventDefault={guardarIncidencia}>
         <div class="form-group">
           <label for="titulo">Título *</label>
@@ -522,9 +555,15 @@
 
         <!-- Selector de jefe -->
         <div class="form-group">
-          <label for="asignado_a">{userRole === 'Agente' ? 'Asignar a Jefatura *' : 'Asignar a Agente *'}</label>
+          <label for="asignado_a"
+            >{userRole === "Agente"
+              ? "Asignar a Jefatura *"
+              : "Asignar a Agente *"}</label
+          >
           {#if cargandoJefes}
-            <div class="loading-jefes">Cargando {userRole === 'Agente' ? 'jefes' : 'agentes'}...</div>
+            <div class="loading-jefes">
+              Cargando {userRole === "Agente" ? "jefes" : "agentes"}...
+            </div>
           {:else if jefesArea.length > 0}
             <select
               id="asignado_a"
@@ -532,13 +571,20 @@
               disabled={creandoIncidencia}
               required
             >
-              <option value={null}>Seleccione {userRole === 'Agente' ? 'un jefe' : 'un agente'}</option>
+              <option value={null}
+                >Seleccione {userRole === "Agente"
+                  ? "un jefe"
+                  : "un agente"}</option
+              >
               {#each jefesArea as jefe}
                 <option value={jefe.id}>{jefe.nombre} ({jefe.rol})</option>
               {/each}
             </select>
           {:else}
-            <div class="no-jefes">No hay {userRole === 'Agente' ? 'jefes' : 'agentes'} disponibles en su área</div>
+            <div class="no-jefes">
+              No hay {userRole === "Agente" ? "jefes" : "agentes"} disponibles en
+              su área
+            </div>
           {/if}
         </div>
 
@@ -551,12 +597,8 @@
           >
             Cancelar
           </button>
-          <button
-            type="submit"
-            class="btn-save"
-            disabled={creandoIncidencia}
-          >
-            {creandoIncidencia ? 'Creando...' : 'Crear Incidencia'}
+          <button type="submit" class="btn-save" disabled={creandoIncidencia}>
+            {creandoIncidencia ? "Creando..." : "Crear Incidencia"}
           </button>
         </div>
       </form>
@@ -566,26 +608,26 @@
 
 <!-- Modal para ver detalles de incidencia -->
 {#if showDetalleModal && incidenciaSeleccionada}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="modal-overlay" on:click={cerrarDetalleModal}>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="modal modal-detalle" on:click|stopPropagation>
       <div class="modal-header">
         <div class="detalle-header">
           <h2>Detalle de Incidencia</h2>
           <div class="incidencia-badges">
             {#if incidenciaSeleccionada.fecha_resolucion}
-              <span class="badge badge-resuelto">
-                Resuelta
-              </span>
+              <span class="badge badge-resuelto"> Resuelta </span>
             {:else}
-              <span class="badge badge-pendiente">
-                Pendiente
-              </span>
+              <span class="badge badge-pendiente"> Pendiente </span>
             {/if}
           </div>
         </div>
         <button class="close-btn" on:click={cerrarDetalleModal}>×</button>
       </div>
-      
+
       {#if cargandoDetalle}
         <div class="loading-container">
           <div class="spinner"></div>
@@ -616,20 +658,27 @@
                   <div class="estado-actual">
                     <strong>Estado:</strong>
                     <span class="badge badge-{incidenciaSeleccionada.estado}">
-                      {incidenciaSeleccionada.estado_display || incidenciaSeleccionada.estado}
+                      {incidenciaSeleccionada.estado_display ||
+                        incidenciaSeleccionada.estado}
                     </span>
                   </div>
                 {/if}
                 {#if incidenciaSeleccionada.prioridad}
                   <div class="prioridad-actual">
                     <strong>Prioridad:</strong>
-                    <span class="badge badge-prioridad-{incidenciaSeleccionada.prioridad}">
-                      {incidenciaSeleccionada.prioridad_display || incidenciaSeleccionada.prioridad}
+                    <span
+                      class="badge badge-prioridad-{incidenciaSeleccionada.prioridad}"
+                    >
+                      {incidenciaSeleccionada.prioridad_display ||
+                        incidenciaSeleccionada.prioridad}
                     </span>
                   </div>
                 {/if}
                 {#if incidenciaSeleccionada.puede_cambiar_estado}
-                  <button class="btn-cambiar-estado" on:click={abrirCambiarEstadoModal}>
+                  <button
+                    class="btn-cambiar-estado"
+                    on:click={abrirCambiarEstadoModal}
+                  >
                     Cambiar Estado
                   </button>
                 {/if}
@@ -641,12 +690,19 @@
           <div class="detalle-grid">
             <div class="detalle-item">
               <strong>Creada por:</strong>
-              <span>{incidenciaSeleccionada.creado_por_nombre || 'No especificado'}</span>
+              <span
+                >{incidenciaSeleccionada.creado_por_nombre ||
+                  "No especificado"}</span
+              >
             </div>
-            
+
             <div class="detalle-item">
               <strong>Fecha de creación:</strong>
-              <span>{IncidenciasService.formatearFecha(incidenciaSeleccionada.fecha_creacion)}</span>
+              <span
+                >{IncidenciasService.formatearFecha(
+                  incidenciaSeleccionada.fecha_creacion,
+                )}</span
+              >
             </div>
 
             {#if incidenciaSeleccionada.asignado_a_nombre}
@@ -659,7 +715,11 @@
             {#if incidenciaSeleccionada.fecha_asignacion}
               <div class="detalle-item">
                 <strong>Fecha de asignación:</strong>
-                <span>{IncidenciasService.formatearFecha(incidenciaSeleccionada.fecha_asignacion)}</span>
+                <span
+                  >{IncidenciasService.formatearFecha(
+                    incidenciaSeleccionada.fecha_asignacion,
+                  )}</span
+                >
               </div>
             {/if}
 
@@ -673,7 +733,11 @@
             {#if incidenciaSeleccionada.fecha_resolucion}
               <div class="detalle-item">
                 <strong>Fecha de resolución:</strong>
-                <span>{IncidenciasService.formatearFecha(incidenciaSeleccionada.fecha_resolucion)}</span>
+                <span
+                  >{IncidenciasService.formatearFecha(
+                    incidenciaSeleccionada.fecha_resolucion,
+                  )}</span
+                >
               </div>
             {/if}
           </div>
@@ -696,8 +760,12 @@
                 {#each incidenciaSeleccionada.comentarios_seguimiento as comentario}
                   <div class="comentario-item">
                     <div class="comentario-meta">
-                      <strong>{comentario.autor || 'Usuario'}</strong>
-                      <span class="comentario-fecha">{IncidenciasService.formatearFecha(comentario.fecha)}</span>
+                      <strong>{comentario.autor || "Usuario"}</strong>
+                      <span class="comentario-fecha"
+                        >{IncidenciasService.formatearFecha(
+                          comentario.fecha,
+                        )}</span
+                      >
                     </div>
                     <div class="comentario-texto">{comentario.comentario}</div>
                   </div>
@@ -713,27 +781,33 @@
 
 <!-- Modal de Mensajes -->
 {#if showMensajeModal}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="modal-overlay" on:click={cerrarMensajeModal}>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="modal-content mensaje-modal" on:click|stopPropagation>
       <div class="mensaje-header {mensajeModal.tipo}">
         <div class="mensaje-icono">
-          {#if mensajeModal.tipo === 'success'}
+          {#if mensajeModal.tipo === "success"}
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
             </svg>
-          {:else if mensajeModal.tipo === 'error'}
+          {:else if mensajeModal.tipo === "error"}
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+              />
             </svg>
           {/if}
         </div>
         <h3>{mensajeModal.titulo}</h3>
       </div>
-      
+
       <div class="mensaje-contenido">
         <p>{mensajeModal.mensaje}</p>
       </div>
-      
+
       <div class="mensaje-acciones">
         <button class="btn-mensaje" on:click={cerrarMensajeModal}>
           Aceptar
@@ -745,23 +819,29 @@
 
 <!-- Modal para cambiar estado -->
 {#if showCambiarEstadoModal && incidenciaSeleccionada}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="modal-overlay" on:click={cerrarCambiarEstadoModal}>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="modal" on:click|stopPropagation>
       <div class="modal-header">
         <h2>Cambiar Estado - {incidenciaSeleccionada.numero}</h2>
         <button class="close-btn" on:click={cerrarCambiarEstadoModal}>×</button>
       </div>
-      
+
       <form on:submit|preventDefault={guardarCambioEstado}>
         <div class="cambiar-estado-content">
           <div class="estado-actual-info">
-            <p><strong>Estado actual:</strong> 
+            <p>
+              <strong>Estado actual:</strong>
               <span class="badge badge-{incidenciaSeleccionada.estado}">
-                {incidenciaSeleccionada.estado_display || incidenciaSeleccionada.estado}
+                {incidenciaSeleccionada.estado_display ||
+                  incidenciaSeleccionada.estado}
               </span>
             </p>
           </div>
-          
+
           <div class="form-group">
             <label for="nuevo-estado">Nuevo Estado *</label>
             <select
@@ -799,9 +879,10 @@
             <button
               type="submit"
               class="btn-save"
-              disabled={cambiandoEstado || nuevoEstado === incidenciaSeleccionada.estado}
+              disabled={cambiandoEstado ||
+                nuevoEstado === incidenciaSeleccionada.estado}
             >
-              {cambiandoEstado ? 'Cambiando...' : 'Cambiar Estado'}
+              {cambiandoEstado ? "Cambiando..." : "Cambiar Estado"}
             </button>
           </div>
         </div>
@@ -812,10 +893,11 @@
 
 <style>
   .incidencias-container {
-    max-width: 1200px;
+    width: 100%;
+    max-width: 1500px;
     margin: 0 auto;
-    padding: 0 2rem 2rem;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 0 2rem 1.5rem;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .loading-container {
@@ -831,34 +913,33 @@
     width: 40px;
     height: 40px;
     border: 4px solid #f3f4f6;
-    border-top: 4px solid #3B82F6;
+    border-top: 4px solid #3b82f6;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
 
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
-  /* Header elegante - igual al que te gustó */
   .header {
     position: relative;
     background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
     color: white;
     padding: 30px 40px;
-    max-width: 1200px;
+    max-width: 1500px;
     border-radius: 28px;
     overflow: hidden;
     text-align: center;
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-      0 10px 30px rgba(30, 64, 175, 0.4);
-    margin-bottom: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
+      0 20px 60px rgba(30, 64, 175, 0.4);
+    margin-bottom: 2rem;
   }
 
   .header::before {
@@ -878,10 +959,19 @@
     animation: moveLines 20s linear infinite;
   }
 
+  @keyframes moveLines {
+    0% {
+      transform: translateX(0) translateY(0);
+    }
+    100% {
+      transform: translateX(50px) translateY(50px);
+    }
+  }
+
   .header h1 {
     margin: 10px;
     font-weight: 800;
-    font-size: 35px;
+    font-size: 32px;
     letter-spacing: 0.2px;
     position: relative;
     padding-bottom: 12px;
@@ -902,44 +992,52 @@
       rgba(255, 255, 255, 0.9),
       transparent
     );
-    animation: slideRight 3s ease-in-out infinite;
+    animation: moveLine 2s linear infinite;
   }
 
-  .header-subtitle {
-    margin: 0.25rem 0 0 0;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.9rem;
-    position: relative;
-    z-index: 1;
+  @keyframes moveLine {
+    0% {
+      left: -40%;
+    }
+    100% {
+      left: 100%;
+    }
   }
 
   .content {
-    padding: 2rem 0;
+    padding: 0;
   }
 
   .error-banner {
     background: #fee2e2;
     color: #dc2626;
     padding: 1rem;
-    border-radius: 8px;
+    border-radius: 12px;
     margin-bottom: 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border: 1px solid #fecaca;
   }
 
   .error-banner button {
-    background: #dc2626;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
     color: white;
     border: none;
     padding: 0.5rem 1rem;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
   }
 
+  .error-banner button:hover {
+    background: linear-gradient(135deg, #b91c1c, #991b1b);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.4);
+  }
 
-
-  /* Navegación por tabs y controles */
   .tabs-container {
     display: flex;
     justify-content: space-between;
@@ -949,13 +1047,13 @@
     border-bottom: 2px solid #e5e7eb;
     padding-bottom: 1rem;
   }
-  
+
   .tabs {
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
-  
+
   .controls {
     display: flex;
     align-items: center;
@@ -965,22 +1063,26 @@
   .tab {
     background: none;
     border: none;
-    padding: 0.75rem 1rem;
+    font-size: 16px;
+    padding: 0.75rem 1.25rem;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 10px;
     color: #6b7280;
-    font-weight: 500;
-    transition: all 0.2s;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .tab:hover {
     background: #f3f4f6;
     color: #374151;
+    transform: translateY(-2px);
   }
 
   .tab.active {
-    background: #3b82f6;
+    background: linear-gradient(135deg, #4c51bf 0%, #5b21b6 100%);
     color: white;
+    box-shadow: 0 4px 15px rgba(76, 81, 191, 0.3);
   }
 
   .search-container {
@@ -992,16 +1094,18 @@
   .search-input {
     padding: 0.75rem 2.5rem 0.75rem 1rem;
     border: 2px solid #e5e7eb;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 0.875rem;
     width: 300px;
-    transition: border-color 0.2s;
+    transition: all 0.3s ease;
     background: white;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .search-input:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: #4c51bf;
+    box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
   }
 
   .search-input::placeholder {
@@ -1028,7 +1132,7 @@
     align-items: center;
     cursor: pointer;
     user-select: none;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .checkbox-input {
@@ -1045,12 +1149,12 @@
   }
 
   .checkbox-input:checked {
-    background: #3b82f6;
-    border-color: #3b82f6;
+    background: #4c51bf;
+    border-color: #4c51bf;
   }
 
   .checkbox-input:checked::before {
-    content: '✓';
+    content: "✓";
     position: absolute;
     top: 50%;
     left: 50%;
@@ -1065,31 +1169,34 @@
   }
 
   .checkbox-input:checked:hover {
-    background: #2563eb;
-    border-color: #2563eb;
+    background: #5b21b6;
+    border-color: #5b21b6;
   }
 
   .checkbox-label {
     font-size: 0.875rem;
     color: #374151;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .btn-crear {
-    background: #10b981;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
-    border-radius: 8px;
+    border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
-    font-family: inherit;
+    transition: all 0.3s ease;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-size: 0.875rem;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
   }
 
   .btn-crear:hover {
-    background: #059669;
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
   }
 
   /* Lista de incidencias */
@@ -1097,19 +1204,42 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+  }
+
+  .incidencias-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .incidencias-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+  }
+
+  .incidencias-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+
+  .incidencias-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 
   .incidencia-card {
     background: white;
     border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
   }
 
   .incidencia-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+    border-color: #cbd5e1;
   }
 
   .incidencia-header {
@@ -1120,10 +1250,13 @@
   }
 
   .incidencia-numero {
-    font-family: monospace;
+    font-family: "Courier New", monospace;
     font-weight: bold;
     color: #6b7280;
     font-size: 0.875rem;
+    background: #f3f4f6;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
   }
 
   .incidencia-badges {
@@ -1132,40 +1265,83 @@
   }
 
   .badge {
-    padding: 0.25rem 0.75rem;
+    padding: 0.35rem 0.85rem;
     border-radius: 20px;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
-  .badge-resuelto { background: #d1fae5; color: #065f46; }
-  .badge-pendiente { background: #fef3c7; color: #92400e; }
-  
+  .badge-resuelto {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+  }
+
+  .badge-pendiente {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+  }
+
   /* Estados específicos */
-  .badge-abierta { background: #dbeafe; color: #1e40af; }
-  .badge-en_proceso { background: #fef3c7; color: #92400e; }
-  .badge-pendiente_informacion { background: #fde68a; color: #b45309; }
-  .badge-resuelta { background: #d1fae5; color: #065f46; }
-  .badge-cerrada { background: #e5e7eb; color: #374151; }
-  
+  .badge-abierta {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+  }
+
+  .badge-en_proceso {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+  }
+
+  .badge-pendiente_informacion {
+    background: linear-gradient(135deg, #eab308, #ca8a04);
+    color: white;
+  }
+
+  .badge-resuelta {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+  }
+
+  .badge-cerrada {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+  }
+
   /* Prioridades */
-  .badge-prioridad-baja { background: #ecfdf5; color: #059669; }
-  .badge-prioridad-media { background: #fef3c7; color: #d97706; }
-  .badge-prioridad-alta { background: #fecaca; color: #dc2626; }
-  .badge-prioridad-critica { background: #7c2d12; color: white; }
+  .badge-prioridad-baja {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+  }
+
+  .badge-prioridad-media {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+  }
+
+  .badge-prioridad-alta {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+  }
+
+  .badge-prioridad-critica {
+    background: linear-gradient(135deg, #991b1b, #7f1d1d);
+    color: white;
+  }
 
   .incidencia-titulo {
     margin: 0 0 0.5rem 0;
     font-size: 1.125rem;
-    font-weight: 600;
+    font-weight: 700;
     color: #1f2937;
   }
 
   .incidencia-descripcion {
     color: #6b7280;
     margin-bottom: 1rem;
-    line-height: 1.5;
+    line-height: 1.6;
   }
 
   .incidencia-footer {
@@ -1189,6 +1365,7 @@
 
   .meta-item strong {
     color: #374151;
+    font-weight: 600;
   }
 
   .incidencia-actions {
@@ -1197,20 +1374,23 @@
   }
 
   .btn-secondary {
-    background: #2563eb;
+    background: linear-gradient(135deg, #4c51bf, #5b21b6);
     color: #ffffff;
-    border: 1px solid #2563eb;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
     font-size: 0.875rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
+    transition: all 0.3s ease;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    box-shadow: 0 2px 8px rgba(76, 81, 191, 0.3);
   }
 
   .btn-secondary:hover {
-    background: #1d4ed8;
-    border-color: #1d4ed8;
+    background: linear-gradient(135deg, #5b21b6, #6d28d9);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 81, 191, 0.4);
   }
 
   .empty-state {
@@ -1222,66 +1402,13 @@
   .empty-state h3 {
     margin-bottom: 0.5rem;
     color: #374151;
+    font-size: 1.5rem;
+    font-weight: 700;
   }
 
-  /* Animaciones */
-  @keyframes moveLines {
-    0% {
-      transform: translate(0, 0);
-    }
-    100% {
-      transform: translate(50px, 50px);
-    }
-  }
-
-  @keyframes slideRight {
-    0% {
-      left: -40%;
-    }
-    50% {
-      left: 60%;
-    }
-    100% {
-      left: -40%;
-    }
-  }
-
-  /* Responsive design */
-  @media (max-width: 768px) {
-    .tabs-container {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 1rem;
-    }
-
-    .controls {
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-
-    .search-container {
-      flex: 1;
-      min-width: 200px;
-    }
-
-    .search-input {
-      width: 100%;
-    }
-
-    .filter-container {
-      margin-left: 0;
-      margin-top: 0.5rem;
-    }
-
-    .tabs {
-      flex-wrap: wrap;
-    }
-
-    .tab {
-      font-size: 0.75rem;
-      padding: 0.5rem 0.75rem;
-    }
+  .empty-state p {
+    font-size: 1rem;
+    margin-bottom: 1rem;
   }
 
   /* Modal styles */
@@ -1293,7 +1420,7 @@
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
     z-index: 1000;
     backdrop-filter: blur(4px);
@@ -1306,10 +1433,10 @@
     border-radius: 16px;
     padding: 0;
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
     max-height: 90vh;
     overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: modalAppear 0.3s ease-out;
   }
 
@@ -1325,40 +1452,42 @@
   }
 
   .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 16px 16px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem 2rem;
-    border-bottom: 1px solid #e5e7eb;
-    background: #f9fafb;
   }
 
   .modal-header h2 {
     margin: 0;
-    color: #374151;
-    font-size: 1.25rem;
-    font-weight: 500;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .close-btn {
     background: none;
     border: none;
-    font-size: 1.5rem;
+    color: white;
+    font-size: 28px;
     cursor: pointer;
-    color: #6b7280;
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
+    padding: 0;
+    line-height: 1;
   }
 
   .close-btn:hover {
-    background: #e5e7eb;
-    color: #374151;
+    background: rgba(255, 255, 255, 0.2);
   }
 
   .modal form {
@@ -1372,9 +1501,9 @@
   .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    font-weight: 400;
-    color: #4b5563;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 600;
+    color: #374151;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-size: 0.875rem;
   }
 
@@ -1383,25 +1512,22 @@
   .form-group select {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid #d1d5db;
+    border: 2px solid #e5e7eb;
     border-radius: 8px;
     font-size: 0.875rem;
-    transition: border-color 0.2s;
+    transition: all 0.3s ease;
     box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-weight: 400;
-    color: #4b5563;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: #374151;
   }
 
   .form-group input:focus,
   .form-group textarea:focus,
   .form-group select:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
-
-
 
   .form-group textarea {
     resize: vertical;
@@ -1419,37 +1545,42 @@
   .btn-save {
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
-    font-weight: 400;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
     border: none;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-size: 0.875rem;
   }
 
   .btn-cancel {
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
-  }
-
-  .btn-cancel:hover:not(:disabled) {
-    background: #e5e7eb;
-  }
-
-  .btn-save {
-    background: #3b82f6;
+    background: #6c757d;
     color: white;
   }
 
+  .btn-cancel:hover:not(:disabled) {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+  }
+
+  .btn-save {
+    background: linear-gradient(135deg, #4c51bf, #5b21b6);
+    color: white;
+    box-shadow: 0 4px 15px rgba(76, 81, 191, 0.3);
+  }
+
   .btn-save:hover:not(:disabled) {
-    background: #2563eb;
+    background: linear-gradient(135deg, #5b21b6, #6d28d9);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 81, 191, 0.4);
   }
 
   .btn-cancel:disabled,
   .btn-save:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
   }
 
   .loading-jefes {
@@ -1457,9 +1588,19 @@
     text-align: center;
     color: #6b7280;
     font-style: italic;
-    border: 1px solid #d1d5db;
+    border: 2px solid #e5e7eb;
     border-radius: 8px;
     background: #f9fafb;
+  }
+
+  .no-jefes {
+    padding: 0.75rem;
+    text-align: center;
+    color: #dc2626;
+    border: 2px solid #fecaca;
+    border-radius: 8px;
+    background: #fee2e2;
+    font-weight: 500;
   }
 
   /* Estilos específicos para modal de detalles */
@@ -1468,7 +1609,7 @@
     max-height: 98vh;
     height: auto;
     width: 95vw;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     flex-direction: column;
   }
@@ -1484,11 +1625,29 @@
   }
 
   .detalle-content {
-    padding: 1.25rem;
+    padding: 2rem;
     overflow-y: auto;
     flex: 1;
-    max-height: calc(98vh - 80px);
+    max-height: calc(98vh - 100px);
     min-height: 500px;
+  }
+
+  .detalle-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .detalle-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+  }
+
+  .detalle-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+
+  .detalle-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 
   .detalle-section {
@@ -1502,8 +1661,13 @@
   .detalle-numero {
     font-size: 0.9rem;
     color: #6b7280;
-    font-weight: 500;
+    font-weight: 600;
     margin-bottom: 0.5rem;
+    font-family: "Courier New", monospace;
+    background: #f3f4f6;
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
   }
 
   .detalle-titulo {
@@ -1516,7 +1680,7 @@
 
   .detalle-section h4 {
     font-size: 1.1rem;
-    font-weight: 600;
+    font-weight: 700;
     color: #374151;
     margin: 0 0 0.75rem 0;
     border-bottom: 2px solid #e5e7eb;
@@ -1527,7 +1691,7 @@
   .detalle-resolucion {
     background: #f9fafb;
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 1.25rem;
     line-height: 1.7;
     color: #374151;
@@ -1546,16 +1710,22 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    padding: 0.75rem;
+    padding: 1rem;
     background: #f8fafc;
-    border-radius: 6px;
-    border-left: 3px solid #3b82f6;
+    border-radius: 8px;
+    border-left: 4px solid #4c51bf;
+    transition: all 0.2s ease;
+  }
+
+  .detalle-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   .detalle-item strong {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #4b5563;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -1563,7 +1733,7 @@
   .detalle-item span {
     font-size: 1rem;
     color: #1f2937;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .comentarios-section {
@@ -1581,10 +1751,16 @@
   .comentario-item {
     background: #f8fafc;
     border: 1px solid #e5e7eb;
-    border-left: 4px solid #3b82f6;
-    border-radius: 8px;
+    border-left: 4px solid #4c51bf;
+    border-radius: 12px;
     padding: 1.25rem;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    transition: all 0.2s ease;
+  }
+
+  .comentario-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
   }
 
   .comentario-meta {
@@ -1596,21 +1772,21 @@
 
   .comentario-meta strong {
     color: #374151;
-    font-weight: 500;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 600;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .comentario-fecha {
     font-size: 0.875rem;
     color: #6b7280;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-weight: 400;
   }
 
   .comentario-texto {
     color: #4b5563;
     line-height: 1.6;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-weight: 400;
   }
 
@@ -1622,11 +1798,52 @@
     gap: 1rem;
     padding: 1rem;
     background: #f8fafc;
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid #e5e7eb;
   }
 
   .estado-actual,
+  .prioridad-actual {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .estado-actual strong,
+  .prioridad-actual strong {
+    font-size: 0.875rem;
+    color: #374151;
+    font-weight: 600;
+  }
+
+  .btn-cambiar-estado {
+    background: linear-gradient(135deg, #4c51bf, #5b21b6);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: auto;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    box-shadow: 0 2px 8px rgba(76, 81, 191, 0.3);
+  }
+
+  .btn-cambiar-estado:hover {
+    background: linear-gradient(135deg, #5b21b6, #6d28d9);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 81, 191, 0.4);
+  }
+
+  /* Estilos para modal de cambio de estado */
+  .cambiar-estado-content {
+    padding: 2rem;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .estado-actual .estado-actual,
   .prioridad-actual {
     display: flex;
     align-items: center;
@@ -1661,7 +1878,8 @@
   /* Estilos para modal de cambio de estado */
   .cambiar-estado-content {
     padding: 2rem;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
   }
 
   .estado-actual-info {
@@ -1670,7 +1888,8 @@
     border-radius: 8px;
     border: 1px solid #e5e7eb;
     margin-bottom: 1.5rem;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
   }
 
   .estado-actual-info p {
@@ -1680,12 +1899,14 @@
     gap: 0.75rem;
     font-size: 0.95rem;
     font-weight: 400;
-    font-family: -apple-system, BlinkMacSystemFont, "Segue UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segue UI", Roboto,
+      sans-serif;
   }
 
   .estado-actual-info strong {
     font-weight: 500;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
   }
 
   /* Estilos para modal de mensajes */
@@ -1733,7 +1954,8 @@
     margin: 0;
     font-size: 1.25rem;
     font-weight: 500;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
   }
 
   .mensaje-contenido {
@@ -1745,7 +1967,8 @@
     font-size: 1rem;
     line-height: 1.6;
     color: #4b5563;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
     font-weight: 400;
   }
 
@@ -1765,7 +1988,8 @@
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 1rem;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
   }
 
   .btn-mensaje:hover {

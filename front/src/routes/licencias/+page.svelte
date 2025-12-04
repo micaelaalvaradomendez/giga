@@ -1118,7 +1118,8 @@
 
 	.btn-primary,
 	.btn-secondary,
-	.btn-refresh {
+	.btn-refresh,
+	.btn-cancel {
 		padding: 16px 32px;
 		border: none;
 		border-radius: 10px;
@@ -1164,6 +1165,22 @@
 	.btn-refresh:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 5px 15px rgba(226, 148, 59, 0.4);
+	}
+
+	.btn-cancel {
+		background: #6c757d;
+		color: white;
+	}
+
+	.btn-cancel:hover:not(:disabled) {
+		background: #5a6268;
+		transform: translateY(-2px);
+		box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+	}
+
+	.btn-cancel:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	/* Estadísticas */
