@@ -894,9 +894,9 @@
 <style>
   .incidencias-container {
     width: 100%;
-    max-width: 1500px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 0 2rem 1.5rem;
+    padding: 0 1rem 1.5rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
@@ -931,9 +931,9 @@
     position: relative;
     background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
     color: white;
-    padding: 30px 40px;
-    max-width: 1500px;
-    border-radius: 28px;
+    padding: 20px 30px;
+    max-width: 100%;
+    border-radius: 16px;
     overflow: hidden;
     text-align: center;
     box-shadow:
@@ -1042,22 +1042,26 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    gap: 2rem;
+    gap: 1rem;
     margin-bottom: 2rem;
     border-bottom: 2px solid #e5e7eb;
     padding-bottom: 1rem;
+    flex-wrap: nowrap;
+    min-width: 0;
   }
 
   .tabs {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: nowrap;
   }
 
   .controls {
     display: flex;
     align-items: center;
     gap: 1rem;
+    flex-shrink: 0;
   }
 
   .tab {
@@ -1071,6 +1075,8 @@
     font-weight: 600;
     transition: all 0.3s ease;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .tab:hover {
@@ -1096,7 +1102,8 @@
     border: 2px solid #e5e7eb;
     border-radius: 10px;
     font-size: 0.875rem;
-    width: 300px;
+    width: 250px;
+    max-width: 100%;
     transition: all 0.3s ease;
     background: white;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -2049,6 +2056,13 @@
     .mensaje-contenido,
     .mensaje-acciones {
       padding: 1rem;
+    }
+  }
+
+  /* Solo ajustes mínimos para evitar overflow */
+  @media (max-width: 1024px) {
+    .incidencias-container {
+      max-width: 100%;
     }
   }
 </style>
