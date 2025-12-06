@@ -7,76 +7,111 @@ services:
     container_name: giga-postgres
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=${DB_NAME:-giga}
-      - POSTGRES_USER=${DB_USER:-giga_user}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=giga
+      - POSTGRES_USER=giga_user
+      - POSTGRES_PASSWORD=giga2025
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./bd/init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - giga-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-giga_user} -d ${DB_NAME:-giga}" ]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 30s
+      test: [ "CMD-SHELL", "pg_isready -U giga_user -d giga" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 80s
 
   # Backend Django
   backend:
     build:
       context: ./back
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile
     container_name: giga-django
     restart: unless-stopped
     environment:
-      - DEBUG=${DEBUG:-False}
-      - SECRET_KEY=${SECRET_KEY}
-
-      # Email Configuration (Railway Dashboard)
-      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
-      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
-      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
-      - FRONTEND_URL=${FRONTEND_URL}
-
-      # Session Configuration
-      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-True}
-      - SESSION_COOKIE_AGE=${SESSION_COOKIE_AGE:-3600}
-
-      - DB_NAME=${DB_NAME:-giga}
-      - DB_USER=${DB_USER:-giga_user}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=postgres
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-giga-dev-key-change-in-production
+      - DB_NAME=giga
+      - DB_USER=giga_user
+      - DB_PASSWORD=giga2025
+      - DB_HOST=giga-postgres
       - DB_PORT=5432
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
-      - CORS_ALLOW_ALL_ORIGINS=${CORS_ALLOW_ALL_ORIGINS:-False}
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,backend
+      - CORS_ALLOW_ALL_ORIGINS=True
     volumes:
+      - ./back:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    networks:
+      - giga-network
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health", "||", "curl", "-f", "http://localhost:8000/api/", "||", "exit", "1" ]
+      test: [ "CMD", "python", "manage.py", "check", "--database", "default" ]
       interval: 30s
       timeout: 15s
       retries: 5
-      start_period: 120s
+      start_period: 60s
 
   # Frontend Svelte
   frontend:
     build:
       context: ./front
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile
     container_name: giga-frontend
     restart: unless-stopped
     environment:
-      - NODE_ENV=production
-      - VITE_API_URL=${VITE_API_URL}
+      - NODE_ENV=development
+      - VITE_API_URL=http://backend:8000
+      # Habilitar polling para file watcher dentro del contenedor (útil en Windows hosts)
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=100
+    volumes:
+      - ./front:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "3000:3000"
+    networks:
+      - giga-network
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000", "||", "exit", "1" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:3000", "||", "exit", "1" ]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 45s
+
+  # Nginx Reverse Proxy
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: giga-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/logs:/var/log/nginx
+      - static_volume:/var/www/static:ro
+      - media_volume:/var/www/media:ro
+    networks:
+      - giga-network
+    depends_on:
+      - backend
+      - frontend
+    healthcheck:
+      test: [ "CMD", "/usr/local/bin/healthcheck.sh" ]
       interval: 30s
       timeout: 15s
       retries: 5
@@ -88,52 +123,42 @@ services:
     container_name: giga-minio
     command: server /data --console-address ":9090"
     restart: unless-stopped
+    ports:
+      - "9000:9000" # API
+      - "9090:9090" # Console
     environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-giga-user}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_ROOT_USER=giga-user
+      - MINIO_ROOT_PASSWORD=giga-password-change-me
     volumes:
       - minio_data:/data
+    networks:
+      - giga-network
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 40s
+      retries: 3
+      start_period: 30s
 
   # n8n Workflow Automation
   n8n:
     image: n8nio/n8n:latest
     container_name: giga-n8n
     restart: unless-stopped
+    ports:
+      - "5678:5678"
     environment:
-      - N8N_HOST=0.0.0.0
+      - N8N_HOST=localhost
       - N8N_PORT=5678
-      - WEBHOOK_URL=${N8N_WEBHOOK_URL}
+      - WEBHOOK_URL=http://localhost:5678/
       - TZ=America/Argentina/Buenos_Aires
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
-      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
-      # PostgreSQL Backend para n8n (persistencia)
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
-      - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=${DB_NAME:-giga}
-      - DB_POSTGRESDB_USER=${DB_USER:-giga_user}
-      - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD}
-      - DB_POSTGRESDB_SCHEMA=n8n
+      - N8N_BASIC_AUTH_ACTIVE=false
     volumes:
       - n8n_data:/home/node/.n8n
+    networks:
+      - giga-network
     depends_on:
-      postgres:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5678/healthz", "||", "exit", "1" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+      - minio
 
 volumes:
   postgres_data:
@@ -142,7 +167,14 @@ volumes:
     driver: local
   media_volume:
     driver: local
+  frontend_node_modules:
+    driver: local
   minio_data:
     driver: local
   n8n_data:
     driver: local
+
+networks:
+  giga-network:
+    driver: bridge
+    name: giga-network
