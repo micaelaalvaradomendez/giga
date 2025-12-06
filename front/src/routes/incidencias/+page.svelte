@@ -1067,7 +1067,7 @@
   .tab {
     background: none;
     border: none;
-    font-size: 16px;
+    font-size: 14px;
     padding: 0.75rem 1.25rem;
     cursor: pointer;
     border-radius: 10px;

@@ -32,6 +32,7 @@
 	import ModalAsignar from "$lib/componentes/admin/licencias/ModalAsignar.svelte";
 	import ModalAprobar from "$lib/componentes/admin/licencias/ModalAprobar.svelte";
 	import ModalRechazar from "$lib/componentes/admin/licencias/ModalRechazar.svelte";
+	import ModalSolicitar from "$lib/componentes/admin/licencias/ModalSolicitar.svelte";
 	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
 
 	let vistaActual = "licencias"; // 'licencias' o 'tipos'
@@ -48,21 +49,6 @@
 	let showModalAprobar = false;
 	let showModalRechazar = false;
 	let licenciaSeleccionada = null;
-
-	// Form data
-	let formLicencia = {
-		id_agente: null,
-		id_tipo_licencia: null,
-		fecha_desde: "",
-		fecha_hasta: "",
-		observaciones: "",
-		justificacion: "",
-	};
-
-	// Variables para asignación de licencias
-	let areaSeleccionada = null;
-	let agentesDelArea = [];
-	let cargandoAgentes = false;
 
 	let formAprobacion = {
 		observaciones: "",
@@ -274,57 +260,13 @@
 		}
 	}
 
-	async function cargarAgentesPorArea(areaId) {
-		try {
-			if (!areaId) {
-				agentesDelArea = [];
-				cargandoAgentes = false;
-				return;
-			}
 
-			cargandoAgentes = true;
-			const response = await personasService.getAgentesByArea(areaId);
-			if (response?.data) {
-				// La API devuelve estructura paginada: { count, results: [...] }
-				agentesDelArea = response.data.results || [];
-			} else {
-				agentesDelArea = [];
-			}
-
-			// Reset agente seleccionado cuando cambia el área
-			formLicencia.id_agente = null;
-		} catch (err) {
-			console.error("Error cargando agentes del área:", err);
-			agentesDelArea = [];
-		} finally {
-			cargandoAgentes = false;
-		}
-	}
 
 	function abrirModalCrear() {
-		formLicencia = {
-			id_agente: userInfo.id_agente, // Por defecto, el usuario actual
-			id_tipo_licencia: null,
-			fecha_desde: "",
-			fecha_hasta: "",
-			observaciones: "",
-			justificacion: "",
-		};
 		showModalCrear = true;
 	}
 
 	function abrirModalAsignar() {
-		formLicencia = {
-			id_agente: null,
-			id_tipo_licencia: null,
-			fecha_desde: "",
-			fecha_hasta: "",
-			observaciones: "",
-			justificacion: "Asignada por jefatura",
-		};
-		areaSeleccionada = null;
-		agentesDelArea = [];
-		cargandoAgentes = false;
 		showModalAsignar = true;
 	}
 
@@ -365,41 +307,10 @@
 		};
 	}
 
-	async function handleCrearLicencia() {
-		if (
-			!formLicencia.id_tipo_licencia ||
-			!formLicencia.fecha_desde ||
-			!formLicencia.fecha_hasta
-		) {
-			mostrarError("Por favor complete todos los campos obligatorios");
-			return;
-		}
-
-		if (
-			new Date(formLicencia.fecha_desde) >
-			new Date(formLicencia.fecha_hasta)
-		) {
-			mostrarError(
-				"La fecha de inicio no puede ser posterior a la fecha de fin",
-			);
-			return;
-		}
-
-		saving = true;
-		const resultado = await crearLicencia({
-			...formLicencia,
-			estado: "pendiente",
-		});
-
-		if (resultado.success) {
-			cerrarModales();
-			mostrarExito(
-				"Licencia solicitada correctamente. Aguarde aprobación.",
-			);
-		} else {
-			mostrarError(resultado.error);
-		}
-		saving = false;
+	function handleLicenciaCreada(event) {
+		showModalCrear = false;
+		mostrarExito("Licencia solicitada correctamente. Aguarde aprobación.");
+		cargarLicencias(); // Recargar la lista
 	}
 
 	function handleAsignarEvent(event) {
@@ -525,51 +436,7 @@
 		);
 	});
 
-	async function handleAsignarLicencia() {
-		if (
-			!areaSeleccionada ||
-			!formLicencia.id_agente ||
-			!formLicencia.id_tipo_licencia ||
-			!formLicencia.fecha_desde ||
-			!formLicencia.fecha_hasta
-		) {
-			mostrarError("Por favor complete todos los campos obligatorios");
-			return;
-		}
 
-		const rol =
-			userInfo?.roles?.[0]?.nombre || userInfo?.rol_nombre || "Agente";
-		saving = true;
-
-		// Determinar el estado según el rol del usuario
-		let estadoLicencia = "pendiente";
-		let aprobadaPor = null;
-
-		if (rol === "Director" || rol === "Jefatura") {
-			// Director y Jefatura aprueban automáticamente sus asignaciones
-			estadoLicencia = "aprobada";
-			aprobadaPor = userInfo.id_agente;
-		}
-		// Agente Avanzado asigna pero la licencia queda pendiente de aprobación
-
-		const resultado = await crearLicencia({
-			...formLicencia,
-			estado: estadoLicencia,
-			aprobada_por: aprobadaPor,
-		});
-
-		if (resultado.success) {
-			cerrarModales();
-			const mensaje =
-				estadoLicencia === "aprobada"
-					? "Licencia asignada y aprobada correctamente."
-					: "Licencia asignada correctamente. Queda pendiente de aprobación.";
-			mostrarExito(mensaje);
-		} else {
-			mostrarError(resultado.error);
-		}
-		saving = false;
-	}
 
 	async function handleAprobarLicencia() {
 		if (!licenciaSeleccionada) return;
@@ -629,10 +496,7 @@
 		return puedeAprobarLicencia(licencia, rol, userInfo?.id_area);
 	}
 
-	$: diasLicencia = calcularDiasLicencia(
-		formLicencia.fecha_desde,
-		formLicencia.fecha_hasta,
-	);
+
 </script>
 
 <svelte:head>
@@ -899,101 +763,21 @@
 </div>
 
 <!-- Modal Crear/Solicitar Licencia -->
-{#if showModalCrear}
-	<div class="modal-overlay">
-		<div class="modal">
-			<div class="modal-header">
-				<h3>📋 Solicitar Licencia</h3>
-				<button class="modal-close" on:click={cerrarModales}>✕</button>
-			</div>
-			<form on:submit|preventDefault={handleCrearLicencia}>
-				<div class="modal-body">
-					<div class="form-group">
-						<label for="tipo">Tipo de Licencia *</label>
-						<select
-							bind:value={formLicencia.id_tipo_licencia}
-							required
-						>
-							<option value={null}>Seleccione un tipo...</option>
-							{#each $tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}
-									>{tipo.codigo} - {tipo.descripcion}</option
-								>
-							{/each}
-						</select>
-					</div>
-
-					<div class="form-row">
-						<div class="form-group">
-							<label for="fecha">Fecha Desde *</label>
-							<input
-								type="date"
-								bind:value={formLicencia.fecha_desde}
-								required
-							/>
-						</div>
-						<div class="form-group">
-							<label for="fecha">Fecha Hasta *</label>
-							<input
-								type="date"
-								bind:value={formLicencia.fecha_hasta}
-								required
-							/>
-						</div>
-					</div>
-
-					{#if diasLicencia > 0}
-						<div class="info-days">
-							📅 Duración: <strong>{diasLicencia} días</strong>
-						</div>
-					{/if}
-
-					<div class="form-group">
-						<label for="justificacion">Justificación *</label>
-						<textarea
-							bind:value={formLicencia.justificacion}
-							placeholder="Indique el motivo de la licencia..."
-							rows="3"
-							required
-						></textarea>
-					</div>
-
-					<div class="form-group">
-						<label for="observaciones"
-							>Observaciones adicionales</label
-						>
-						<textarea
-							bind:value={formLicencia.observaciones}
-							placeholder="Observaciones opcionales..."
-							rows="2"
-						></textarea>
-					</div>
-				</div>
-				<div class="modal-footer">
-					<button
-						type="button"
-						class="btn-cancel"
-						on:click={cerrarModales}
-						disabled={saving}
-					>
-						Cancelar
-					</button>
-					<button type="submit" class="btn-primary" disabled={saving}>
-						{saving ? "Enviando..." : "📤 Enviar Solicitud"}
-					</button>
-				</div>
-			</form>
-		</div>
-	</div>
-{/if}
+<ModalSolicitar
+	bind:show={showModalCrear}
+	tiposLicencia={$tiposLicencia}
+	{userInfo}
+	on:created={handleLicenciaCreada}
+	on:close={() => (showModalCrear = false)}
+/>
 
 <!-- Modal de Asignar Licencia -->
 <ModalAsignar
 	bind:show={showModalAsignar}
 	{areas}
 	tiposLicencia={$tiposLicencia}
-	on:asignar={handleAsignarEvent}
-	on:cancelar={() => (showModalAsignar = false)}
+	on:assigned={handleAsignarEvent}
+	on:close={() => (showModalAsignar = false)}
 />
 
 <!-- Modal de Aprobar Licencia -->
@@ -1357,7 +1141,6 @@
 		font-size: 13px;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
-		border-bottom: 3px solid #3b82f6;
 		background: transparent;
 	}
 

@@ -1,95 +1,73 @@
 <script>
-	import { crearLicencia } from '$lib/paneladmin/controllers/licenciasController.js';
-	
-	// Props
+	import { createEventDispatcher } from 'svelte';
+	import { crearLicencia, calcularDiasLicencia } from '$lib/paneladmin/controllers/licenciasController.js';
+
 	export let show = false;
 	export let tiposLicencia = [];
 	export let userInfo = null;
 
-	// Events
-	import { createEventDispatcher } from 'svelte';
 	const dispatch = createEventDispatcher();
 
-	// Form data
 	let formLicencia = {
-		id_agente: null,
-		id_tipo_licencia: null,
-		fecha_desde: '',
-		fecha_hasta: '',
-		observaciones: '',
-		justificacion: ''
+		id_tipo_licencia: "",
+		observaciones: "",
+		justificacion: "",
+		fecha_desde: "",
+		fecha_hasta: ""
 	};
 
 	let enviando = false;
+	let diasLicencia = 0;
 
-	// Limpiar form cuando se cierra el modal
 	$: if (!show) {
 		formLicencia = {
-			id_agente: null,
-			id_tipo_licencia: null,
-			fecha_desde: '',
-			fecha_hasta: '',
-			observaciones: '',
-			justificacion: ''
+			id_tipo_licencia: "",
+			observaciones: "",
+			justificacion: "",
+			fecha_desde: "",
+			fecha_hasta: ""
 		};
 		enviando = false;
 	}
 
+	$: diasLicencia = calcularDiasLicencia(formLicencia.fecha_desde, formLicencia.fecha_hasta);
+
 	function cerrarModal() {
-		show = false;
 		dispatch('close');
 	}
 
 	async function handleCrearLicencia() {
-		if (!userInfo?.id_agente) {
-			alert('Error: No se pudo obtener la información del usuario. Por favor, recargue la página e intente nuevamente.');
+		if (!formLicencia.id_tipo_licencia || !formLicencia.fecha_desde || !formLicencia.fecha_hasta || !formLicencia.justificacion) {
+			alert("Por favor complete todos los campos obligatorios");
 			return;
 		}
 
-		try {
-			enviando = true;
-			
-			// Asignar el agente actual automáticamente
-			const datosLicencia = {
-				...formLicencia,
-				id_agente: userInfo.id_agente
-			};
+		enviando = true;
+		const datos = {
+			...formLicencia,
+			id_agente: userInfo?.id_agente
+		};
 
-			console.log('📝 Creando licencia:', datosLicencia);
-			
-			const resultado = await crearLicencia(datosLicencia);
-			
-			if (resultado.success) {
-				alert('✅ Licencia solicitada correctamente');
-				cerrarModal();
-				dispatch('created', resultado.data);
-			} else {
-				throw new Error(resultado.message || 'Error al crear la licencia');
-			}
-		} catch (err) {
-			console.error('❌ Error creando licencia:', err);
-			alert(`Error: ${err.message}`);
-		} finally {
-			enviando = false;
+		const resultado = await crearLicencia(datos);
+
+		if (resultado.success) {
+			dispatch('created');
+			cerrarModal();
+		} else {
+			alert(resultado.error || "Error al crear la licencia");
 		}
+		enviando = false;
 	}
 </script>
 
 {#if show}
-	<div class="modal-backdrop">
-		<div class="modal-contenido">
+	<div class="modal-backdrop" on:click={cerrarModal}>
+		<div class="modal-contenido" on:click|stopPropagation>
 			<div class="modal-header">
 				<h5>Nueva Solicitud de Licencia</h5>
 				<button type="button" class="btn-close" on:click={cerrarModal}>&times;</button>
 			</div>
 			<div class="modal-body">
-				<!-- Debug info -->
-				<div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 12px;">
-					<strong>Debug Modal Solicitud:</strong><br>
-					Usuario: {userInfo?.nombre} {userInfo?.apellido} (ID: {userInfo?.id_agente})<br>
-					Tipos disponibles: {tiposLicencia.length}
-				</div>
-				
 				<form on:submit|preventDefault={handleCrearLicencia}>
 					<div class="form-group">
 						<label for="agente_solicitante">Agente Solicitante</label>
@@ -105,22 +83,39 @@
 					<div class="form-group">
 						<label for="tipo_licencia_crear">Tipo de Licencia *</label>
 						<select id="tipo_licencia_crear" bind:value={formLicencia.id_tipo_licencia} required>
-							<option value="">Seleccione un tipo...</option>
+							<option value="">Seleccione tipo de licencia</option>
 							{#each tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}>{tipo.nombre}</option>
+								<option value={tipo.id_tipo_licencia}>{tipo.descripcion}</option>
 							{/each}
 						</select>
 					</div>
 
-					<div class="form-group">
-						<label for="fecha_desde_crear">Fecha de Inicio *</label>
-						<input type="date" id="fecha_desde_crear" bind:value={formLicencia.fecha_desde} required />
+					<div class="row">
+						<div class="form-group" style="flex: 1;">
+							<label for="fecha_desde_crear">Desde *</label>
+							<input 
+								type="date" 
+								id="fecha_desde_crear" 
+								bind:value={formLicencia.fecha_desde} 
+								required 
+							/>
+						</div>
+						<div class="form-group" style="flex: 1;">
+							<label for="fecha_hasta_crear">Hasta *</label>
+							<input 
+								type="date" 
+								id="fecha_hasta_crear" 
+								bind:value={formLicencia.fecha_hasta} 
+								required 
+							/>
+						</div>
 					</div>
 
-					<div class="form-group">
-						<label for="fecha_hasta_crear">Fecha de Fin *</label>
-						<input type="date" id="fecha_hasta_crear" bind:value={formLicencia.fecha_hasta} required />
-					</div>
+					{#if diasLicencia > 0}
+						<div class="info-days">
+							Duración: <strong>{diasLicencia} días</strong>
+						</div>
+					{/if}
 
 					<div class="form-group">
 						<label for="justificacion_crear">Justificación *</label>
@@ -169,49 +164,58 @@
 		justify-content: center;
 		align-items: center;
 		z-index: 1000;
+		backdrop-filter: blur(4px);
 	}
 
 	.modal-contenido {
 		background: white;
-		border-radius: 8px;
+		border-radius: 16px;
 		width: 90%;
 		max-width: 500px;
 		max-height: 90vh;
 		overflow-y: auto;
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.modal-header {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		padding: 1.5rem 2rem;
+		border-radius: 16px 16px 0 0;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 1rem;
-		border-bottom: 1px solid #eee;
 	}
 
 	.modal-header h5 {
 		margin: 0;
-		font-size: 1.2rem;
-		color: #333;
+		font-size: 1.5rem;
+		font-weight: 600;
 	}
 
 	.btn-close {
 		background: none;
 		border: none;
-		font-size: 1.5rem;
+		color: white;
+		font-size: 25px;
 		cursor: pointer;
-		color: #666;
 		padding: 0;
 		width: 30px;
 		height: 30px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		transition: all 0.3s ease;
 	}
 
 	.btn-close:hover {
-		color: #000;
+		background: rgba(255, 255, 255, 0.2);
 	}
 
 	.modal-body {
-		padding: 1rem;
+		padding: 2rem;
 	}
 
 	.form-group {
@@ -220,24 +224,39 @@
 
 	.form-group label {
 		display: block;
-		margin-bottom: 0.25rem;
-		font-weight: bold;
-		color: #333;
+		margin-bottom: 5px;
+		font-weight: 600;
+		color: #313131;
 	}
 
 	.form-group input,
 	.form-group select,
 	.form-group textarea {
+		padding: 12px 15px;
+		border: 2px solid #e1e5e9;
+		border-radius: 8px;
+		font-size: 16px;
+		transition: all 0.3s ease;
+		font-family: inherit;
 		width: 100%;
-		padding: 0.5rem;
-		border: 1px solid #ddd;
-		border-radius: 4px;
-		font-size: 0.9rem;
+		box-sizing: border-box;
+	}
+
+	.form-group textarea {
+		resize: vertical;
 	}
 
 	.form-group input:disabled {
 		background-color: #f5f5f5;
 		color: #666;
+	}
+
+	.form-group input:focus,
+	.form-group select:focus,
+	.form-group textarea:focus {
+		outline: none;
+		border-color: #667eea;
+		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 	}
 
 	.form-text {
@@ -247,28 +266,41 @@
 		display: block;
 	}
 
+	.row {
+		display: flex;
+		gap: 1rem;
+	}
+
 	.modal-footer {
 		display: flex;
 		justify-content: flex-end;
 		gap: 0.5rem;
 		margin-top: 1.5rem;
+		padding-top: 1rem;
+		border-top: 1px solid #e5e7eb;
 	}
 
 	.btn-primary {
-		background: #007bff;
+		padding: 10px 20px;
+		background: linear-gradient(135deg, #10b981, #059669);
 		color: white;
 		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 4px;
+		border-radius: 8px;
+		font-weight: 600;
 		cursor: pointer;
+		transition: all 0.3s ease;
+		box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+		font-size: 16px;
 	}
 
 	.btn-primary:hover:not(:disabled) {
-		background: #0056b3;
+		background: linear-gradient(135deg, #059669, #047857);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
 	}
 
 	.btn-primary:disabled {
-		background: #6c757d;
+		opacity: 0.7;
 		cursor: not-allowed;
 	}
 
@@ -276,17 +308,52 @@
 		background: #6c757d;
 		color: white;
 		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 4px;
+		padding: 10px 20px;
+		border-radius: 8px;
+		font-weight: 600;
 		cursor: pointer;
+		transition: all 0.3s ease;
+		font-size: 16px;
 	}
 
 	.btn-secondary:hover:not(:disabled) {
 		background: #545b62;
+		transform: translateY(-2px);
 	}
 
 	.btn-secondary:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+	}
+
+	.info-days {
+		background-color: #e0f2fe;
+		color: #0369a1;
+		padding: 10px;
+		border-radius: 8px;
+		margin-bottom: 1rem;
+		text-align: center;
+		font-size: 0.9rem;
+		font-weight: 600;
+	}
+
+	@media (max-width: 480px) {
+		.row {
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+		
+		.modal-contenido {
+			width: 95%;
+			margin: 10px;
+		}
+		
+		.modal-header {
+			padding: 1rem;
+		}
+		
+		.modal-body {
+			padding: 1rem;
+		}
 	}
 </style>

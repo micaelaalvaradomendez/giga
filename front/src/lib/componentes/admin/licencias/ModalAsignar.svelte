@@ -20,15 +20,15 @@
 	const dispatch = createEventDispatcher();
 
 	let formLicencia = {
-		id_agente: null,
-		id_tipo_licencia: null,
+		id_agente: "",
+		id_tipo_licencia: "",
 		fecha_desde: "",
 		fecha_hasta: "",
 		observaciones: "",
 		justificacion: "",
 	};
 
-	let areaSeleccionada = null;
+	let areaSeleccionada = "";
 	let agentesDelArea = [];
 	let cargandoAgentes = false;
 	let enviando = false;
@@ -65,14 +65,14 @@
 
 	$: if (!show) {
 		formLicencia = {
-			id_agente: null,
-			id_tipo_licencia: null,
+			id_agente: "",
+			id_tipo_licencia: "",
 			fecha_desde: "",
 			fecha_hasta: "",
 			observaciones: "",
 			justificacion: "",
 		};
-		areaSeleccionada = null;
+		areaSeleccionada = "";
 		agentesDelArea = [];
 		cargandoAgentes = false;
 		enviando = false;
@@ -184,7 +184,6 @@
 			const resultado = await asignarLicencia(formLicencia);
 
 			if (resultado.success) {
-				mostrarConfirmacion("✅ Licencia asignada correctamente");
 				cerrarModal();
 				dispatch("assigned", resultado.data);
 			} else {
@@ -245,9 +244,7 @@
 		<div class="modal-contenido">
 			<div class="modal-header">
 				<h5>Asignar Nueva Licencia</h5>
-				<button type="button" class="btn-close" on:click={cerrarModal}
-					>&times;</button
-				>
+				<button type="button" class="btn-close" on:click={cerrarModal}>&times;</button>
 			</div>
 			<div class="modal-body">
 				<form on:submit|preventDefault={handleAsignarLicencia}>
@@ -262,7 +259,7 @@
 								cargarAgentesPorArea(e.target.value)}
 							required
 						>
-							<option value="">Seleccione un área...</option>
+							<option value="">Seleccione área</option>
 							{#each areasDisponibles as area}
 								<option value={area.id_area}
 									>{area.nombre}</option
@@ -311,7 +308,7 @@
 							bind:value={formLicencia.id_tipo_licencia}
 							required
 						>
-							<option value="">Seleccione un tipo...</option>
+							<option value="">Seleccione tipo de licencia</option>
 							{#each tiposLicencia as tipo}
 								<option value={tipo.id_tipo_licencia}
 									>{tipo.codigo} - {tipo.descripcion}</option

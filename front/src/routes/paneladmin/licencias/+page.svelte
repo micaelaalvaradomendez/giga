@@ -34,17 +34,28 @@
 	import ModalAsignar from "$lib/componentes/admin/licencias/ModalAsignar.svelte";
 	import ModalAprobar from "$lib/componentes/admin/licencias/ModalAprobar.svelte";
 	import ModalRechazar from "$lib/componentes/admin/licencias/ModalRechazar.svelte";
+	import ModalEliminarLicencia from "$lib/componentes/admin/licencias/ModalEliminarLicencia.svelte";
+	import ModalTipoLicencia from "$lib/componentes/admin/licencias/ModalTipoLicencia.svelte";
+	import ModalConfirmarEliminarTipo from "$lib/componentes/admin/licencias/ModalConfirmarEliminarTipo.svelte";
+	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
 
-	let vistaActual = "licencias"; 
+	let vistaActual = "licencias";
 
 	let userInfo = null;
 	let permisos = {};
 	let areas = [];
 	let isAdmin = false;
-	let userRol = null; 
-	let userArea = null; 
-	let esAgente = false; 
-	let esJefaturaODirector = false; 
+	let userRol = null;
+	let userArea = null;
+	let esAgente = false;
+	let esJefaturaODirector = false;
+
+	let alertConfig = {
+		show: false,
+		type: "info",
+		title: "",
+		message: "",
+	};
 
 	let showModalSolicitar = false;
 	let showModalCrear = false;
@@ -251,7 +262,10 @@
 
 	function abrirModalAsignar() {
 		if (!permisos.puedeAsignar) {
-			mostrarAlerta("❌ No tienes permiso para asignar licencias", "error");
+			mostrarAlerta(
+				"❌ No tienes permiso para asignar licencias",
+				"error",
+			);
 			return;
 		}
 
@@ -322,42 +336,82 @@
 	}
 
 	function handleAprobarEvent(event) {
+		console.log("🚀 handleAprobarEvent triggered", event.detail);
+		console.log("📄 Licencia seleccionada:", licenciaSeleccionada);
+
 		if (licenciaSeleccionada) {
 			aprobarLicencia(
 				licenciaSeleccionada.id_licencia,
 				event.detail.observaciones,
-			).then((resultado) => {
-				if (resultado.success) {
-					showModalAprobar = false;
+			)
+				.then((resultado) => {
+					console.log("🔄 Resultado aprobarLicencia:", resultado);
+					if (resultado.success) {
+						showModalAprobar = false;
+						mostrarAlerta(
+							"Licencia aprobada correctamente.",
+							"success",
+						);
+					} else {
+						console.error("❌ Error al aprobar:", resultado.error);
+						mostrarAlerta(resultado.error, "error");
+					}
+				})
+				.catch((err) => {
+					console.error("❌ Excepción en aprobarLicencia:", err);
 					mostrarAlerta(
-						"Licencia aprobada correctamente.",
-						"success",
+						"Error inesperado al aprobar la licencia",
+						"error",
 					);
-				} else {
-					mostrarAlerta(resultado.error, "error");
-				}
-			});
+				});
+		} else {
+			console.error("❌ No hay licencia seleccionada");
 		}
 	}
 
 	function handleRechazarEvent(event) {
+		console.log("🚀 handleRechazarEvent triggered", event.detail);
+		console.log("📄 Licencia seleccionada:", licenciaSeleccionada);
+
 		if (licenciaSeleccionada) {
 			rechazarLicencia(
 				licenciaSeleccionada.id_licencia,
 				event.detail.motivo,
-			).then((resultado) => {
-				if (resultado.success) {
-					showModalRechazar = false;
-					mostrarAlerta("Licencia rechazada.", "success");
-				} else {
-					mostrarAlerta(resultado.error, "error");
-				}
-			});
+			)
+				.then((resultado) => {
+					console.log("🔄 Resultado rechazarLicencia:", resultado);
+					if (resultado.success) {
+						showModalRechazar = false;
+						mostrarAlerta("Licencia rechazada.", "success");
+					} else {
+						console.error("❌ Error al rechazar:", resultado.error);
+						mostrarAlerta(resultado.error, "error");
+					}
+				})
+				.catch((err) => {
+					console.error("❌ Excepción en rechazarLicencia:", err);
+					mostrarAlerta(
+						"Error inesperado al rechazar la licencia",
+						"error",
+					);
+				});
+		} else {
+			console.error("❌ No hay licencia seleccionada");
 		}
 	}
 
 	function mostrarAlerta(mensaje, tipo = "info") {
-		mostrarAlerta(mensaje);
+		alertConfig = {
+			show: true,
+			type: tipo,
+			title:
+				tipo === "error"
+					? "Error"
+					: tipo === "success"
+						? "Éxito"
+						: "Información",
+			message: mensaje,
+		};
 	}
 
 	function cerrarModales() {
@@ -370,55 +424,14 @@
 		agentesDelArea = [];
 	}
 
-	async function handleCrearLicencia() {
-		if (
-			!formLicencia.id_tipo_licencia ||
-			!formLicencia.fecha_desde ||
-			!formLicencia.fecha_hasta
-		) {
-			mostrarAlerta(
-				"Por favor complete todos los campos obligatorios",
-				"error",
-			);
-			return;
-		}
-
-		if (
-			new Date(formLicencia.fecha_desde) >
-			new Date(formLicencia.fecha_hasta)
-		) {
-			mostrarAlerta(
-				"La fecha de inicio no puede ser posterior a la fecha de fin",
-				"error",
-			);
-			return;
-		}
-
-		if (!userInfo?.id_agente) {
-			mostrarAlerta(
-				"No se puede crear la licencia: información de usuario no disponible",
-				"error",
-			);
-			return;
-		}
-
-		saving = true;
-		const resultado = await crearLicencia({
-			...formLicencia,
-			id_agente: userInfo.id_agente, 
-			estado: "pendiente",
-		});
-
-		if (resultado.success) {
-			cerrarModales();
-			mostrarAlerta(
-				"Licencia solicitada correctamente. Aguarde aprobación.",
-				"success",
-			);
-		} else {
-			mostrarAlerta(resultado.error, "error");
-		}
-		saving = false;
+	function handleSolicitarEvent(event) {
+		console.log("Licencia creada:", event.detail);
+		showModalCrear = false;
+		mostrarAlerta(
+			"Licencia solicitada correctamente. Aguarde aprobación.",
+			"success",
+		);
+		cargarLicencias();
 	}
 
 	function aplicarFiltros() {
@@ -604,10 +617,7 @@
 		{#if vistaActual === "licencias"}
 			<div class="header-actions">
 				{#if permisos.puedeAsignar}
-					<button
-						class="btn-secondary"
-						on:click={abrirModalAsignar}
-					>
+					<button class="btn-secondary" on:click={abrirModalAsignar}>
 						📝 Asignar Licencia
 					</button>
 				{/if}
@@ -888,7 +898,6 @@
 				</div>
 			{/if}
 		{:else}
-
 			{#if errorTipos}
 				<div class="alert alert-error">
 					<strong>❌ Error:</strong>
@@ -982,88 +991,22 @@
 	</div>
 </div>
 
+<ModalAlert
+	bind:show={alertConfig.show}
+	type={alertConfig.type}
+	title={alertConfig.title}
+	message={alertConfig.message}
+	on:confirm={() => (alertConfig.show = false)}
+	on:close={() => (alertConfig.show = false)}
+/>
 
-{#if showModalCrear}
-	<div class="modal-backdrop">
-		<div class="modal-contenido">
-			<div class="modal-header">
-				<h5>Nueva Solicitud de Licencia</h5>
-				<button type="button" class="btn-close" on:click={cerrarModales}
-					>&times;</button
-				>
-			</div>
-			<div class="modal-body">
-				<form on:submit|preventDefault={handleCrearLicencia}>
-					<div class="form-group">
-						<label for="tipo_licencia">Tipo de Licencia *</label>
-						<select
-							id="tipo_licencia"
-							bind:value={formLicencia.id_tipo_licencia}
-							required
-						>
-							<option value="">Seleccione un tipo...</option>
-							{#each $tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}
-									>{tipo.nombre}</option
-								>
-							{/each}
-						</select>
-					</div>
-					<div class="form-group">
-						<label for="fecha_desde">Fecha de Inicio *</label>
-						<input
-							type="date"
-							id="fecha_desde"
-							bind:value={formLicencia.fecha_desde}
-							required
-						/>
-					</div>
-					<div class="form-group">
-						<label for="fecha_hasta">Fecha de Fin *</label>
-						<input
-							type="date"
-							id="fecha_hasta"
-							bind:value={formLicencia.fecha_hasta}
-							required
-						/>
-					</div>
-					{#if diasLicencia > 0}
-						<div class="info-dias">
-							<small
-								>📅 Días solicitados: <strong
-									>{diasLicencia}</strong
-								></small
-							>
-						</div>
-					{/if}
-					<div class="form-group">
-						<label for="observaciones">Observaciones</label>
-						<textarea
-							id="observaciones"
-							bind:value={formLicencia.observaciones}
-							rows="3"
-							placeholder="Motivo o comentarios adicionales..."
-						></textarea>
-					</div>
-					<div class="modal-actions">
-						<button
-							type="button"
-							class="btn btn-secondary"
-							on:click={cerrarModales}>Cancelar</button
-						>
-						<button
-							type="submit"
-							class="btn btn-primary"
-							disabled={saving}
-						>
-							{saving ? "Creando..." : "Crear Licencia"}
-						</button>
-					</div>
-				</form>
-			</div>
-		</div>
-	</div>
-{/if}
+<ModalSolicitar
+	bind:show={showModalCrear}
+	tiposLicencia={$tiposLicencia}
+	{userInfo}
+	on:created={handleSolicitarEvent}
+	on:close={() => (showModalCrear = false)}
+/>
 
 <ModalAsignar
 	bind:show={showModalAsignar}
@@ -1089,135 +1032,30 @@
 	on:cancelar={() => (showModalRechazar = false)}
 />
 
-{#if showConfirmDeleteLicencia && licenciaAEliminar}
-	<div class="modal-overlay">
-		<div class="modal-confirm">
-			<div class="modal-header-warning">
-				<h3>🗑️ Eliminar Licencia</h3>
-			</div>
-			<div class="modal-body-confirm">
-				<p>
-					¿Estás seguro de que deseas eliminar la licencia de <strong
-						>{licenciaAEliminar.agente_nombre}</strong
-					>?
-				</p>
-				<div class="licencia-details">
-					<p>
-						<strong>Tipo:</strong>
-						{licenciaAEliminar.tipo_licencia_descripcion ||
-							"Sin tipo"}
-					</p>
-					<p>
-						<strong>Período:</strong>
-						{formatearFecha(licenciaAEliminar.fecha_desde)} al {formatearFecha(
-							licenciaAEliminar.fecha_hasta,
-						)}
-					</p>
-					<p><strong>Estado:</strong> {licenciaAEliminar.estado}</p>
-					<p>
-						<strong>Días:</strong>
-						{licenciaAEliminar.dias_licencia}
-					</p>
-				</div>
-				<p class="warning-text">
-					⚠️ Esta acción no se puede deshacer y eliminará
-					permanentemente la licencia del sistema.
-				</p>
-			</div>
-			<div class="modal-footer-confirm">
-				<button
-					class="btn-cancelar-confirm"
-					on:click={cancelarEliminacionLicencia}
-				>
-					Cancelar
-				</button>
-				<button
-					class="btn-eliminar-confirm"
-					on:click={confirmarEliminacionLicencia}
-					disabled={eliminandoLicencia}
-				>
-					{eliminandoLicencia ? "Eliminando..." : "Eliminar Licencia"}
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
+<ModalEliminarLicencia
+	bind:show={showConfirmDeleteLicencia}
+	licencia={licenciaAEliminar}
+	eliminando={eliminandoLicencia}
+	on:confirmar={confirmarEliminacionLicencia}
+	on:cancelar={cancelarEliminacionLicencia}
+/>
 
-{#if showForm}
-	<div class="modal-overlay">
-		<div class="modal">
-			<h3>
-				{isEditing
-					? "Editar tipo de licencia"
-					: "Nuevo tipo de licencia"}
-			</h3>
-			{#if errorTipos}
-				<div class="alert alert-error">{errorTipos}</div>
-			{/if}
-			<div class="form-row">
-				<label for="codigo">Código / Nombre *</label>
-				<input
-					bind:value={form.codigo}
-					placeholder="Ej: VAC, ENF, etc."
-					required
-				/>
-			</div>
-			<div class="form-row">
-				<label for="desc">Descripción</label>
-				<textarea
-					rows="3"
-					bind:value={form.descripcion}
-					placeholder="Descripción del tipo de licencia"
-				></textarea>
-			</div>
-			<div class="form-actions">
-				<button class="btn-primary" on:click={guardar} disabled={saving}
-					>{saving ? "Guardando..." : "Guardar"}</button
-				>
-				<button
-					class="btn-limpiar"
-					on:click={() => (showForm = false)}
-					disabled={saving}>Cancelar</button
-				>
-			</div>
-		</div>
-	</div>
-{/if}
+<ModalTipoLicencia
+	bind:show={showForm}
+	{isEditing}
+	bind:form
+	error={errorTipos}
+	{saving}
+	on:guardar={guardar}
+	on:cancelar={() => (showForm = false)}
+/>
 
-{#if showConfirmDelete && tipoAEliminar}
-	<div class="modal-overlay">
-		<div class="modal-confirm">
-			<div class="modal-header-warning">
-				<h3>⚠️ Confirmar Eliminación</h3>
-			</div>
-			<div class="modal-body-confirm">
-				<p>
-					¿Eliminar el tipo de licencia <strong
-						>"{tipoAEliminar.codigo ||
-							tipoAEliminar.nombre}"</strong
-					>?
-				</p>
-				<p class="warning-text">
-					Esta acción fallará si hay agentes con este tipo.
-				</p>
-			</div>
-			<div class="modal-footer-confirm">
-				<button
-					class="btn-cancelar-confirm"
-					on:click={cancelarEliminacion}
-				>
-					Cancelar
-				</button>
-				<button
-					class="btn-eliminar-confirm"
-					on:click={confirmarEliminacion}
-				>
-					Eliminar
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
+<ModalConfirmarEliminarTipo
+	bind:show={showConfirmDelete}
+	tipo={tipoAEliminar}
+	on:confirmar={confirmarEliminacion}
+	on:cancelar={cancelarEliminacion}
+/>
 
 <style>
 	.page-container {
@@ -1386,7 +1224,7 @@
 	.btn-secondary {
 		background: linear-gradient(135deg, #b78ef8 0%, #b966d3 100%);
 		color: white;
-		box-shadow: 0 4px 15px rgba(102, 126rgb (125, 138, 175) 0.3);
+		box-shadow: 0 4px 15px rgba(102, 126, 255, 0.3);
 		margin-left: 10px;
 	}
 
@@ -1584,13 +1422,13 @@
 
 	/* Tabla */
 	.table-container {
+		overflow-y: scroll;
 		overflow-x: auto;
-		overflow-y: auto;
 		border: 1px solid #e5e7eb;
 		border-radius: 12px;
 		background: white;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-		max-height: 600px;
+		max-height: 55vh;
 	}
 
 	.table-container::-webkit-scrollbar {
@@ -1637,7 +1475,6 @@
 		font-size: 13px;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
-		border-bottom: 3px solid #3b82f6;
 		background: transparent;
 	}
 
@@ -1883,404 +1720,6 @@
 		border: 1px solid #feb2b2;
 	}
 
-	/* Modales principales */
-	.modal-backdrop {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: rgba(0, 0, 0, 0.6);
-		z-index: 1000;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 1rem;
-	}
-
-	.modal-contenido {
-		background: white;
-		border-radius: 12px;
-		box-shadow:
-			0 20px 25px -5px rgba(0, 0, 0, 0.1),
-			0 10px 10px -5px rgba(0, 0, 0, 0.04);
-		max-width: 500px;
-		width: 100%;
-		max-height: 90vh;
-		overflow-y: auto;
-	}
-
-	.modal-header {
-		padding: 1.5rem 1.5rem 0;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		border-bottom: 1px solid #e2e8f0;
-		margin-bottom: 1rem;
-	}
-
-	.modal-header h5 {
-		margin: 0;
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: #2d3748;
-	}
-
-	.btn-close {
-		background: none;
-		border: none;
-		font-size: 1.5rem;
-		cursor: pointer;
-		color: #718096;
-		padding: 0.25rem;
-		border-radius: 4px;
-	}
-
-	.btn-close:hover {
-		background-color: #f7fafc;
-		color: #4a5568;
-	}
-
-	.modal-body {
-		padding: 0 1.5rem 1.5rem;
-	}
-
-	.form-group {
-		margin-bottom: 1rem;
-	}
-
-	.form-group label {
-		display: block;
-		margin-bottom: 0.5rem;
-		font-weight: 500;
-		color: #4a5568;
-	}
-
-	.form-group input,
-	.form-group select,
-	.form-group textarea {
-		width: 100%;
-		padding: 0.75rem;
-		border: 1px solid #e2e8f0;
-		border-radius: 8px;
-		font-size: 0.875rem;
-		transition:
-			border-color 0.15s ease-in-out,
-			box-shadow 0.15s ease-in-out;
-	}
-
-	.form-group input:focus,
-	.form-group select:focus,
-	.form-group textarea:focus {
-		outline: none;
-		border-color: #4c51bf;
-		box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
-	}
-
-	.form-group textarea {
-		resize: vertical;
-		min-height: 80px;
-	}
-
-	.info-dias {
-		margin-bottom: 1rem;
-		padding: 0.75rem;
-		background: #f0fff4;
-		border: 1px solid #c6f6d5;
-		border-radius: 8px;
-		text-align: center;
-	}
-
-	.licencia-info {
-		background: #f7fafc;
-		padding: 1rem;
-		border-radius: 8px;
-		margin-bottom: 1rem;
-		border: 1px solid #e2e8f0;
-	}
-
-	.modal-actions {
-		display: flex;
-		gap: 0.75rem;
-		justify-content: flex-end;
-		margin-top: 1.5rem;
-		padding-top: 1rem;
-		border-top: 1px solid #e2e8f0;
-	}
-
-	.btn {
-		padding: 0.75rem 1.5rem;
-		border-radius: 8px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.15s ease-in-out;
-		border: none;
-		font-size: 0.875rem;
-	}
-
-	.btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-	/* Modal simple para tipos */
-	.modal-overlay {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.6);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 2000;
-		backdrop-filter: blur(4px);
-		animation: fadeIn 0.2s ease;
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
-
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
-	}
-
-	.modal {
-		background: white;
-		padding: 2rem;
-		border-radius: 16px;
-		width: 520px;
-		max-width: 92%;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-		animation: slideUp 0.3s ease;
-		border: 1px solid #e5e7eb;
-	}
-
-	@keyframes slideUp {
-		from {
-			transform: translateY(20px);
-			opacity: 0;
-		}
-		to {
-			transform: translateY(0);
-			opacity: 1;
-		}
-	}
-
-	.modal h3 {
-		margin: 0 0 1.5rem 0;
-		color: #1e293b;
-		font-size: 22px;
-		font-weight: 700;
-		padding-bottom: 1rem;
-		border-bottom: 2px solid #e5e7eb;
-	}
-
-	.form-row {
-		margin-bottom: 1.25rem;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.form-row label {
-		font-weight: 600;
-		margin-bottom: 8px;
-		color: #374151;
-		font-size: 14px;
-	}
-
-	.form-row input,
-	.form-row textarea {
-		padding: 12px 14px;
-		border: 2px solid #e2e8f0;
-		border-radius: 8px;
-		font-size: 14px;
-		transition: all 0.2s ease;
-		font-family: inherit;
-	}
-
-	.form-row input:focus,
-	.form-row textarea:focus {
-		outline: none;
-		border-color: #3b82f6;
-		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-	}
-
-	.form-row textarea {
-		min-height: 100px;
-		resize: vertical;
-	}
-
-	.form-actions {
-		display: flex;
-		gap: 12px;
-		justify-content: flex-end;
-		margin-top: 1.5rem;
-		padding-top: 1rem;
-		border-top: 1px solid #e5e7eb;
-	}
-
-	/* Botones del modal */
-	.modal .btn-primary {
-		background: linear-gradient(135deg, #10b981, #059669);
-		color: white;
-		padding: 12px 24px;
-		border-radius: 8px;
-		font-size: 16px;
-		font-weight: 600;
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
-
-	.modal .btn-primary:hover:not(:disabled) {
-		background: linear-gradient(135deg, #059669, #047857);
-		transform: translateY(-2px);
-		box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
-	}
-
-	.modal .btn-primary:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-
-		transform: none;
-	}
-
-	.modal .btn-limpiar {
-		background: linear-gradient(135deg, #6b7280, #4b5563);
-		color: white;
-		padding: 12px 24px;
-		border-radius: 8px;
-		font-size: 16px;
-		font-weight: 600;
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		box-shadow: 0 2px 4px rgba(107, 114, 128, 0.3);
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
-
-	.modal .btn-limpiar:hover:not(:disabled) {
-		background: linear-gradient(135deg, #4b5563, #374151);
-		transform: translateY(-2px);
-		box-shadow: 0 4px 8px rgba(107, 114, 128, 0.4);
-	}
-
-	.modal .btn-limpiar:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-		transform: none;
-	}
-
-	/* Modal de confirmación específico */
-	.modal-confirm {
-		background: white;
-		border-radius: 16px;
-		width: 480px;
-		max-width: 92%;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-		overflow: hidden;
-	}
-
-	.modal-header-warning {
-		background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-		padding: 1.5rem;
-		color: white;
-	}
-
-	.modal-header-warning h3 {
-		margin: 0;
-		font-size: 20px;
-		font-weight: 700;
-	}
-
-	.modal-body-confirm {
-		padding: 2rem;
-	}
-
-	.modal-body-confirm p {
-		margin: 0 0 1rem 0;
-		color: #374151;
-		font-size: 15px;
-	}
-
-	.modal-body-confirm strong {
-		color: #1e293b;
-		font-weight: 600;
-	}
-
-	.warning-text {
-		color: #d97706;
-		font-size: 14px;
-		font-weight: 500;
-	}
-
-	.modal-footer-confirm {
-		display: flex;
-		gap: 12px;
-		justify-content: flex-end;
-		padding: 1.5rem;
-		background: #f9fafb;
-		border-top: 1px solid #e5e7eb;
-	}
-
-	.btn-cancelar-confirm {
-		background: linear-gradient(135deg, #6b7280, #4b5563);
-		color: white;
-		padding: 12px 24px;
-		border-radius: 8px;
-		font-size: 14px;
-		font-weight: 600;
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
-
-	.btn-cancelar-confirm:hover {
-		background: linear-gradient(135deg, #4b5563, #374151);
-		transform: translateY(-2px);
-	}
-
-	.btn-eliminar-confirm {
-		background: linear-gradient(135deg, #ef4444, #dc2626);
-		color: white;
-		padding: 12px 24px;
-		border-radius: 8px;
-		font-size: 14px;
-		font-weight: 600;
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
-
-	.btn-eliminar-confirm:hover {
-		background: linear-gradient(135deg, #dc2626, #b91c1c);
-		transform: translateY(-2px);
-	}
-
-	/* Spinner */
-	.spinner {
-		width: 1rem;
-		height: 1rem;
-		border: 2px solid #e2e8f0;
-		border-top: 2px solid #4c51bf;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		0% {
-			transform: rotate(0deg);
-		}
-		100% {
-			transform: rotate(360deg);
-		}
-	}
-
 	/* Responsive */
 	@media (max-width: 1200px) {
 		.page-container {
@@ -2439,48 +1878,6 @@
 			padding: 8px 12px;
 			font-size: 12px;
 		}
-
-		/* Modales responsive */
-		.modal-contenido,
-		.modal {
-			margin: 0.5rem;
-			max-width: calc(100vw - 1rem);
-			max-height: calc(100vh - 1rem);
-		}
-
-		.modal-header {
-			padding: 1rem;
-		}
-
-		.modal-header h5,
-		.modal h3 {
-			font-size: 18px;
-		}
-
-		.modal-body {
-			padding: 0 1rem 1rem;
-		}
-
-		.form-group label {
-			font-size: 14px;
-		}
-
-		.form-group input,
-		.form-group select,
-		.form-group textarea {
-			padding: 0.6rem;
-			font-size: 14px;
-		}
-
-		.modal-actions {
-			flex-direction: column;
-			gap: 0.5rem;
-		}
-
-		.btn {
-			width: 100%;
-			padding: 0.875rem 1rem;
-		}
 	}
 
 	@media (max-width: 480px) {
@@ -2521,5 +1918,469 @@
 		.table-container {
 			max-height: 400px;
 		}
+	}
+
+	.header-title::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: linear-gradient(
+				90deg,
+				rgba(255, 255, 255, 0.03) 1px,
+				transparent 1px
+			),
+			linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+		background-size: 50px 50px;
+		animation: moveLines 20s linear infinite;
+	}
+
+	.header-title h1 {
+		margin: 10px;
+		font-weight: 800;
+		font-size: 30px;
+		letter-spacing: 0.2px;
+		position: relative;
+		padding-bottom: 12px;
+		overflow: hidden;
+		display: inline-block;
+	}
+
+	.header-title h1::after {
+		content: "";
+		position: absolute;
+		width: 40%;
+		height: 3px;
+		bottom: 0;
+		left: 0;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.9),
+			transparent
+		);
+		animation: moveLine 2s linear infinite;
+	}
+
+	@keyframes moveLine {
+		0% {
+			left: -40%;
+		}
+		100% {
+			left: 100%;
+		}
+	}
+
+	.toggle-buttons {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+		margin-bottom: 2rem;
+		padding: 1rem;
+		border-radius: 16px;
+	}
+
+	.btn-toggle {
+		padding: 1rem 2.5rem;
+		border: none;
+		background: rgb(228, 228, 228);
+		color: #475569;
+		border-radius: 12px;
+		cursor: pointer;
+		font-weight: 600;
+		font-size: 16px;
+		transition: all 0.3s ease;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		position: relative;
+		overflow: hidden;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	}
+
+	.btn-toggle::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: -100%;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.3),
+			transparent
+		);
+		transition: left 0.5s;
+	}
+
+	.btn-toggle:hover::before {
+		left: 100%;
+	}
+
+	.btn-toggle.active {
+		background: linear-gradient(135deg, #4c51bf 0%, #5b21b6 100%);
+		color: white;
+		transform: translateY(-2px);
+		box-shadow: 0 6px 12px rgba(76, 81, 191, 0.4);
+	}
+
+	.btn-toggle:hover:not(.active) {
+		background: linear-gradient(135deg, #d6d7d8, #d4d9e0);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+	}
+
+	.header-actions {
+		display: flex;
+		gap: 10px;
+	}
+
+	.btn-secondary,
+	.btn-refresh,
+	.btn-nuevoTipo {
+		padding: 16px 32px;
+		border: none;
+		border-radius: 10px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		font-size: 17px;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	}
+
+	.btn-secondary {
+		background: linear-gradient(135deg, #b78ef8 0%, #b966d3 100%);
+		color: white;
+		box-shadow: 0 4px 15px rgba(102, 126, 241, 0.3);
+		margin-left: 10px;
+	}
+
+	.btn-secondary:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(215, 111, 241, 0.5);
+	}
+
+	.btn-refresh,
+	.btn-header {
+		background: linear-gradient(135deg, #ff9939 0%, #ffa358 100%);
+		color: white;
+	}
+
+	.btn-refresh:hover,
+	.btn-header:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 5px 15px rgba(226, 148, 59, 0.4);
+	}
+
+	.btn-nuevoTipo {
+		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+		color: white;
+	}
+
+	.btn-nuevoTipo:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+	}
+
+	/* Botones */
+	.btn-primary,
+	.btn-header {
+		padding: 0.75rem 1.25rem;
+		border: none;
+		border-radius: 8px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.btn-primary {
+		background: #4c51bf;
+		color: white;
+	}
+
+	.btn-primary:hover:not(:disabled) {
+		background: #434190;
+	}
+
+	.btn-clear {
+		padding: 0.5rem 1rem;
+		background: #e53e3e;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		font-weight: 500;
+	}
+
+	.btn-clear:hover {
+		background: #c53030;
+	}
+
+	/* Estadísticas */
+	.stats-container {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 1rem;
+		margin-top: 20px;
+		margin-bottom: 20px;
+	}
+
+	.stat-card {
+		background: white;
+		padding: 20px;
+		border-radius: 16px;
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+		text-align: center;
+		border-top: 4px solid #4c51bf;
+		transition: transform 0.3s ease;
+	}
+
+	.stat-card:hover {
+		transform: translateY(-5px);
+	}
+
+	.stat-number {
+		font-size: 2.2rem;
+		font-weight: 700;
+		color: #4c51bf;
+	}
+
+	.stat-card.pending .stat-number {
+		color: #ed8936;
+	}
+	.stat-card.approved .stat-number {
+		color: #38a169;
+	}
+	.stat-card.rejected .stat-number {
+		color: #e53e3e;
+	}
+
+	.stat-card.pending {
+		border-top: 4px solid #ed8936;
+	}
+	.stat-card.approved {
+		border-top: 4px solid #38a169;
+	}
+	.stat-card.rejected {
+		border-top: 4px solid #e53e3e;
+	}
+
+	.stat-label {
+		font-size: 16px;
+		color: #222222e0;
+		margin-top: 0.5rem;
+		font-weight: 600;
+	}
+
+	.filtros-container {
+		background: #f3f3f3d8;
+		border: 1px solid #e0e0e09c;
+		border-radius: 12px;
+		padding: 1.5rem;
+		margin-bottom: 2rem;
+	}
+	.filtros-row {
+		display: flex;
+		gap: 2rem;
+		align-items: end;
+		flex-wrap: nowrap;
+	}
+
+	.filtro-group {
+		flex: 1 1 200px;
+		min-width: 160px;
+		max-width: 100%;
+	}
+
+	.filtro-group label {
+		color: #1a1a1a;
+		font-weight: 600;
+		color: #374151;
+		font-size: 16px;
+	}
+
+	.filtro-group input,
+	.filtro-group select {
+		margin-top: 10px;
+		width: 100%;
+		padding: 0.7rem;
+		border: 1px solid #e2e8f0;
+		border-radius: 8px;
+		font-size: 0.875rem;
+		background: white;
+		appearance: none;
+	}
+
+	.filtro-group input:focus,
+	.filtro-group select:focus,
+	.input-busqueda:focus {
+		outline: none;
+		border-color: #4c51bf;
+		box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
+	}
+
+	.filtro-actions {
+		display: flex;
+		align-items: flex-end;
+		padding-bottom: 2px;
+	}
+
+	.acciones {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.roles-table .btn-primary {
+		background: linear-gradient(135deg, #4c51bf, #434190);
+		color: white;
+		padding: 8px 16px;
+		border-radius: 8px;
+		font-size: 14px;
+		font-weight: 600;
+		box-shadow: 0 2px 4px rgba(76, 81, 191, 0.3);
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.roles-table .btn-primary:hover {
+		background: linear-gradient(135deg, #434190, #3c366b);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(76, 81, 191, 0.4);
+	}
+
+	.roles-table .btn-secondary {
+		background: linear-gradient(135deg, #dc2626, #b91c1c);
+		color: white;
+		padding: 8px 16px;
+		border-radius: 8px;
+		font-size: 14px;
+		font-weight: 600;
+		margin-left: 8px;
+		transition: all 0.2s ease;
+		box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.roles-table .btn-secondary:hover {
+		background: linear-gradient(135deg, #b91c1c, #991b1b);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(220, 38, 38, 0.4);
+	}
+
+	.agente-info strong {
+		display: block;
+		color: #2d3748;
+	}
+
+	.agente-info small {
+		color: #718096;
+	}
+
+	.tipo-badge {
+		background: #edf2f7;
+		color: #4a5568;
+		padding: 0.25rem 0.75rem;
+		border-radius: 20px;
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+
+	.estado-badge {
+		display: inline-block;
+		padding: 8px 16px;
+		border-radius: 20px;
+		font-size: 12px;
+		font-weight: 700;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	.estado-pendiente {
+		background: linear-gradient(135deg, #fef3c7, #fde68a);
+		color: #c97d1aff;
+		border: 1px solid #fcd34d;
+		animation: pulse 2s infinite;
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.05);
+		}
+	}
+
+	.estado-aprobada {
+		background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
+		color: #14613dff;
+		border: 1px solid #68d391;
+	}
+
+	.estado-rechazada {
+		background: linear-gradient(135deg, #fed7d7, #feb2b2);
+		color: #c42222ff;
+		border: 1px solid #fc8181;
+	}
+
+	.loading-state,
+	.no-data,
+	.loading-container,
+	.empty-state {
+		text-align: center;
+		padding: 3rem;
+		color: #718096;
+		background: white;
+		border-radius: 12px;
+		margin-top: 2rem;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+	}
+
+	.spinner-large {
+		width: 40px;
+		height: 40px;
+		border: 4px solid #e2e8f0;
+		border-top-color: #4c51bf;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+		margin: 0 auto 1rem;
+	}
+
+	.spinner {
+		width: 16px;
+		height: 16px;
+		border: 2px solid #ffffff;
+		border-top-color: transparent;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+		display: inline-block;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	.empty-icon {
+		font-size: 3rem;
+		margin-bottom: 1rem;
+		opacity: 0.5;
+	}
+
+	.empty-state h3 {
+		color: #2d3748;
+		margin-bottom: 0.5rem;
 	}
 </style>

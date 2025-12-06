@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS area (
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_area_padre) REFERENCES area(id_area) ON DELETE CASCADE,
-    UNIQUE(nombre, id_area_padre)
+    UNIQUE NULLS NOT DISTINCT (nombre, id_area_padre)
 );
 
 -- 2. Tabla: tipo_licencia
