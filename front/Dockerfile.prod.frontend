@@ -1,0 +1,72 @@
+# Frontend Svelte - GIGA - PRODUCTION
+# Multi-stage build para optimizar tamaño
+
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copiar archivos de configuración
+COPY package.json package-lock.json* pnpm-lock.yaml* ./
+
+# Instalar dependencias (usar npm o pnpm según lo que tengas)
+RUN if [ -f pnpm-lock.yaml ]; then \
+    corepack enable && corepack prepare pnpm@latest --activate && \
+    pnpm install --frozen-lockfile; \
+    else \
+    npm ci; \
+    fi
+
+# Copiar código fuente
+COPY . .
+
+# Build de producción
+RUN if [ -f pnpm-lock.yaml ]; then \
+    pnpm run build; \
+    else \
+    npm run build; \
+    fi
+
+# Stage 2: Production
+FROM node:20-alpine
+
+# Instalar solo lo necesario para producción
+RUN apk add --no-cache curl wget
+
+WORKDIR /app
+
+# Copiar archivos de configuración
+COPY package.json package-lock.json* pnpm-lock.yaml* ./
+
+# Instalar solo dependencias de producción
+RUN if [ -f pnpm-lock.yaml ]; then \
+    corepack enable && corepack prepare pnpm@latest --activate && \
+    pnpm install --prod --frozen-lockfile; \
+    else \
+    npm ci --only=production; \
+    fi
+
+# Copiar build desde stage anterior
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/package.json ./
+
+# Crear usuario no-root
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S svelte -u 1001 && \
+    chown -R svelte:nodejs /app
+
+USER svelte
+
+# Exponer puerto
+EXPOSE 3000
+
+# Variables de entorno
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+
+# Ejecutar la aplicación built con adapter-node
+CMD ["node", "build"]

@@ -50,6 +50,15 @@ run_sql "$SCRIPT_DIR/03-seed-data.sql" \
 run_sql "$SCRIPT_DIR/04-historical-data.sql" \
     "Datos históricos para testing"
 
+run_sql "$SCRIPT_DIR/05-incidencias.sql" \
+    "Tablas incidencias"
+
+run_sql "$SCRIPT_DIR/fix-plus.sql" \
+    "Arreglo logica plus"
+
+run_sql "$SCRIPT_DIR/sesion-activa.sql" \
+    "Tabla para sesiones concurrentes"
+
 # ========================================================================
 # Finalización
 # ========================================================================
