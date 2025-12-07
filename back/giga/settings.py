@@ -227,15 +227,12 @@ REST_FRAMEWORK = {
 }
 
 # CORS Settings - Para conectar con el frontend Svelte
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Frontend Svelte
-    "http://127.0.0.1:3000",
-    "http://localhost",        # Nginx
-    "http://127.0.0.1",
-]
+# Leer de variable de entorno, con fallback a localhost para desarrollo
+cors_origins_env = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000,http://127.0.0.1:3000,http://localhost,http://127.0.0.1')
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',')]
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default='True', cast=bool)
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default='False', cast=bool)
 
 # Headers adicionales para CORS
 CORS_ALLOW_HEADERS = [
