@@ -4,18 +4,19 @@ import { browser } from '$app/environment';
 
 // Configuración de API que funciona tanto en desarrollo como en producción
 const getApiBaseUrl = () => {
-	// Usar VITE_API_BASE si está definido (tanto en cliente como servidor)
-	const apiBase = import.meta.env.VITE_API_BASE;
-	if (apiBase) {
-		return apiBase;
-	}
-
-	// En el navegador (cliente) - fallback
+	// En el navegador (cliente)
 	if (browser) {
-		return '/api';
+		// Usar variable VITE_API_BASE (disponible en build time)
+		return import.meta.env.VITE_API_BASE || '/api';
 	}
 
-	// En el servidor (SSR) - fallback para desarrollo local
+	// En el servidor (SSR)
+	// Usar variable de entorno normal (disponible en runtime)
+	if (typeof process !== 'undefined' && process.env?.API_BASE_URL) {
+		return process.env.API_BASE_URL;
+	}
+
+	// Fallback para desarrollo local con Docker
 	return 'http://giga-django:8000/api';
 };
 
