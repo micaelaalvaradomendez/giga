@@ -184,8 +184,14 @@ SESSION_COOKIE_SECURE = not DEBUG
 # Cookie no accesible desde JavaScript (seguridad)
 SESSION_COOKIE_HTTPONLY = True
 
-# SameSite para CSRF protection
-SESSION_COOKIE_SAMESITE = 'Lax'
+# SameSite=None para permitir cookies cross-domain en producción (Railway)
+# En desarrollo local (mismo dominio) usa 'Lax'
+SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
+
+# CSRF Trusted Origins - Necesario para POST requests cross-domain
+# Leer de variable de entorno con fallback a localhost
+csrf_origins_env = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:3000,http://127.0.0.1:3000')
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins_env.split(',')]
 
 
 # =============================================================================
