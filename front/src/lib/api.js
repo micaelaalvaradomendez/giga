@@ -4,14 +4,18 @@ import { browser } from '$app/environment';
 
 // Configuración de API que funciona tanto en desarrollo como en producción
 const getApiBaseUrl = () => {
-	// En el navegador (cliente)
-	if (browser) {
-		// Usar la variable de entorno o el valor por defecto (nginx)
-		return import.meta.env.VITE_API_BASE || '/api';
+	// Usar VITE_API_BASE si está definido (tanto en cliente como servidor)
+	const apiBase = import.meta.env.VITE_API_BASE;
+	if (apiBase) {
+		return apiBase;
 	}
-	
-	// En el servidor (SSR)
-	// En Docker (tanto dev como prod): usar el nombre del servicio del contenedor
+
+	// En el navegador (cliente) - fallback
+	if (browser) {
+		return '/api';
+	}
+
+	// En el servidor (SSR) - fallback para desarrollo local
 	return 'http://giga-django:8000/api';
 };
 
@@ -57,22 +61,22 @@ export class API {
 		const response = await api.get(url);
 		return response.data;
 	}
-	
+
 	static async post(url, data) {
 		const response = await api.post(url, data);
 		return response.data;
 	}
-	
+
 	static async put(url, data) {
 		const response = await api.put(url, data);
 		return response.data;
 	}
-	
+
 	static async delete(url) {
 		const response = await api.delete(url);
 		return response.data;
 	}
-	
+
 	static async patch(url, data) {
 		const response = await api.patch(url, data);
 		return response.data;
