@@ -379,6 +379,8 @@ dump_*.sql
 .env.production
 .env.development
 minio.env
+# EXCEPCIÓN: Permitir front/.env.production para Railway (solo contiene URL pública del backend)
+!front/.env.production
 *.key
 *.pem
 *.p12
