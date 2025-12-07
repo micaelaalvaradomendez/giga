@@ -20,6 +20,10 @@ RUN if [ -f pnpm-lock.yaml ]; then \
 # Copiar código fuente
 COPY . .
 
+# Declarar variable de build para la API URL (se pasa desde Railway)
+ARG VITE_API_BASE
+ENV VITE_API_BASE=$VITE_API_BASE
+
 # Build de producción
 RUN if [ -f pnpm-lock.yaml ]; then \
     pnpm run build; \
