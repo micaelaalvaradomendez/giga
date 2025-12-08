@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import { personasService } from '$lib/services.js';
-import AuthService from '$lib/login/authService.js';
+import { organigramaService } from '$lib/services/services.js';
 
 /**
  * Controlador para la visualización del organigrama organizacional

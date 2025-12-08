@@ -75,10 +75,12 @@
 	async function loadOrganigrama() {
 		try {
 			loading = true;
-			console.log("🔄 Cargando organigrama desde API...");
+			console.log("🔄 Cargando organigrama...");
 
-			// Usar el servicio en lugar de fetch directo
+			// ✅ Usar el servicio
 			const result = await organigramaService.getOrganigrama();
+
+			console.log("📦 Resultado:", result);
 
 			if (result.success) {
 				organigramaData = {
@@ -87,45 +89,21 @@
 					updatedBy: result.data.creado_por,
 					organigrama: result.data.estructura,
 				};
-				console.log("✅ Organigrama cargado:", organigramaData);
+				console.log("✅ Organigrama cargado");
 			} else {
-				throw new Error(
-					result.message || "Error al cargar organigrama",
-				);
+				throw new Error(result.message || "Error al cargar");
 			}
 
 			updateNodesList();
 		} catch (error) {
-			console.error("❌ Error cargando organigrama:", error);
-
-			// Datos de fallback
-			organigramaData = {
-				version: "1.0.0",
-				lastUpdated: new Date().toISOString(),
-				updatedBy: "Sistema",
-				organigrama: [
-					{
-						id: "root",
-						tipo: "secretaria",
-						nombre: "Secretaría de Protección Civil",
-						titular: "No disponible",
-						email: "",
-						telefono: "",
-						descripcion: "Organigrama no disponible temporalmente",
-						nivel: 0,
-						children: [],
-					},
-				],
-			};
-			updateNodesList();
+			console.error("❌ Error:", error);
+			// ... fallback ...
 		} finally {
 			loading = false;
 		}
 	}
 
 	async function saveOrganigrama() {
-		if (!browser || !organigramaData) return;
-
 		try {
 			loading = true;
 
@@ -137,58 +115,32 @@
 			});
 
 			if (result.success) {
-				console.log("✅ Organigrama guardado correctamente");
-				organigramaData.lastUpdated = result.data.actualizado_en;
-				organigramaData.updatedBy = result.data.creado_por;
+				console.log("✅ Guardado");
 				showUnsavedWarning = false;
-				updateNodesList();
 				return true;
-			} else {
-				throw new Error(
-					result.message || "Error al guardar organigrama",
-				);
 			}
 		} catch (error) {
-			console.error("❌ Error guardando organigrama:", error);
-			alert("Error al guardar los cambios: " + error.message);
-			return false;
+			console.error("❌ Error guardando:", error);
+			alert("Error: " + error.message);
 		} finally {
 			loading = false;
 		}
 	}
 
 	async function sincronizarConAreas() {
-		if (!browser) return;
-
-		if (
-			!confirm(
-				"¿Sincronizar el organigrama con la estructura actual de áreas?",
-			)
-		) {
-			return;
-		}
+		if (!confirm("¿Sincronizar?")) return;
 
 		try {
 			loading = true;
-
 			const result = await organigramaService.sincronizarOrganigrama();
 
 			if (result.success) {
-				console.log("✅ Organigrama sincronizado correctamente");
-				alert(
-					"Organigrama sincronizado exitosamente con las áreas del sistema",
-				);
+				alert("✅ Sincronizado");
 				await loadOrganigrama();
-				return true;
-			} else {
-				throw new Error(
-					result.message || "Error al sincronizar organigrama",
-				);
 			}
 		} catch (error) {
-			console.error("❌ Error sincronizando organigrama:", error);
-			alert(`Error al sincronizar: ${error.message}`);
-			return false;
+			console.error("❌ Error:", error);
+			alert("Error: " + error.message);
 		} finally {
 			loading = false;
 		}
