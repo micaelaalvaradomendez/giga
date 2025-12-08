@@ -76,13 +76,33 @@
 			loading = true;
 			console.log("🔄 Cargando organigrama desde API...");
 
-			// CARGAR DESDE API DEL BACKEND
-			const response = await fetch("/api/personas/organigrama/", {
-				method: "GET",
-				credentials: "include",
-			});
+			// CARGAR DESDE API DEL BACKEND con manejo de errores mejorado
+			let response;
+			try {
+				response = await fetch("/api/personas/organigrama/", {
+					method: "GET",
+					credentials: "include",
+					headers: {
+						Accept: "application/json",
+						"Content-Type": "application/json",
+					},
+				});
+			} catch (fetchError) {
+				// Error de red o CORS
+				console.error(
+					"❌ Error de red al intentar conectar:",
+					fetchError,
+				);
+				throw new Error(
+					"No se pudo conectar con el servidor. Verifique su conexión o la configuración de CORS.",
+				);
+			}
 
-			console.log("📡 Response status:", response.status);
+			console.log("📡 Response status:", response?.status);
+
+			if (!response) {
+				throw new Error("No se recibió respuesta del servidor");
+			}
 
 			if (response.ok) {
 				const result = await response.json();
@@ -111,13 +131,29 @@
 						result.message || "Error al cargar organigrama",
 					);
 				}
+			} else if (response.status === 404) {
+				console.warn(
+					"⚠️ Endpoint no encontrado - usando datos de fallback",
+				);
+				throw new Error(
+					"Endpoint de organigrama no configurado en el servidor",
+				);
+			} else if (response.status === 500) {
+				console.error("❌ Error interno del servidor");
+				const errorText = await response.text();
+				console.error("Detalles:", errorText);
+				throw new Error(
+					"Error interno del servidor al cargar el organigrama",
+				);
 			} else {
 				console.error(
 					"❌ Response not ok:",
 					response.status,
 					response.statusText,
 				);
-				throw new Error("Error de conexión con el servidor");
+				throw new Error(
+					`Error ${response.status}: ${response.statusText}`,
+				);
 			}
 
 			// Actualizar lista de nodos para el selector
@@ -130,6 +166,11 @@
 			);
 		} catch (error) {
 			console.error("❌ Error cargando organigrama:", error);
+			console.error("Stack trace:", error.stack);
+
+			if (browser) {
+				console.warn("ℹ️ Mostrando datos de fallback debido al error");
+			}
 
 			// Datos de fallback básicos para mostrar algo en caso de error
 			organigramaData = {
