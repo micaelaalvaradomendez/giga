@@ -66,7 +66,7 @@
     cargando = true;
     error = null;
     try {
-      let url = '/api/guardias/compensaciones/';
+      let url = '/guardias/compensaciones/';
       const params = new URLSearchParams();
       
       if (filtroEstado) params.append('estado', filtroEstado);
@@ -91,7 +91,7 @@
     error = null;
     
     try {
-      await API.post('/api/guardias/compensaciones/crear-compensacion/', nuevaCompensacion);
+      await API.post('/guardias/compensaciones/crear-compensacion/', nuevaCompensacion);
       
       // Limpiar formulario y recargar lista
       nuevaCompensacion = {
@@ -125,7 +125,7 @@
     error = null;
 
     try {
-      await API.post('/api/guardias/compensaciones/aprobar-lote/', {
+      await API.post('/guardias/compensaciones/aprobar-lote/', {
         compensacion_ids: ids,
         accion: accion,
         observaciones: accion === 'rechazar' ? prompt('Motivo del rechazo:') : '',
