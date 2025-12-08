@@ -238,8 +238,8 @@ export const guardiasService = {
 
 // SERVICIOS PARA CONVENIO IA - Conectado a N8N
 export const convenioIaService = {
-  // URL del webhook de N8N en modo producción
-  N8N_WEBHOOK_URL: 'http://localhost:5678/webhook/3ebdf75e-f0e2-4d18-b070-498f1486d845',
+  // URL del webhook de N8N - Se configura desde variable de entorno
+  N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/3ebdf75e-f0e2-4d18-b070-498f1486d845',
 
   /**
    * Consulta al convenio usando N8N + IA
