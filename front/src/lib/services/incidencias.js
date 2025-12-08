@@ -1,6 +1,8 @@
+import { API_BASE_URL } from '../api.js';
+
 class IncidenciasService {
     constructor() {
-        this.baseURL = '/api/incidencias/';
+        this.baseURL = `${API_BASE_URL}/incidencias/`;
     }
 
     // Obtener token CSRF desde cookie (si existe)
@@ -16,7 +18,7 @@ class IncidenciasService {
             'Content-Type': 'application/json',
             ...(options.headers || {})
         };
-        
+
         const csrf = IncidenciasService.getCsrfToken();
         if (csrf) {
             headers['X-CSRFToken'] = csrf;
@@ -28,7 +30,7 @@ class IncidenciasService {
         };
 
         const response = await fetch(url, { ...defaultOptions, ...options });
-        
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.detail || `Error ${response.status}: ${response.statusText}`);
@@ -40,7 +42,7 @@ class IncidenciasService {
     // Obtener todas las incidencias (con filtrado por rol)
     async obtenerIncidencias() {
         const response = await this._makeRequest();
-        
+
         // Manejar respuesta paginada de DRF
         if (response && typeof response === 'object') {
             // Si tiene structure paginada de DRF: {count, results}
@@ -52,7 +54,7 @@ class IncidenciasService {
                 return response;
             }
         }
-        
+
         // Fallback: devolver array vacío en caso de estructura inesperada
         console.warn('Estructura de respuesta inesperada en obtenerIncidencias:', response);
         return [];

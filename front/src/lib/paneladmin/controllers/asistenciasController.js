@@ -6,6 +6,7 @@
 
 import { writable, derived } from 'svelte/store';
 import { goto } from '$app/navigation';
+import { API_BASE_URL } from '$lib/api.js';
 
 class AsistenciasController {
 	constructor() {
@@ -53,7 +54,7 @@ class AsistenciasController {
 			this.loading.set(true);
 
 			// Verificar sesión
-			const sessionResponse = await fetch('/api/personas/auth/check-session/', {
+			const sessionResponse = await fetch('${API_BASE_URL}/personas/auth/check-session/', {
 				credentials: 'include'
 			});
 
@@ -100,7 +101,7 @@ class AsistenciasController {
 	// ========== CARGA DE DATOS ==========
 	async cargarAreas() {
 		try {
-			const response = await fetch('/api/personas/catalogs/areas/', {
+			const response = await fetch('${API_BASE_URL}/personas/catalogs/areas/', {
 				credentials: 'include'
 			});
 
@@ -154,19 +155,19 @@ class AsistenciasController {
 				if (responseAsistencias.ok && responseAusentes.ok) {
 					const dataAsistencias = await responseAsistencias.json();
 					const dataAusentes = await responseAusentes.json();
-					
+
 					console.log('📊 Datos cargados:', {
 						asistencias_registradas: dataAsistencias.data?.length || 0,
 						ausentes: dataAusentes.data?.length || 0,
 						primer_ausente: dataAusentes.data?.[0]
 					});
-					
+
 					// Combinar ambos arrays
 					asistenciasData = [
 						...(dataAsistencias.data || []),
 						...(dataAusentes.data || [])
 					];
-					
+
 					// Verificar estructura de primer ausente si existe
 					if (dataAusentes.data && dataAusentes.data.length > 0) {
 						console.log('🔍 Estructura del primer ausente:', dataAusentes.data[0]);
@@ -286,13 +287,13 @@ class AsistenciasController {
 
 		this.asistenciaEditando.set(asistenciaNormalizada);
 		this.observacionEdit.set('');
-		
+
 		// SIEMPRE iniciar en modo normal (sin checkbox marcado)
 		// Los campos de hora se pre-llenarán solo cuando el usuario active el checkbox
 		this.horaEntrada.set('');
 		this.horaSalida.set('');
 		this.usarHoraEspecifica.set(false);
-		
+
 		console.log('📝 Abriendo modal para asistencia (normalizada):', {
 			id_asistencia: asistenciaNormalizada.id_asistencia,
 			agente_nombre: asistenciaNormalizada.agente_nombre,
@@ -305,7 +306,7 @@ class AsistenciasController {
 			estructura_original: asistencia,
 			estructura_normalizada: asistenciaNormalizada
 		});
-		
+
 		this.modalCorreccion.set(true);
 	}
 
@@ -326,14 +327,14 @@ class AsistenciasController {
 
 		if (usarHora) {
 			// Si se activa el checkbox, pre-llenar con las horas actuales
-			const horaEntradaFormatted = asistencia.hora_entrada ? 
+			const horaEntradaFormatted = asistencia.hora_entrada ?
 				asistencia.hora_entrada.substring(0, 5) : '';
-			const horaSalidaFormatted = asistencia.hora_salida ? 
+			const horaSalidaFormatted = asistencia.hora_salida ?
 				asistencia.hora_salida.substring(0, 5) : '';
-				
+
 			this.horaEntrada.set(horaEntradaFormatted);
 			this.horaSalida.set(horaSalidaFormatted);
-			
+
 			console.log('⏰ Activando modo hora específica:', {
 				entrada_prellenada: horaEntradaFormatted,
 				salida_prellenada: horaSalidaFormatted
@@ -342,7 +343,7 @@ class AsistenciasController {
 			// Si se desactiva el checkbox, limpiar los campos
 			this.horaEntrada.set('');
 			this.horaSalida.set('');
-			
+
 			console.log('🔄 Desactivando modo hora específica');
 		}
 	}
@@ -415,7 +416,7 @@ class AsistenciasController {
 
 			console.log('📤 Enviando petición de marcación:', requestBody);
 
-			const response = await fetch('/api/asistencia/marcar/', {
+			const response = await fetch('${API_BASE_URL}/asistencia/marcar/', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
@@ -521,7 +522,7 @@ class AsistenciasController {
 
 			console.log('📤 Enviando petición de marcación salida:', requestBody);
 
-			const response = await fetch('/api/asistencia/marcar/', {
+			const response = await fetch('${API_BASE_URL}/asistencia/marcar/', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
@@ -590,7 +591,7 @@ class AsistenciasController {
 		// En este caso, usar los métodos de marcación en lugar de corrección
 		if (!asistencia.id_asistencia) {
 			console.log('📝 Sin asistencia previa, creando nuevas marcaciones...');
-			
+
 			if (!usarHora) {
 				return {
 					success: false,
@@ -638,27 +639,27 @@ class AsistenciasController {
 					// Temporalmente setear la observación
 					this.observacionEdit.set(observacion || 'Marcación creada por administrador');
 					const resultado_entrada = await this.marcarEntrada(horaEntrada);
-					
+
 					if (!resultado_entrada.success) {
 						return resultado_entrada;
 					}
 					resultado_final.messages.push('Entrada creada');
-					
+
 					// IMPORTANTE: Recargar datos después de crear la entrada para tener el id_asistencia
 					if (horaSalida) {
 						console.log('🔄 Recargando datos después de crear entrada...');
 						await this.cargarAsistencias();
-						
+
 						// Buscar la asistencia recién creada
 						let asistenciasActuales;
 						this.asistencias.subscribe(value => asistenciasActuales = value)();
-						
-						const asistenciaActualizada = asistenciasActuales.find(a => 
-							a.agente_dni === asistencia.agente_dni && 
+
+						const asistenciaActualizada = asistenciasActuales.find(a =>
+							a.agente_dni === asistencia.agente_dni &&
 							a.fecha === asistencia.fecha &&
 							a.hora_entrada !== null
 						);
-						
+
 						if (asistenciaActualizada) {
 							console.log('✅ Asistencia actualizada encontrada:', asistenciaActualizada);
 							this.asistenciaEditando.set(asistenciaActualizada);
@@ -676,11 +677,11 @@ class AsistenciasController {
 							message: 'No se puede crear salida sin entrada previa'
 						};
 					}
-					
+
 					// Actualizar la observación
 					this.observacionEdit.set(observacion || 'Marcación creada por administrador');
 					const resultado_salida = await this.marcarSalida(horaSalida);
-					
+
 					if (!resultado_salida.success) {
 						return resultado_salida;
 					}
@@ -694,9 +695,9 @@ class AsistenciasController {
 
 			} catch (error) {
 				console.error('❌ Error creando marcaciones:', error);
-				return { 
-					success: false, 
-					message: '❌ Error creando marcaciones: ' + error.message 
+				return {
+					success: false,
+					message: '❌ Error creando marcaciones: ' + error.message
 				};
 			}
 		}
@@ -880,7 +881,7 @@ class AsistenciasController {
 			`¿Está seguro que desea marcar a ${asistencia.agente_nombre} como AUSENTE?\n\n` +
 			'Esta acción eliminará su presentismo para el día de hoy y quedará registrada en el sistema.'
 		);
-		
+
 		if (!confirmar) {
 			return { success: false, message: 'Operación cancelada' };
 		}
@@ -890,14 +891,14 @@ class AsistenciasController {
 				'MOTIVO OBLIGATORIO: Explique por qué se marca como ausente\n' +
 				'(ej: "No se presentó a trabajar", "Abandono de puesto sin aviso")'
 			);
-			
+
 			if (!motivo || !motivo.trim()) {
 				return {
 					success: false,
 					message: 'Debe proporcionar un motivo para marcar como ausente'
 				};
 			}
-			
+
 			this.observacionEdit.set(motivo.trim());
 			observacion = motivo.trim();
 		}
