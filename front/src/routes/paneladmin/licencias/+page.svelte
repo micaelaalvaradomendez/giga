@@ -30,7 +30,7 @@
 	} from "$lib/paneladmin/controllers/licenciasController.js";
 
 	// Componentes modales
-	import ModalSolicitar from "$lib/componentes/admin/licencias/ModalSolicitar.svelte";
+	import ModalSolicitar from "$lib/componentes/licencias/ModalSolicitar.svelte";
 	import ModalAsignar from "$lib/componentes/admin/licencias/ModalAsignar.svelte";
 	import ModalAprobar from "$lib/componentes/admin/licencias/ModalAprobar.svelte";
 	import ModalRechazar from "$lib/componentes/admin/licencias/ModalRechazar.svelte";

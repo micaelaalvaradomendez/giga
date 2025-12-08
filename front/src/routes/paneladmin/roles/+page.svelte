@@ -293,7 +293,7 @@
 												</button>
 												<button
 													class="btn-secondary"
-													on:click={rolesController.cancelarEdicionRol}
+													on:click={() => rolesController.cancelarEdicionRol()}
 													disabled={$savingRoleId ===
 														agente.id_agente}
 												>

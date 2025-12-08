@@ -32,7 +32,7 @@
 	import ModalAsignar from "$lib/componentes/admin/licencias/ModalAsignar.svelte";
 	import ModalAprobar from "$lib/componentes/admin/licencias/ModalAprobar.svelte";
 	import ModalRechazar from "$lib/componentes/admin/licencias/ModalRechazar.svelte";
-	import ModalSolicitar from "$lib/componentes/admin/licencias/ModalSolicitar.svelte";
+	import ModalSolicitar from "$lib/componentes/licencias/ModalSolicitar.svelte";
 	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
 
 	let vistaActual = "licencias"; // 'licencias' o 'tipos'
@@ -260,8 +260,6 @@
 		}
 	}
 
-
-
 	function abrirModalCrear() {
 		showModalCrear = true;
 	}
@@ -436,8 +434,6 @@
 		);
 	});
 
-
-
 	async function handleAprobarLicencia() {
 		if (!licenciaSeleccionada) return;
 
@@ -495,8 +491,6 @@
 			userInfo?.roles?.[0]?.nombre || userInfo?.rol_nombre || "Agente";
 		return puedeAprobarLicencia(licencia, rol, userInfo?.id_area);
 	}
-
-
 </script>
 
 <svelte:head>
@@ -1337,153 +1331,6 @@
 		box-shadow: 0 4px 8px rgba(76, 81, 191, 0.4);
 	}
 
-	/* Modales - Estilo unificado */
-	.modal-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0.5);
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		z-index: 1000;
-		backdrop-filter: blur(4px);
-	}
-
-	.modal {
-		background: white;
-		border-radius: 16px;
-		max-width: 600px;
-		width: 90%;
-		max-height: 90vh;
-		overflow-y: auto;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
-
-	.modal-header {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		padding: 1.5rem 2rem;
-		border-radius: 16px 16px 0 0;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.modal-header h3 {
-		margin: 0;
-		font-size: 1.5rem;
-		font-weight: 600;
-	}
-
-	.modal-close {
-		background: none;
-		border: none;
-		color: white;
-		font-size: 25px;
-		cursor: pointer;
-		padding: 0;
-		width: 30px;
-		height: 30px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		transition: all 0.3s ease;
-	}
-
-	.modal-close:hover {
-		background: rgba(255, 255, 255, 0.2);
-	}
-
-	.modal-body {
-		padding: 2rem;
-	}
-
-	.modal-footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.5rem;
-		margin-top: 1.5rem;
-		padding: 1.5rem 2rem;
-		border-top: 1px solid #e5e7eb;
-	}
-
-	.form-group {
-		margin-bottom: 1rem;
-	}
-
-	.form-group label {
-		display: block;
-		margin-bottom: 5px;
-		font-weight: 600;
-		color: #313131;
-	}
-
-	.form-group input,
-	.form-group select,
-	.form-group textarea {
-		padding: 12px 15px;
-		border: 2px solid #e1e5e9;
-		border-radius: 8px;
-		font-size: 16px;
-		transition: all 0.3s ease;
-		font-family: inherit;
-		resize: vertical;
-		width: 100%;
-		box-sizing: border-box;
-	}
-
-	.form-group input:focus,
-	.form-group select:focus,
-	.form-group textarea:focus {
-		outline: none;
-		border-color: #667eea;
-		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-	}
-
-	.form-group textarea {
-		resize: vertical;
-		min-height: 80px;
-	}
-
-	.form-row {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1rem;
-		margin-bottom: 1.25rem;
-	}
-
-	.info-days {
-		background: #dbeafe;
-		color: #1e40af;
-		padding: 0.75rem;
-		border-radius: 6px;
-		margin-bottom: 1rem;
-		text-align: center;
-		font-weight: 600;
-	}
-
-	.btn-cancel {
-		background: #6c757d;
-		color: white;
-		padding: 12px 24px;
-		border: none;
-		border-radius: 8px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		font-size: 16px;
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
-
-	.btn-cancel:hover:not(:disabled) {
-		background: #5a6268;
-		transform: translateY(-2px);
-	}
 	/* Responsive */
 	@media (max-width: 1200px) {
 		.page-container {
@@ -1621,45 +1468,6 @@
 		.acciones {
 			flex-direction: column;
 			gap: 6px;
-		}
-
-		/* Modales responsive */
-		.modal {
-			margin: 0.5rem;
-			max-width: calc(100vw - 1rem);
-			max-height: calc(100vh - 1rem);
-		}
-
-		.modal-header {
-			padding: 1rem;
-		}
-
-		.modal-header h3 {
-			font-size: 18px;
-		}
-
-		.modal-body {
-			padding: 0 1rem 1rem;
-		}
-
-		.form-group label {
-			font-size: 14px;
-		}
-
-		.form-group input,
-		.form-group select,
-		.form-group textarea {
-			padding: 0.6rem;
-			font-size: 14px;
-		}
-
-		.form-row {
-			grid-template-columns: 1fr;
-		}
-
-		.modal-footer {
-			flex-direction: column;
-			gap: 0.5rem;
 		}
 	}
 
