@@ -70,6 +70,17 @@ export const personasService = {
   renameAgrupacion: (data, token = null) => createApiClient(token).post('/personas/parametros/agrupaciones/rename/', data),
 };
 
+export const organigramaService = {
+  // Obtener organigrama
+  getOrganigrama: (token = null) => createApiClient(token).get('/personas/organigrama/'),
+
+  // Guardar organigrama
+  saveOrganigrama: (data, token = null) => createApiClient(token).post('/personas/organigrama/save/', data),
+
+  // Sincronizar con áreas
+  sincronizarOrganigrama: (token = null) => createApiClient(token).post('/personas/organigrama/sincronizar/'),
+};
+
 // SERVICIOS PARA ASISTENCIA
 export const asistenciaService = {
   // Asistencias

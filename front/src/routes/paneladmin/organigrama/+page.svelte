@@ -4,6 +4,7 @@
 	import OrganigramaViewer from "$lib/componentes/admin/organigrama/OrganigramaViewer.svelte";
 	import AdminNodeRenderer from "$lib/componentes/admin/organigrama/AdminNodeRenderer.svelte";
 	import ModalEliminar from "$lib/componentes/admin/parametros/ModalEliminar.svelte";
+	import { organigramaService } from "$lib/services";
 
 	let organigramaData = null;
 	let loading = true;
@@ -76,103 +77,28 @@
 			loading = true;
 			console.log("🔄 Cargando organigrama desde API...");
 
-			// CARGAR DESDE API DEL BACKEND con manejo de errores mejorado
-			let response;
-			try {
-				response = await fetch("/api/personas/organigrama/", {
-					method: "GET",
-					credentials: "include",
-					headers: {
-						Accept: "application/json",
-						"Content-Type": "application/json",
-					},
-				});
-			} catch (fetchError) {
-				// Error de red o CORS
-				console.error(
-					"❌ Error de red al intentar conectar:",
-					fetchError,
-				);
-				throw new Error(
-					"No se pudo conectar con el servidor. Verifique su conexión o la configuración de CORS.",
-				);
-			}
+			// Usar el servicio en lugar de fetch directo
+			const result = await organigramaService.getOrganigrama();
 
-			console.log("📡 Response status:", response?.status);
-
-			if (!response) {
-				throw new Error("No se recibió respuesta del servidor");
-			}
-
-			if (response.ok) {
-				const result = await response.json();
-				console.log("📥 API Response:", result);
-
-				if (result.success) {
-					// Convertir estructura de la API al formato esperado por el frontend
-					organigramaData = {
-						version: result.data.version,
-						lastUpdated: result.data.actualizado_en,
-						updatedBy: result.data.creado_por,
-						organigrama: result.data.estructura,
-					};
-
-					console.log("✅ Organigrama cargado:", organigramaData);
-					console.log(
-						"✅ Estructura length:",
-						result.data.estructura?.length,
-					);
-				} else {
-					console.error(
-						"❌ API success=false, message:",
-						result.message,
-					);
-					throw new Error(
-						result.message || "Error al cargar organigrama",
-					);
-				}
-			} else if (response.status === 404) {
-				console.warn(
-					"⚠️ Endpoint no encontrado - usando datos de fallback",
-				);
-				throw new Error(
-					"Endpoint de organigrama no configurado en el servidor",
-				);
-			} else if (response.status === 500) {
-				console.error("❌ Error interno del servidor");
-				const errorText = await response.text();
-				console.error("Detalles:", errorText);
-				throw new Error(
-					"Error interno del servidor al cargar el organigrama",
-				);
+			if (result.success) {
+				organigramaData = {
+					version: result.data.version,
+					lastUpdated: result.data.actualizado_en,
+					updatedBy: result.data.creado_por,
+					organigrama: result.data.estructura,
+				};
+				console.log("✅ Organigrama cargado:", organigramaData);
 			} else {
-				console.error(
-					"❌ Response not ok:",
-					response.status,
-					response.statusText,
-				);
 				throw new Error(
-					`Error ${response.status}: ${response.statusText}`,
+					result.message || "Error al cargar organigrama",
 				);
 			}
 
-			// Actualizar lista de nodos para el selector
 			updateNodesList();
-
-			console.log(
-				"✅ Lista de nodos actualizada:",
-				allNodes.length,
-				"nodos",
-			);
 		} catch (error) {
 			console.error("❌ Error cargando organigrama:", error);
-			console.error("Stack trace:", error.stack);
 
-			if (browser) {
-				console.warn("ℹ️ Mostrando datos de fallback debido al error");
-			}
-
-			// Datos de fallback básicos para mostrar algo en caso de error
+			// Datos de fallback
 			organigramaData = {
 				version: "1.0.0",
 				lastUpdated: new Date().toISOString(),
@@ -192,60 +118,6 @@
 				],
 			};
 			updateNodesList();
-			console.log("✅ Usando datos de fallback básicos");
-		} finally {
-			loading = false;
-		}
-	}
-
-	async function sincronizarConAreas() {
-		if (!browser) return;
-
-		if (
-			!confirm(
-				"¿Sincronizar el organigrama con la estructura actual de áreas? Esto reemplazará el organigrama actual.",
-			)
-		) {
-			return;
-		}
-
-		try {
-			loading = true;
-
-			const response = await fetch(
-				"/api/personas/organigrama/sincronizar/",
-				{
-					method: "POST",
-					credentials: "include",
-					headers: {
-						"Content-Type": "application/json",
-					},
-				},
-			);
-
-			if (response.ok) {
-				const result = await response.json();
-				if (result.success) {
-					console.log("✅ Organigrama sincronizado correctamente");
-					alert(
-						"Organigrama sincronizado exitosamente con las áreas del sistema",
-					);
-
-					// Recargar el organigrama
-					await loadOrganigrama();
-					return true;
-				} else {
-					throw new Error(
-						result.message || "Error al sincronizar organigrama",
-					);
-				}
-			} else {
-				throw new Error("Error de conexión con el servidor");
-			}
-		} catch (error) {
-			console.error("❌ Error sincronizando organigrama:", error);
-			alert(`Error al sincronizar: ${error.message}`);
-			return false;
 		} finally {
 			loading = false;
 		}
@@ -257,44 +129,65 @@
 		try {
 			loading = true;
 
-			// GUARDAR EN LA API DEL BACKEND
-			const response = await fetch("/api/personas/organigrama/save/", {
-				method: "POST",
-				credentials: "include",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					nombre: "Secretaría de Protección Civil",
-					estructura: organigramaData.organigrama,
-					version: organigramaData.version || "1.0.0",
-					creado_por: "Administrador",
-				}),
+			const result = await organigramaService.saveOrganigrama({
+				nombre: "Secretaría de Protección Civil",
+				estructura: organigramaData.organigrama,
+				version: organigramaData.version || "1.0.0",
+				creado_por: "Administrador",
 			});
 
-			if (response.ok) {
-				const result = await response.json();
-				if (result.success) {
-					console.log("✅ Organigrama guardado correctamente");
-
-					// Actualizar datos locales con la respuesta del servidor
-					organigramaData.lastUpdated = result.data.actualizado_en;
-					organigramaData.updatedBy = result.data.creado_por;
-					showUnsavedWarning = false;
-
-					updateNodesList();
-					return true;
-				} else {
-					throw new Error(
-						result.message || "Error al guardar organigrama",
-					);
-				}
+			if (result.success) {
+				console.log("✅ Organigrama guardado correctamente");
+				organigramaData.lastUpdated = result.data.actualizado_en;
+				organigramaData.updatedBy = result.data.creado_por;
+				showUnsavedWarning = false;
+				updateNodesList();
+				return true;
 			} else {
-				throw new Error("Error de conexión con el servidor");
+				throw new Error(
+					result.message || "Error al guardar organigrama",
+				);
 			}
 		} catch (error) {
 			console.error("❌ Error guardando organigrama:", error);
 			alert("Error al guardar los cambios: " + error.message);
+			return false;
+		} finally {
+			loading = false;
+		}
+	}
+
+	async function sincronizarConAreas() {
+		if (!browser) return;
+
+		if (
+			!confirm(
+				"¿Sincronizar el organigrama con la estructura actual de áreas?",
+			)
+		) {
+			return;
+		}
+
+		try {
+			loading = true;
+
+			const result = await organigramaService.sincronizarOrganigrama();
+
+			if (result.success) {
+				console.log("✅ Organigrama sincronizado correctamente");
+				alert(
+					"Organigrama sincronizado exitosamente con las áreas del sistema",
+				);
+				await loadOrganigrama();
+				return true;
+			} else {
+				throw new Error(
+					result.message || "Error al sincronizar organigrama",
+				);
+			}
+		} catch (error) {
+			console.error("❌ Error sincronizando organigrama:", error);
+			alert(`Error al sincronizar: ${error.message}`);
 			return false;
 		} finally {
 			loading = false;
