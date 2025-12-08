@@ -4,7 +4,6 @@
 	import OrganigramaViewer from "$lib/componentes/admin/organigrama/OrganigramaViewer.svelte";
 	import AdminNodeRenderer from "$lib/componentes/admin/organigrama/AdminNodeRenderer.svelte";
 	import ModalEliminar from "$lib/componentes/admin/parametros/ModalEliminar.svelte";
-	import { organigramaController } from "$lib/paneladmin/controllers";
 
 	let organigramaData = null;
 	let loading = true;
@@ -78,7 +77,10 @@
 			console.log("🔄 Cargando organigrama desde API...");
 
 			// CARGAR DESDE API DEL BACKEND
-			const response = await organigramaController.init();
+			const response = await fetch("/api/personas/organigrama/", {
+				method: "GET",
+				credentials: "include",
+			});
 
 			console.log("📡 Response status:", response.status);
 
