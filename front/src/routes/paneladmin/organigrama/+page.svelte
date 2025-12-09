@@ -75,72 +75,187 @@
 	async function loadOrganigrama() {
 		try {
 			loading = true;
-			console.log("🔄 Cargando organigrama...");
+			console.log("🔄 Cargando organigrama desde API...");
 
-			// ✅ Usar el servicio
-			const result = await organigramaController.getOrganigrama();
-
-			console.log("📦 Resultado:", result);
-
-			if (result.success) {
-				organigramaData = {
-					version: result.data.version,
-					lastUpdated: result.data.actualizado_en,
-					updatedBy: result.data.creado_por,
-					organigrama: result.data.estructura,
-				};
-				console.log("✅ Organigrama cargado");
-			} else {
-				throw new Error(result.message || "Error al cargar");
-			}
-
-			updateNodesList();
-		} catch (error) {
-			console.error("❌ Error:", error);
-			// ... fallback ...
-		} finally {
-			loading = false;
-		}
-	}
-
-	async function saveOrganigrama() {
-		try {
-			loading = true;
-
-			const result = await organigramaController.saveOrganigrama({
-				nombre: "Secretaría de Protección Civil",
-				estructura: organigramaData.organigrama,
-				version: organigramaData.version || "1.0.0",
-				creado_por: "Administrador",
+			// CARGAR DESDE API DEL BACKEND
+			const response = await fetch("/api/personas/organigrama/", {
+				method: "GET",
+				credentials: "include",
 			});
 
-			if (result.success) {
-				console.log("✅ Guardado");
-				showUnsavedWarning = false;
-				return true;
+			console.log("📡 Response status:", response.status);
+
+			if (response.ok) {
+				const result = await response.json();
+				console.log("📥 API Response:", result);
+
+				if (result.success) {
+					// Convertir estructura de la API al formato esperado por el frontend
+					organigramaData = {
+						version: result.data.version,
+						lastUpdated: result.data.actualizado_en,
+						updatedBy: result.data.creado_por,
+						organigrama: result.data.estructura,
+					};
+
+					console.log("✅ Organigrama cargado:", organigramaData);
+					console.log(
+						"✅ Estructura length:",
+						result.data.estructura?.length,
+					);
+				} else {
+					console.error(
+						"❌ API success=false, message:",
+						result.message,
+					);
+					throw new Error(
+						result.message || "Error al cargar organigrama",
+					);
+				}
+			} else {
+				console.error(
+					"❌ Response not ok:",
+					response.status,
+					response.statusText,
+				);
+				throw new Error("Error de conexión con el servidor");
 			}
+
+			// Actualizar lista de nodos para el selector
+			updateNodesList();
+
+			console.log(
+				"✅ Lista de nodos actualizada:",
+				allNodes.length,
+				"nodos",
+			);
 		} catch (error) {
-			console.error("❌ Error guardando:", error);
-			alert("Error: " + error.message);
+			console.error("❌ Error cargando organigrama:", error);
+
+			// Datos de fallback básicos para mostrar algo en caso de error
+			organigramaData = {
+				version: "1.0.0",
+				lastUpdated: new Date().toISOString(),
+				updatedBy: "Sistema",
+				organigrama: [
+					{
+						id: "root",
+						tipo: "secretaria",
+						nombre: "Secretaría de Protección Civil",
+						titular: "No disponible",
+						email: "",
+						telefono: "",
+						descripcion: "Organigrama no disponible temporalmente",
+						nivel: 0,
+						children: [],
+					},
+				],
+			};
+			updateNodesList();
+			console.log("✅ Usando datos de fallback básicos");
 		} finally {
 			loading = false;
 		}
 	}
 
 	async function sincronizarConAreas() {
-		if (!confirm("¿Sincronizar?")) return;
+		if (!browser) return;
+
+		if (
+			!confirm(
+				"¿Sincronizar el organigrama con la estructura actual de áreas? Esto reemplazará el organigrama actual.",
+			)
+		) {
+			return;
+		}
 
 		try {
 			loading = true;
-			const result = await organigramaController.sincronizarOrganigrama();
 
-			if (result.success) {
-				alert("✅ Sincronizado");
-				await loadOrganigrama();
+			const response = await fetch(
+				"/api/personas/organigrama/sincronizar/",
+				{
+					method: "POST",
+					credentials: "include",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				},
+			);
+
+			if (response.ok) {
+				const result = await response.json();
+				if (result.success) {
+					console.log("✅ Organigrama sincronizado correctamente");
+					alert(
+						"Organigrama sincronizado exitosamente con las áreas del sistema",
+					);
+
+					// Recargar el organigrama
+					await loadOrganigrama();
+					return true;
+				} else {
+					throw new Error(
+						result.message || "Error al sincronizar organigrama",
+					);
+				}
+			} else {
+				throw new Error("Error de conexión con el servidor");
 			}
 		} catch (error) {
-			console.error("❌ Error:", error);
-			alert("Error: " + error.message);
+			console.error("❌ Error sincronizando organigrama:", error);
+			alert(`Error al sincronizar: ${error.message}`);
+			return false;
+		} finally {
+			loading = false;
+		}
+	}
+
+	async function saveOrganigrama() {
+		if (!browser || !organigramaData) return;
+
+		try {
+			loading = true;
+
+			// GUARDAR EN LA API DEL BACKEND
+			const response = await fetch("/api/personas/organigrama/save/", {
+				method: "POST",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					nombre: "Secretaría de Protección Civil",
+					estructura: organigramaData.organigrama,
+					version: organigramaData.version || "1.0.0",
+					creado_por: "Administrador",
+				}),
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				if (result.success) {
+					console.log("✅ Organigrama guardado correctamente");
+
+					// Actualizar datos locales con la respuesta del servidor
+					organigramaData.lastUpdated = result.data.actualizado_en;
+					organigramaData.updatedBy = result.data.creado_por;
+					showUnsavedWarning = false;
+
+					updateNodesList();
+					return true;
+				} else {
+					throw new Error(
+						result.message || "Error al guardar organigrama",
+					);
+				}
+			} else {
+				throw new Error("Error de conexión con el servidor");
+			}
+		} catch (error) {
+			console.error("❌ Error guardando organigrama:", error);
+			alert("Error al guardar los cambios: " + error.message);
+			return false;
 		} finally {
 			loading = false;
 		}
