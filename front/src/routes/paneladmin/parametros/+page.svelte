@@ -645,15 +645,39 @@
 		position: relative;
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
-		padding: 30px 40px;
+		padding: 16px 12px;
 		margin: 0;
-		max-width: 1000px;
-		border-radius: 28px;
+		max-width: 100%;
+		border-radius: 16px;
 		overflow: hidden;
 		text-align: center;
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
 			0 20px 60px rgba(30, 64, 175, 0.4);
+		box-sizing: border-box;
+		width: 100%;
+	}
+
+	@media (min-width: 640px) {
+		.page-header-title {
+			padding: 20px 24px;
+			border-radius: 20px;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.page-header-title {
+			padding: 25px 32px;
+			border-radius: 24px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.page-header-title {
+			padding: 30px 40px;
+			max-width: 1000px;
+			border-radius: 28px;
+		}
 	}
 
 	.page-header-title::before {
@@ -676,8 +700,10 @@
 	.page-header-title h1 {
 		margin: 10px;
 		font-weight: 800;
-		font-size: 30px;
+		font-size: 18px;
 		letter-spacing: 0.2px;
+		max-width: 100%;
+		word-wrap: break-word;
 		font-family:
 			"Segoe UI",
 			system-ui,
@@ -690,7 +716,31 @@
 		position: relative;
 		padding-bottom: 12px;
 		overflow: hidden;
-		display: inline-block;
+		display: block;
+	}
+
+	@media (min-width: 480px) {
+		.page-header-title h1 {
+			font-size: 22px;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.page-header-title h1 {
+			font-size: 26px;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.page-header-title h1 {
+			display: inline-block;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.page-header-title h1 {
+			font-size: 30px;
+		}
 	}
 
 	.page-header-title h1::after {
@@ -1215,10 +1265,6 @@
 	}
 
 	@media (max-width: 480px) {
-		.page-header h1 {
-			font-size: 1.8rem;
-		}
-
 		.header-actions {
 			flex-direction: column;
 		}

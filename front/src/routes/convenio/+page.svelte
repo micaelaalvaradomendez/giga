@@ -177,7 +177,7 @@
 	.hero h1 {
 		margin: 0;
 		font-weight: 800;
-		font-size: 30px;
+		font-size: 18px;
 		letter-spacing: 0.2px;
 		font-family:
 			"Segoe UI",
@@ -191,7 +191,28 @@
 		position: relative;
 		padding-bottom: 12px;
 		overflow: hidden;
-		display: inline-block;
+		display: block;
+		max-width: 100%;
+		word-wrap: break-word;
+	}
+
+	@media (min-width: 480px) {
+		.hero h1 {
+			font-size: 22px;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.hero h1 {
+			font-size: 26px;
+			display: inline-block;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.hero h1 {
+			font-size: 30px;
+		}
 	}
 
 	.hero h1::after {
@@ -527,7 +548,7 @@
 	}
 
 	.section-title {
-		font-size: 18px;
+		font-size: 16px;
 		margin: 0 0 12px;
 		font-weight: 700;
 		color: #1e293b;
@@ -544,7 +565,22 @@
 		position: relative;
 		padding-bottom: 12px;
 		overflow: hidden;
-		display: inline-block;
+		display: block;
+		max-width: 100%;
+		word-wrap: break-word;
+	}
+
+	@media (min-width: 480px) {
+		.section-title {
+			font-size: 17px;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.section-title {
+			font-size: 18px;
+			display: inline-block;
+		}
 	}
 
 	.section-title::after {
@@ -653,10 +689,6 @@
 			flex-direction: column;
 			text-align: center;
 			gap: 12px;
-		}
-
-		.hero h1 {
-			font-size: 24px;
 		}
 
 		.container {

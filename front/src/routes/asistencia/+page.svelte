@@ -316,21 +316,46 @@
 		position: relative;
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
-		padding: 30px 40px;
-		max-width: 1200px;
-		border-radius: 28px;
+		padding: 16px 12px;
+		max-width: 100%;
+		border-radius: 16px;
 		overflow: hidden;
 		text-align: center;
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
 			0 10px 30px rgba(30, 64, 175, 0.4);
-
-		text-align: center;
-		margin-bottom: 30px;
+		margin-bottom: 20px;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 2px;
+		box-sizing: border-box;
+		width: 100%;
+	}
+
+	@media (min-width: 640px) {
+		.header {
+			padding: 20px 24px;
+			border-radius: 20px;
+			margin-bottom: 24px;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.header {
+			padding: 25px 30px;
+			border-radius: 24px;
+			margin-bottom: 28px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.header {
+			padding: 30px 40px;
+			max-width: 1200px;
+			border-radius: 28px;
+			margin-bottom: 30px;
+		}
 	}
 
 	.header::before {
@@ -353,12 +378,39 @@
 	.header h1 {
 		margin: 10px;
 		font-weight: 800;
-		font-size: 35px;
+		font-size: 20px;
 		letter-spacing: 0.2px;
 		position: relative;
 		padding-bottom: 12px;
 		overflow: hidden;
-		display: inline-block;
+		display: block;
+		max-width: 100%;
+		word-wrap: break-word;
+	}
+
+	@media (min-width: 480px) {
+		.header h1 {
+			font-size: 24px;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.header h1 {
+			font-size: 28px;
+			display: inline-block;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.header h1 {
+			font-size: 32px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.header h1 {
+			font-size: 35px;
+		}
 	}
 
 	.header h1::after {

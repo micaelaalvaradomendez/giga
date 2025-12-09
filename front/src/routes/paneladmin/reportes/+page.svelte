@@ -1033,8 +1033,28 @@
 	.titulo-section h1 {
 		margin: 0 0 0.5rem 0;
 		color: #2c3e50;
-		font-size: 2rem;
+		font-size: 1.3rem;
 		font-weight: 700;
+		max-width: 100%;
+		word-wrap: break-word;
+	}
+
+	@media (min-width: 480px) {
+		.titulo-section h1 {
+			font-size: 1.5rem;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.titulo-section h1 {
+			font-size: 1.7rem;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.titulo-section h1 {
+			font-size: 2rem;
+		}
 	}
 
 	.titulo-section p {

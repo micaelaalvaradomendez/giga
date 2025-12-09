@@ -1093,12 +1093,33 @@
 	.header-title h1 {
 		margin: 10px;
 		font-weight: 800;
-		font-size: 30px;
+		font-size: 18px;
 		letter-spacing: 0.2px;
 		position: relative;
 		padding-bottom: 12px;
 		overflow: hidden;
-		display: inline-block;
+		display: block;
+		max-width: 100%;
+		word-wrap: break-word;
+	}
+
+	@media (min-width: 480px) {
+		.header-title h1 {
+			font-size: 22px;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.header-title h1 {
+			font-size: 26px;
+			display: inline-block;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.header-title h1 {
+			font-size: 30px;
+		}
 	}
 
 	.header-title h1::after {
@@ -1716,10 +1737,6 @@
 			padding: 20px 30px;
 		}
 
-		.header-title h1 {
-			font-size: 24px;
-		}
-
 		.filtros-row {
 			flex-wrap: wrap;
 			gap: 1rem;
@@ -1751,10 +1768,6 @@
 			padding: 20px 15px;
 			border-radius: 16px;
 			margin-right: 0;
-		}
-
-		.header-title h1 {
-			font-size: 20px;
 		}
 
 		.header-actions {
@@ -1866,10 +1879,6 @@
 	}
 
 	@media (max-width: 480px) {
-		.header-title h1 {
-			font-size: 18px;
-		}
-
 		.stats-container {
 			grid-template-columns: 1fr;
 		}

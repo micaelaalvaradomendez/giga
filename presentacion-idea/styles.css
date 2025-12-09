@@ -1,318 +1,440 @@
-/* ======================================= */
-/* 1. Base y Configuración (Estilo GIGA - Neumorphic Glass) */
-/* ======================================= */
 :root {
-    /* Colores primarios del componente Svelte (Azules claros y oscuros) */
-    --primary-color: #407bff; /* Azul vibrante (similar al fondo del sidebar-tab) */
-    --secondary-color: #2c57c7; /* Azul oscuro (similar a títulos del sidebar) */
-    --light-bg: #f7f7f7; /* Fondo muy claro, base del Neumorphism */
-    
-    /* Efectos de Glass-Neumorphism */
-    --glass-bg: rgba(255, 255, 255, 0.95); /* Base de la transparencia del sidebar */
-    --glass-border: rgba(64, 123, 255, 0.2); /* Borde azul suave */
-    --shadow-color-light: rgba(255, 255, 255, 0.9); /* Sombra interior clara */
-    --shadow-color-dark: rgba(64, 123, 255, 0.15); /* Sombra exterior azul suave */
-    
-    --text-color-dark: #2c57c7;
-    --text-color-light: #444;
+    --bg-color: #050510;
+    --accent-color: #ff2a6d;
+    /* Rosa Neón */
+    --secondary-color: #05d9e8;
+    /* Cyan Neón */
+    --text-color: #e0e0e0;
+
+    /* Dimensiones */
+    --sphere-size: 280px;
+    /* Tamaño del núcleo */
+    --orbit-radius: 550px;
+    /* Radio de la órbita */
 }
 
-html {
-    scroll-behavior: smooth;
+* {
     box-sizing: border-box;
-}
-
-*, *::before, *::after {
-    box-sizing: inherit;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    font-family: 'Montserrat', sans-serif, "Segoe UI", Tahoma, Geneva, Verdana;
-    margin: 0;
-    padding: 0;
-    color: var(--text-color-dark);
-    background-color: var(--light-bg); 
-    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 245, 255, 0.95)), url('fondo_giga.jpg'); 
-    background-attachment: fixed;
-    background-size: cover;
-    overflow-x: hidden;
-    font-weight: 400;
-}
-
-h1, h2, h3 {
-    font-family: inherit;
-    color: var(--secondary-color);
-    letter-spacing: 0.5px;
-    font-weight: 800; 
-}
-
-p {
-    color: var(--text-color-light);
-    font-weight: 400;
-    line-height: 1.5;
-}
-
-ul {
-    padding-left: 20px;
-    list-style: disc;
-    line-height: 1.6;
-}
-
-.subtitle {
-    font-size: 0.9em;
-    font-weight: 600;
-    color: var(--primary-color);
-    margin-top: -10px;
-    margin-bottom: 20px;
-    opacity: 0.8;
-}
-
-/* ======================================= */
-/* 2. Glass-Neumorphism (Tarjeta Clara - Estilo menu-item) */
-/* ======================================= */
-.glass-card {
-    background: linear-gradient(180deg, var(--glass-bg) 0%, rgba(240, 245, 255, 0.9) 100%); 
-    border-radius: 16px;
-    box-shadow: 
-        0 4px 16px var(--shadow-color-dark), 
-        inset 0 1px 2px var(--shadow-color-light); 
-    backdrop-filter: blur(15px); 
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid var(--glass-border); 
-    padding: 30px;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glass-card:hover {
-    transform: scale(1.01); 
-    box-shadow: 
-        0 8px 20px rgba(64, 123, 255, 0.25), 
-        inset 0 1px 2px rgba(255, 255, 255, 0.95);
-}
-
-/* Botones de acción principal (estilo sidebar-tab) */
-.btn-action {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #2c57c7 100%); 
-    border: none;
-    padding: 12px 25px;
-    border-radius: 40px; /* Muy redondeado como el tab */
-    color: white;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 20px;
-    box-shadow: 0 4px 12px rgba(64, 123, 255, 0.4); 
-    transition: all 0.3s;
-}
-
-.btn-action:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(64, 123, 255, 0.6);
-}
-
-/* ======================================= */
-/* 3. Línea de Tiempo Inmersiva (Scroll Snapping) */
-/* ======================================= */
-.timeline-container {
+    background-color: var(--bg-color);
+    background-image: radial-gradient(circle at 50% 50%, #1f1a2e 0%, #000 100%);
+    color: var(--text-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     height: 100vh;
-    overflow-y: scroll;
-    scroll-snap-type: y mandatory; 
-    position: relative;
-}
-
-/* Línea Central Fija (Elemento principal del timeline) */
-.timeline-container::after {
-    content: '';
-    position: fixed; 
-    width: 2px; 
-    background-color: var(--primary-color);
-    opacity: 0.6;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    margin-left: -1px;
-    z-index: 0;
-    pointer-events: none;
-}
-
-.section-item {
-    height: 100vh; 
-    scroll-snap-align: start;
+    overflow: hidden;
     display: flex;
-    align-items: center;
     justify-content: center;
-    position: relative; 
-    padding: 50px 0;
-}
-
-.section-content {
-    max-width: 1000px;
-    width: 80%;
-    display: flex; 
     align-items: center;
-    justify-content: space-between;
+    perspective: 1200px;
+    /* Profundidad 3D */
 }
 
-.card-wrapper {
-    width: 45%;
-    position: relative;
-    z-index: 1;
-}
-
-/* Posicionamiento y alternancia de las tarjetas */
-#intro .card-wrapper {
-    width: 60%;
-    text-align: center;
-}
-
-.section-item:nth-child(even) .card-wrapper {
-    margin-left: 55%; 
-}
-
-.section-item:nth-child(odd):not(#intro) .card-wrapper {
-    margin-right: 55%; 
-    text-align: right;
-}
-
-/* Indicador Circular en la Línea */
-.timeline-indicator {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 16px;
-    height: 16px;
-    background: white;
-    border: 4px solid var(--primary-color);
-    border-radius: 50%;
-    z-index: 2;
-    box-shadow: 0 0 10px rgba(64, 123, 255, 0.5);
-}
-
-/* ======================================= */
-/* 4. Navegación (Puntos Laterales - Estilo GIGA) */
-/* ======================================= */
-nav {
-    position: fixed;
-    top: 50%;
-    left: 40px; 
-    transform: translateY(-50%);
-    z-index: 2000;
-}
-
-nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-nav a {
-    display: block;
-    width: 8px;
-    height: 8px;
-    margin: 18px 0;
-    border-radius: 50%;
-    /* Estilo inactivo sutil */
-    background-color: rgba(64, 123, 255, 0.1); 
-    border: 2px solid var(--primary-color);
-    transition: all 0.3s;
-    text-indent: -9999px;
-    box-shadow: 0 0 5px rgba(64, 123, 255, 0.3);
-}
-
-nav a.active,
-nav a:hover {
-    background-color: var(--primary-color);
-    border-color: white; /* Borde blanco fuerte cuando está activo */
-    transform: scale(1.5);
-    box-shadow: 0 0 15px var(--primary-color);
-}
-
-/* ======================================= */
-/* 5. Estilos de Modales (Ventanas) */
-/* ======================================= */
-.modal-overlay {
+/* --- FONDO DE PARTÍCULAS --- */
+#particleCanvas {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(240, 240, 240, 0.95); 
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 5000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.3s;
+    z-index: -1;
+    pointer-events: none;
 }
 
-.modal-content-window {
-    width: 80%;
-    max-width: 900px;
-    max-height: 90%;
-    padding: 40px;
-    overflow-y: auto;
-    
-    /* Inversión de estilo: Tarjeta Oscura Neumorphic */
-    background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 16px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+/* --- UNIVERSO 3D --- */
+.universe {
     position: relative;
+    transform-style: preserve-3d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 1s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.8s;
 }
 
-.modal-content-window h2 {
-    color: white;
-    border-bottom: 2px solid var(--primary-color);
-    padding-bottom: 10px;
+/* Estado "Alejado" cuando se abre una carta o el núcleo */
+.universe.receded {
+    transform: scale(0.6) translateZ(-400px) translateY(-50px);
+    opacity: 0.3;
+    pointer-events: none;
+    filter: blur(2px);
 }
 
-.modal-content-window h3 {
-    color: var(--primary-color);
-    margin-top: 20px;
-}
-
-.modal-content-window p, .modal-content-window li {
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.modal-close {
+/* --- NÚCLEO (PROBLEMA) --- */
+.center-object {
+    width: var(--sphere-size);
+    height: var(--sphere-size);
+    background: radial-gradient(circle at 30% 30%, #402a32, #150505);
+    border: 2px solid #542335;
+    border-radius: 50%;
     position: absolute;
-    top: 15px;
-    right: 20px;
-    font-size: 1.8em;
+    z-index: 100;
+    box-shadow:
+        0 0 60px rgba(255, 42, 109, 0.3),
+        inset 10px 10px 30px rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
-    color: var(--primary-color);
-    transition: transform 0.2s;
+    transform-style: preserve-3d;
+    transition: all 0.5s ease;
 }
 
-.modal-close:hover {
+.center-object:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 100px rgba(255, 42, 109, 0.6);
+    border-color: var(--accent-color);
+}
+
+.sphere-title {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--accent-color);
+    text-shadow: 0 0 20px rgba(255, 42, 109, 0.8);
+    margin-bottom: 5px;
+}
+
+.sphere-subtitle {
+    font-size: 0.9rem;
+    color: #ccc;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+}
+
+/* --- ANILLO DE ORBITA --- */
+.orbit-ring {
+    position: absolute;
+    width: 0;
+    height: 0;
+    transform-style: preserve-3d;
+    /* La rotación se controla vía JS */
+}
+
+/* --- TARJETAS ORBITALES --- */
+.orbit-card {
+    position: absolute;
+    width: 140px;
+    height: 160px;
+    left: -70px;
+    /* Centrado (-width/2) */
+    top: -80px;
+    /* Centrado (-height/2) */
+
+    /* Estilo Glassmorphism */
+    background: rgba(20, 20, 30, 0.6);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    /* La transformación de posición se hace en JS */
+}
+
+.orbit-card:hover {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 30px rgba(5, 217, 232, 0.3);
+    background: rgba(20, 20, 30, 0.9);
+    z-index: 200 !important;
+    /* Traer al frente en hover */
+}
+
+.card-icon {
+    font-size: 3.5rem;
+    filter: drop-shadow(0 0 10px rgba(5, 217, 232, 0.5));
+    transition: transform 0.3s;
+}
+
+.orbit-card:hover .card-icon {
+    transform: scale(1.1);
+}
+
+.card-label {
+    font-size: 0.9rem;
+    color: #fff;
+    font-weight: 600;
+    text-align: center;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    padding: 0 10px;
+}
+
+/* --- OVERLAYS (Expandidos) --- */
+.overlay-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Tarjeta Expandida (Clon) */
+.expanded-card {
+    position: absolute;
+    background: rgba(10, 12, 20, 0.95);
+    border: 2px solid var(--secondary-color);
+    box-shadow: 0 0 100px rgba(5, 217, 232, 0.2);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+    pointer-events: none;
+
+    /* Estado inicial (se sobrescribe por JS al clonar) */
+    width: 0;
+    height: 0;
+    top: 50%;
+    left: 50%;
+}
+
+.expanded-card.active {
+    width: 85vw !important;
+    height: 85vh !important;
+    top: 7.5vh !important;
+    left: 7.5vw !important;
+    opacity: 1;
+    pointer-events: all;
+    transform: none !important;
+}
+
+/* Contenido dentro de la expandida */
+.expanded-content {
+    padding: 50px;
+    height: 100%;
+    overflow-y: auto;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.5s 0.3s;
+    /* Delay para que termine de abrirse */
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.expanded-card.active .expanded-content {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.expanded-content h2 {
+    font-size: 3rem;
+    color: var(--secondary-color);
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(5, 217, 232, 0.4);
+    text-align: center;
+    border-bottom: 1px solid rgba(5, 217, 232, 0.3);
+    padding-bottom: 15px;
+    width: 100%;
+}
+
+.expanded-content .body-text {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    max-width: 900px;
+    text-align: left;
+    width: 100%;
+}
+
+.expanded-content ul {
+    margin: 20px 0;
+    padding-left: 20px;
+}
+
+.expanded-content li {
+    margin-bottom: 15px;
+    list-style-type: none;
+    position: relative;
+    padding-left: 25px;
+}
+
+.expanded-content li:before {
+    content: "➤";
+    position: absolute;
+    left: 0;
+    color: var(--accent-color);
+}
+
+.expanded-img-container {
+    margin-top: 20px;
+    max-width: 80%;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #444;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.expanded-img-container img {
+    width: 100%;
+    display: block;
+}
+
+.close-btn {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 3rem;
+    color: white;
+    cursor: pointer;
+    z-index: 10;
+    transition: 0.3s;
+    line-height: 0.8;
+}
+
+.close-btn:hover {
+    color: var(--accent-color);
     transform: rotate(90deg);
 }
 
-/* Responsive básico para evitar colapso en móviles */
-@media (max-width: 800px) {
-    .timeline-container::after, .timeline-indicator {
-        display: none; /* Ocultar línea central en móviles */
+/* Estilo para el modo Hero (Núcleo) - Color Rojo */
+.expanded-card.hero-mode {
+    border-color: var(--accent-color);
+    background: rgba(20, 5, 10, 0.96);
+}
+
+.expanded-card.hero-mode h2 {
+    color: var(--accent-color);
+    text-shadow: 0 0 20px rgba(255, 42, 109, 0.4);
+    border-color: rgba(255, 42, 109, 0.3);
+}
+
+/* --- HERO SUBTITLE --- */
+.hero-subtitle {
+    font-size: 1.3rem;
+    text-align: center;
+    color: #ccc;
+    margin-bottom: 30px;
+    font-style: italic;
+}
+
+/* --- TABS CONTAINER --- */
+.tabs-container {
+    width: 100%;
+    max-width: 900px;
+}
+
+.tabs-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid rgba(255, 42, 109, 0.2);
+    padding-bottom: 10px;
+}
+
+.tab-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 42, 109, 0.3);
+    border-radius: 10px 10px 0 0;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #ccc;
+    font-size: 1rem;
+    font-weight: 500;
+    flex: 1;
+    justify-content: center;
+}
+
+.tab-btn:hover {
+    background: rgba(255, 42, 109, 0.1);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.tab-btn.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+    box-shadow: 0 0 20px rgba(255, 42, 109, 0.4);
+}
+
+.tab-icon {
+    font-size: 1.5rem;
+}
+
+.tab-title {
+    font-weight: 600;
+}
+
+.tabs-body {
+    width: 100%;
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.4s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
     }
 
-    .section-item {
-        padding: 50px 20px;
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
+}
 
-    .section-content {
-        flex-direction: column;
-        width: 100%;
-    }
+.tab-content p {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    margin-bottom: 15px;
+}
 
-    .card-wrapper {
-        width: 95% !important;
-        margin: 20px auto !important;
-        text-align: left !important;
-    }
+.tab-content ul {
+    margin: 20px 0;
+    padding-left: 20px;
+}
 
-    nav {
-        left: 10px;
-    }
+.tab-content li {
+    margin-bottom: 15px;
+    list-style-type: none;
+    position: relative;
+    padding-left: 25px;
+    font-size: 1.1rem;
+}
+
+.tab-content li:before {
+    content: "➤";
+    position: absolute;
+    left: 0;
+    color: var(--accent-color);
+}
+
+/* Instrucciones Footer */
+.footer-nav {
+    position: fixed;
+    bottom: 30px;
+    width: 100%;
+    text-align: center;
+    opacity: 0.6;
+    pointer-events: none;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
 }

@@ -581,9 +581,29 @@
   }
 
   .head h1 {
-    font-size: 1.8rem;
+    font-size: 1.2rem;
     margin: 0 0 0.5rem 0;
     color: #1e40af;
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+
+  @media (min-width: 480px) {
+    .head h1 {
+      font-size: 1.4rem;
+    }
+  }
+
+  @media (min-width: 640px) {
+    .head h1 {
+      font-size: 1.6rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .head h1 {
+      font-size: 1.8rem;
+    }
   }
 
   .head p {

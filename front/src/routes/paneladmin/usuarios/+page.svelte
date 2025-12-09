@@ -473,7 +473,7 @@
 	.page-header h1 {
 		margin: 10px;
 		font-weight: 800;
-		font-size: 30px;
+		font-size: 18px;
 		letter-spacing: 0.2px;
 		font-family:
 			"Segoe UI",
@@ -487,7 +487,28 @@
 		position: relative;
 		padding-bottom: 12px;
 		overflow: hidden;
-		display: inline-block;
+		display: block;
+		max-width: 100%;
+		word-wrap: break-word;
+	}
+
+	@media (min-width: 480px) {
+		.page-header h1 {
+			font-size: 22px;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.page-header h1 {
+			font-size: 26px;
+			display: inline-block;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.page-header h1 {
+			font-size: 30px;
+		}
 	}
 
 	.page-header-title h1::after {

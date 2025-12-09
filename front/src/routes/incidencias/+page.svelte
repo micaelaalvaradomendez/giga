@@ -588,15 +588,31 @@
     position: relative;
     background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
     color: white;
-    padding: 20px 30px;
+    padding: 16px 12px;
     max-width: 100%;
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
     text-align: center;
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.1) inset,
       0 20px 60px rgba(30, 64, 175, 0.4);
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    box-sizing: border-box;
+  }
+
+  @media (min-width: 640px) {
+    .header {
+      padding: 18px 20px;
+      border-radius: 14px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .header {
+      padding: 20px 30px;
+      border-radius: 16px;
+      margin-bottom: 2rem;
+    }
   }
 
   .header::before {
@@ -628,12 +644,33 @@
   .header h1 {
     margin: 10px;
     font-weight: 800;
-    font-size: 32px;
+    font-size: 20px;
     letter-spacing: 0.2px;
     position: relative;
     padding-bottom: 12px;
     overflow: hidden;
-    display: inline-block;
+    display: block;
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+
+  @media (min-width: 480px) {
+    .header h1 {
+      font-size: 24px;
+    }
+  }
+
+  @media (min-width: 640px) {
+    .header h1 {
+      font-size: 28px;
+      display: inline-block;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .header h1 {
+      font-size: 32px;
+    }
   }
 
   .header h1::after {
