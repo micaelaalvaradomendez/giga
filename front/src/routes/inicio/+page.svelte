@@ -1055,6 +1055,8 @@
 		.estado-hora {
 			font-size: 1rem;
 		}
+	}
+
 	/* Accesos rápidos */
 	.accesos-grid {
 		display: grid;
