@@ -12,17 +12,19 @@
 
 <style>
   .footer {
-    width: 100vw;
+    width: 100%;
     max-width: 100%;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     padding: 12px 0;
-    background: linear-gradient(135deg, 
-      rgba(64, 123, 255, 0.85) 0%, 
-      rgba(44, 87, 199, 0.75) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(64, 123, 255, 0.85) 0%,
+      rgba(44, 87, 199, 0.75) 100%
+    );
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-top: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 
+    box-shadow:
       0 -8px 32px rgba(64, 123, 255, 0.25),
       inset 0 1px 2px rgba(255, 255, 255, 0.3),
       inset 0 -1px 2px rgba(0, 0, 0, 0.1);
@@ -96,9 +98,9 @@
   .department-name {
     font-size: 11px;
     font-weight: 700;
-    color: #E8F1FF;
+    color: #e8f1ff;
     letter-spacing: 0.2px;
-    text-shadow: 
+    text-shadow:
       0 2px 4px rgba(0, 0, 0, 0.3),
       0 0 12px rgba(64, 123, 255, 0.4);
     white-space: nowrap;
@@ -135,9 +137,9 @@
   .footer-info {
     font-size: 10px;
     font-weight: 600;
-    color: #E8F1FF;
+    color: #e8f1ff;
     letter-spacing: 0.3px;
-    text-shadow: 
+    text-shadow:
       0 2px 4px rgba(0, 0, 0, 0.3),
       0 0 12px rgba(64, 123, 255, 0.4);
     white-space: nowrap;

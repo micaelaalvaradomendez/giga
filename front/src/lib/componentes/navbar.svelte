@@ -18,7 +18,7 @@
     position: relative;
     left: 0;
     right: 0;
-    width: 100vw;
+    width: 100%;
     max-width: 100%;
     z-index: 1000;
     font-family: Verdana, Geneva, Tahoma, sans-serif;

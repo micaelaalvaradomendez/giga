@@ -114,9 +114,7 @@
                     >
                         <span class="menu-item-icon">📧</span>
                         <div class="menu-item-text">
-                            <div class="menu-item-title">
-                                Incidencias
-                            </div>
+                            <div class="menu-item-title">Incidencias</div>
                         </div>
                     </a>
                     <a
@@ -377,7 +375,7 @@
     }
 
     .sidebar-tab {
-        position: absolute;
+        position: fixed;
         left: 0;
         top: 50%;
         transform: translateY(600%);
@@ -410,7 +408,7 @@
     }
 
     .sidebar-tab.active {
-        left: 280px;
+        transform: translateX(min(280px, 80vw)) translateY(600%);
         opacity: 1;
         visibility: visible;
         margin-left: -55px;
@@ -430,7 +428,7 @@
 
     @media (min-width: 768px) {
         .sidebar-tab.active {
-            left: 320px;
+            transform: translateX(min(320px, 80vw)) translateY(600%);
         }
     }
 
@@ -450,7 +448,7 @@
     .sidebar-container.active .sidebar-tab:not(.active) {
         opacity: 0;
         visibility: hidden;
-        left: 0;
+        transform: translateX(0) translateY(600%);
         transition: opacity 0.4s;
     }
 
@@ -488,9 +486,8 @@
 
     .sidebar {
         position: fixed;
-        left: -320px;
-        width: 280px;
-        max-width: 80vw;
+        width: min(280px, 80vw);
+        left: calc(-1 * min(280px, 80vw));
         background: linear-gradient(
             180deg,
             rgba(255, 255, 255, 0.75) 0%,
@@ -507,15 +504,15 @@
         overflow-y: auto;
         overflow-x: hidden;
         top: 0;
-        height: 100vh;
-        height: 100dvh;
+        min-height: 100vh;
+        min-height: 100svh;
         z-index: 9995;
     }
 
     @media (min-width: 768px) {
         .sidebar {
-            width: 320px;
-            max-width: 320px;
+            width: min(320px, 80vw);
+            left: calc(-1 * min(320px, 80vw));
         }
     }
 

@@ -298,111 +298,117 @@
             <button on:click={() => year++}>&gt;&gt;</button>
         </h1>
     </div>
-    <div class="calendar-grid">
-        <div class="calendar-header-row">
-            {#each headers as header}
-                <div class="calendar-header-cell">{header}</div>
-            {/each}
-        </div>
-        <div class="calendar-body">
-            {#each days as day}
-                <div
-                    class="calendar-day"
-                    class:disabled={!day.enabled}
-                    class:today={day.isToday}
-                    class:feriado={day.isFeriado}
-                    class:guardia={day.tieneGuardia}
-                    on:click={() => dayClick(day)}
-                    on:keydown={(e) => e.key === "Enter" && dayClick(day)}
-                    role="button"
-                    tabindex="0"
-                >
-                    <div class="day-number">{day.name}</div>
-                    {#if day.isFeriado}
-                        <div class="feriado-info">
-                            {#if day.feriados && day.feriados.length > 0}
-                                <!-- Mostrar todos los feriados -->
-                                {#each day.feriados as feriado}
+    <div class="calendar-grid-wrapper">
+        <div class="calendar-grid">
+            <div class="calendar-header-row">
+                {#each headers as header}
+                    <div class="calendar-header-cell">{header}</div>
+                {/each}
+            </div>
+            <div class="calendar-body">
+                {#each days as day}
+                    <div
+                        class="calendar-day"
+                        class:disabled={!day.enabled}
+                        class:today={day.isToday}
+                        class:feriado={day.isFeriado}
+                        class:guardia={day.tieneGuardia}
+                        on:click={() => dayClick(day)}
+                        on:keydown={(e) => e.key === "Enter" && dayClick(day)}
+                        role="button"
+                        tabindex="0"
+                    >
+                        <div class="day-number">{day.name}</div>
+                        {#if day.isFeriado}
+                            <div class="feriado-info">
+                                {#if day.feriados && day.feriados.length > 0}
+                                    <!-- Mostrar todos los feriados -->
+                                    {#each day.feriados as feriado}
+                                        <div class="feriado-item">
+                                            <div class="feriado-nombre">
+                                                {feriado.nombre}
+                                            </div>
+                                            {#if feriado.es_multiples_dias}
+                                                <div class="feriado-duracion">
+                                                    {feriado.duracion_dias} días
+                                                </div>
+                                            {/if}
+                                            <div class="feriado-tipo">
+                                                {feriado.tipo_feriado}
+                                            </div>
+                                        </div>
+                                    {/each}
+                                {:else if day.feriado}
+                                    <!-- Compatibilidad con formato anterior -->
                                     <div class="feriado-item">
                                         <div class="feriado-nombre">
-                                            {feriado.nombre}
+                                            {day.feriado.nombre}
                                         </div>
-                                        {#if feriado.es_multiples_dias}
+                                        {#if day.feriado.es_multiples_dias}
                                             <div class="feriado-duracion">
-                                                {feriado.duracion_dias} días
+                                                {day.feriado.duracion_dias} días
                                             </div>
                                         {/if}
                                         <div class="feriado-tipo">
-                                            {feriado.tipo_feriado}
+                                            {day.feriado.tipo_feriado}
                                         </div>
+                                    </div>
+                                {/if}
+                            </div>
+                        {/if}
+                        {#if day.tieneGuardia && day.guardias.length > 0}
+                            <div class="guardias-info">
+                                {#each day.guardias.slice(0, 1) as guardia}
+                                    <div class="guardia-item">
+                                        <div class="guardia-tipo">
+                                            🚨 {guardia.tipo || "Guardia"}
+                                        </div>
+                                        <div class="guardia-horario">
+                                            {guardia.hora_inicio?.slice(0, 5)} -
+                                            {guardia.hora_fin?.slice(0, 5)}
+                                        </div>
+                                        {#if guardia.es_multiples_dias || guardia.hora_inicio > guardia.hora_fin}
+                                            <div class="guardia-duracion">
+                                                2 días
+                                            </div>
+                                        {/if}
+                                        {#if guardia.agente_nombre}
+                                            <div class="guardia-agente">
+                                                {guardia.agente_nombre}
+                                            </div>
+                                        {/if}
+                                        {#if guardia.cantidad && guardia.cantidad > 1}
+                                            <div class="guardia-cantidad">
+                                                ({guardia.cantidad} agentes)
+                                            </div>
+                                        {/if}
                                     </div>
                                 {/each}
-                            {:else if day.feriado}
-                                <!-- Compatibilidad con formato anterior -->
-                                <div class="feriado-item">
-                                    <div class="feriado-nombre">
-                                        {day.feriado.nombre}
+                                {#if day.guardias.length > 1}
+                                    <div
+                                        class="guardias-more"
+                                        on:click={() =>
+                                            showAllGuardias(
+                                                day.date,
+                                                day.guardias,
+                                            )}
+                                        on:keydown={(e) =>
+                                            e.key === "Enter" &&
+                                            showAllGuardias(
+                                                day.date,
+                                                day.guardias,
+                                            )}
+                                        role="button"
+                                        tabindex="0"
+                                    >
+                                        +{day.guardias.length - 1} más
                                     </div>
-                                    {#if day.feriado.es_multiples_dias}
-                                        <div class="feriado-duracion">
-                                            {day.feriado.duracion_dias} días
-                                        </div>
-                                    {/if}
-                                    <div class="feriado-tipo">
-                                        {day.feriado.tipo_feriado}
-                                    </div>
-                                </div>
-                            {/if}
-                        </div>
-                    {/if}
-                    {#if day.tieneGuardia && day.guardias.length > 0}
-                        <div class="guardias-info">
-                            {#each day.guardias.slice(0, 1) as guardia}
-                                <div class="guardia-item">
-                                    <div class="guardia-tipo">
-                                        🚨 {guardia.tipo || "Guardia"}
-                                    </div>
-                                    <div class="guardia-horario">
-                                        {guardia.hora_inicio?.slice(0, 5)} - {guardia.hora_fin?.slice(
-                                            0,
-                                            5,
-                                        )}
-                                    </div>
-                                    {#if guardia.es_multiples_dias || guardia.hora_inicio > guardia.hora_fin}
-                                        <div class="guardia-duracion">
-                                            2 días
-                                        </div>
-                                    {/if}
-                                    {#if guardia.agente_nombre}
-                                        <div class="guardia-agente">
-                                            {guardia.agente_nombre}
-                                        </div>
-                                    {/if}
-                                    {#if guardia.cantidad && guardia.cantidad > 1}
-                                        <div class="guardia-cantidad">
-                                            ({guardia.cantidad} agentes)
-                                        </div>
-                                    {/if}
-                                </div>
-                            {/each}
-                            {#if day.guardias.length > 1}
-                                <div
-                                    class="guardias-more"
-                                    on:click={() =>
-                                        showAllGuardias(day.date, day.guardias)}
-                                    on:keydown={(e) =>
-                                        e.key === "Enter" &&
-                                        showAllGuardias(day.date, day.guardias)}
-                                    role="button"
-                                    tabindex="0"
-                                >
-                                    +{day.guardias.length - 1} más
-                                </div>
-                            {/if}
-                        </div>
-                    {/if}
-                </div>
-            {/each}
+                                {/if}
+                            </div>
+                        {/if}
+                    </div>
+                {/each}
+            </div>
         </div>
     </div>
 </div>
@@ -593,12 +599,20 @@
     .calendar-header button:hover {
         background: rgba(255, 255, 255, 0.3);
     }
+
+    .calendar-grid-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
+
     .calendar-grid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         gap: 0;
         background: transparent;
         padding: 0;
+        min-width: 700px;
     }
     .calendar-header-row {
         display: contents;
@@ -740,7 +754,11 @@
     }
 
     .calendar-day.today.feriado {
-        background: linear-gradient(135deg, #e65c5c 0%, #cc0000 100%) !important;
+        background: linear-gradient(
+            135deg,
+            #e65c5c 0%,
+            #cc0000 100%
+        ) !important;
         border: none;
         border-radius: 8px;
     }
