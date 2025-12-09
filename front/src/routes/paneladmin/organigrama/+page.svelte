@@ -78,7 +78,7 @@
 			console.log("🔄 Cargando organigrama...");
 
 			// ✅ Usar el servicio
-			const result = await organigramaService.getOrganigrama();
+			const result = await organigramaController.getOrganigrama();
 
 			console.log("📦 Resultado:", result);
 
@@ -107,7 +107,7 @@
 		try {
 			loading = true;
 
-			const result = await organigramaService.saveOrganigrama({
+			const result = await organigramaController.saveOrganigrama({
 				nombre: "Secretaría de Protección Civil",
 				estructura: organigramaData.organigrama,
 				version: organigramaData.version || "1.0.0",
@@ -132,7 +132,7 @@
 
 		try {
 			loading = true;
-			const result = await organigramaService.sincronizarOrganigrama();
+			const result = await organigramaController.sincronizarOrganigrama();
 
 			if (result.success) {
 				alert("✅ Sincronizado");
