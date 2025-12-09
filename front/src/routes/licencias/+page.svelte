@@ -513,9 +513,6 @@
 					📝 Asignar Licencia
 				</button>
 			{/if}
-			<button class="btn-refresh" on:click={() => cargarLicencias()}>
-				🔄 Actualizar
-			</button>
 		</div>
 	</div>
 
@@ -895,9 +892,7 @@
 	}
 
 	.btn-primary,
-	.btn-secondary,
-	.btn-refresh,
-	.btn-cancel {
+	.btn-secondary {
 		padding: 16px 32px;
 		border: none;
 		border-radius: 10px;
@@ -933,32 +928,6 @@
 	.btn-secondary:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 6px 20px rgba(215, 111, 241, 0.5);
-	}
-
-	.btn-refresh {
-		background: linear-gradient(135deg, #ff9939 0%, #ffa358 100%);
-		color: white;
-	}
-
-	.btn-refresh:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 5px 15px rgba(226, 148, 59, 0.4);
-	}
-
-	.btn-cancel {
-		background: #6c757d;
-		color: white;
-	}
-
-	.btn-cancel:hover:not(:disabled) {
-		background: #5a6268;
-		transform: translateY(-2px);
-		box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
-	}
-
-	.btn-cancel:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
 	}
 
 	/* Estadísticas */
@@ -1389,8 +1358,7 @@
 		}
 
 		.btn-primary,
-		.btn-secondary,
-		.btn-refresh {
+		.btn-secondary {
 			width: 100%;
 			justify-content: center;
 			margin-left: 0;

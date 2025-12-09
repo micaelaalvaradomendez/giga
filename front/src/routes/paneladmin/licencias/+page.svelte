@@ -621,27 +621,12 @@
 						📝 Asignar Licencia
 					</button>
 				{/if}
-				<button class="btn-refresh" on:click={() => cargarLicencias()}>
-					🔄 Actualizar
-				</button>
 			</div>
 		{:else}
 			<div class="header-actions">
 				<button class="btn-nuevoTipo" on:click={abrirAlta}
 					>➕ Nuevo Tipo</button
 				>
-				<button
-					class="btn-refresh"
-					on:click={cargarTipos}
-					disabled={loadingTipos}
-				>
-					{#if loadingTipos}
-						<span class="spinner"></span>
-					{:else}
-						🔄
-					{/if}
-					Actualizar
-				</button>
 			</div>
 		{/if}
 	</div>

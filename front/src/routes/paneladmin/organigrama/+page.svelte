@@ -5,6 +5,7 @@
 	import AdminNodeRenderer from "$lib/componentes/admin/organigrama/AdminNodeRenderer.svelte";
 	import ModalEliminar from "$lib/componentes/admin/parametros/ModalEliminar.svelte";
 	import { organigramaController } from "$lib/paneladmin/controllers";
+	import { API_BASE_URL } from "$lib/api";
 
 	let organigramaData = null;
 	let loading = true;
@@ -78,10 +79,13 @@
 			console.log("🔄 Cargando organigrama desde API...");
 
 			// CARGAR DESDE API DEL BACKEND
-			const response = await fetch("/api/personas/organigrama/", {
-				method: "GET",
-				credentials: "include",
-			});
+			const response = await fetch(
+				`${API_BASE_URL}/personas/organigrama/`,
+				{
+					method: "GET",
+					credentials: "include",
+				},
+			);
 
 			console.log("📡 Response status:", response.status);
 
@@ -173,7 +177,7 @@
 			loading = true;
 
 			const response = await fetch(
-				"/api/personas/organigrama/sincronizar/",
+				`${API_BASE_URL}/personas/organigrama/sincronizar/`,
 				{
 					method: "POST",
 					credentials: "include",
@@ -218,19 +222,22 @@
 			loading = true;
 
 			// GUARDAR EN LA API DEL BACKEND
-			const response = await fetch("/api/personas/organigrama/save/", {
-				method: "POST",
-				credentials: "include",
-				headers: {
-					"Content-Type": "application/json",
+			const response = await fetch(
+				`${API_BASE_URL}/personas/organigrama/save/`,
+				{
+					method: "POST",
+					credentials: "include",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						nombre: "Secretaría de Protección Civil",
+						estructura: organigramaData.organigrama,
+						version: organigramaData.version || "1.0.0",
+						creado_por: "Administrador",
+					}),
 				},
-				body: JSON.stringify({
-					nombre: "Secretaría de Protección Civil",
-					estructura: organigramaData.organigrama,
-					version: organigramaData.version || "1.0.0",
-					creado_por: "Administrador",
-				}),
-			});
+			);
 
 			if (response.ok) {
 				const result = await response.json();
@@ -647,13 +654,6 @@
 			>
 				🔄 Sincronizar con Áreas
 			</button>
-			<button
-				class="btn"
-				style="background: #8b5cf6; color: white;"
-				on:click={loadOrganigrama}
-			>
-				🔄 Recargar
-			</button>
 			<input
 				type="file"
 				accept=".json"
@@ -985,6 +985,7 @@
 	.loading {
 		text-align: center;
 		padding: 4rem 2rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.spinner {
