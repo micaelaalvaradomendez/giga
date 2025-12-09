@@ -29,3 +29,4 @@ urlpatterns = [
     path('health/', simple_health, name='health'),
     path('api/health/', health_check, name='api_health'),
 ]
+print("--- 🚀 CARGANDO RUTAS DE PERSONAS ACTUALIZADAS (V2) ---")
