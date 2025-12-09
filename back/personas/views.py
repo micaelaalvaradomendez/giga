@@ -2009,6 +2009,7 @@ def get_organigrama(request):
     """
     Obtener la estructura del organigrama activa.
     """
+    print(f"DEBUG: Petición recibida en get_organigrama. Path: {request.path}")
     try:
         # Obtener el organigrama activo más reciente
         organigrama = Organigrama.objects.filter(activo=True).first()
