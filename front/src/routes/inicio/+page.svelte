@@ -416,8 +416,13 @@
 
 			<!-- Columna derecha: Calendario -->
 			<div class="right-column">
-				<div class="card-body calendario-body">
-					<CalendarioBase {feriados} {guardias} />
+				<div class="dashboard-card calendario-card">
+					<div class="card-header">
+						<h2>📅 Calendario</h2>
+					</div>
+					<div class="card-body calendario-body">
+						<CalendarioBase {feriados} {guardias} />
+					</div>
 				</div>
 			</div>
 		</div>
@@ -425,6 +430,11 @@
 {/if}
 
 <style>
+	:global(*) {
+		color-scheme: light only !important;
+		-webkit-color-scheme: light !important;
+	}
+
 	.loading-container,
 	.error-container {
 		display: flex;
@@ -461,6 +471,9 @@
 		max-width: 100%;
 		box-sizing: border-box;
 		overflow-x: hidden;
+		background-color: #f8f9fa !important;
+		color: #1a1a1a !important;
+		color-scheme: light only !important;
 	}
 
 	@media (min-width: 768px) {
@@ -542,15 +555,24 @@
 	.user-avatar {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		background: white;
+		gap: 0.5rem;
+		background: white !important;
+		background-color: #ffffff !important;
 		border: 2px solid #e9ecef;
-		padding: 0.5rem 1rem;
+		padding: 0.4rem 0.8rem;
 		border-radius: 50px;
 		cursor: pointer;
 		transition: all 0.2s;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		flex-shrink: 0;
+	}
+
+	@media (min-width: 640px) {
+		.user-avatar {
+			gap: 0.75rem;
+			padding: 0.5rem 1rem;
+		}
 	}
 
 	.user-avatar:hover {
@@ -561,23 +583,41 @@
 	}
 
 	.avatar-circle {
-		width: 40px;
-		height: 40px;
+		width: 36px;
+		height: 36px;
 		border-radius: 50%;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 1rem;
+		font-size: 0.9rem;
 		font-weight: bold;
-		color: white;
+		color: white !important;
+		flex-shrink: 0;
+	}
+
+	@media (min-width: 640px) {
+		.avatar-circle {
+			width: 40px;
+			height: 40px;
+			font-size: 1rem;
+		}
 	}
 
 	.avatar-name {
 		font-weight: 600;
-		font-size: 16px;
-		color: #1a1a1a;
+		font-size: 14px;
+		color: #1a1a1a !important;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		white-space: nowrap;
+		display: none;
+	}
+
+	@media (min-width: 640px) {
+		.avatar-name {
+			display: block;
+			font-size: 16px;
+		}
 	}
 
 	.avatar-icon {
@@ -627,7 +667,8 @@
 	}
 
 	.dashboard-card {
-		background: white;
+		background: white !important;
+		background-color: #ffffff !important;
 		border-radius: 12px;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 		overflow: hidden;
@@ -637,6 +678,7 @@
 		width: 100%;
 		max-width: 100%;
 		box-sizing: border-box;
+		color: #1a1a1a !important;
 	}
 
 	@media (min-width: 768px) {
@@ -693,21 +735,51 @@
 
 	.card-header h2 {
 		margin: 0;
-		font-size: 1.25rem;
+		font-size: 1rem;
 		font-weight: 600;
-		color: #1a1a1a;
+		color: #1a1a1a !important;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	@media (min-width: 640px) {
+		.card-header h2 {
+			font-size: 1.1rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.card-header h2 {
+			font-size: 1.25rem;
+		}
 	}
 
 	.btn-ir {
-		padding: 0.5rem 1rem;
+		padding: 0.4rem 0.8rem;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
+		color: white !important;
 		border: none;
 		border-radius: 8px;
-		font-size: 0.9rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.2s;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	@media (min-width: 640px) {
+		.btn-ir {
+			padding: 0.5rem 1rem;
+			font-size: 0.85rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.btn-ir {
+			font-size: 0.9rem;
+		}
 	}
 
 	.btn-ir:hover {
@@ -769,11 +841,22 @@
 	.guardia-item {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
-		padding: 1rem;
-		background: linear-gradient(135deg, #fff7e6 0%, #fff3dc 100%);
-		border-radius: 12px;
+		gap: 0.75rem;
+		padding: 0.75rem;
+		background: linear-gradient(135deg, #fff7e6 0%, #fff3dc 100%) !important;
+		border-radius: 8px;
 		border-left: 4px solid #ffc107;
+		box-sizing: border-box;
+		width: 100%;
+		max-width: 100%;
+	}
+
+	@media (min-width: 640px) {
+		.guardia-item {
+			gap: 1rem;
+			padding: 1rem;
+			border-radius: 12px;
+		}
 	}
 
 	.guardia-fecha {
@@ -781,104 +864,190 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		background: white;
-		padding: 0.75rem;
+		background: white !important;
+		padding: 0.5rem;
 		border-radius: 8px;
-		min-width: 60px;
+		min-width: 50px;
+		flex-shrink: 0;
+	}
+
+	@media (min-width: 640px) {
+		.guardia-fecha {
+			padding: 0.75rem;
+			min-width: 60px;
+		}
 	}
 
 	.fecha-dia {
-		font-size: 1.5rem;
+		font-size: 1.25rem;
 		font-weight: 700;
-		color: #1a1a1a;
+		color: #1a1a1a !important;
 		line-height: 1;
 	}
 
+	@media (min-width: 640px) {
+		.fecha-dia {
+			font-size: 1.5rem;
+		}
+	}
+
 	.fecha-mes {
-		font-size: 0.75rem;
-		color: #6c757d;
+		font-size: 0.65rem;
+		color: #6c757d !important;
 		text-transform: uppercase;
+	}
+
+	@media (min-width: 640px) {
+		.fecha-mes {
+			font-size: 0.75rem;
+		}
 	}
 
 	.guardia-info {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
+		flex: 1;
+		min-width: 0;
 	}
 
 	.guardia-turno {
 		font-weight: 600;
-		color: #1a1a1a;
+		color: #1a1a1a !important;
+		font-size: 0.9rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	@media (min-width: 640px) {
+		.guardia-turno {
+			font-size: 1rem;
+		}
 	}
 
 	.guardia-detalle {
-		font-size: 0.875rem;
-		color: #6c757d;
+		font-size: 0.75rem;
+		color: #6c757d !important;
+	}
+
+	@media (min-width: 640px) {
+		.guardia-detalle {
+			font-size: 0.875rem;
+		}
 	}
 
 	/* Asistencia */
 	.asistencia-estado {
 		display: flex;
-		gap: 1rem;
+		flex-direction: column;
+		gap: 0.75rem;
+		width: 100%;
+	}
+
+	@media (min-width: 640px) {
+		.asistencia-estado {
+			flex-direction: row;
+			gap: 1rem;
+		}
 	}
 
 	.estado-item {
 		flex: 1;
 		display: flex;
 		align-items: center;
-		gap: 1rem;
-		padding: 1rem;
-		border-radius: 12px;
+		gap: 0.75rem;
+		padding: 0.75rem;
+		border-radius: 8px;
 		border: 2px solid;
+		box-sizing: border-box;
+		width: 100%;
+		min-width: 0;
+	}
+
+	@media (min-width: 640px) {
+		.estado-item {
+			gap: 1rem;
+			padding: 1rem;
+			border-radius: 12px;
+		}
 	}
 
 	.estado-item.marcado {
-		background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-		border-color: #28a745;
+		background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%) !important;
+		border-color: #28a745 !important;
 	}
 
 	.estado-item.pendiente {
-		background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-		border-color: #dc3545;
+		background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%) !important;
+		border-color: #dc3545 !important;
 	}
 
 	.estado-icon {
-		font-size: 1.5rem;
+		font-size: 1.25rem;
 		font-weight: bold;
+		flex-shrink: 0;
+	}
+
+	@media (min-width: 640px) {
+		.estado-icon {
+			font-size: 1.5rem;
+		}
 	}
 
 	.estado-item.marcado .estado-icon {
-		color: #28a745;
+		color: #28a745 !important;
 	}
 
 	.estado-item.pendiente .estado-icon {
-		color: #dc3545;
+		color: #dc3545 !important;
 	}
 
 	.estado-info {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
+		flex: 1;
+		min-width: 0;
 	}
 
 	.estado-label {
-		font-size: 0.75rem;
-		color: #6c757d;
+		font-size: 0.65rem;
+		color: #6c757d !important;
 		text-transform: uppercase;
 		font-weight: 600;
 	}
 
+	@media (min-width: 640px) {
+		.estado-label {
+			font-size: 0.75rem;
+		}
+	}
+
 	.estado-hora {
 		font-weight: 600;
-		font-size: 1rem;
-		color: #1a1a1a;
+		font-size: 0.9rem;
+		color: #1a1a1a !important;
+	}
+
+	@media (min-width: 640px) {
+		.estado-hora {
+			font-size: 1rem;
+		}
 	}
 
 	/* Accesos rápidos */
 	.accesos-grid {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
-		gap: 1rem;
+		gap: 0.75rem;
+		width: 100%;
+	}
+
+	@media (min-width: 640px) {
+		.accesos-grid {
+			gap: 1rem;
+		}
 	}
 
 	.acceso-btn {
@@ -886,14 +1055,24 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 0.5rem;
-		padding: 1.5rem 1rem;
-		background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+		gap: 0.4rem;
+		padding: 1rem 0.5rem;
+		background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
 		border: 2px solid #e0e0e0;
-		border-radius: 12px;
+		border-radius: 8px;
 		cursor: pointer;
 		transition: all 0.2s;
 		font-weight: 600;
+		box-sizing: border-box;
+		width: 100%;
+	}
+
+	@media (min-width: 640px) {
+		.acceso-btn {
+			gap: 0.5rem;
+			padding: 1.5rem 1rem;
+			border-radius: 12px;
+		}
 	}
 
 	.acceso-btn:hover {
@@ -903,58 +1082,58 @@
 	}
 
 	.acceso-btn.admin {
-		background: linear-gradient(135deg, #fff7e6 0%, #fff3dc 100%);
-		border-color: #ffc107;
+		background: linear-gradient(135deg, #fff7e6 0%, #fff3dc 100%) !important;
+		border-color: #ffc107 !important;
 	}
 
 	.acceso-icon {
-		font-size: 2rem;
+		font-size: 1.5rem;
+	}
+
+	@media (min-width: 640px) {
+		.acceso-icon {
+			font-size: 2rem;
+		}
 	}
 
 	.acceso-label {
-		font-size: 0.9rem;
-		color: #1a1a1a;
+		font-size: 0.75rem;
+		color: #1a1a1a !important;
+		text-align: center;
+		word-wrap: break-word;
+	}
+
+	@media (min-width: 640px) {
+		.acceso-label {
+			font-size: 0.9rem;
+		}
 	}
 
 	/* Calendario */
+	.calendario-card::before {
+		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+	}
+
 	.calendario-body {
-		padding: 1rem;
+		padding: 0.5rem;
+		overflow: hidden;
 	}
 
-	@media (max-width: 1024px) {
-		.dashboard-layout {
-			grid-template-columns: 1fr;
+	@media (min-width: 640px) {
+		.calendario-body {
+			padding: 1rem;
 		}
 	}
 
-	@media (max-width: 768px) {
-		.user-avatar {
-			padding: 0.5rem;
-		}
 
-		.avatar-name {
-			display: none;
-		}
 
+	@media (max-width: 480px) {
 		.accesos-grid {
 			grid-template-columns: 1fr;
 		}
 
-		.asistencia-estado {
-			flex-direction: column;
-		}
-
-		.guardia-item {
-			padding: 0.75rem;
-		}
-
-		.card-header h2 {
-			font-size: 1rem;
-		}
-
-		.btn-ir {
-			padding: 0.4rem 0.8rem;
-			font-size: 0.8rem;
+		.dashboard-header {
+			margin-bottom: 1rem;
 		}
 	}
 </style>
