@@ -410,7 +410,7 @@
     }
 
     .sidebar-tab.active {
-        left: 320px;
+        left: 280px;
         opacity: 1;
         visibility: visible;
         margin-left: -55px;
@@ -426,6 +426,12 @@
             inset -1px 0 2px rgba(0, 0, 0, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-right: none;
+    }
+
+    @media (min-width: 768px) {
+        .sidebar-tab.active {
+            left: 320px;
+        }
     }
 
     .sidebar-tab.active:hover {
@@ -483,7 +489,8 @@
     .sidebar {
         position: fixed;
         left: -320px;
-        width: 320px;
+        width: 280px;
+        max-width: 80vw;
         background: linear-gradient(
             180deg,
             rgba(255, 255, 255, 0.75) 0%,
@@ -498,9 +505,18 @@
             inset 1px 0 2px rgba(64, 123, 255, 0.1);
         transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         overflow-y: auto;
+        overflow-x: hidden;
         top: 0;
         height: 100vh;
+        height: 100dvh;
         z-index: 9995;
+    }
+
+    @media (min-width: 768px) {
+        .sidebar {
+            width: 320px;
+            max-width: 320px;
+        }
     }
 
     .sidebar-container.active .sidebar {

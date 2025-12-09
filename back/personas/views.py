@@ -2292,3 +2292,23 @@ def sincronizar_organigrama_manual(request):
             'success': False,
             'message': f'Error al sincronizar organigrama: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================================================
+# ENDPOINTS DE DEBUG TEMPORAL - REMOVER DESPUÉS DE RESOLVER 404
+# ============================================================================
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def debug_organigrama_test(request):
+    """
+    Endpoint de prueba SIN autenticación para verificar que el routing funciona.
+    TEMPORAL - Remover después de resolver el problema.
+    """
+    return Response({
+        'success': True,
+        'message': 'Endpoint de organigrama funcionando correctamente',
+        'path': request.path,
+        'method': request.method,
+        'authenticated': hasattr(request, 'session') and 'user_id' in request.session
+    })

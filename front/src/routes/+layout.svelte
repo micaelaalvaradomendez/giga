@@ -39,31 +39,45 @@
 		box-sizing: border-box;
 	}
 
-	:global(html, body) {
+	:global(html) {
 		height: 100%;
 		margin: 0;
 		padding: 0;
+		overflow-x: hidden;
 	}
 
 	:global(body) {
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		overflow-x: hidden;
+		width: 100%;
 	}
 
 	.layout-container {
 		display: flex;
+		flex-direction: column;
 		flex: 1;
-		transition: margin-left 0.4s ease;
-		margin-left: 0;
-	}
-
-	.layout-container.menu-open {
-		margin-left: 320px;
+		width: 100%;
+		min-height: 0;
+		position: relative;
 	}
 
 	main {
 		flex: 1;
-		padding: 2rem;
+		padding: 1rem;
+		width: 100%;
+		max-width: 100%;
+		overflow-x: hidden;
+		box-sizing: border-box;
+	}
+
+	@media (min-width: 768px) {
+		main {
+			padding: 2rem;
+		}
 	}
 </style>

@@ -240,20 +240,39 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        margin-top: 80px;
-        gap: 30px;
+        margin-top: 2rem;
+        padding: 1rem;
+        gap: 1.5rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    @media (min-width: 768px) {
+        .page-wrap {
+            margin-top: 4rem;
+            gap: 2rem;
+        }
     }
 
     .datetime-card {
         background-image: linear-gradient(163deg, #8eb6e4 0%, #3d97ff 90%);
-        border-radius: 24px;
+        border-radius: 20px;
         padding: 3px;
         box-shadow: 
             0 8px 32px rgba(64, 124, 255, 0.671),
             inset 0 1px 2px rgba(255, 255, 255, 0.3);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         text-align: center;
-        min-width: 450px;
+        width: 90%;
+        max-width: 450px;
+    }
+
+    @media (min-width: 640px) {
+        .datetime-card {
+            width: auto;
+            min-width: 450px;
+            border-radius: 24px;
+        }
     }
 
     .datetime-content {
@@ -262,40 +281,71 @@
             rgba(255, 255, 255, 0.95) 0%,
             rgba(255, 255, 255, 0.88) 100%
         );
-        border-radius: 21px;
-        padding: 30px 50px;
+        border-radius: 18px;
+        padding: 20px 30px;
         box-shadow:
             0 4px 16px rgba(64, 123, 255, 0.1),
             inset 0 1px 2px rgba(255, 255, 255, 0.8),
             inset 0 -1px 2px rgba(64, 123, 255, 0.05);
     }
 
+    @media (min-width: 640px) {
+        .datetime-content {
+            border-radius: 21px;
+            padding: 30px 50px;
+        }
+    }
+
     .time-display {
-        font-size: 72px;
+        font-size: 48px;
         font-weight: 700;
         color: rgb(64, 123, 255);
         text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-        letter-spacing: 2px;
-        margin-bottom: 10px;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+    }
+
+    @media (min-width: 640px) {
+        .time-display {
+            font-size: 72px;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
     }
 
     .date-display {
-        font-size: 20px;
+        font-size: 14px;
         font-weight: 500;
         color: rgb(64, 123, 255);
         text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
         text-transform: capitalize;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.3px;
+    }
+
+    @media (min-width: 640px) {
+        .date-display {
+            font-size: 20px;
+            letter-spacing: 0.5px;
+        }
     }
 
     .card-wrapper {
         background-image: linear-gradient(163deg, #8eb6e4 0%, #3d97ff 90%);
-        border-radius: 24px;
+        border-radius: 20px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         padding: 0;
         box-shadow: 
             0 8px 32px rgba(64, 124, 255, 0.671),
             inset 0 1px 2px rgba(255, 255, 255, 0.3);
+        width: 90%;
+        max-width: 450px;
+    }
+
+    @media (min-width: 640px) {
+        .card-wrapper {
+            border-radius: 24px;
+            width: auto;
+        }
     }
 
     .card-wrapper:hover {
@@ -306,17 +356,24 @@
             inset 0 1px 2px rgba(255, 255, 255, 0.4);
     }
 
+    @media (max-width: 480px) {
+        .card-wrapper:hover {
+            transform: scale(1);
+        }
+    }
+
     .container {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
             sans-serif;
+        width: 100%;
         max-width: 450px;
         background: linear-gradient(
             135deg,
             rgba(255, 255, 255, 0.95) 0%,
             rgba(255, 255, 255, 0.88) 100%
         );
-        border-radius: 20px;
-        padding: 25px 35px;
+        border-radius: 18px;
+        padding: 20px 25px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         margin: 3px;
         border: 1px solid rgba(64, 123, 255, 0.15);
@@ -324,6 +381,14 @@
             0 4px 16px rgba(64, 123, 255, 0.1),
             inset 0 1px 2px rgba(255, 255, 255, 0.8),
             inset 0 -1px 2px rgba(64, 123, 255, 0.05);
+        box-sizing: border-box;
+    }
+
+    @media (min-width: 640px) {
+        .container {
+            border-radius: 20px;
+            padding: 25px 35px;
+        }
     }
 
     .container:hover {
@@ -343,8 +408,14 @@
     .textB {
         text-align: center;
         font-weight: 700;
-        font-size: 40px;
+        font-size: 28px;
         color: rgb(16, 137, 211);
+    }
+
+    @media (min-width: 640px) {
+        .textB {
+            font-size: 40px;
+        }
     }
 
     .form {
@@ -352,17 +423,26 @@
     }
 
     .form .input {
-        font-size: 18px;
-        width: 85%;
+        font-size: 16px;
+        width: 100%;
         background: white;
         border: 2px solid #a2b8e7;
-        padding: 15px 20px;
+        padding: 12px 16px;
         border-radius: 16px;
         margin-top: 15px;
         box-shadow: 
             0 4px 16px rgba(64, 123, 255, 0.12),
             inset 0 1px 2px rgba(255, 255, 255, 0.8);
         transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    @media (min-width: 640px) {
+        .form .input {
+            font-size: 18px;
+            width: 85%;
+            padding: 15px 20px;
+        }
     }
 
     .form .input::placeholder {
@@ -382,8 +462,8 @@
         align-items: center;
         justify-content: center;
         gap: 4px;
-        padding: 12px 32px;
-        font-size: 18px;
+        padding: 12px 24px;
+        font-size: 16px;
         border: none;
         background-color: white;
         border-radius: 100px;
@@ -395,6 +475,14 @@
         transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         width: 100%;
         margin: 20px auto;
+        box-sizing: border-box;
+    }
+
+    @media (min-width: 640px) {
+        .animated-button {
+            padding: 12px 32px;
+            font-size: 18px;
+        }
     }
 
     .animated-button svg {
@@ -503,13 +591,19 @@
     }
     .input-wrapper {
         position: relative;
-        width: auto;
+        width: 100%;
         display: block;
     }
 
     .input-wrapper .input {
         padding-right: 45px;
-        width: 76%;
+        width: 100%;
+    }
+
+    @media (min-width: 640px) {
+        .input-wrapper .input {
+            width: 76%;
+        }
     }
 
     .eye-button {
@@ -528,6 +622,13 @@
         transition: color 0.2s;
         width: 24px;
         height: 35px;
+        z-index: 10;
+    }
+
+    @media (min-width: 640px) {
+        .eye-button {
+            right: 10px;
+        }
     }
 
     .eye-button:focus {
@@ -555,9 +656,15 @@
     }
 
     .form .recover-password a {
-        font-size: 20px;
+        font-size: 16px;
         color: #0099ff;
         text-decoration: underline;
+    }
+
+    @media (min-width: 640px) {
+        .form .recover-password a {
+            font-size: 20px;
+        }
     }
 
     .error-message {
@@ -566,11 +673,18 @@
         padding: 0.7rem;
         border-radius: 16px;
         text-align: center;
-        font-size: 15px;
+        font-size: 14px;
         margin-top: 0.5rem;
         box-shadow: 
             0 4px 16px rgba(255, 68, 68, 0.25),
             inset 0 1px 2px rgba(255, 255, 255, 0.2);
+        word-wrap: break-word;
+    }
+
+    @media (min-width: 640px) {
+        .error-message {
+            font-size: 15px;
+        }
     }
 
     @keyframes keyframes-fill {

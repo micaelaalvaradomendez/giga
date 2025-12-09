@@ -17,7 +17,10 @@
   .navbar {
     position: sticky;
     top: 0;
-    width: 100%;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    max-width: 100%;
     z-index: 1000;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     padding: 12px 0;
@@ -31,16 +34,34 @@
       0 8px 32px rgba(64, 123, 255, 0.25),
       inset 0 -1px 2px rgba(255, 255, 255, 0.3),
       inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    overflow-x: hidden;
   }
 
   .navbar-container {
-    max-width: 1400px;
+    max-width: 100%;
+    width: 100%;
     margin: 0 auto;
-    padding: 0 32px;
+    padding: 0 1rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 24px;
+    gap: 1rem;
+    box-sizing: border-box;
+  }
+
+  @media (min-width: 768px) {
+    .navbar-container {
+      padding: 0 2rem;
+      gap: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .navbar-container {
+      max-width: 1400px;
+      padding: 0 2rem;
+      gap: 1.5rem;
+    }
   }
 
   .navbar-left {
@@ -49,8 +70,8 @@
     gap: 4px;
     text-decoration: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    padding: 12px 24px;
-    border-radius: 20px;
+    padding: 8px 12px;
+    border-radius: 12px;
     background: linear-gradient(135deg, 
       rgba(255, 255, 255, 0.15) 0%, 
       rgba(255, 255, 255, 0.08) 100%);
@@ -58,6 +79,15 @@
       0 4px 16px rgba(0, 0, 0, 0.15),
       inset 0 1px 2px rgba(255, 255, 255, 0.25),
       inset 0 -1px 2px rgba(0, 0, 0, 0.1);
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  @media (min-width: 768px) {
+    .navbar-left {
+      padding: 12px 24px;
+      border-radius: 20px;
+    }
   }
 
   .navbar-left:hover {
@@ -76,15 +106,30 @@
   }
 
   .logo-title {
-    font-size: 30px;
+    font-size: 20px;
     font-weight: 800;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     color: #E8F1FF;
     text-shadow: 
       0 2px 4px rgba(0, 0, 0, 0.3),
       0 0 12px rgba(64, 123, 255, 0.4);
     position: relative;
     display: inline-block;
+    white-space: nowrap;
+  }
+
+  @media (min-width: 640px) {
+    .logo-title {
+      font-size: 24px;
+      letter-spacing: 0.8px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .logo-title {
+      font-size: 30px;
+      letter-spacing: 1px;
+    }
   }
 
   .logo-title-wrapper::after {
@@ -117,39 +162,95 @@
   }
 
   .logo-subtitle {
-    font-size: 15px;
+    font-size: 9px;
     font-weight: 600;
     color: #E8F1FF;
     opacity: 0.85;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     text-transform: uppercase;
     text-shadow: 
       0 2px 4px rgba(0, 0, 0, 0.3),
       0 0 8px rgba(64, 123, 255, 0.3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  @media (min-width: 640px) {
+    .logo-subtitle {
+      font-size: 11px;
+      letter-spacing: 0.4px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .logo-subtitle {
+      font-size: 15px;
+      letter-spacing: 0.5px;
+    }
   }
 
   .navbar-right {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 12px 24px;
+    gap: 8px;
+    padding: 8px 12px;
+    flex-shrink: 0;
+  }
+
+  @media (min-width: 768px) {
+    .navbar-right {
+      gap: 16px;
+      padding: 12px 24px;
+    }
   }
 
   .organization-name {
-    font-size: 20px;
+    font-size: 11px;
     font-weight: 700;
     color: #E8F1FF;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
     text-shadow: 
       0 2px 4px rgba(0, 0, 0, 0.3),
       0 0 12px rgba(64, 123, 255, 0.4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+  }
+
+  @media (min-width: 640px) {
+    .organization-name {
+      font-size: 13px;
+      max-width: 200px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .organization-name {
+      font-size: 20px;
+      letter-spacing: 0.3px;
+      max-width: none;
+    }
   }
 
   .SsSV {
-    height: 56px;
+    height: 40px;
     width: auto;
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3)) brightness(1.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @media (min-width: 640px) {
+    .SsSV {
+      height: 48px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .SsSV {
+      height: 56px;
+    }
   }
 
   .SsSV:hover {
@@ -157,44 +258,9 @@
     transform: scale(1.05);
   }
 
-  @media (max-width: 1024px) {
-    .navbar-container {
-      padding: 0 24px;
-    }
-
-    .logo-title {
-      font-size: 24px;
-    }
-
-    .logo-subtitle {
-      font-size: 11px;
-    }
-
+  @media (max-width: 480px) {
     .organization-name {
-      font-size: 13px;
-    }
-
-    .SsSV {
-      height: 48px;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .navbar-container {
-      flex-direction: column;
-      gap: 16px;
-      padding: 0 16px;
-    }
-
-    .navbar-left,
-    .navbar-right {
-      width: 100%;
-      justify-content: center;
-      text-align: center;
-    }
-
-    .logo-subtitle {
-      font-size: 10px;
+      display: none;
     }
   }
 </style>

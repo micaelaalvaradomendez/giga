@@ -98,4 +98,7 @@ urlpatterns = [
     path('parametros/', include(parametros_patterns)),
     path('organigrama/', include(organigrama_patterns)),
     path('test/', include(test_patterns)),
+    # DEBUG TEMPORAL - Remover después de resolver 404
+    path('debug/organigrama-test/', views.debug_organigrama_test, name='debug_organigrama_test'),
 ]
+
