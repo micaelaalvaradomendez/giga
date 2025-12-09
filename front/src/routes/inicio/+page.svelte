@@ -466,10 +466,10 @@
 	}
 
 	.dashboard-container {
-		padding: 1rem;
+		padding: 0.5rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		width: 100%;
-		max-width: 100%;
+		max-width: 100vw;
 		box-sizing: border-box;
 		overflow-x: hidden;
 		background-color: #f8f9fa !important;
@@ -685,6 +685,7 @@
 		max-width: 100%;
 		box-sizing: border-box;
 		color: #1a1a1a !important;
+		margin: 0;
 	}
 
 	@media (min-width: 768px) {
@@ -722,7 +723,7 @@
 	}
 
 	.card-header {
-		padding: 1rem;
+		padding: 0.75rem;
 		border-bottom: 2px solid #f1f3f5;
 		display: flex;
 		justify-content: space-between;
@@ -794,7 +795,7 @@
 	}
 
 	.card-body {
-		padding: 1rem;
+		padding: 0.75rem;
 		box-sizing: border-box;
 		width: 100%;
 		max-width: 100%;

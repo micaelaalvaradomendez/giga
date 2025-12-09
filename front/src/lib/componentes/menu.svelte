@@ -504,8 +504,9 @@
         overflow-y: auto;
         overflow-x: hidden;
         top: 0;
-        min-height: 100vh;
-        min-height: 100svh;
+        bottom: 0;
+        height: 100vh;
+        height: 100dvh;
         z-index: 9995;
     }
 
