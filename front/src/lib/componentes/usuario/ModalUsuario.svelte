@@ -329,9 +329,11 @@
 	}
 
 	.info-value {
-		font-size: 18px;
+		font-size: 1rem;
 		color: #1a1a1a;
 		font-weight: 500;
+		word-break: break-word;
+		overflow-wrap: break-word;
 	}
 
 	.roles-item {

@@ -378,7 +378,7 @@
         position: fixed;
         left: 0;
         top: 50%;
-        transform: translateY(600%);
+        transform: translateY(-50%);
         background: linear-gradient(
             135deg,
             rgba(64, 123, 255, 0.95) 0%,
@@ -408,7 +408,7 @@
     }
 
     .sidebar-tab.active {
-        transform: translateX(min(280px, 80vw)) translateY(600%);
+        transform: translateX(min(280px, 80vw)) translateY(-50%);
         opacity: 1;
         visibility: visible;
         margin-left: -55px;
@@ -428,7 +428,7 @@
 
     @media (min-width: 768px) {
         .sidebar-tab.active {
-            transform: translateX(min(320px, 80vw)) translateY(600%);
+            transform: translateX(min(320px, 80vw)) translateY(-50%);
         }
     }
 

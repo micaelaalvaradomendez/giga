@@ -505,13 +505,13 @@
 	}
 
 	.dashboard-title {
-		font-size: 24px;
+		font-size: 1.5rem;
 		font-weight: 700;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
-		margin: 10px;
+		margin: 0;
 		position: relative;
 		padding-bottom: 0.5rem;
 		overflow: hidden;
@@ -560,13 +560,15 @@
 		background: white !important;
 		background-color: #ffffff !important;
 		border: 2px solid #e9ecef;
-		padding: 0.4rem 0.8rem;
+		padding: 0.4rem 0.6rem;
 		border-radius: 50px;
 		cursor: pointer;
 		transition: all 0.2s;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		flex-shrink: 0;
+		max-width: 100%;
+		overflow: hidden;
 	}
 
 	@media (min-width: 640px) {
@@ -607,10 +609,13 @@
 
 	.avatar-name {
 		font-weight: 600;
-		font-size: 14px;
+		font-size: 0.875rem;
 		color: #1a1a1a !important;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 120px;
 		display: none;
 	}
 
