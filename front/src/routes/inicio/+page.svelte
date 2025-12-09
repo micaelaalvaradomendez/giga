@@ -873,6 +873,7 @@
 		padding: 0.5rem;
 		border-radius: 8px;
 		min-width: 50px;
+		max-width: 60px;
 		flex-shrink: 0;
 	}
 
@@ -914,6 +915,7 @@
 		gap: 0.25rem;
 		flex: 1;
 		min-width: 0;
+		overflow: hidden;
 	}
 
 	.guardia-turno {
