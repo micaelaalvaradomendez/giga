@@ -14,7 +14,6 @@
   .footer {
     width: 100vw;
     max-width: 100%;
-    margin-top: auto;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     padding: 12px 0;
     background: linear-gradient(135deg, 

@@ -455,9 +455,18 @@
 	}
 
 	.dashboard-container {
-		min-height: 100vh;
-		padding: 2rem;
+		padding: 1rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+		overflow-x: hidden;
+	}
+
+	@media (min-width: 768px) {
+		.dashboard-container {
+			padding: 2rem;
+		}
 	}
 
 	.dashboard-header {
@@ -468,12 +477,21 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		max-width: 1400px;
+		max-width: 100%;
 		margin: 0 auto;
+		gap: 1rem;
+		flex-wrap: wrap;
+		box-sizing: border-box;
+	}
+
+	@media (min-width: 1024px) {
+		.header-content {
+			max-width: 1400px;
+		}
 	}
 
 	.dashboard-title {
-		font-size: 40px;
+		font-size: 24px;
 		font-weight: 700;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		-webkit-background-clip: text;
@@ -484,6 +502,20 @@
 		padding-bottom: 0.5rem;
 		overflow: hidden;
 		display: inline-block;
+		max-width: 100%;
+		word-wrap: break-word;
+	}
+
+	@media (min-width: 640px) {
+		.dashboard-title {
+			font-size: 32px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.dashboard-title {
+			font-size: 40px;
+		}
 	}
 
 	.dashboard-title::after {
@@ -554,32 +586,63 @@
 	}
 
 	.dashboard-layout {
-		max-width: 1400px;
+		max-width: 100%;
+		width: 100%;
 		margin: 0 auto;
 		display: grid;
-		grid-template-columns: 380px 1fr;
-		gap: 2rem;
+		grid-template-columns: 1fr;
+		gap: 1rem;
+		box-sizing: border-box;
+	}
+
+	@media (min-width: 1024px) {
+		.dashboard-layout {
+			max-width: 1400px;
+			grid-template-columns: 380px 1fr;
+			gap: 2rem;
+		}
 	}
 
 	.left-column {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
+		gap: 1rem;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
+	@media (min-width: 768px) {
+		.left-column {
+			gap: 1.5rem;
+		}
 	}
 
 	.right-column {
 		display: flex;
 		flex-direction: column;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
 	}
 
 	.dashboard-card {
 		background: white;
-		border-radius: 16px;
+		border-radius: 12px;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 		overflow: hidden;
 		transition: all 0.3s;
 		border: 1px solid #e9ecef;
 		position: relative;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
+	@media (min-width: 768px) {
+		.dashboard-card {
+			border-radius: 16px;
+		}
 	}
 
 	.dashboard-card::before {
@@ -611,12 +674,21 @@
 	}
 
 	.card-header {
-		padding: 1.5rem;
+		padding: 1rem;
 		border-bottom: 2px solid #f1f3f5;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		box-sizing: border-box;
+	}
+
+	@media (min-width: 768px) {
+		.card-header {
+			padding: 1.5rem;
+		}
 	}
 
 	.card-header h2 {
@@ -644,7 +716,17 @@
 	}
 
 	.card-body {
-		padding: 1.5rem;
+		padding: 1rem;
+		box-sizing: border-box;
+		width: 100%;
+		max-width: 100%;
+		overflow-x: hidden;
+	}
+
+	@media (min-width: 768px) {
+		.card-body {
+			padding: 1.5rem;
+		}
 	}
 
 	.card-loading {
@@ -846,14 +928,6 @@
 	}
 
 	@media (max-width: 768px) {
-		.dashboard-container {
-			padding: 1rem;
-		}
-
-		.dashboard-title {
-			font-size: 1.5rem;
-		}
-
 		.user-avatar {
 			padding: 0.5rem;
 		}
@@ -868,6 +942,19 @@
 
 		.asistencia-estado {
 			flex-direction: column;
+		}
+
+		.guardia-item {
+			padding: 0.75rem;
+		}
+
+		.card-header h2 {
+			font-size: 1rem;
+		}
+
+		.btn-ir {
+			padding: 0.4rem 0.8rem;
+			font-size: 0.8rem;
 		}
 	}
 </style>

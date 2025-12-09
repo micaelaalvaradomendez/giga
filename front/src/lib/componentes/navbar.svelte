@@ -15,8 +15,7 @@
 
 <style>
   .navbar {
-    position: sticky;
-    top: 0;
+    position: relative;
     left: 0;
     right: 0;
     width: 100vw;

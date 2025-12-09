@@ -235,6 +235,11 @@
 </div>
 
 <style>
+    :global(*) {
+        color-scheme: light only;
+        -webkit-color-scheme: light;
+    }
+
     .page-wrap {
         display: flex;
         flex-direction: column;
@@ -425,7 +430,9 @@
     .form .input {
         font-size: 16px;
         width: 100%;
-        background: white;
+        background: white !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
         border: 2px solid #a2b8e7;
         padding: 12px 16px;
         border-radius: 16px;
@@ -435,6 +442,8 @@
             inset 0 1px 2px rgba(255, 255, 255, 0.8);
         transition: all 0.3s ease;
         box-sizing: border-box;
+        color-scheme: light;
+        -webkit-text-fill-color: #000000;
     }
 
     @media (min-width: 640px) {
@@ -446,7 +455,18 @@
     }
 
     .form .input::placeholder {
-        color: rgb(170, 170, 170);
+        color: rgb(170, 170, 170) !important;
+        opacity: 1 !important;
+    }
+
+    .form .input:-webkit-autofill,
+    .form .input:-webkit-autofill:hover,
+    .form .input:-webkit-autofill:focus,
+    .form .input:-webkit-autofill:active {
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: #000000 !important;
+        transition: background-color 5000s ease-in-out 0s;
+        box-shadow: inset 0 0 20px 20px #ffffff !important;
     }
     .form .input:focus {
         outline: none;

@@ -44,6 +44,8 @@
 		margin: 0;
 		padding: 0;
 		overflow-x: hidden;
+		color-scheme: light only;
+		-webkit-color-scheme: light;
 	}
 
 	:global(body) {
@@ -55,6 +57,10 @@
 		padding: 0;
 		overflow-x: hidden;
 		width: 100%;
+		background-color: #ffffff !important;
+		color: #000000 !important;
+		color-scheme: light only;
+		-webkit-color-scheme: light;
 	}
 
 	.layout-container {
