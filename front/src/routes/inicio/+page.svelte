@@ -637,7 +637,7 @@
 		margin: 0 auto;
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 1rem;
+		gap: 0.75rem;
 		box-sizing: border-box;
 	}
 
@@ -652,7 +652,7 @@
 	.left-column {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 0.75rem;
 		width: 100%;
 		max-width: 100%;
 		box-sizing: border-box;

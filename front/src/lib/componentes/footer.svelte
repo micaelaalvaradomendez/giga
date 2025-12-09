@@ -28,10 +28,8 @@
       0 -8px 32px rgba(64, 123, 255, 0.25),
       inset 0 1px 2px rgba(255, 255, 255, 0.3),
       inset 0 -1px 2px rgba(0, 0, 0, 0.1);
-    position: relative;
-    left: 0;
-    right: 0;
     overflow-x: hidden;
+    box-sizing: border-box;
   }
 
   .footer-container {

@@ -15,25 +15,24 @@
 
 <style>
   .navbar {
-    position: relative;
-    left: 0;
-    right: 0;
     width: 100%;
     max-width: 100%;
-    z-index: 1000;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     padding: 12px 0;
-    background: linear-gradient(135deg, 
-      rgba(64, 123, 255, 0.85) 0%, 
-      rgba(44, 87, 199, 0.75) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(64, 123, 255, 0.85) 0%,
+      rgba(44, 87, 199, 0.75) 100%
+    );
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 
+    box-shadow:
       0 8px 32px rgba(64, 123, 255, 0.25),
       inset 0 -1px 2px rgba(255, 255, 255, 0.3),
       inset 0 1px 2px rgba(0, 0, 0, 0.1);
     overflow-x: hidden;
+    box-sizing: border-box;
   }
 
   .navbar-container {
@@ -71,10 +70,12 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 8px 12px;
     border-radius: 12px;
-    background: linear-gradient(135deg, 
-      rgba(255, 255, 255, 0.15) 0%, 
-      rgba(255, 255, 255, 0.08) 100%);
-    box-shadow: 
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+    box-shadow:
       0 4px 16px rgba(0, 0, 0, 0.15),
       inset 0 1px 2px rgba(255, 255, 255, 0.25),
       inset 0 -1px 2px rgba(0, 0, 0, 0.1);
@@ -90,7 +91,7 @@
   }
 
   .navbar-left:hover {
-    box-shadow: 
+    box-shadow:
       0 6px 20px rgba(0, 0, 0, 0.2),
       0 0 16px rgba(64, 123, 255, 0.2),
       inset 0 1px 2px rgba(255, 255, 255, 0.35),
@@ -108,8 +109,8 @@
     font-size: 20px;
     font-weight: 800;
     letter-spacing: 0.5px;
-    color: #E8F1FF;
-    text-shadow: 
+    color: #e8f1ff;
+    text-shadow:
       0 2px 4px rgba(0, 0, 0, 0.3),
       0 0 12px rgba(64, 123, 255, 0.4);
     position: relative;
@@ -138,10 +139,12 @@
     height: 2px;
     bottom: 0;
     left: -35%;
-    background: linear-gradient(90deg, 
-      transparent, 
-      rgba(255, 255, 255, 0.9), 
-      transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.9),
+      transparent
+    );
     opacity: 0;
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -163,11 +166,11 @@
   .logo-subtitle {
     font-size: 9px;
     font-weight: 600;
-    color: #E8F1FF;
+    color: #e8f1ff;
     opacity: 0.85;
     letter-spacing: 0.3px;
     text-transform: uppercase;
-    text-shadow: 
+    text-shadow:
       0 2px 4px rgba(0, 0, 0, 0.3),
       0 0 8px rgba(64, 123, 255, 0.3);
     white-space: nowrap;
@@ -207,9 +210,9 @@
   .organization-name {
     font-size: 11px;
     font-weight: 700;
-    color: #E8F1FF;
+    color: #e8f1ff;
     letter-spacing: 0.2px;
-    text-shadow: 
+    text-shadow:
       0 2px 4px rgba(0, 0, 0, 0.3),
       0 0 12px rgba(64, 123, 255, 0.4);
     white-space: nowrap;
