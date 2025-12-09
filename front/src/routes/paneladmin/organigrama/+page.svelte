@@ -4,7 +4,7 @@
 	import OrganigramaViewer from "$lib/componentes/admin/organigrama/OrganigramaViewer.svelte";
 	import AdminNodeRenderer from "$lib/componentes/admin/organigrama/AdminNodeRenderer.svelte";
 	import ModalEliminar from "$lib/componentes/admin/parametros/ModalEliminar.svelte";
-	import { organigramaService } from "$lib/services/services.js";
+	import { organigramaService } from "$lib/paneladmin/controllers";
 
 	let organigramaData = null;
 	let loading = true;
