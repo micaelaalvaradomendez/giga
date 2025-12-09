@@ -19,7 +19,7 @@ class AsistenciaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Asistencia
         fields = [
-            'id_asistencia', 'fecha', 'hora_entrada', 'hora_salida',
+            'id_asistencia', 'fecha', 'hora_entrada', 'hora_salida', 'horas_efectivas',
             'marcacion_entrada_automatica', 'marcacion_salida_automatica',
             'es_correccion', 'corregido_por', 'corregido_por_nombre',
             'observaciones', 'creado_en', 'actualizado_en',
@@ -27,7 +27,7 @@ class AsistenciaSerializer(serializers.ModelSerializer):
             'id_area', 'area_nombre', 'estado',
             'horario_esperado_entrada', 'horario_esperado_salida'
         ]
-        read_only_fields = ['id_asistencia', 'creado_en', 'actualizado_en', 'estado']
+        read_only_fields = ['id_asistencia', 'creado_en', 'actualizado_en', 'estado', 'horas_efectivas']
     
     def get_agente_nombre(self, obj):
         if obj.id_agente:

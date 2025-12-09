@@ -350,6 +350,7 @@ CREATE TABLE IF NOT EXISTS asistencia (
     fecha DATE NOT NULL,
     hora_entrada TIME,
     hora_salida TIME,
+    horas_efectivas DECIMAL(4,2),
     marcacion_entrada_automatica BOOLEAN DEFAULT false,
     marcacion_salida_automatica BOOLEAN DEFAULT false,
     es_correccion BOOLEAN DEFAULT false,
