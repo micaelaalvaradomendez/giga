@@ -445,9 +445,9 @@
             inset -1px 0 2px rgba(0, 0, 0, 0.15);
     }
 
-    .sidebar-container.active .sidebar-tab:not(.active) {
+    .sidebar-container.active .sidebar-tab.hide-tab {
         opacity: 0;
-        visibility: hidden;
+        pointer-events: none;
         transform: translateX(0) translateY(600%);
         transition: opacity 0.4s;
     }

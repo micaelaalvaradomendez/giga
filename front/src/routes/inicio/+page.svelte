@@ -1136,8 +1136,25 @@
 	}
 
 	.calendario-body {
-		padding: 0.5rem;
+		padding: 0 !important;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
+	.calendario-body :global(.calendar-container) {
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
+	/* Asegurar que el calendario no cause overflow */
+	.calendario-card {
 		overflow: hidden;
+		width: 100%;
+		max-width: 100%;
 	}
 
 	@media (min-width: 640px) {

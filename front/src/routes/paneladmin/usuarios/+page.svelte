@@ -24,7 +24,7 @@
 		modalEditarAgente,
 		modalEliminarAgente,
 		modalAgregarAgente,
-		usuarioActual, 
+		usuarioActual,
 	} = usuariosController;
 
 	// Funciones para abrir modales (delegadas al controlador)
@@ -435,15 +435,22 @@
 		position: relative;
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
-		padding: 30px 40px;
+		padding: 20px;
 		margin: 0;
-		max-width: 1000px;
+		max-width: 100%;
 		border-radius: 28px;
 		overflow: hidden;
 		text-align: center;
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
 			0 20px 60px rgba(30, 64, 175, 0.4);
+	}
+
+	@media (min-width: 768px) {
+		.page-header-title {
+			padding: 30px 40px;
+			max-width: 1000px;
+		}
 	}
 
 	.page-header-title::before {
@@ -520,10 +527,17 @@
 
 	.filtros-row {
 		display: grid;
-		grid-template-columns: 1fr auto auto;
+		grid-template-columns: 1fr;
 		gap: 1rem;
-		align-items: end;
+		align-items: stretch;
 		margin-bottom: 1rem;
+	}
+
+	@media (min-width: 768px) {
+		.filtros-row {
+			grid-template-columns: 1fr auto auto;
+			align-items: end;
+		}
 	}
 
 	.filtro-group {
@@ -547,7 +561,16 @@
 		transition:
 			border-color 0.2s,
 			box-shadow 0.2s;
-		min-width: 250px;
+		min-width: 0;
+		width: 100%;
+	}
+
+	@media (min-width: 768px) {
+		.input-busqueda,
+		.select-area {
+			min-width: 250px;
+			width: auto;
+		}
 	}
 
 	.input-busqueda:focus,
@@ -669,6 +692,7 @@
 
 	table {
 		width: 100%;
+		min-width: 800px;
 		border-collapse: collapse;
 		background: white;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;

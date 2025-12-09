@@ -590,7 +590,7 @@
     min-width: fit-content;
     background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
     color: white;
-    padding: 25px 140px;
+    padding: 20px;
     margin: 0;
     border-radius: 28px;
     overflow: hidden;
@@ -598,6 +598,12 @@
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.1) inset,
       0 20px 60px rgba(30, 64, 175, 0.4);
+  }
+
+  @media (min-width: 768px) {
+    .header-glass {
+      padding: 25px 140px;
+    }
   }
 
   .header-glass::before {
@@ -619,7 +625,7 @@
 
   .header-glass h1 {
     font-weight: 800;
-    font-size: 28px;
+    font-size: 20px;
     letter-spacing: 0.2px;
     position: relative;
     padding-bottom: 12px;
@@ -627,6 +633,12 @@
     text-align: left;
     display: inline-block;
     white-space: nowrap;
+  }
+
+  @media (min-width: 768px) {
+    .header-glass h1 {
+      font-size: 28px;
+    }
   }
 
   .header-glass h1::after {
@@ -692,7 +704,7 @@
 
   .guardias-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(350px, 100%), 1fr));
     gap: 1.5rem;
   }
 

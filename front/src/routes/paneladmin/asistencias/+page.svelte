@@ -695,7 +695,7 @@
         position: relative;
         background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
         color: white;
-        padding: 30px 40px;
+        padding: 20px;
         margin-bottom: 30px;
         border-radius: 28px;
         overflow: hidden;
@@ -703,6 +703,12 @@
         box-shadow:
             0 0 0 1px rgba(255, 255, 255, 0.1) inset,
             0 10px 30px rgba(30, 64, 175, 0.4);
+    }
+
+    @media (min-width: 768px) {
+        .header {
+            padding: 30px 40px;
+        }
     }
 
     .header::before {
@@ -770,10 +776,17 @@
 
     .filtros-grid {
         display: grid;
-        grid-template-columns: 1fr auto auto;
+        grid-template-columns: 1fr;
         gap: 1rem;
-        align-items: end;
+        align-items: stretch;
         margin-bottom: 1rem;
+    }
+
+    @media (min-width: 768px) {
+        .filtros-grid {
+            grid-template-columns: 1fr auto auto;
+            align-items: end;
+        }
     }
 
     .form-group {

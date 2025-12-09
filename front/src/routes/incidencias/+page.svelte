@@ -695,7 +695,7 @@
     box-shadow: 0 4px 8px rgba(220, 38, 38, 0.4);
   }
 
-  .tabs-container {
+  .tabs-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
@@ -703,8 +703,15 @@
     margin-bottom: 2rem;
     border-bottom: 2px solid #e5e7eb;
     padding-bottom: 1rem;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     min-width: 0;
+  }
+
+  @media (max-width: 768px) {
+    .tabs-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
   }
 
   .tabs {
@@ -719,6 +726,14 @@
     align-items: center;
     gap: 1rem;
     flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 768px) {
+    .controls {
+      width: 100%;
+      flex-direction: column;
+    }
   }
 
   .tab {
@@ -764,6 +779,12 @@
     transition: all 0.3s ease;
     background: white;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  @media (max-width: 768px) {
+    .search-input {
+      width: 100%;
+    }
   }
 
   .search-input:focus {
@@ -1074,7 +1095,6 @@
     font-size: 1rem;
     margin-bottom: 1rem;
   }
-
 
   /* Solo ajustes mínimos para evitar overflow */
   @media (max-width: 1024px) {
