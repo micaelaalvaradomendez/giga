@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
+import AuthService from '$lib/login/authService.js';
 import { personasService } from '$lib/services.js';
-import { organigramaService } from '$lib/services/services.js';
 
 /**
  * Controlador para la visualización del organigrama organizacional
@@ -147,19 +147,27 @@ class OrganigramaController {
 				personasService.getRoles()
 			]);
 
+			// Normalizador único y coherente
+			const normalize = r =>
+				r?.data?.results ||
+				r?.data?.data?.results ||
+				r?.results ||
+				[];
+
 			// Procesar agentes
-			const agentesData = agentesResponse.data?.results || agentesResponse.results || [];
-			this.agentes.set(Array.isArray(agentesData) ? agentesData : []);
+			const agentesData = normalize(agentesResponse);
+			this.agentes.set(agentesData);
 
 			// Procesar áreas
-			const areasData = areasResponse.data?.data?.results || areasResponse.data?.results || [];
-			this.areas.set(Array.isArray(areasData) ? areasData : []);
+			const areasData = normalize(areasResponse);
+			this.areas.set(areasData);
 
 			// Procesar roles
-			const rolesData = rolesResponse.data?.data?.results || rolesResponse.data?.results || [];
-			this.roles.set(Array.isArray(rolesData) ? rolesData : []);
+			const rolesData = normalize(rolesResponse);
+			this.roles.set(rolesData);
 
 			console.log('✅ Datos del organigrama cargados correctamente');
+
 		} catch (error) {
 			console.error('❌ Error cargando datos del organigrama:', error);
 
@@ -174,10 +182,12 @@ class OrganigramaController {
 
 			this.error.set(errorMessage);
 			throw error;
+
 		} finally {
 			this.loading.set(false);
 		}
 	}
+
 
 	/**
 	 * Organizar agentes jerárquicamente
@@ -341,7 +351,7 @@ class OrganigramaController {
 			const estructura = await new Promise((resolve) => {
 				this.estructuraOrganizacional.subscribe(value => {
 					resolve(value);
-				})();
+				});
 			});
 
 			if (formato === 'json') {
