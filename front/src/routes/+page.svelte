@@ -1,31 +1,52 @@
 <script>
     import AuthService from "../lib/login/authService.js";
-    import { onMount, onDestroy } from 'svelte';
+    import { onMount, onDestroy } from "svelte";
 
     let cuil = "";
     let password = "";
     let showPassword = false;
     let errorMessage = "";
     let isLoading = false;
-    
+
     let currentTime = "";
     let currentDate = "";
     let timeInterval;
 
-    const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-    const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const diasSemana = [
+        "domingo",
+        "lunes",
+        "martes",
+        "miércoles",
+        "jueves",
+        "viernes",
+        "sábado",
+    ];
+    const meses = [
+        "enero",
+        "febrero",
+        "marzo",
+        "abril",
+        "mayo",
+        "junio",
+        "julio",
+        "agosto",
+        "septiembre",
+        "octubre",
+        "noviembre",
+        "diciembre",
+    ];
 
     function updateDateTime() {
         const now = new Date();
         const horas = now.getHours();
-        const minutos = now.getMinutes().toString().padStart(2, '0');
+        const minutos = now.getMinutes().toString().padStart(2, "0");
         currentTime = `${horas}:${minutos}`;
-        
+
         const dia = diasSemana[now.getDay()];
         const numeroDia = now.getDate();
         const mes = meses[now.getMonth()];
         const anio = now.getFullYear();
-        
+
         currentDate = `${dia} ${numeroDia} de ${mes} del ${anio}`;
     }
 
@@ -263,7 +284,7 @@
         background-image: linear-gradient(163deg, #8eb6e4 0%, #3d97ff 90%);
         border-radius: 20px;
         padding: 3px;
-        box-shadow: 
+        box-shadow:
             0 8px 32px rgba(64, 124, 255, 0.671),
             inset 0 1px 2px rgba(255, 255, 255, 0.3);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -292,6 +313,7 @@
             0 4px 16px rgba(64, 123, 255, 0.1),
             inset 0 1px 2px rgba(255, 255, 255, 0.8),
             inset 0 -1px 2px rgba(64, 123, 255, 0.05);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
 
     @media (min-width: 640px) {
@@ -339,7 +361,7 @@
         border-radius: 20px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         padding: 0;
-        box-shadow: 
+        box-shadow:
             0 8px 32px rgba(64, 124, 255, 0.671),
             inset 0 1px 2px rgba(255, 255, 255, 0.3);
         width: 90%;
@@ -355,7 +377,7 @@
 
     .card-wrapper:hover {
         transform: scale(1.02);
-        box-shadow: 
+        box-shadow:
             0 12px 48px rgba(64, 123, 255, 0.35),
             0 0 24px rgba(64, 123, 255, 0.15),
             inset 0 1px 2px rgba(255, 255, 255, 0.4);
@@ -437,7 +459,7 @@
         padding: 12px 16px;
         border-radius: 16px;
         margin-top: 15px;
-        box-shadow: 
+        box-shadow:
             0 4px 16px rgba(64, 123, 255, 0.12),
             inset 0 1px 2px rgba(255, 255, 255, 0.8);
         transition: all 0.3s ease;
@@ -471,7 +493,7 @@
     .form .input:focus {
         outline: none;
         border: 2px solid #12b1d1;
-        box-shadow: 
+        box-shadow:
             0 6px 20px rgba(18, 177, 209, 0.25),
             inset 0 1px 2px rgba(255, 255, 255, 0.9);
     }
@@ -695,7 +717,7 @@
         text-align: center;
         font-size: 14px;
         margin-top: 0.5rem;
-        box-shadow: 
+        box-shadow:
             0 4px 16px rgba(255, 68, 68, 0.25),
             inset 0 1px 2px rgba(255, 255, 255, 0.2);
         word-wrap: break-word;
