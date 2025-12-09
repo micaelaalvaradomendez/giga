@@ -466,10 +466,10 @@
 	}
 
 	.dashboard-container {
-		padding: 0.5rem;
+		padding: 1rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		width: 100%;
-		max-width: 100vw;
+		max-width: 100%;
 		box-sizing: border-box;
 		overflow-x: hidden;
 		background-color: #f8f9fa !important;
@@ -484,7 +484,11 @@
 	}
 
 	.dashboard-header {
-		margin-bottom: 2rem;
+		margin-bottom: 1.5rem;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+		overflow-x: hidden;
 	}
 
 	.header-content {
@@ -492,10 +496,12 @@
 		justify-content: space-between;
 		align-items: center;
 		max-width: 100%;
+		width: 100%;
 		margin: 0 auto;
-		gap: 1rem;
+		gap: 0.5rem;
 		flex-wrap: wrap;
 		box-sizing: border-box;
+		overflow-x: hidden;
 	}
 
 	@media (min-width: 1024px) {
@@ -515,9 +521,10 @@
 		position: relative;
 		padding-bottom: 0.5rem;
 		overflow: hidden;
-		display: inline-block;
+		display: block;
 		max-width: 100%;
 		word-wrap: break-word;
+		box-sizing: border-box;
 	}
 
 	@media (min-width: 640px) {
@@ -639,6 +646,7 @@
 		grid-template-columns: 1fr;
 		gap: 0.75rem;
 		box-sizing: border-box;
+		overflow-x: hidden;
 	}
 
 	@media (min-width: 1024px) {
@@ -656,6 +664,7 @@
 		width: 100%;
 		max-width: 100%;
 		box-sizing: border-box;
+		overflow-x: hidden;
 	}
 
 	@media (min-width: 768px) {
@@ -670,6 +679,7 @@
 		width: 100%;
 		max-width: 100%;
 		box-sizing: border-box;
+		overflow-x: hidden;
 	}
 
 	.dashboard-card {
@@ -686,6 +696,7 @@
 		box-sizing: border-box;
 		color: #1a1a1a !important;
 		margin: 0;
+		min-width: 0;
 	}
 
 	@media (min-width: 768px) {
@@ -800,6 +811,7 @@
 		width: 100%;
 		max-width: 100%;
 		overflow-x: hidden;
+		min-width: 0;
 	}
 
 	@media (min-width: 768px) {
@@ -1065,6 +1077,7 @@
 		width: 100%;
 		max-width: 100%;
 		box-sizing: border-box;
+		overflow-x: hidden;
 	}
 
 	@media (min-width: 640px) {
@@ -1145,17 +1158,30 @@
 	}
 
 	.calendario-body {
-		padding: 0 !important;
+		padding: 0.5rem !important;
 		overflow-x: auto;
 		-webkit-overflow-scrolling: touch;
 		width: 100%;
 		max-width: 100%;
 		box-sizing: border-box;
+		min-width: 0;
 	}
 
 	.calendario-body :global(.calendar-container) {
 		width: 100%;
 		max-width: 100%;
+		box-sizing: border-box;
+		min-width: 0;
+	}
+
+	.calendario-body :global(.calendar-grid) {
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
+	.calendario-body :global(.calendar-day) {
+		min-width: 0;
 		box-sizing: border-box;
 	}
 
@@ -1164,11 +1190,13 @@
 		overflow: hidden;
 		width: 100%;
 		max-width: 100%;
+		box-sizing: border-box;
+		min-width: 0;
 	}
 
 	@media (min-width: 640px) {
 		.calendario-body {
-			padding: 1rem;
+			padding: 1rem !important;
 		}
 	}
 

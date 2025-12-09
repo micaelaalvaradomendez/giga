@@ -74,16 +74,12 @@
 
 	main {
 		flex: 1;
-		padding: 1rem;
+		padding: 0;
 		width: 100%;
 		max-width: 100%;
 		overflow-x: hidden;
 		box-sizing: border-box;
 	}
 
-	@media (min-width: 768px) {
-		main {
-			padding: 2rem;
-		}
-	}
+
 </style>
