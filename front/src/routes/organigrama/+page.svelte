@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from "svelte";
 	import { browser } from "$app/environment";
+	import { API_BASE_URL } from "$lib/api.js";
 	import OrganigramaViewer from "$lib/componentes/admin/organigrama/OrganigramaViewer.svelte";
 
 	let organigramaData = null;
@@ -14,8 +15,9 @@
 
 	async function loadOrganigrama() {
 		try {
+			console.log("🔄 Cargando organigrama desde API...");
 			// CARGAR DESDE API DEL BACKEND
-			const response = await fetch("/api/personas/organigrama/", {
+			const response = await fetch(`${API_BASE_URL}/personas/organigrama/`, {
 				method: "GET",
 				credentials: "include",
 			});

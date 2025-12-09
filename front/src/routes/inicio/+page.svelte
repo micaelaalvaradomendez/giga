@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
+	import { API_BASE_URL } from "$lib/api.js";
 	import AuthService from "../../lib/login/authService.js";
 	import ModalUsuario from "../../lib/componentes/usuario/ModalUsuario.svelte";
 	import EditarPerfil from "../../lib/componentes/EditarPerfil.svelte";
@@ -84,7 +85,7 @@
 	async function cargarEstadoAsistencia() {
 		try {
 			loadingAsistencia = true;
-			const response = await fetch("/api/asistencia/estado/", {
+			const response = await fetch(`${API_BASE_URL}/asistencia/estado/`, {
 				credentials: "include",
 			});
 			if (response.ok) {
@@ -843,7 +844,11 @@
 		align-items: center;
 		gap: 0.75rem;
 		padding: 0.75rem;
-		background: linear-gradient(135deg, #fff7e6 0%, #fff3dc 100%) !important;
+		background: linear-gradient(
+			135deg,
+			#fff7e6 0%,
+			#fff3dc 100%
+		) !important;
 		border-radius: 8px;
 		border-left: 4px solid #ffc107;
 		box-sizing: border-box;
@@ -974,12 +979,20 @@
 	}
 
 	.estado-item.marcado {
-		background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%) !important;
+		background: linear-gradient(
+			135deg,
+			#d4edda 0%,
+			#c3e6cb 100%
+		) !important;
 		border-color: #28a745 !important;
 	}
 
 	.estado-item.pendiente {
-		background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%) !important;
+		background: linear-gradient(
+			135deg,
+			#f8d7da 0%,
+			#f5c6cb 100%
+		) !important;
 		border-color: #dc3545 !important;
 	}
 
@@ -1057,7 +1070,11 @@
 		justify-content: center;
 		gap: 0.4rem;
 		padding: 1rem 0.5rem;
-		background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+		background: linear-gradient(
+			135deg,
+			#f8f9fa 0%,
+			#e9ecef 100%
+		) !important;
 		border: 2px solid #e0e0e0;
 		border-radius: 8px;
 		cursor: pointer;
@@ -1082,7 +1099,11 @@
 	}
 
 	.acceso-btn.admin {
-		background: linear-gradient(135deg, #fff7e6 0%, #fff3dc 100%) !important;
+		background: linear-gradient(
+			135deg,
+			#fff7e6 0%,
+			#fff3dc 100%
+		) !important;
 		border-color: #ffc107 !important;
 	}
 
@@ -1124,8 +1145,6 @@
 			padding: 1rem;
 		}
 	}
-
-
 
 	@media (max-width: 480px) {
 		.accesos-grid {

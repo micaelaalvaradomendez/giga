@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
+	import { API_BASE_URL } from "$lib/api.js";
 
 	let dni = "";
 	let loading = false;
@@ -20,7 +21,7 @@
 		// Verificar sesión
 		try {
 			const sessionResponse = await fetch(
-				"/api/personas/auth/check-session/",
+				`${API_BASE_URL}/personas/auth/check-session/`,
 				{
 					credentials: "include",
 				},
@@ -50,7 +51,7 @@
 
 	async function cargarEstado() {
 		try {
-			const response = await fetch("/api/asistencia/estado/", {
+			const response = await fetch(`${API_BASE_URL}/asistencia/estado/`, {
 				credentials: "include",
 			});
 
@@ -75,7 +76,7 @@
 		mensaje = null;
 
 		try {
-			const response = await fetch("/api/asistencia/marcar/", {
+			const response = await fetch(`${API_BASE_URL}/asistencia/marcar/`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -101,10 +102,7 @@
 				} else if (data.tipo === "ya_completo") {
 					mostrarMensaje(data.message, "info");
 				} else if (data.tipo === "dia_no_laborable") {
-					mostrarMensaje(
-						"📅 " + data.message,
-						"info",
-					);
+					mostrarMensaje("📅 " + data.message, "info");
 				} else {
 					mostrarMensaje(data.message, "error");
 				}
@@ -185,7 +183,9 @@
 					</div>
 					<div class="info">
 						<span class="label">Entrada</span>
-						<span class="hora">{formatTime(estado.hora_entrada)}</span>
+						<span class="hora"
+							>{formatTime(estado.hora_entrada)}</span
+						>
 					</div>
 				</div>
 
@@ -203,7 +203,9 @@
 					</div>
 					<div class="info">
 						<span class="label">Salida</span>
-						<span class="hora">{formatTime(estado.hora_salida)}</span>
+						<span class="hora"
+							>{formatTime(estado.hora_salida)}</span
+						>
 					</div>
 				</div>
 			</div>
