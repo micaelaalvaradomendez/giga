@@ -763,12 +763,12 @@
 	}
 
 	.btn-ir {
-		padding: 0.4rem 0.8rem;
+		padding: 0.35rem 0.6rem;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white !important;
 		border: none;
 		border-radius: 8px;
-		font-size: 0.75rem;
+		font-size: 0.7rem;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.2s;
@@ -1055,14 +1055,14 @@
 		.estado-hora {
 			font-size: 1rem;
 		}
-	}
-
 	/* Accesos rápidos */
 	.accesos-grid {
 		display: grid;
-		grid-template-columns: repeat(2, 1fr);
+		grid-template-columns: 1fr;
 		gap: 0.75rem;
 		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
 	}
 
 	@media (min-width: 640px) {
@@ -1076,20 +1076,19 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 0.4rem;
+		gap: 0.5rem;
 		padding: 1rem 0.5rem;
-		background: linear-gradient(
-			135deg,
-			#f8f9fa 0%,
-			#e9ecef 100%
-		) !important;
-		border: 2px solid #e0e0e0;
-		border-radius: 8px;
+		background: white !important;
+		border: 2px solid #e9ecef;
+		border-radius: 12px;
 		cursor: pointer;
 		transition: all 0.2s;
-		font-weight: 600;
+		text-decoration: none;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 		box-sizing: border-box;
 		width: 100%;
+		max-width: 100%;
+		min-width: 0;
 	}
 
 	@media (min-width: 640px) {
