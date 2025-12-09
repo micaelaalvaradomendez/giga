@@ -514,6 +514,7 @@
         max-width: 100%;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         box-sizing: border-box;
+        min-width: 0;
     }
 
     @media (min-width: 768px) {
@@ -612,7 +613,10 @@
         gap: 0;
         background: transparent;
         padding: 0;
-        min-width: 700px;
+        min-width: 280px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     .calendar-header-row {
         display: contents;
@@ -670,6 +674,9 @@
         flex-direction: column;
         position: relative;
         box-sizing: border-box;
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
     }
 
     @media (min-width: 480px) {
