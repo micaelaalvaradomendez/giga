@@ -5,6 +5,7 @@
 	import AdminNodeRenderer from "$lib/componentes/admin/organigrama/AdminNodeRenderer.svelte";
 	import ModalEliminar from "$lib/componentes/admin/parametros/ModalEliminar.svelte";
 	import { organigramaController } from "$lib/paneladmin/controllers";
+	import { API_BASE_URL } from "$lib/api";
 
 	let organigramaData = null;
 	let loading = true;
@@ -78,7 +79,7 @@
 			console.log("🔄 Cargando organigrama desde API...");
 
 			// CARGAR DESDE API DEL BACKEND
-			const response = await fetch("/api/personas/organigrama/", {
+			const response = await fetch(`${API_BASE_URL}/personas/organigrama/`, {
 				method: "GET",
 				credentials: "include",
 			});
@@ -173,7 +174,7 @@
 			loading = true;
 
 			const response = await fetch(
-				"/api/personas/organigrama/sincronizar/",
+				`${API_BASE_URL}/personas/organigrama/sincronizar/`,
 				{
 					method: "POST",
 					credentials: "include",
@@ -218,7 +219,7 @@
 			loading = true;
 
 			// GUARDAR EN LA API DEL BACKEND
-			const response = await fetch("/api/personas/organigrama/save/", {
+			const response = await fetch(`${API_BASE_URL}/personas/organigrama/save/`, {
 				method: "POST",
 				credentials: "include",
 				headers: {
