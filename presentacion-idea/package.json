@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Presentación GIGA - Sistema de Gestión Integral de Guardias y Asistencia",
     "scripts": {
-        "start": "npx serve -s . -l tcp://0.0.0.0:${PORT:-3000}"
+        "start": "node server.js"
     },
     "keywords": [
         "presentacion",
