@@ -6,21 +6,33 @@
         isAuthenticated as authStore,
         user as userStore,
     } from "../../lib/login/authService.js";
-    let isLoading = true;
-    let errorMessage = "";
+
     export let isActive = false;
 
+    // Local reactive aliases
     $: currentUser = $userStore;
     $: isAuth = $authStore;
     $: currentPath = $page.url.pathname;
 
-    // función para obtener el rol principal del usuario
-    function getUserRole(user) {
-        if (!user || !user.roles || user.roles.length === 0) return null;
-        return user.roles[0].nombre;
-    }
+    // Evitar ejecutar checkSession muchas veces: bandera de módulo
+    let _checkSessionCalled = false;
 
-    $: userRole = getUserRole(currentUser);
+    // Calcular role una sola vez por cambio de user (sin función auxiliar)
+    $: userRole = currentUser?.roles?.[0]?.nombre || null;
+
+    // Predefinir mapa de clases fuera de funciones para no recrearlo cada render
+    const ROLE_CLASSES = {
+        Administrador: "role-admin",
+        Director: "role-director",
+        Jefatura: "role-jefatura",
+        "Agente Avanzado": "role-agente-avanzado",
+        Agente: "role-agente",
+    };
+
+    // Computar la clase del badge solo cuando cambie userRole
+    $: roleBadgeClass = ROLE_CLASSES[userRole] || "role-default";
+
+    // Reactive flags para permisos
     $: isAdmin = userRole === "Administrador";
     $: isDirector = userRole === "Director" || isAdmin;
     $: isJefatura = userRole === "Jefatura" || isDirector;
@@ -34,59 +46,33 @@
         isActive = false;
     }
 
-    onMount(async () => {
-        try {
-            const sessionCheck = await AuthService.checkSession();
-            console.log("Session check result:", sessionCheck);
-
-            if (!sessionCheck.authenticated) {
-                console.log("Usuario NO autenticado");
-                const currentPath = window.location.pathname;
-                if (currentPath !== "/" && currentPath !== "/convenio") {
-                    goto("/");
-                    return;
-                }
-            } else {
-                console.log("Usuario autenticado:", sessionCheck.user);
-            }
-        } catch (error) {
-            console.error("Error verificando sesión:", error);
-            errorMessage = "Error verificando la sesión";
-        } finally {
-            isLoading = false;
+    onMount(() => {
+        // Solo intentar checkSession si no estamos autenticados y no se intentó antes
+        // Nota: +layout.svelte ya hace checkSession, así que esto es redundante en la mayoría de casos
+        if (!($authStore) && !_checkSessionCalled) {
+            _checkSessionCalled = true;
+            // lanzar sin bloquear render y sin logs pesados
+            AuthService.checkSession().catch(() => {
+                // Silenciar errores aquí; el servicio los maneja
+            });
         }
     });
-
-    function getRoleBadgeClass(user) {
-        const role = getUserRole(user);
-        const roleClasses = {
-            Administrador: "role-admin",
-            Director: "role-director",
-            Jefatura: "role-jefatura",
-            "Agente Avanzado": "role-agente-avanzado",
-            Agente: "role-agente",
-        };
-        return roleClasses[role] || "role-default";
-    }
 </script>
 
-{#if errorMessage}
-    <div class="error-message">{errorMessage}</div>
-{:else}
-    <div class={"sidebar-container " + (isActive ? "active" : "")}>
-        <button
-            class="sidebar-tab"
-            on:click={toggleMenu}
-            class:active={isActive}
-            type="button"
-            aria-label="Alternar menú"
-            aria-expanded={isActive}
-        >
-            <div class="sidebar-tab-icon">☰</div>
-        </button>
-        {#if currentUser}
-            <div class={getRoleBadgeClass(currentUser)}></div>
-        {/if}
+<div class={"sidebar-container " + (isActive ? "active" : "")}>
+    <button
+        class="sidebar-tab"
+        on:click={toggleMenu}
+        class:active={isActive}
+        type="button"
+        aria-label="Alternar menú"
+        aria-expanded={isActive}
+    >
+        <div class="sidebar-tab-icon">☰</div>
+    </button>
+    {#if currentUser}
+        <div class={roleBadgeClass}></div>
+    {/if}
         <div class="sidebar">
             <div class="sidebar-header">
                 <h2>Menú Principal</h2>
@@ -352,7 +338,6 @@
             {/if}
         </div>
     </div>
-{/if}
 
 {#if isActive}
     <div
@@ -878,28 +863,4 @@
         height: 0;
     }
 
-    .error-message {
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: linear-gradient(
-            135deg,
-            rgba(239, 68, 68, 0.98) 0%,
-            rgba(220, 38, 38, 0.95) 100%
-        );
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        color: white;
-        padding: 16px 32px;
-        border-radius: 16px;
-        font-weight: 600;
-        box-shadow:
-            0 8px 24px rgba(239, 68, 68, 0.3),
-            0 0 16px rgba(239, 68, 68, 0.2),
-            inset 0 1px 2px rgba(255, 255, 255, 0.3),
-            inset 0 -1px 2px rgba(0, 0, 0, 0.2);
-        z-index: 10001;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
 </style>
