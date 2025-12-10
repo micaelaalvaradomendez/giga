@@ -108,8 +108,8 @@
 		paginaActual = 1;
 	}
 
-	// Computed properties
-	$: registrosOrdenados = registros.sort((a, b) => {
+	// Computed properties - Use spread copy to avoid mutating the original array
+	$: registrosOrdenados = [...registros].sort((a, b) => {
 		let valorA = a[ordenarPor];
 		let valorB = b[ordenarPor];
 
