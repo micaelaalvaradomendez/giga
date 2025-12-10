@@ -1,8 +1,13 @@
 <script>
-	import { onMount, tick } from "svelte";
+	import { onMount, onDestroy, tick } from "svelte";
 	import { goto } from "$app/navigation";
 	import AuthService from "$lib/login/authService.js";
 	import AuditService from "$lib/services/auditService.js";
+
+	// Cleanup references for event listeners
+	let mousemoveHandler = null;
+	let containerRef = null;
+	let initTimeoutId = null;
 
 	const allModules = [
 		{
@@ -147,7 +152,7 @@
 			await tick();
 
 			// Usar setTimeout para asegurar que el DOM esté completamente renderizado
-			setTimeout(() => {
+			initTimeoutId = setTimeout(() => {
 				// Inicializar animaciones si hay módulos visibles
 				const cards = document.querySelectorAll(".module-card");
 				const container = document.querySelector(".modules-space");
@@ -161,7 +166,9 @@
 					// Use requestAnimationFrame to throttle mousemove updates
 					let ticking = false;
 					
-					container.addEventListener("mousemove", (e) => {
+					// Store reference for cleanup
+					containerRef = container;
+					mousemoveHandler = (e) => {
 						if (ticking) return;
 						
 						ticking = true;
@@ -177,7 +184,9 @@
 							}
 							ticking = false;
 						});
-					});
+					};
+					
+					container.addEventListener("mousemove", mousemoveHandler);
 					console.log("✅ Animaciones inicializadas correctamente");
 				} else {
 					console.warn("⚠️ No se encontraron elementos para animar");
@@ -187,6 +196,16 @@
 			console.error("Error de autenticación:", error);
 			alert("usuario no autorizado");
 			goto("/");
+		}
+	});
+
+	// Cleanup event listeners and timers on component destroy
+	onDestroy(() => {
+		if (initTimeoutId) {
+			clearTimeout(initTimeoutId);
+		}
+		if (containerRef && mousemoveHandler) {
+			containerRef.removeEventListener("mousemove", mousemoveHandler);
 		}
 	});
 </script>

@@ -28,11 +28,34 @@
 		return auditoriaController.getBadgeColor(accion);
 	}
 
+	// Cache for computed differences to avoid recomputation
+	const diffCache = new Map();
+	
+	// Helper function for fast shallow equality check
+	function shallowEqual(a, b) {
+		// Handle primitives and null/undefined
+		if (a === b) return true;
+		if (a === null || b === null || a === undefined || b === undefined) return false;
+		if (typeof a !== typeof b) return false;
+		
+		// For primitives, direct comparison is enough
+		if (typeof a !== 'object') return a === b;
+		
+		// For arrays/objects, use JSON.stringify only when needed
+		return JSON.stringify(a) === JSON.stringify(b);
+	}
+	
 	// Función para obtener solo las diferencias entre dos objetos
 	function obtenerDiferencias(previo, nuevo) {
 		if (typeof previo !== "object" || typeof nuevo !== "object" || 
 			previo === null || nuevo === null) {
 			return { previo, nuevo };
+		}
+		
+		// Create a cache key based on object identity or stringified content for small objects
+		const cacheKey = `${JSON.stringify(previo)}_${JSON.stringify(nuevo)}`;
+		if (diffCache.has(cacheKey)) {
+			return diffCache.get(cacheKey);
 		}
 
 		const diffPrevio = {};
@@ -40,21 +63,29 @@
 		const allKeys = new Set([...Object.keys(previo), ...Object.keys(nuevo)]);
 
 		allKeys.forEach((key) => {
-			const valorPrevio = JSON.stringify(previo[key]);
-			const valorNuevo = JSON.stringify(nuevo[key]);
+			const valorPrevio = previo[key];
+			const valorNuevo = nuevo[key];
 
-			if (valorPrevio !== valorNuevo) {
+			// Use shallow equality check first, only stringify for complex objects
+			if (!shallowEqual(valorPrevio, valorNuevo)) {
 				const claveFormateada = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-				diffPrevio[claveFormateada] = previo[key] ?? "N/A";
-				diffNuevo[claveFormateada] = nuevo[key] ?? "N/A";
+				diffPrevio[claveFormateada] = valorPrevio ?? "N/A";
+				diffNuevo[claveFormateada] = valorNuevo ?? "N/A";
 			}
 		});
 
-		if (Object.keys(diffPrevio).length === 0) {
-			return { previo, nuevo };
+		const result = Object.keys(diffPrevio).length === 0 
+			? { previo, nuevo }
+			: { previo: diffPrevio, nuevo: diffNuevo };
+		
+		// Cache result (limit cache size to avoid memory issues)
+		if (diffCache.size > 100) {
+			const firstKey = diffCache.keys().next().value;
+			diffCache.delete(firstKey);
 		}
-
-		return { previo: diffPrevio, nuevo: diffNuevo };
+		diffCache.set(cacheKey, result);
+		
+		return result;
 	}
 
 	// Función para formatear valores JSON de forma inteligente
