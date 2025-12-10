@@ -2,12 +2,12 @@
     "phases": {
         "setup": {
             "nixPkgs": [
-                "nodejs_18"
+                "nodejs_20"
             ]
         },
         "install": {
             "cmds": [
-                "npm ci"
+                "npm install --legacy-peer-deps || npm install"
             ]
         },
         "build": {
