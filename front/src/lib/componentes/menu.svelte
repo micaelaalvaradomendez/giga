@@ -52,8 +52,12 @@
         if (!($authStore) && !_checkSessionCalled) {
             _checkSessionCalled = true;
             // lanzar sin bloquear render y sin logs pesados
-            AuthService.checkSession().catch(() => {
-                // Silenciar errores aquí; el servicio los maneja
+            AuthService.checkSession().catch((error) => {
+                // El servicio AuthService ya maneja y registra errores críticos
+                // Solo registramos errores de red que puedan requerir atención
+                if (error?.message && !error.message.includes('authenticated')) {
+                    console.error('Error en verificación de sesión del menú:', error.message);
+                }
             });
         }
     });
