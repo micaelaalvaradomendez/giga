@@ -28,12 +28,12 @@
 		return auditoriaController.getBadgeColor(accion);
 	}
 
-	// Cache for computed differences to avoid recomputation
+	// Cache for computed differences to avoid recomputation (keyed by audit record ID)
 	const diffCache = new Map();
 	
-	// Helper function for fast shallow equality check
-	function shallowEqual(a, b) {
-		// Handle primitives and null/undefined
+	// Fast equality check: true shallow for primitives, deep only when needed for objects
+	function valuesEqual(a, b) {
+		// Handle primitives and null/undefined - fast path
 		if (a === b) return true;
 		if (a === null || b === null || a === undefined || b === undefined) return false;
 		if (typeof a !== typeof b) return false;
@@ -41,20 +41,32 @@
 		// For primitives, direct comparison is enough
 		if (typeof a !== 'object') return a === b;
 		
-		// For arrays/objects, use JSON.stringify only when needed
+		// For arrays, compare length first
+		if (Array.isArray(a) && Array.isArray(b)) {
+			if (a.length !== b.length) return false;
+		}
+		
+		// For objects, compare keys count first
+		const keysA = Object.keys(a);
+		const keysB = Object.keys(b);
+		if (keysA.length !== keysB.length) return false;
+		
+		// Only fall back to JSON.stringify for complex nested objects
 		return JSON.stringify(a) === JSON.stringify(b);
 	}
 	
 	// Función para obtener solo las diferencias entre dos objetos
-	function obtenerDiferencias(previo, nuevo) {
+	// Uses audit record ID for caching when available
+	function obtenerDiferencias(previo, nuevo, recordId = null) {
 		if (typeof previo !== "object" || typeof nuevo !== "object" || 
 			previo === null || nuevo === null) {
 			return { previo, nuevo };
 		}
 		
-		// Create a cache key based on object identity or stringified content for small objects
-		const cacheKey = `${JSON.stringify(previo)}_${JSON.stringify(nuevo)}`;
-		if (diffCache.has(cacheKey)) {
+		// Use record ID for cache key if available (most efficient)
+		// Only create string cache key for records without ID
+		const cacheKey = recordId ?? `${Object.keys(previo).length}_${Object.keys(nuevo).length}`;
+		if (recordId && diffCache.has(cacheKey)) {
 			return diffCache.get(cacheKey);
 		}
 
@@ -66,8 +78,8 @@
 			const valorPrevio = previo[key];
 			const valorNuevo = nuevo[key];
 
-			// Use shallow equality check first, only stringify for complex objects
-			if (!shallowEqual(valorPrevio, valorNuevo)) {
+			// Use optimized equality check
+			if (!valuesEqual(valorPrevio, valorNuevo)) {
 				const claveFormateada = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 				diffPrevio[claveFormateada] = valorPrevio ?? "N/A";
 				diffNuevo[claveFormateada] = valorNuevo ?? "N/A";
@@ -78,12 +90,15 @@
 			? { previo, nuevo }
 			: { previo: diffPrevio, nuevo: diffNuevo };
 		
-		// Cache result (limit cache size to avoid memory issues)
-		if (diffCache.size > 100) {
-			const firstKey = diffCache.keys().next().value;
-			diffCache.delete(firstKey);
+		// Only cache if we have a record ID (stable key)
+		if (recordId) {
+			// Cache result (limit cache size to avoid memory issues)
+			if (diffCache.size > 100) {
+				const firstKey = diffCache.keys().next().value;
+				diffCache.delete(firstKey);
+			}
+			diffCache.set(cacheKey, result);
 		}
-		diffCache.set(cacheKey, result);
 		
 		return result;
 	}
@@ -297,14 +312,14 @@
 										{#if registro.valor_previo}
 											<div class="detalle-seccion">
 												<h4>📋 Valor Anterior</h4>
-												<pre class="valor-json">{#if registro.accion === "ACTUALIZAR"}{formatearValor(obtenerDiferencias(registro.valor_previo, registro.valor_nuevo).previo, registro.accion)}{:else}{formatearValor(registro.valor_previo, registro.accion)}{/if}</pre>
+												<pre class="valor-json">{#if registro.accion === "ACTUALIZAR"}{formatearValor(obtenerDiferencias(registro.valor_previo, registro.valor_nuevo, registro.id_auditoria).previo, registro.accion)}{:else}{formatearValor(registro.valor_previo, registro.accion)}{/if}</pre>
 											</div>
 										{/if}
 										
 										{#if registro.valor_nuevo}
 											<div class="detalle-seccion">
 												<h4>📝 Valor Nuevo</h4>
-												<pre class="valor-json">{#if registro.accion === "ACTUALIZAR"}{formatearValor(obtenerDiferencias(registro.valor_previo, registro.valor_nuevo).nuevo, registro.accion)}{:else}{formatearValor(registro.valor_nuevo, registro.accion)}{/if}</pre>
+												<pre class="valor-json">{#if registro.accion === "ACTUALIZAR"}{formatearValor(obtenerDiferencias(registro.valor_previo, registro.valor_nuevo, registro.id_auditoria).nuevo, registro.accion)}{:else}{formatearValor(registro.valor_nuevo, registro.accion)}{/if}</pre>
 											</div>
 										{/if}
 									</div>

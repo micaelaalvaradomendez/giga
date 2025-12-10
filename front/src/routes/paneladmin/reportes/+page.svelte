@@ -104,14 +104,21 @@
 	}, new Map()) || new Map();
 
 	// Precompute totals per day to avoid reduce+find in template
-	$: totalesPorDia = $datosReporte?.dias_columnas?.reduce((map, dia) => {
-		const total = $datosReporte.agentes?.reduce((sum, agente) => {
-			const diaData = agenteDiasMap.get(agente)?.get(dia.fecha);
-			return sum + (diaData?.horas || 0);
-		}, 0) || 0;
-		map.set(dia.fecha, total);
-		return map;
-	}, new Map()) || new Map();
+	// Note: This depends on agenteDiasMap being computed first (Svelte handles this via reactive statement ordering)
+	$: totalesPorDia = (() => {
+		// Ensure agenteDiasMap is ready before computing totals
+		if (!agenteDiasMap.size || !$datosReporte?.dias_columnas) {
+			return new Map();
+		}
+		return $datosReporte.dias_columnas.reduce((map, dia) => {
+			const total = $datosReporte.agentes?.reduce((sum, agente) => {
+				const diaData = agenteDiasMap.get(agente)?.get(dia.fecha);
+				return sum + (diaData?.horas || 0);
+			}, 0) || 0;
+			map.set(dia.fecha, total);
+			return map;
+		}, new Map());
+	})();
 
 	// Helper function to get day data for an agent (uses precomputed map)
 	function getDiaData(agente, fecha) {
