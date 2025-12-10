@@ -17,6 +17,13 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+// Helper para leer el csrftoken de las cookies cuando estamos en el navegador
+const getCsrfToken = () => {
+    if (!browser) return null;
+    const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+};
+
 /**
  * Crea una instancia de API real conectada al backend Django.
  * @param {string | null} token - Parámetro legacy, no se usa ya que usamos cookies.
@@ -28,8 +35,10 @@ export const createApiClient = (token = null) => {
 		timeout: 10000,
 		withCredentials: true, // Importante para cookies de sesión Django
 		headers: {
-			'Content-Type': 'application/json'
-		}
+            'Content-Type': 'application/json',
+            ...(getCsrfToken() ? { 'X-CSRFToken': getCsrfToken() } : {}),
+            'X-Requested-With': 'XMLHttpRequest'
+        }
 	});
 
 	// Interceptor para manejo de errores de autenticación
@@ -80,3 +89,4 @@ export class API {
 }
 
 export default api;
+

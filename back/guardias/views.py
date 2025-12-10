@@ -1,5 +1,5 @@
-"""
-Views para la app guardias - Implementación de Fase 1 con lógica existente.
+﻿"""
+Views para la app guardias - ImplementaciÃ³n de Fase 1 con lÃ³gica existente.
 """
 
 from rest_framework import viewsets, status
@@ -13,7 +13,7 @@ from datetime import datetime, date
 import logging
 
 from .models import Cronograma, Guardia, ResumenGuardiaMes, ReglaPlus, ParametrosArea, Feriado, HoraCompensacion
-# Importar funciones de validación de días laborables
+# Importar funciones de validaciÃ³n de dÃ­as laborables
 from asistencia.views import es_dia_laborable, get_motivo_no_laborable
 from auditoria.models import Auditoria
 from .serializers import (
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class ReglaPlusViewSet(viewsets.ModelViewSet):
-    """ViewSet para gestión de reglas de plus salarial"""
+    """ViewSet para gestiÃ³n de reglas de plus salarial"""
     
     queryset = ReglaPlus.objects.all()
     serializer_class = ReglaPlusSerializer
@@ -66,7 +66,7 @@ class ReglaPlusViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def simular(self, request, pk=None):
-        """Simula la aplicación de una regla de plus"""
+        """Simula la aplicaciÃ³n de una regla de plus"""
         regla = self.get_object()
         
         horas_test = request.data.get('horas_efectivas', 160)
@@ -83,7 +83,7 @@ class ReglaPlusViewSet(viewsets.ModelViewSet):
 
 
 class ParametrosAreaViewSet(viewsets.ModelViewSet):
-    """ViewSet para parámetros de control horario por área"""
+    """ViewSet para parÃ¡metros de control horario por Ã¡rea"""
     
     queryset = ParametrosArea.objects.all()
     serializer_class = ParametrosAreaSerializer
@@ -92,8 +92,8 @@ class ParametrosAreaViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         
-        # Filtrar por área
-        area_id = self.request.query_params.get('area')
+        # Filtrar por Ã¡rea
+        area_id = self.data_in.get('area')
         if area_id:
             queryset = queryset.filter(id_area=area_id)
         
@@ -112,16 +112,16 @@ class ParametrosAreaViewSet(viewsets.ModelViewSet):
 
 
 class FeriadoViewSet(viewsets.ModelViewSet):
-    """ViewSet para gestión de feriados con soporte multi-día"""
+    """ViewSet para gestiÃ³n de feriados con soporte multi-dÃ­a"""
     
     queryset = Feriado.objects.all()
     serializer_class = FeriadoSerializer
-    permission_classes = []  # Temporalmente sin autenticación para debugging
+    permission_classes = []  # Temporalmente sin autenticaciÃ³n para debugging
     
     def get_queryset(self):
         queryset = super().get_queryset()
         
-        # Filtros por año - ahora busca en rango de fechas
+        # Filtros por anio - ahora busca en rango de fechas
         anio = self.request.query_params.get('anio')
         if anio:
             queryset = queryset.filter(
@@ -141,14 +141,14 @@ class FeriadoViewSet(viewsets.ModelViewSet):
         return queryset.filter(activo=True).order_by('fecha_inicio', 'fecha_fin')
 
     def create(self, request, *args, **kwargs):
-        """Override del método create para manejar repetición anual"""
+        """Override del mÃ©todo create para manejar repeticiÃ³n anual"""
         repetir_anualmente = request.data.get('repetir_anualmente', False)
         
         if not repetir_anualmente:
             # Comportamiento normal
             return super().create(request, *args, **kwargs)
         
-        # Crear feriado con repetición anual (5 años hacia adelante)
+        # Crear feriado con repeticiÃ³n anual (5 anios hacia adelante)
         try:
             
             fecha_inicio_str = request.data.get('fecha_inicio')
@@ -158,40 +158,40 @@ class FeriadoViewSet(viewsets.ModelViewSet):
             fecha_fin_base = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
             
             feriados_creados = []
-            años_creados = []
+            anios_creados = []
             
             with transaction.atomic():
-                # Crear feriado para los próximos 5 años
+                # Crear feriado para los prÃ³ximos 5 anios
                 for i in range(5):
-                    # Calcular las fechas para este año
-                    fecha_inicio_año = fecha_inicio_base.replace(year=fecha_inicio_base.year + i)
-                    fecha_fin_año = fecha_fin_base.replace(year=fecha_fin_base.year + i)
+                    # Calcular las fechas para este anio
+                    fecha_inicio_anio = fecha_inicio_base.replace(year=fecha_inicio_base.year + i)
+                    fecha_fin_anio = fecha_fin_base.replace(year=fecha_fin_base.year + i)
                     
                     # Verificar si ya existe un feriado con el mismo nombre en esas fechas
                     existe = Feriado.objects.filter(
                         nombre=request.data.get('nombre'),
-                        fecha_inicio=fecha_inicio_año,
-                        fecha_fin=fecha_fin_año
+                        fecha_inicio=fecha_inicio_anio,
+                        fecha_fin=fecha_fin_anio
                     ).exists()
                     
                     if not existe:
                         feriado_data = request.data.copy()
-                        feriado_data['fecha_inicio'] = fecha_inicio_año
-                        feriado_data['fecha_fin'] = fecha_fin_año
+                        feriado_data['fecha_inicio'] = fecha_inicio_anio
+                        feriado_data['fecha_fin'] = fecha_fin_anio
                         
                         serializer = self.get_serializer(data=feriado_data)
                         serializer.is_valid(raise_exception=True)
                         feriado = serializer.save()
                         
                         feriados_creados.append(FeriadoSerializer(feriado).data)
-                        años_creados.append(str(fecha_inicio_año.year))
+                        anios_creados.append(str(fecha_inicio_anio.year))
             
             return Response({
                 'success': True,
-                'message': f'Se crearon {len(feriados_creados)} feriados para los próximos 5 años',
+                'message': f'Se crearon {len(feriados_creados)} feriados para los prÃ³ximos 5 anios',
                 'data': {
                     'feriados_creados': len(feriados_creados),
-                    'años': años_creados,
+                    'anios': anios_creados,
                     'feriados': feriados_creados
                 }
             }, status=status.HTTP_201_CREATED)
@@ -203,7 +203,7 @@ class FeriadoViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['post'])
     def verificar_fecha(self, request):
-        """Verifica si una fecha específica es feriado - ahora soporta múltiples feriados por fecha"""
+        """Verifica si una fecha especÃ­fica es feriado - ahora soporta mÃºltiples feriados por fecha"""
         fecha_str = request.data.get('fecha')
         if not fecha_str:
             return Response(
@@ -232,36 +232,36 @@ class FeriadoViewSet(viewsets.ModelViewSet):
             
         except ValueError:
             return Response(
-                {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                {'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def por_mes(self, request):
-        """Obtiene feriados para un mes específico (optimizado para calendario)"""
-        año = request.query_params.get('año')
+        """Obtiene feriados para un mes especÃ­fico (optimizado para calendario)"""
+        anio = request.query_params.get('anio')
         mes = request.query_params.get('mes')
         
-        if not año or not mes:
+        if not anio or not mes:
             return Response(
-                {'error': 'Año y mes son requeridos'}, 
+                {'error': 'anio y mes son requeridos'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         try:
             # Fechas del mes
             from datetime import date, timedelta
-            primer_dia = date(int(año), int(mes), 1)
+            primer_dia = date(int(anio), int(mes), 1)
             if int(mes) == 12:
-                ultimo_dia = date(int(año) + 1, 1, 1) - timedelta(days=1)
+                ultimo_dia = date(int(anio) + 1, 1, 1) - timedelta(days=1)
             else:
-                ultimo_dia = date(int(año), int(mes) + 1, 1) - timedelta(days=1)
+                ultimo_dia = date(int(anio), int(mes) + 1, 1) - timedelta(days=1)
             
             # Feriados que intersectan con el mes
             feriados = Feriado.feriados_en_rango(primer_dia, ultimo_dia)
             
             return Response({
-                'año': año,
+                'anio': anio,
                 'mes': mes,
                 'primer_dia': primer_dia,
                 'ultimo_dia': ultimo_dia,
@@ -271,7 +271,7 @@ class FeriadoViewSet(viewsets.ModelViewSet):
             
         except ValueError as e:
             return Response(
-                {'error': f'Año o mes inválidos: {str(e)}'}, 
+                {'error': f'anio o mes invÃ¡lidos: {str(e)}'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
     
@@ -310,17 +310,17 @@ class FeriadoViewSet(viewsets.ModelViewSet):
             
         except ValueError:
             return Response(
-                {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                {'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
 
     def perform_create(self, serializer):
-        """Override para agregar auditoría en creación"""
+        """Override para agregar auditorÃ­a en creaciÃ³n"""
         feriado = serializer.save()
         self._crear_auditoria_feriado('CREAR', feriado.id_feriado, None, serializer.data)
     
     def perform_update(self, serializer):
-        """Override para agregar auditoría en actualización"""
+        """Override para agregar auditorÃ­a en actualizaciÃ³n"""
         feriado_anterior = self.get_object()
         valor_previo = FeriadoSerializer(feriado_anterior).data
         
@@ -328,13 +328,13 @@ class FeriadoViewSet(viewsets.ModelViewSet):
         self._crear_auditoria_feriado('MODIFICAR', feriado.id_feriado, valor_previo, serializer.data)
     
     def perform_destroy(self, instance):
-        """Override para agregar auditoría en eliminación"""
+        """Override para agregar auditorÃ­a en eliminaciÃ³n"""
         valor_previo = FeriadoSerializer(instance).data
         self._crear_auditoria_feriado('ELIMINAR', instance.id_feriado, valor_previo, None)
         instance.delete()
     
     def _crear_auditoria_feriado(self, accion, feriado_id, valor_previo=None, valor_nuevo=None):
-        """Crear registro de auditoría para cambios en feriados"""
+        """Crear registro de auditorÃ­a para cambios en feriados"""
         try:
             from auditoria.models import Auditoria
             from django.utils import timezone
@@ -358,11 +358,11 @@ class FeriadoViewSet(viewsets.ModelViewSet):
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"Error al crear auditoría de feriado: {str(e)}")
+            logger.error(f"Error al crear auditorÃ­a de feriado: {str(e)}")
 
 
 class CronogramaViewSet(viewsets.ModelViewSet):
-    """ViewSet extendido para cronogramas con planificación automática"""
+    """ViewSet extendido para cronogramas con planificaciÃ³n automÃ¡tica"""
     
     queryset = Cronograma.objects.all()
     serializer_class = CronogramaExtendidoSerializer
@@ -378,7 +378,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
         )
         
         # Filtros
-        area_id = self.request.query_params.get('area')
+        area_id = self.data_in.get('area')
         estado = self.request.query_params.get('estado')
         tipo = self.request.query_params.get('tipo')
         
@@ -393,12 +393,12 @@ class CronogramaViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['post'])
     def crear_con_guardias(self, request):
-        """Crea un cronograma con múltiples guardias y registra en auditoría"""
+        """Crea un cronograma con mÃºltiples guardias y registra en auditorÃ­a"""
         try:
             data = request.data
             
             # Debug: Log de datos recibidos
-            print(f"📋 Datos recibidos en crear_con_guardias: {data}")
+            print(f"ðŸ“‹ Datos recibidos en crear_con_guardias: {data}")
             
             # Validar datos requeridos
             required_fields = ['nombre', 'tipo', 'id_area', 'fecha', 'hora_inicio', 'hora_fin', 'agentes']
@@ -424,29 +424,29 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 fecha_guardia = dt.strptime(data['fecha'], '%Y-%m-%d').date()
                 logger.info(f"Validando fecha para guardia: {fecha_guardia}")
                 
-                # Verificar si es día laborable (si es True, entonces NO es válido para guardias)
+                # Verificar si es dÃ­a laborable (si es True, entonces NO es vÃ¡lido para guardias)
                 es_laborable = es_dia_laborable(fecha_guardia)
-                logger.info(f"¿Es día laborable {fecha_guardia}? {es_laborable}")
+                logger.info(f"Â¿Es dÃ­a laborable {fecha_guardia}? {es_laborable}")
                 
                 if es_laborable:
-                    # Es día laborable (lunes a viernes normal), NO permitido para guardias
-                    logger.warning(f"Rechazando guardia en día laborable: {fecha_guardia}")
+                    # Es dÃ­a laborable (lunes a viernes normal), NO permitido para guardias
+                    logger.warning(f"Rechazando guardia en dÃ­a laborable: {fecha_guardia}")
                     return Response(
-                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sÃ¡bados y domingos) o feriados'}, 
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
-                # Si llegamos aquí, es fin de semana o feriado (válido para guardias)
+                # Si llegamos aquÃ­, es fin de semana o feriado (vÃ¡lido para guardias)
                 motivo = get_motivo_no_laborable(fecha_guardia)
-                logger.info(f"✅ Fecha válida para guardia {fecha_guardia}: {motivo}")
+                logger.info(f"âœ… Fecha vÃ¡lida para guardia {fecha_guardia}: {motivo}")
                 
             except ValueError as e:
                 return Response(
-                    {'error': f'Formato de fecha inválido: {data.get("fecha")}'}, 
+                    {'error': f'Formato de fecha invÃ¡lido: {data.get("fecha")}'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             except Exception as e:
-                logger.error(f"Error validando día laborable: {str(e)}")
+                logger.error(f"Error validando dÃ­a laborable: {str(e)}")
                 return Response(
                     {'error': 'Error validando fecha de guardia'}, 
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -456,45 +456,45 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             from .utils import get_agente_rol, requiere_aprobacion_rol
             
             agente_id = data.get('agente_id')  # Por ahora recibir del request
-            print(f"🔍 agente_id del request: {agente_id}")
+            print(f"ðŸ” agente_id del request: {agente_id}")
             
             if not agente_id and hasattr(request.user, 'agente'):
                 agente_id = request.user.agente.id_agente
             
-            # Si no se proporciona agente_id, usar el de la sesión
+            # Si no se proporciona agente_id, usar el de la sesiÃ³n
             if not agente_id:
                 agente_id = request.session.get('user_id')
-                print(f"📌 agente_id desde sesión: {agente_id}")
+                print(f"ðŸ“Œ agente_id desde sesiÃ³n: {agente_id}")
             
             if not agente_id:
                 return Response({'error': 'No se pudo determinar el agente creador'}, status=status.HTTP_400_BAD_REQUEST)
             
-            # RBAC: Validación de área permitida según rol
+            # RBAC: ValidaciÃ³n de Ã¡rea permitida segÃºn rol
             agente_creador = obtener_agente_sesion(request)
             if agente_creador:
                 rol_creador = obtener_rol_agente(agente_creador)
                 id_area_cronograma = data.get('id_area')
                 
                 if rol_creador == 'jefatura':
-                    # Jefatura solo puede crear para su propia área
+                    # Jefatura solo puede crear para su propia Ã¡rea
                     if agente_creador.id_area and agente_creador.id_area.id_area != id_area_cronograma:
                         return Response({
-                            'error': f'Jefatura solo puede crear cronogramas para su propia área (Área: {agente_creador.id_area.nombre})'
+                            'error': f'Jefatura solo puede crear cronogramas para su propia Ã¡rea (Ãrea: {agente_creador.id_area.nombre})'
                         }, status=status.HTTP_403_FORBIDDEN)
                 
                 elif rol_creador == 'director':
-                    # Director solo para áreas bajo su dirección
+                    # Director solo para Ã¡reas bajo su direcciÃ³n
                     areas_permitidas = obtener_areas_jerarquia(agente_creador)
                     area_ids = [a.id_area for a in areas_permitidas]
                     if id_area_cronograma not in area_ids:
                         return Response({
-                            'error': 'Director solo puede crear cronogramas para áreas bajo su dirección'
+                            'error': 'Director solo puede crear cronogramas para Ã¡reas bajo su direcciÃ³n'
                         }, status=status.HTTP_403_FORBIDDEN)
                 
-                # Admin: sin restricción
+                # Admin: sin restricciÃ³n
             
             # Obtener el agente
-            print(f"✅ Usando agente_id: {agente_id}")
+            print(f"âœ… Usando agente_id: {agente_id}")
             
             # Obtener agente completo
             try:
@@ -511,13 +511,13 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             if not rol_creador:
                 rol_creador = 'jefatura'  # Por defecto
             
-            # Determinar estado inicial según rol
+            # Determinar estado inicial segÃºn rol
             if rol_creador.lower() == 'administrador':
                 estado_inicial = 'publicada'  # Auto-aprobado y publicado
                 fecha_aprobacion = timezone.now().date()
-                aprobado_por_id = agente_id  # Se aprueba a sí mismo
+                aprobado_por_id = agente_id  # Se aprueba a sÃ­ mismo
             else:
-                estado_inicial = 'pendiente'  # Requiere aprobación
+                estado_inicial = 'pendiente'  # Requiere aprobaciÃ³n
                 fecha_aprobacion = None
                 aprobado_por_id = None
             
@@ -537,7 +537,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 aprobado_por_id_id=aprobado_por_id
             )
             
-            # Registrar auditoría del cronograma
+            # Registrar auditorÃ­a del cronograma
             Auditoria.objects.create(
                 pk_afectada=cronograma.id_cronograma,
                 nombre_tabla='cronograma',
@@ -555,7 +555,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 id_agente_id=agente_id
             )
             
-            # Determinar estado de las guardias según estado del cronograma
+            # Determinar estado de las guardias segÃºn estado del cronograma
             if estado_inicial == 'pendiente':
                 estado_guardias = 'pendiente_aprobacion'
                 guardias_activas = False  # No activar hasta aprobar
@@ -564,7 +564,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 estado_guardias = 'planificada'
                 guardias_activas = True
             
-            # Validar fecha y duración de guardia antes de crear
+            # Validar fecha y duraciÃ³n de guardia antes de crear
             from datetime import datetime
             from .utils import ValidadorHorarios
             
@@ -574,11 +574,11 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             fecha_valida, mensaje_fecha = ValidadorHorarios.validar_fecha_guardia(fecha_guardia)
             if not fecha_valida:
                 return Response(
-                    {'error': f'Fecha no válida para guardia: {mensaje_fecha}'}, 
+                    {'error': f'Fecha no vÃ¡lida para guardia: {mensaje_fecha}'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Validar duración de la guardia  
+            # Validar duraciÃ³n de la guardia  
             from datetime import time, datetime as dt
             hora_inicio_obj = dt.strptime(data['hora_inicio'], '%H:%M').time()
             hora_fin_obj = dt.strptime(data['hora_fin'], '%H:%M').time()
@@ -588,14 +588,14 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             )
             if not duracion_valida:
                 return Response(
-                    {'error': f'Duración no válida: {mensaje_duracion}'}, 
+                    {'error': f'DuraciÃ³n no vÃ¡lida: {mensaje_duracion}'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            print(f"✅ Validaciones pasadas - {mensaje_fecha}, {mensaje_duracion}")
+            print(f"âœ… Validaciones pasadas - {mensaje_fecha}, {mensaje_duracion}")
             
             # Debug: Mostrar datos antes de crear guardias
-            print(f"🔍 Datos para crear guardias:")
+            print(f"ðŸ” Datos para crear guardias:")
             print(f"  - Cronograma creado: {cronograma.id_cronograma}")
             print(f"  - Estado guardias: {estado_guardias}")
             print(f"  - Guardias activas: {guardias_activas}")
@@ -610,7 +610,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 else:
                     agente_id_guardia = agente_data
                 
-                print(f"🔍 Creando guardia para agente: {agente_id_guardia} (tipo: {type(agente_data)})")
+                print(f"ðŸ” Creando guardia para agente: {agente_id_guardia} (tipo: {type(agente_data)})")
                     
                 guardia = Guardia.objects.create(
                     id_cronograma=cronograma,
@@ -624,9 +624,9 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     observaciones=data.get('observaciones', '')
                 )
                 guardias_creadas.append(guardia)
-                print(f"✅ Guardia creada: {guardia.id_guardia} para agente {agente_id_guardia}")
+                print(f"âœ… Guardia creada: {guardia.id_guardia} para agente {agente_id_guardia}")
                 
-                # Registrar auditoría de cada guardia
+                # Registrar auditorÃ­a de cada guardia
                 Auditoria.objects.create(
                     pk_afectada=guardia.id_guardia,
                     nombre_tabla='guardia',
@@ -645,7 +645,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     id_agente_id=agente_id
                 )
             
-            print(f"✅ Todas las guardias creadas exitosamente. Total: {len(guardias_creadas)}")
+            print(f"âœ… Todas las guardias creadas exitosamente. Total: {len(guardias_creadas)}")
             
             return Response({
                 'mensaje': 'Guardia creada exitosamente',
@@ -662,7 +662,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['put', 'patch'])
     def actualizar_con_guardias(self, request, pk=None):
-        """Actualiza un cronograma y sus guardias con registro completo en auditoría"""
+        """Actualiza un cronograma y sus guardias con registro completo en auditorÃ­a"""
         try:
             cronograma = self.get_object()
             data = request.data
@@ -695,34 +695,34 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 from datetime import datetime as dt
                 fecha_guardia = dt.strptime(data['fecha'], '%Y-%m-%d').date()
                 
-                # Verificar si es día laborable (si es True, entonces NO es válido para guardias)
+                # Verificar si es dÃ­a laborable (si es True, entonces NO es vÃ¡lido para guardias)
                 es_laborable = es_dia_laborable(fecha_guardia)
-                logger.info(f"¿Es día laborable {fecha_guardia}? {es_laborable}")
+                logger.info(f"Â¿Es dÃ­a laborable {fecha_guardia}? {es_laborable}")
                 
                 if es_laborable:
-                    # Es día laborable (lunes a viernes normal), NO permitido para guardias
-                    logger.warning(f"Rechazando actualización de guardia en día laborable: {fecha_guardia}")
+                    # Es dÃ­a laborable (lunes a viernes normal), NO permitido para guardias
+                    logger.warning(f"Rechazando actualizaciÃ³n de guardia en dÃ­a laborable: {fecha_guardia}")
                     return Response(
-                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sÃ¡bados y domingos) o feriados'}, 
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
                 motivo = get_motivo_no_laborable(fecha_guardia)
-                logger.info(f"✅ Fecha válida para actualizar guardia {fecha_guardia}: {motivo}")
+                logger.info(f"âœ… Fecha vÃ¡lida para actualizar guardia {fecha_guardia}: {motivo}")
                 
             except ValueError as e:
                 return Response(
-                    {'error': f'Formato de fecha inválido: {data.get("fecha")}'}, 
+                    {'error': f'Formato de fecha invÃ¡lido: {data.get("fecha")}'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             except Exception as e:
-                logger.error(f"Error validando día laborable: {str(e)}")
+                logger.error(f"Error validando dÃ­a laborable: {str(e)}")
                 return Response(
                     {'error': 'Error validando fecha de guardia'}, 
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             
-            # Obtener agente que realiza la actualización
+            # Obtener agente que realiza la actualizaciÃ³n
             agente_id = data.get('agente_id')
             if not agente_id and hasattr(request.user, 'agente'):
                 agente_id = request.user.agente.id_agente
@@ -742,7 +742,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            # Guardar valores previos para auditoría
+            # Guardar valores previos para auditorÃ­a
             valor_previo_cronograma = {
                 'tipo': cronograma.tipo,
                 'hora_inicio': str(cronograma.hora_inicio),
@@ -751,7 +751,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 'id_area': cronograma.id_area_id
             }
             
-            # Obtener guardias existentes para auditoría
+            # Obtener guardias existentes para auditorÃ­a
             guardias_previas = list(cronograma.guardia_set.all().values(
                 'id_guardia', 'id_agente_id', 'fecha', 'hora_inicio', 
                 'hora_fin', 'tipo', 'estado', 'activa'
@@ -776,7 +776,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             
             cronograma.save()
             
-            # Registrar auditoría del cronograma
+            # Registrar auditorÃ­a del cronograma
             Auditoria.objects.create(
                 pk_afectada=cronograma.id_cronograma,
                 nombre_tabla='cronograma',
@@ -793,9 +793,9 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 id_agente_id=agente_id
             )
             
-            # Eliminar guardias existentes y registrar en auditoría
+            # Eliminar guardias existentes y registrar en auditorÃ­a
             for guardia_previa in guardias_previas:
-                # Convertir fechas a string para serialización JSON
+                # Convertir fechas a string para serializaciÃ³n JSON
                 guardia_previa_serializable = guardia_previa.copy()
                 if 'fecha' in guardia_previa_serializable:
                     guardia_previa_serializable['fecha'] = str(guardia_previa_serializable['fecha'])
@@ -846,7 +846,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 )
                 guardias_creadas.append(guardia)
                 
-                # Registrar auditoría de cada nueva guardia
+                # Registrar auditorÃ­a de cada nueva guardia
                 Auditoria.objects.create(
                     pk_afectada=guardia.id_guardia,
                     nombre_tabla='guardia',
@@ -866,7 +866,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     id_agente_id=agente_id
                 )
             
-            # Registrar resumen en auditoría
+            # Registrar resumen en auditorÃ­a
             Auditoria.objects.create(
                 pk_afectada=cronograma.id_cronograma,
                 nombre_tabla='cronograma',
@@ -900,7 +900,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['post'])
     def planificar(self, request):
-        """Planificación automática de guardias"""
+        """PlanificaciÃ³n automÃ¡tica de guardias"""
         serializer = PlanificacionCronogramaSerializer(data=request.data)
         if serializer.is_valid():
             try:
@@ -915,12 +915,12 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     return Response(resultado, status=status.HTTP_201_CREATED)
                 else:
                     return Response(
-                        {'error': 'Error en la planificación automática'}, 
+                        {'error': 'Error en la planificaciÃ³n automÃ¡tica'}, 
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR
                     )
                     
             except Exception as e:
-                logger.error(f"Error en planificación: {e}")
+                logger.error(f"Error en planificaciÃ³n: {e}")
                 return Response(
                     {'error': str(e)}, 
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -930,7 +930,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['patch'])
     def aprobar(self, request, pk=None):
-        """Aprueba un cronograma con validación de jerarquía de roles"""
+        """Aprueba un cronograma con validaciÃ³n de jerarquÃ­a de roles"""
         from .utils import get_agente_rol, puede_aprobar
         
         cronograma = self.get_object()
@@ -943,7 +943,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             )
         
         # Obtener agente que aprueba (simular con agente_id del request por ahora)
-        # En producción usar: agente_aprobador = request.user.agente
+        # En producciÃ³n usar: agente_aprobador = request.user.agente
         agente_id = request.data.get('agente_id')
         if not agente_id:
             return Response(
@@ -968,7 +968,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Validar si puede aprobar según jerarquía
+        # Validar si puede aprobar segÃºn jerarquÃ­a
         if not puede_aprobar(cronograma, rol_aprobador):
             roles_permitidos = cronograma.puede_aprobar_rol
             return Response(
@@ -993,7 +993,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             activa=True
         )
         
-        # Registrar en auditoría
+        # Registrar en auditorÃ­a
         Auditoria.objects.create(
             pk_afectada=cronograma.id_cronograma,
             nombre_tabla='cronograma',
@@ -1014,7 +1014,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['patch'])
     def publicar(self, request, pk=None):
-        """Publica un cronograma pendiente o aprobado (método legacy)"""
+        """Publica un cronograma pendiente o aprobado (mÃ©todo legacy)"""
         cronograma = self.get_object()
         
         if cronograma.estado not in ['aprobada', 'pendiente']:
@@ -1027,7 +1027,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
         cronograma.estado = 'publicada'
         cronograma.save()
         
-        # Registrar en auditoría
+        # Registrar en auditorÃ­a
         Auditoria.objects.create(
             pk_afectada=cronograma.id_cronograma,
             nombre_tabla='cronograma',
@@ -1042,7 +1042,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['patch'])
     def despublicar(self, request, pk=None):
-        """Despublica un cronograma para permitir edición"""
+        """Despublica un cronograma para permitir ediciÃ³n"""
         cronograma = self.get_object()
         
         if cronograma.estado != 'publicada':
@@ -1073,7 +1073,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
         cronograma.estado = 'pendiente'
         cronograma.save()
         
-        # Registrar en auditoría
+        # Registrar en auditorÃ­a
         Auditoria.objects.create(
             pk_afectada=cronograma.id_cronograma,
             nombre_tabla='cronograma',
@@ -1085,14 +1085,14 @@ class CronogramaViewSet(viewsets.ModelViewSet):
         )
         
         return Response({
-            'mensaje': 'Cronograma despublicado exitosamente. Ahora está pendiente y puede editarse o eliminarse.',
+            'mensaje': 'Cronograma despublicado exitosamente. Ahora estÃ¡ pendiente y puede editarse o eliminarse.',
             'cronograma_id': cronograma.id_cronograma,
             'nuevo_estado': cronograma.estado
         })
     
     @action(detail=True, methods=['delete'])
     def eliminar(self, request, pk=None):
-        """Elimina un cronograma solo si está en estado pendiente"""
+        """Elimina un cronograma solo si estÃ¡ en estado pendiente"""
         cronograma = self.get_object()
         
         if cronograma.estado != 'pendiente':
@@ -1118,7 +1118,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Guardar datos para auditoría antes de eliminar
+        # Guardar datos para auditorÃ­a antes de eliminar
         cronograma_id = cronograma.id_cronograma
         cronograma_data = {
             'id': cronograma_id,
@@ -1128,7 +1128,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             'fecha': str(cronograma.fecha),
         }
         
-        # Registrar eliminación de guardias asociadas
+        # Registrar eliminaciÃ³n de guardias asociadas
         guardias = cronograma.guardia_set.all()
         for guardia in guardias:
             Auditoria.objects.create(
@@ -1145,7 +1145,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 id_agente_id=agente_id
             )
         
-        # Registrar eliminación del cronograma
+        # Registrar eliminaciÃ³n del cronograma
         Auditoria.objects.create(
             pk_afectada=cronograma_id,
             nombre_tabla='cronograma',
@@ -1156,7 +1156,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             id_agente_id=agente_id
         )
         
-        # Eliminar cronograma (esto también elimina las guardias por CASCADE)
+        # Eliminar cronograma (esto tambiÃ©n elimina las guardias por CASCADE)
         cronograma.delete()
         
         return Response({
@@ -1164,9 +1164,9 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             'cronograma_eliminado': cronograma_data
         })
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def pendientes(self, request):
-        """Lista cronogramas pendientes de aprobación según rol del usuario"""
+        """Lista cronogramas pendientes de aprobaciÃ³n segÃºn rol del usuario"""
         from .utils import get_agente_rol, get_approval_hierarchy
         
         # Obtener agente del usuario (por ahora via query param)
@@ -1275,14 +1275,14 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Guardar estado previo para auditoría
+        # Guardar estado previo para auditorÃ­a
         estado_previo = cronograma.estado
         
         # Rechazar cronograma
         cronograma.estado = 'rechazada'
         cronograma.save()
         
-        # Registrar en auditoría
+        # Registrar en auditorÃ­a
         Auditoria.objects.create(
             pk_afectada=cronograma.id_cronograma,
             nombre_tabla='cronograma',
@@ -1302,76 +1302,76 @@ class CronogramaViewSet(viewsets.ModelViewSet):
 
 
 class GuardiaViewSet(viewsets.ModelViewSet):
-    """ViewSet para guardias con reportes y exportación"""
+    """ViewSet para guardias con reportes y exportaciÃ³n"""
     
     queryset = Guardia.objects.all()
     serializer_class = GuardiaResumenSerializer
     permission_classes = [IsAuthenticated]
     
     def create(self, request, *args, **kwargs):
-        """Override create para validar días permitidos"""
+        """Override create para validar dÃ­as permitidos"""
         fecha_str = request.data.get('fecha')
         if fecha_str:
             try:
                 from datetime import datetime as dt
                 fecha_obj = dt.strptime(fecha_str, '%Y-%m-%d').date()
                 
-                # Validar que NO sea día laborable (solo permitir fines de semana y feriados)
+                # Validar que NO sea dÃ­a laborable (solo permitir fines de semana y feriados)
                 if es_dia_laborable(fecha_obj):
                     return Response(
-                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sÃ¡bados y domingos) o feriados'}, 
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
             except ValueError:
                 return Response(
-                    {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                    {'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
         return super().create(request, *args, **kwargs)
     
     def update(self, request, *args, **kwargs):
-        """Override update para validar días permitidos"""
+        """Override update para validar dÃ­as permitidos"""
         fecha_str = request.data.get('fecha')
         if fecha_str:
             try:
                 from datetime import datetime as dt
                 fecha_obj = dt.strptime(fecha_str, '%Y-%m-%d').date()
                 
-                # Validar que NO sea día laborable (solo permitir fines de semana y feriados)
+                # Validar que NO sea dÃ­a laborable (solo permitir fines de semana y feriados)
                 if es_dia_laborable(fecha_obj):
                     return Response(
-                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sÃ¡bados y domingos) o feriados'}, 
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
             except ValueError:
                 return Response(
-                    {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                    {'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
         return super().update(request, *args, **kwargs)
     
     def partial_update(self, request, *args, **kwargs):
-        """Override partial_update para validar días permitidos"""
+        """Override partial_update para validar dÃ­as permitidos"""
         fecha_str = request.data.get('fecha')
         if fecha_str:
             try:
                 from datetime import datetime as dt
                 fecha_obj = dt.strptime(fecha_str, '%Y-%m-%d').date()
                 
-                # Validar que NO sea día laborable (solo permitir fines de semana y feriados)
+                # Validar que NO sea dÃ­a laborable (solo permitir fines de semana y feriados)
                 if es_dia_laborable(fecha_obj):
                     return Response(
-                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sÃ¡bados y domingos) o feriados'}, 
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
             except ValueError:
                 return Response(
-                    {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                    {'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
@@ -1449,7 +1449,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Validar que el agente que modifica sea el dueño de la nota
+        # Validar que el agente que modifica sea el dueno de la nota
         agente_id = request.data.get('agente_id') if request.method == 'PUT' else request.query_params.get('agente_id')
         if agente_id and str(nota.id_agente_id) != str(agente_id):
             return Response(
@@ -1471,15 +1471,15 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_204_NO_CONTENT
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def verificar_disponibilidad(self, request):
-        """Verifica disponibilidad de un agente en una fecha específica"""
-        agente_id = request.query_params.get('agente')
+        """Verifica disponibilidad de un agente en una fecha especÃ­fica"""
+        agente_id = data_in.get('agente')
         fecha = request.query_params.get('fecha')
         
         if not agente_id or not fecha:
             return Response(
-                {'error': 'Se requieren parámetros: agente y fecha'}, 
+                {'error': 'Se requieren parÃ¡metros: agente y fecha'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -1487,7 +1487,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             from datetime import datetime
             fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
             
-            # Verificar si el agente ya tiene guardias ese día
+            # Verificar si el agente ya tiene guardias ese dÃ­a
             guardias_existentes = self.get_queryset().filter(
                 id_agente=agente_id,
                 fecha=fecha_obj,
@@ -1505,7 +1505,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             
         except ValueError as e:
             return Response(
-                {'error': f'Fecha inválida: {fecha}'}, 
+                {'error': f'Fecha invÃ¡lida: {fecha}'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
@@ -1514,18 +1514,18 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def resumen(self, request):
-        """Resumen de guardias por período - solo guardias activas y aprobadas"""
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
-        agente_id = request.query_params.get('agente')
-        area_id = request.query_params.get('area')
+        """Resumen de guardias por perÃ­odo - solo guardias activas y aprobadas"""
+        fecha_desde = data_in.get('fecha_desde')
+        fecha_hasta = data_in.get('fecha_hasta')
+        agente_id = data_in.get('agente')
+        area_id = data_in.get('area')
         
         queryset = self.get_queryset()
         
-        # FILTRO CRÍTICO: Solo mostrar guardias activas de cronogramas aprobados/publicados
-        # Esto previene que usuarios vean guardias pendientes de aprobación
+        # FILTRO CRÃTICO: Solo mostrar guardias activas de cronogramas aprobados/publicados
+        # Esto previene que usuarios vean guardias pendientes de aprobaciÃ³n
         queryset = queryset.filter(
             activa=True,
             estado='planificada',
@@ -1541,7 +1541,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
         if area_id:
             queryset = queryset.filter(id_cronograma__id_area=area_id)
         
-        # Estadísticas
+        # EstadÃ­sticas
         estadisticas = queryset.aggregate(
             total_guardias=Count('id_guardia'),
             guardias_activas=Count('id_guardia', filter=Q(activa=True)),
@@ -1549,8 +1549,8 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             horas_efectivas=Sum('horas_efectivas')
         )
         
-        # Guardias del período
-        guardias = queryset.order_by('-fecha')[:50]  # Limitar a 50 más recientes
+        # Guardias del perÃ­odo
+        guardias = queryset.order_by('-fecha')[:50]  # Limitar a 50 mÃ¡s recientes
         serializer = self.get_serializer(guardias, many=True)
         
         return Response({
@@ -1564,14 +1564,14 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             }
         })
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def guardias_por_cronograma(self, request):
-        """Obtiene todas las guardias de un cronograma específico (incluyendo pendientes)"""
+        """Obtiene todas las guardias de un cronograma especÃ­fico (incluyendo pendientes)"""
         cronograma_id = request.query_params.get('id_cronograma')
         
         if not cronograma_id:
             return Response(
-                {'error': 'Se requiere el parámetro id_cronograma'}, 
+                {'error': 'Se requiere el parÃ¡metro id_cronograma'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -1582,7 +1582,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 activa=True
             ).select_related('id_agente', 'id_cronograma').order_by('fecha', 'hora_inicio')
             
-            # Serializar guardias con información del agente
+            # Serializar guardias con informaciÃ³n del agente
             guardias_data = []
             for guardia in guardias:
                 agente = guardia.id_agente
@@ -1609,20 +1609,21 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def reporte_individual(self, request):
-        """Genera reporte individual según documentación - Planilla Individual de Guardias"""
+        """Genera reporte individual segÃºn documentaciÃ³n - Planilla Individual de Guardias"""
+        data_in = request.data if request.method.lower() == "post" else request.query_params
         filtros = {
-            'agente': request.query_params.get('agente'),
-            'area': request.query_params.get('area'),
-            'fecha_desde': request.query_params.get('fecha_desde'),
-            'fecha_hasta': request.query_params.get('fecha_hasta'),
-            'tipo_guardia': request.query_params.get('tipo_guardia')
+            'agente': data_in.get('agente'),
+            'area': data_in.get('area'),
+            'fecha_desde': data_in.get('fecha_desde'),
+            'fecha_hasta': data_in.get('fecha_hasta'),
+            'tipo_guardia': data_in.get('tipo_guardia')
         }
 
         agente_sesion = obtener_agente_sesion(request)
         if not agente_sesion:
-            return Response({'error': 'Sesión inválida'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
 
         user_ctx = {
             'agente': agente_sesion,
@@ -1641,20 +1642,22 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def reporte_general(self, request):
-        """Genera reporte general según documentación - Planilla General/Preventiva"""
+        """Genera reporte general segÃºn documentaciÃ³n - Planilla General/Preventiva"""
+        
+        data_in = request.data if request.method.lower() == 'post' else request.query_params
         filtros = {
-            'agente': request.query_params.get('agente'),
-            'area': request.query_params.get('area'),
-            'fecha_desde': request.query_params.get('fecha_desde'),
-            'fecha_hasta': request.query_params.get('fecha_hasta'),
-            'tipo_guardia': request.query_params.get('tipo_guardia')
+            'agente': data_in.get('agente'),
+            'area': data_in.get('area'),
+            'fecha_desde': data_in.get('fecha_desde'),
+            'fecha_hasta': data_in.get('fecha_hasta'),
+            'tipo_guardia': data_in.get('tipo_guardia')
         }
 
         agente_sesion = obtener_agente_sesion(request)
         if not agente_sesion:
-            return Response({'error': 'Sesión inválida'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
 
         user_ctx = {
             'agente': agente_sesion,
@@ -1673,28 +1676,28 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def por_mes(self, request):
-        """Obtiene guardias para un mes específico (optimizado para calendario)"""
-        año = request.query_params.get('año')
+        """Obtiene guardias para un mes especÃ­fico (optimizado para calendario)"""
+        anio = request.query_params.get('anio')
         mes = request.query_params.get('mes')
         
-        if not año or not mes:
+        if not anio or not mes:
             return Response(
-                {'error': 'Año y mes son requeridos'}, 
+                {'error': 'anio y mes son requeridos'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         try:
             from datetime import date, timedelta
             # Fechas del mes
-            primer_dia = date(int(año), int(mes), 1)
+            primer_dia = date(int(anio), int(mes), 1)
             if int(mes) == 12:
-                ultimo_dia = date(int(año) + 1, 1, 1) - timedelta(days=1)
+                ultimo_dia = date(int(anio) + 1, 1, 1) - timedelta(days=1)
             else:
-                ultimo_dia = date(int(año), int(mes) + 1, 1) - timedelta(days=1)
+                ultimo_dia = date(int(anio), int(mes) + 1, 1) - timedelta(days=1)
             
-            # Guardias del mes (incluye las que se extienden desde el día anterior)
+            # Guardias del mes (incluye las que se extienden desde el dÃ­a anterior)
             guardias = []
             
             # Guardias que inician en el mes
@@ -1704,11 +1707,11 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 activa=True
             ).select_related('id_agente', 'id_cronograma')
             
-            # Guardias del día anterior al mes que se extienden (multi-día)
+            # Guardias del dÃ­a anterior al mes que se extienden (multi-dÃ­a)
             fecha_anterior = primer_dia - timedelta(days=1)
             guardias_extension = Guardia.objects.filter(
                 fecha=fecha_anterior,
-                hora_inicio__gt=F('hora_fin'),  # Indica que cruza días
+                hora_inicio__gt=F('hora_fin'),  # Indica que cruza dÃ­as
                 activa=True
             ).select_related('id_agente', 'id_cronograma')
             
@@ -1716,7 +1719,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             todas_guardias = guardias_mes.union(guardias_extension).order_by('fecha', 'hora_inicio')
             
             return Response({
-                'año': año,
+                'anio': anio,
                 'mes': mes,
                 'primer_dia': primer_dia,
                 'ultimo_dia': ultimo_dia,
@@ -1726,7 +1729,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             
         except ValueError as e:
             return Response(
-                {'error': f'Año o mes inválidos: {str(e)}'}, 
+                {'error': f'anio o mes invÃ¡lidos: {str(e)}'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
@@ -1737,7 +1740,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
 
 
 class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
-    """ViewSet para resumen mensual con cálculo automático de plus"""
+    """ViewSet para resumen mensual con cÃ¡lculo automÃ¡tico de plus"""
     
     queryset = ResumenGuardiaMes.objects.all()
     serializer_class = ResumenGuardiaMesExtendidoSerializer
@@ -1749,7 +1752,7 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
         # Filtros
         mes = self.request.query_params.get('mes')
         anio = self.request.query_params.get('anio')
-        agente_id = self.request.query_params.get('agente')
+        agente_id = self.data_in.get('agente')
         estado_plus = self.request.query_params.get('estado_plus')
         
         if mes:
@@ -1765,7 +1768,7 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['post'])
     def calcular_mensual(self, request):
-        """Dispara el cálculo automático de plus mensual"""
+        """Dispara el cÃ¡lculo automÃ¡tico de plus mensual"""
         serializer = CalculoPlusSerializer(data=request.data)
         if serializer.is_valid():
             try:
@@ -1777,7 +1780,7 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
                 return Response(resultado, status=status.HTTP_200_OK)
                 
             except Exception as e:
-                logger.error(f"Error en cálculo mensual: {e}")
+                logger.error(f"Error en cÃ¡lculo mensual: {e}")
                 return Response(
                     {'error': str(e)}, 
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -1793,7 +1796,7 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
             try:
                 resumen_ids = serializer.validated_data['resumen_ids']
                 
-                # Actualizar los resúmenes
+                # Actualizar los resÃºmenes
                 resumenes = ResumenGuardiaMes.objects.filter(
                     id_resumen_guardia_mes__in=resumen_ids,
                     estado_plus='pendiente'
@@ -1818,12 +1821,12 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def reporte_plus_simplificado(self, request):
         """
         Genera reporte de plus usando las reglas simplificadas:
-        - Área operativa + guardia = 40%
-        - Otras áreas + 32+ horas = 40%  
+        - Ãrea operativa + guardia = 40%
+        - Otras Ã¡reas + 32+ horas = 40%  
         - Resto = 20%
         """
         mes = request.query_params.get('mes')
@@ -1832,7 +1835,7 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
         
         if not all([mes, anio]):
             return Response(
-                {'error': 'Se requieren parámetros: mes, anio'}, 
+                {'error': 'Se requieren parÃ¡metros: mes, anio'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -1848,14 +1851,14 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
                 area = Area.objects.get(id_area=area_id)
                 area_nombre = area.nombre
             else:
-                area_nombre = "Todas las áreas"
+                area_nombre = "Todas las Ã¡reas"
             
             agentes_plus = []
             total_agentes_plus20 = 0
             total_agentes_plus40 = 0
             
             for agente in agentes_query:
-                # Calcular plus usando nueva lógica
+                # Calcular plus usando nueva lÃ³gica
                 porcentaje_plus = CalculadoraPlus.calcular_plus_simplificado(
                     agente.id_agente, int(mes), int(anio)
                 )
@@ -1883,16 +1886,16 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
                         total=Sum('horas_efectivas')
                     )['total'] or 0
                     
-                    area_nombre_agente = agente.id_area.nombre if agente.id_area else "Sin área"
+                    area_nombre_agente = agente.id_area.nombre if agente.id_area else "Sin Ã¡rea"
                     es_operativa = any(op in area_nombre_agente.lower() for op in [
-                        'secretaría de protección civil', 'operativo', 'emergencias'
+                        'secretarÃ­a de protecciÃ³n civil', 'operativo', 'emergencias'
                     ])
                     
                     # Determinar motivo del plus
                     if es_operativa and guardias.exists():
-                        motivo = "Área operativa con guardias"
+                        motivo = "Ãrea operativa con guardias"
                     elif not es_operativa and total_horas >= 32:
-                        motivo = f"Otras áreas con {total_horas}h (≥32h)"
+                        motivo = f"Otras Ã¡reas con {total_horas}h (â‰¥32h)"
                     else:
                         motivo = "Guardias con menos de 32h"
                     
@@ -1928,8 +1931,8 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
                     'total_horas_todas_guardias': sum(a['total_horas_guardia'] for a in agentes_plus)
                 },
                 'reglas_aplicadas': {
-                    'regla_1': "Área operativa + guardia = 40% plus",
-                    'regla_2': "Otras áreas + 32+ horas = 40% plus",
+                    'regla_1': "Ãrea operativa + guardia = 40% plus",
+                    'regla_2': "Otras Ã¡reas + 32+ horas = 40% plus",
                     'regla_3': "Resto con guardias = 20% plus"
                 }
             }
@@ -1948,7 +1951,7 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
 
 
 class HoraCompensacionViewSet(viewsets.ModelViewSet):
-    """ViewSet para gestión de horas de compensación por emergencias"""
+    """ViewSet para gestiÃ³n de horas de compensaciÃ³n por emergencias"""
     
     queryset = HoraCompensacion.objects.all()
     serializer_class = HoraCompensacionSerializer
@@ -1964,7 +1967,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
         )
         
         # Filtros
-        agente_id = self.request.query_params.get('agente')
+        agente_id = self.data_in.get('agente')
         estado = self.request.query_params.get('estado')
         mes = self.request.query_params.get('mes')
         anio = self.request.query_params.get('anio')
@@ -1986,7 +1989,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['post'])
     def crear_compensacion(self, request):
-        """Crea una nueva solicitud de compensación"""
+        """Crea una nueva solicitud de compensaciÃ³n"""
         serializer = CrearCompensacionSerializer(data=request.data)
         if serializer.is_valid():
             try:
@@ -1998,7 +2001,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 guardia = data['guardia']
                 agente = Agente.objects.get(id_agente=data['id_agente'])
                 
-                # Obtener agente que solicita (puede ser diferente al que trabajó)
+                # Obtener agente que solicita (puede ser diferente al que trabajÃ³)
                 agente_solicitante_id = request.data.get('solicitado_por', data['id_agente'])
                 agente_solicitante = Agente.objects.get(id_agente=agente_solicitante_id)
                 
@@ -2007,7 +2010,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     agente, data['horas_extra']
                 )
                 
-                # Crear la compensación
+                # Crear la compensaciÃ³n
                 compensacion = HoraCompensacion.objects.create(
                     id_agente=agente,
                     id_guardia=guardia,
@@ -2025,7 +2028,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     monto_total=monto_total
                 )
                 
-                # Registrar en auditoría
+                # Registrar en auditorÃ­a
                 Auditoria.objects.create(
                     pk_afectada=compensacion.id_hora_compensacion,
                     nombre_tabla='hora_compensacion',
@@ -2044,14 +2047,14 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 
                 serializer_response = HoraCompensacionSerializer(compensacion)
                 return Response({
-                    'mensaje': 'Compensación creada exitosamente',
+                    'mensaje': 'CompensaciÃ³n creada exitosamente',
                     'compensacion': serializer_response.data
                 }, status=status.HTTP_201_CREATED)
                 
             except Exception as e:
-                logger.error(f"Error creando compensación: {e}")
+                logger.error(f"Error creando compensaciÃ³n: {e}")
                 return Response(
-                    {'error': f'Error creando compensación: {str(e)}'}, 
+                    {'error': f'Error creando compensaciÃ³n: {str(e)}'}, 
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
         
@@ -2093,7 +2096,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                         else:
                             compensacion.rechazar(agente_aprobador, observaciones)
                         
-                        # Registrar en auditoría
+                        # Registrar en auditorÃ­a
                         Auditoria.objects.create(
                             pk_afectada=compensacion.id_hora_compensacion,
                             nombre_tabla='hora_compensacion',
@@ -2107,7 +2110,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                         procesadas += 1
                         
                     except Exception as e:
-                        logger.error(f"Error procesando compensación {compensacion.id_hora_compensacion}: {e}")
+                        logger.error(f"Error procesando compensaciÃ³n {compensacion.id_hora_compensacion}: {e}")
                         continue
                 
                 return Response({
@@ -2126,7 +2129,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def resumen_mensual(self, request):
         """Resumen mensual de compensaciones por agente"""
         serializer = ResumenCompensacionSerializer(data=request.query_params.dict())
@@ -2140,7 +2143,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 
                 agente = Agente.objects.get(id_agente=agente_id)
                 
-                # Obtener resumen usando el método del modelo
+                # Obtener resumen usando el mÃ©todo del modelo
                 resumen = HoraCompensacion.resumen_mensual_agente(agente, mes, anio)
                 
                 # Obtener compensaciones del mes
@@ -2176,9 +2179,9 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def reporte_compensaciones(self, request):
-        """Reporte general de compensaciones por período y área"""
+        """Reporte general de compensaciones por perÃ­odo y Ã¡rea"""
         mes = request.query_params.get('mes')
         anio = request.query_params.get('anio')
         area_id = request.query_params.get('area_id')
@@ -2186,7 +2189,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
         
         if not all([mes, anio]):
             return Response(
-                {'error': 'Se requieren parámetros: mes, anio'}, 
+                {'error': 'Se requieren parÃ¡metros: mes, anio'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -2205,7 +2208,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 area = Area.objects.get(id_area=area_id)
                 area_nombre = area.nombre
             else:
-                area_nombre = "Todas las áreas"
+                area_nombre = "Todas las Ã¡reas"
             
             # Agrupar por agente
             compensaciones_por_agente = {}
@@ -2220,7 +2223,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                             'id': agente_id,
                             'nombre_completo': f"{compensacion.id_agente.apellido}, {compensacion.id_agente.nombre}",
                             'legajo': compensacion.id_agente.legajo,
-                            'area': compensacion.id_agente.id_area.nombre if compensacion.id_agente.id_area else "Sin área"
+                            'area': compensacion.id_agente.id_area.nombre if compensacion.id_agente.id_area else "Sin Ã¡rea"
                         },
                         'compensaciones': [],
                         'total_horas_extra': Decimal('0'),
@@ -2240,7 +2243,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 total_horas_extra += compensacion.horas_extra
                 total_monto += compensacion.monto_total or Decimal('0')
             
-            # Estadísticas por motivo
+            # EstadÃ­sticas por motivo
             from django.db.models import Count, Sum
             stats_por_motivo = queryset.values('motivo').annotate(
                 cantidad=Count('id_hora_compensacion'),
@@ -2288,18 +2291,18 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def crear_desde_guardia(self, request, pk=None):
-        """Crea compensación directamente desde una guardia específica"""
+        """Crea compensaciÃ³n directamente desde una guardia especÃ­fica"""
         try:
             guardia = Guardia.objects.get(id_guardia=pk)
             
-            # Validar que no exista ya una compensación para esta guardia
+            # Validar que no exista ya una compensaciÃ³n para esta guardia
             compensacion_existente = HoraCompensacion.objects.filter(
                 id_guardia=guardia
             ).exists()
             
             if compensacion_existente:
                 return Response(
-                    {'error': 'Ya existe una compensación para esta guardia'},
+                    {'error': 'Ya existe una compensaciÃ³n para esta guardia'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -2331,7 +2334,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             else:
                 hora_fin_real = hora_fin_str
             
-            # Crear compensación usando el método del modelo
+            # Crear compensaciÃ³n usando el mÃ©todo del modelo
             compensacion = HoraCompensacion.crear_desde_guardia_extendida(
                 guardia=guardia,
                 hora_fin_real=hora_fin_real,
@@ -2342,7 +2345,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             
             serializer = HoraCompensacionSerializer(compensacion)
             return Response({
-                'mensaje': 'Compensación creada desde guardia exitosamente',
+                'mensaje': 'CompensaciÃ³n creada desde guardia exitosamente',
                 'compensacion': serializer.data
             }, status=status.HTTP_201_CREATED)
             
@@ -2352,22 +2355,22 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            logger.error(f"Error creando compensación desde guardia: {e}")
+            logger.error(f"Error creando compensaciÃ³n desde guardia: {e}")
             return Response(
-                {'error': f'Error creando compensación: {str(e)}'}, 
+                {'error': f'Error creando compensaciÃ³n: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def reporte_horas_trabajadas(self, request):
         """Reporte de Guardias y Compensaciones - Horas programadas vs efectivas"""
-        area_id = request.query_params.get('area')
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
+        area_id = data_in.get('area')
+        fecha_desde = data_in.get('fecha_desde')
+        fecha_hasta = data_in.get('fecha_hasta')
         
         if not all([fecha_desde, fecha_hasta]):
             return Response(
-                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'}, 
+                {'error': 'Se requieren parÃ¡metros: fecha_desde, fecha_hasta'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -2385,15 +2388,15 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 'id_cronograma__estado__in': ['aprobada', 'publicada']
             }
             
-            # Filtrar por área si se especifica
+            # Filtrar por Ã¡rea si se especifica
             if area_id:
                 guardias_filter['id_cronograma__id_area'] = area_id
                 area = Area.objects.get(id_area=area_id)
                 area_nombre = area.nombre
             else:
-                area_nombre = 'Todas las áreas'
+                area_nombre = 'Todas las Ã¡reas'
             
-            # Obtener guardias en el período
+            # Obtener guardias en el perÃ­odo
             guardias = self.get_queryset().filter(**guardias_filter)
             
             # Agrupar por agente
@@ -2425,7 +2428,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     agentes_data[agente_id]['horas_efectivas'] += guardia.horas_efectivas
                 
                 # Contar guardias de fines de semana/feriados
-                if guardia.fecha.weekday() >= 5:  # Sábado o domingo
+                if guardia.fecha.weekday() >= 5:  # SÃ¡bado o domingo
                     agentes_data[agente_id]['guardias_fines_feriados'] += 1
                 
                 agentes_data[agente_id]['total_guardias'] += 1
@@ -2463,16 +2466,16 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def reporte_parte_diario(self, request):
         """Reporte de Parte Diario/Mensual Consolidado"""
-        area_id = request.query_params.get('area')
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
+        area_id = data_in.get('area')
+        fecha_desde = data_in.get('fecha_desde')
+        fecha_hasta = data_in.get('fecha_hasta')
         
         if not all([fecha_desde, fecha_hasta]):
             return Response(
-                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'}, 
+                {'error': 'Se requieren parÃ¡metros: fecha_desde, fecha_hasta'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -2484,7 +2487,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
             fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
             
-            # Obtener asistencias del período
+            # Obtener asistencias del perÃ­odo
             asistencias_filter = {
                 'fecha__range': [fecha_inicio, fecha_fin]
             }
@@ -2514,7 +2517,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 elif asistencia.retiro_temprano:
                     novedad = "Retiro temprano"
                 elif asistencia.comision_oficial:
-                    novedad = "Comisión oficial"
+                    novedad = "ComisiÃ³n oficial"
                 
                 registros.append({
                     'fecha': asistencia.fecha.strftime('%d/%m/%Y'),
@@ -2527,7 +2530,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 })
             
             return Response({
-                'area_nombre': 'Todas las áreas' if not area_id else 'Área seleccionada',
+                'area_nombre': 'Todas las Ã¡reas' if not area_id else 'Ãrea seleccionada',
                 'periodo': {
                     'fecha_desde': fecha_desde,
                     'fecha_hasta': fecha_hasta
@@ -2537,7 +2540,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     'total_registros': len(registros),
                     'total_llegadas_tarde': len([r for r in registros if 'tarde' in r['novedad']]),
                     'total_retiros_temprano': len([r for r in registros if 'temprano' in r['novedad']]),
-                    'total_comisiones': len([r for r in registros if 'Comisión' in r['novedad']])
+                    'total_comisiones': len([r for r in registros if 'ComisiÃ³n' in r['novedad']])
                 }
             })
         
@@ -2548,16 +2551,16 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def reporte_calculo_plus(self, request):
-        """Reporte de Cálculo Plus por Guardias (20% / 40%)"""
-        area_id = request.query_params.get('area')
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
+        """Reporte de CÃ¡lculo Plus por Guardias (20% / 40%)"""
+        area_id = data_in.get('area')
+        fecha_desde = data_in.get('fecha_desde')
+        fecha_hasta = data_in.get('fecha_hasta')
         
         if not all([fecha_desde, fecha_hasta]):
             return Response(
-                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'}, 
+                {'error': 'Se requieren parÃ¡metros: fecha_desde, fecha_hasta'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -2571,7 +2574,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             from .utils import CalculadoraPlus
             calculadora = CalculadoraPlus()
             
-            # Obtener cálculos de plus para el período
+            # Obtener cÃ¡lculos de plus para el perÃ­odo
             filtros = {'fecha_desde': fecha_inicio, 'fecha_hasta': fecha_fin}
             if area_id:
                 filtros['area_id'] = area_id
@@ -2598,11 +2601,11 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get','post'])
     def reporte_resumen_licencias(self, request):
         """Reporte de Resumen de Licencias por agente"""
         from datetime import datetime
-        area_id = request.query_params.get('area')
+        area_id = data_in.get('area')
         
         try:
             from personas.models import Agente
@@ -2636,8 +2639,8 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             ]
             
             return Response({
-                'año': datetime.now().year,
-                'area_nombre': 'Todas las áreas' if not area_id else 'Área seleccionada',
+                'anio': datetime.now().year,
+                'area_nombre': 'Todas las Ã¡reas' if not area_id else 'Ãrea seleccionada',
                 'agentes': agentes_reporte,
                 'totales': {
                     'total_agentes': len(agentes_reporte),
@@ -2652,15 +2655,15 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])  
+    @action(detail=False, methods=['get','post'])  
     def reporte_incumplimiento_normativo(self, request):
         """Reporte de Incumplimiento Normativo"""
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
+        fecha_desde = data_in.get('fecha_desde')
+        fecha_hasta = data_in.get('fecha_hasta')
         
         if not all([fecha_desde, fecha_hasta]):
             return Response(
-                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'}, 
+                {'error': 'Se requieren parÃ¡metros: fecha_desde, fecha_hasta'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -2671,7 +2674,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     'tipo': 'exceso_horas_semanales',
                     'nivel': 'critico',
                     'agente': 'Aguila, Tayra',
-                    'descripcion': 'Exceso de horas semanales: 52.0h (máximo: 48h)'
+                    'descripcion': 'Exceso de horas semanales: 52.0h (mÃ¡ximo: 48h)'
                 },
                 {
                     'tipo': 'descanso_insuficiente',
@@ -2703,7 +2706,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             )
 
     # ========================
-    # ENDPOINTS DE EXPORTACIÓN
+    # ENDPOINTS DE EXPORTACIÃ“N
     # ========================
     
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
@@ -2736,7 +2739,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             # Obtener contexto de usuario y datos del reporte
             agente_sesion = obtener_agente_sesion(request)
             if not agente_sesion:
-                return Response({'error': 'Sesión inválida'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
 
             user_ctx = {
                 'agente': agente_sesion,
@@ -2748,7 +2751,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             # Configurar el documento
             buffer = BytesIO()
             
-            # Determinar orientación según tipo de reporte
+            # Determinar orientaciÃ³n segÃºn tipo de reporte
             orientacion = configuracion.get('reporte_especifico', {}).get('orientacion', 'portrait')
             page_size = landscape(A4) if orientacion == 'landscape' else A4
             
@@ -2802,20 +2805,20 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     logo = Image(logo_path, width=60, height=60)
                     elements.append(logo)
                 except:
-                    pass  # Si no se puede cargar el logo, continuar sin él
+                    pass  # Si no se puede cargar el logo, continuar sin Ã©l
             
-            # Título del reporte
+            # TÃ­tulo del reporte
             reporte_config = configuracion.get('reporte_especifico', {})
             titulo_reporte = reporte_config.get('titulo', f'Reporte {tipo_reporte.replace("_", " ").title()}')
             
             elements.append(Paragraph(titulo_reporte, title_style))
             elements.append(Spacer(1, 12))
             
-            # Información institucional
+            # InformaciÃ³n institucional
             elementos_cabecera = [
                 "Universidad Nacional de Tierra del Fuego",
-                "Sistema GIGA - Gestión Integral de Guardias y Asistencias",
-                f"Fecha de Generación: {metadatos.get('fecha_generacion', '')}",
+                "Sistema GIGA - GestiÃ³n Integral de Guardias y Asistencias",
+                f"Fecha de GeneraciÃ³n: {metadatos.get('fecha_generacion', '')}",
                 f"Filtros Aplicados: {metadatos.get('filtros_aplicados', '')}"
             ]
             
@@ -2828,7 +2831,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             # CUERPO DEL REPORTE 
             # ========================================
             
-            # Generar tabla según tipo de reporte usando datos reales
+            # Generar tabla segÃºn tipo de reporte usando datos reales
             tabla_data = self._generar_tabla_pdf(tipo_reporte, datos_reporte, filtros)
             
             if tabla_data and len(tabla_data) > 0:
@@ -2858,7 +2861,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 elements.append(Spacer(1, 20))
             
             # ========================================
-            # PIE DE PÁGINA CON FIRMAS
+            # PIE DE PÃGINA CON FIRMAS
             # ========================================
             
             # Espacio para firmas
@@ -2867,7 +2870,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             firma_data = [
                 ['', ''],
                 ['_' * 30, '_' * 30],
-                ['Jefe de Área', 'RR.HH./Liquidación'],
+                ['Jefe de Ãrea', 'RR.HH./LiquidaciÃ³n'],
                 ['Firma y Sello', 'Firma y Sello']
             ]
             
@@ -2906,7 +2909,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
         except ReporteError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except ImportError:
-            logger.error("ReportLab no está instalado. Instale con: pip install reportlab")
+            logger.error("ReportLab no estÃ¡ instalado. Instale con: pip install reportlab")
             return Response(
                 {'error': 'Funcionalidad de PDF no disponible. Contacte al administrador.'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -2919,9 +2922,9 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             )
     
     def _generar_tabla_pdf(self, tipo_reporte, datos, filtros):
-        """Genera datos de tabla específicos para cada tipo de reporte usando los datos reales."""
+        """Genera datos de tabla especÃ­ficos para cada tipo de reporte usando los datos reales."""
         if tipo_reporte == 'individual':
-            headers = ['Fecha', 'Día Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad']
+            headers = ['Fecha', 'DÃ­a Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad']
             rows = [headers]
 
             for dia in datos.get('dias', []):
@@ -2940,7 +2943,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 ])
             return rows
 
-            # Reporte general: se arma como grilla Agente x Día
+            # Reporte general: se arma como grilla Agente x DÃ­a
         if tipo_reporte == 'general':
             dias = datos.get('dias_columnas', [])
             headers = ['Agente', 'Legajo'] + [d.get('fecha', '') for d in dias] + ['Total Horas']
@@ -2959,12 +2962,12 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 rows.append(fila)
             return rows
 
-        # Fallback genérico
-        headers = ['Item', 'Descripción', 'Valor']
+        # Fallback genÃ©rico
+        headers = ['Item', 'DescripciÃ³n', 'Valor']
         rows = [
             headers,
             ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), ''],
-            ['Período', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", ''],
+            ['PerÃ­odo', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", ''],
             ['Estado', 'Generado exitosamente', ''],
         ]
         return rows
@@ -2992,7 +2995,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
 
             agente_sesion = obtener_agente_sesion(request)
             if not agente_sesion:
-                return Response({'error': 'Sesión inválida'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
 
             user_ctx = {
                 'agente': agente_sesion,
@@ -3009,11 +3012,11 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             writer.writerow(['# Sistema GIGA - Reporte de Guardias y Asistencias'])
             writer.writerow(['# Universidad Nacional de Tierra del Fuego'])
             writer.writerow([f'# Tipo de Reporte: {tipo_reporte.replace("_", " ").title()}'])
-            writer.writerow([f'# Período: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'])
+            writer.writerow([f'# PerÃ­odo: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'])
             writer.writerow([f'# Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'])
-            writer.writerow([])  # Línea vacía
+            writer.writerow([])  # LÃ­nea vacÃ­a
             
-            # Generar datos según tipo de reporte
+            # Generar datos segÃºn tipo de reporte
             datos_csv = self._generar_datos_csv(tipo_reporte, datos_reporte, filtros)
             
             # Escribir datos
@@ -3062,7 +3065,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
 
             agente_sesion = obtener_agente_sesion(request)
             if not agente_sesion:
-                return Response({'error': 'Sesión inválida'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
 
             user_ctx = {
                 'agente': agente_sesion,
@@ -3085,10 +3088,10 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             ws['A1'] = 'Sistema GIGA - Universidad Nacional de Tierra del Fuego'
             ws['A1'].font = Font(bold=True, size=14)
             ws['A2'] = f'Reporte: {tipo_reporte.replace("_", " ").title()}'
-            ws['A3'] = f'Período: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'
+            ws['A3'] = f'PerÃ­odo: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'
             ws['A4'] = f'Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'
             
-            # Línea vacía
+            # LÃ­nea vacÃ­a
             row_start = 6
             
             # Generar datos
@@ -3143,7 +3146,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
         except ReporteError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except ImportError:
-            logger.error("openpyxl no está instalado. Instale con: pip install openpyxl")
+            logger.error("openpyxl no estÃ¡ instalado. Instale con: pip install openpyxl")
             return Response(
                 {'error': 'Funcionalidad de Excel no disponible. Contacte al administrador.'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -3158,7 +3161,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
     def _generar_datos_csv(self, tipo_reporte, datos, filtros):
         """Genera datos en formato de filas para CSV/Excel usando los datos reales."""
         if tipo_reporte == 'individual':
-            headers = ['Fecha', 'Día Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad', 'Estado Asistencia']
+            headers = ['Fecha', 'DÃ­a Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad', 'Estado Asistencia']
             rows = [headers]
 
             for dia in datos.get('dias', []):
@@ -3196,20 +3199,20 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 rows.append(fila)
             return rows
 
-        # Formato genérico
-        headers = ['Descripción', 'Valor', 'Observaciones']
+        # Formato genÃ©rico
+        headers = ['DescripciÃ³n', 'Valor', 'Observaciones']
         rows = [
             headers,
-            ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), 'Generado automáticamente'],
-            ['Período Consultado', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", 'Rango de fechas seleccionado'],
-            ['Fecha de Generación', timezone.now().strftime("%d/%m/%Y %H:%M"), 'Momento de creación del reporte'],
+            ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), 'Generado automÃ¡ticamente'],
+            ['PerÃ­odo Consultado', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", 'Rango de fechas seleccionado'],
+            ['Fecha de GeneraciÃ³n', timezone.now().strftime("%d/%m/%Y %H:%M"), 'Momento de creaciÃ³n del reporte'],
             ['Sistema', 'GIGA - UNTDF', 'Universidad Nacional de Tierra del Fuego'],
         ]
         return rows
 
     @action(detail=True, methods=['patch'])
     def aprobar(self, request, pk=None):
-        """Aprueba una compensación individual"""
+        """Aprueba una compensaciÃ³n individual"""
         try:
             from personas.models import Agente
             
@@ -3232,10 +3235,10 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             agente_aprobador = Agente.objects.get(id_agente=agente_id)
             observaciones = request.data.get('observaciones', '')
             
-            # Aprobar compensación
+            # Aprobar compensaciÃ³n
             compensacion.aprobar(agente_aprobador, observaciones)
             
-            # Registrar en auditoría
+            # Registrar en auditorÃ­a
             Auditoria.objects.create(
                 pk_afectada=compensacion.id_hora_compensacion,
                 nombre_tabla='hora_compensacion',
@@ -3248,20 +3251,20 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             
             serializer = HoraCompensacionSerializer(compensacion)
             return Response({
-                'mensaje': 'Compensación aprobada exitosamente',
+                'mensaje': 'CompensaciÃ³n aprobada exitosamente',
                 'compensacion': serializer.data
             })
             
         except Exception as e:
-            logger.error(f"Error aprobando compensación: {e}")
+            logger.error(f"Error aprobando compensaciÃ³n: {e}")
             return Response(
-                {'error': f'Error aprobando compensación: {str(e)}'}, 
+                {'error': f'Error aprobando compensaciÃ³n: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
     @action(detail=True, methods=['patch'])
     def rechazar(self, request, pk=None):
-        """Rechaza una compensación individual"""
+        """Rechaza una compensaciÃ³n individual"""
         try:
             from personas.models import Agente
             
@@ -3290,10 +3293,10 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Rechazar compensación
+            # Rechazar compensaciÃ³n
             compensacion.rechazar(agente_rechazador, motivo_rechazo)
             
-            # Registrar en auditoría
+            # Registrar en auditorÃ­a
             Auditoria.objects.create(
                 pk_afectada=compensacion.id_hora_compensacion,
                 nombre_tabla='hora_compensacion',
@@ -3306,13 +3309,20 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             
             serializer = HoraCompensacionSerializer(compensacion)
             return Response({
-                'mensaje': 'Compensación rechazada exitosamente',
+                'mensaje': 'CompensaciÃ³n rechazada exitosamente',
                 'compensacion': serializer.data
             })
             
         except Exception as e:
-            logger.error(f"Error rechazando compensación: {e}")
+            logger.error(f"Error rechazando compensaciÃ³n: {e}")
             return Response(
-                {'error': f'Error rechazando compensación: {str(e)}'}, 
+                {'error': f'Error rechazando compensaciÃ³n: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+
+
+
+
+

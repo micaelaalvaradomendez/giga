@@ -221,7 +221,6 @@ export async function exportarPDF(tipoReporte, datosReporte, filtros) {
         // Preparar datos para envío al backend
         const payload = {
             tipo_reporte: tipoReporte,
-            datos: datosReporte,
             filtros: filtros,
             configuracion: {
                 ...PDF_CONFIG,
@@ -281,7 +280,6 @@ export async function exportarCSV(tipoReporte, datosReporte, filtros, formato = 
         // Preparar datos para envío al backend
         const payload = {
             tipo_reporte: tipoReporte,
-            datos: datosReporte,
             filtros: filtros,
             formato: formato, // 'csv' o 'xlsx'
             configuracion: {

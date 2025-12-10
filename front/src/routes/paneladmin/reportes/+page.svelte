@@ -756,7 +756,7 @@
 									</tr>
 								</thead>
 								<tbody>
-									{#each $datosReporte.dias_mes.slice(0, 10) as dia}
+									{#each ($datosReporte?.dias_mes || []).slice(0, 10) as dia}
 										<tr class:dia-con-guardia={dia.tiene_guardia} class:fin-semana={!dia.horario_habitual_inicio}>
 											<td class="dia-fecha">
 												<div class="fecha-completa">
@@ -819,9 +819,9 @@
 							</table>
 						</div>
 
-						{#if $datosReporte.dias_mes.length > 10}
+						{#if ($datosReporte?.dias_mes || []).length > 10}
 							<div class="vista-limitada">
-								<p>Mostrando 10 de {$datosReporte.dias_mes.length} días. Exporte para ver el reporte completo.</p>
+								<p>Mostrando 10 de {($datosReporte?.dias_mes || []).length} días. Exporte para ver el reporte completo.</p>
 							</div>
 						{/if}
 
@@ -2296,5 +2296,18 @@
 		opacity: 1;
 		background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
 	}
+
+	/* Override: mostrar solo individual y general */
+	.selector-tipo-container:nth-of-type(n+2) { display: none; }
+	.selector-opcion input[value="horas_trabajadas"],
+	.selector-opcion input[value="parte_diario"],
+	.selector-opcion input[value="resumen_licencias"],
+	.selector-opcion input[value="calculo_plus"],
+	.selector-opcion input[value="incumplimiento_normativo"] { display: none; }
+	.selector-opcion input[value="horas_trabajadas"] + .opcion-contenido,
+	.selector-opcion input[value="parte_diario"] + .opcion-contenido,
+	.selector-opcion input[value="resumen_licencias"] + .opcion-contenido,
+	.selector-opcion input[value="calculo_plus"] + .opcion-contenido,
+	.selector-opcion input[value="incumplimiento_normativo"] + .opcion-contenido { display: none; }
 	
 </style>
