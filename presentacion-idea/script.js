@@ -88,11 +88,31 @@ const slides = [
         title: "Sistema Final",
         icon: "🚀",
         content: `
-            <p>El sistema está operativo y en producción.</p>
-            <div style="text-align:center; margin-top:30px;">
-                <h3>Acceso: giga-untdf.up.railway.app</h3>
-                <div style="background:white; width:150px; height:150px; margin:20px auto; display:flex; align-items:center; justify-content:center; color:black;">
-                    [QR AQUÍ]
+            <p style="text-align:center; font-size:1.3rem; margin-bottom:30px;">El sistema está operativo y en producción.</p>
+            
+            <div style="display:flex; justify-content:center; align-items:center; gap:50px; margin-top:30px;">
+                <!-- QR Code -->
+                <div style="text-align:center;">
+                    <h3 style="color:var(--secondary-color); margin-bottom:15px;">Acceso Web</h3>
+                    <img src="imagenes/qr.png" alt="QR Code GIGA" style="width:200px; height:200px; border:3px solid var(--accent-color); border-radius:10px; box-shadow:0 0 20px rgba(255,42,109,0.3);">
+                    <p style="margin-top:10px; font-size:1.1rem; color:#05d9e8;">giga-untdf.up.railway.app</p>
+                </div>
+                
+                <!-- Credenciales de Acceso -->
+                <div style="background:rgba(255,255,255,0.05); padding:30px; border-radius:15px; border:1px solid rgba(5,217,232,0.3); min-width:350px;">
+                    <h3 style="color:var(--accent-color); margin-bottom:20px; text-align:center;">Credenciales de Prueba</h3>
+                    
+                    <div style="margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.3); border-radius:8px;">
+                        <p style="font-size:0.9rem; color:#888; margin-bottom:5px;">Usuario 1:</p>
+                        <p style="font-family:monospace; font-size:1.1rem;"><strong>CUIL:</strong> 20-12345678-9</p>
+                        <p style="font-family:monospace; font-size:1.1rem;"><strong>Contraseña:</strong> demo123</p>
+                    </div>
+                    
+                    <div style="padding:15px; background:rgba(0,0,0,0.3); border-radius:8px;">
+                        <p style="font-size:0.9rem; color:#888; margin-bottom:5px;">Usuario 2:</p>
+                        <p style="font-family:monospace; font-size:1.1rem;"><strong>CUIL:</strong> 27-98765432-1</p>
+                        <p style="font-family:monospace; font-size:1.1rem;"><strong>Contraseña:</strong> demo456</p>
+                    </div>
                 </div>
             </div>
         `

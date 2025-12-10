@@ -1,0 +1,22 @@
+{
+    "name": "giga-presentacion",
+    "version": "1.0.0",
+    "description": "Presentación GIGA - Sistema de Gestión Integral de Guardias y Asistencia",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "keywords": [
+        "presentacion",
+        "giga",
+        "untdf"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "express": "^4.18.2"
+    },
+    "engines": {
+        "node": ">=18.x"
+    }
+}
