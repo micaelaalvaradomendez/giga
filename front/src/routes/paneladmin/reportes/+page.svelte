@@ -93,6 +93,42 @@
 	function resetearFiltros() {
 		reporteController.resetearFiltros();
 	}
+
+	// Precompute Maps for O(1) lookups in table rendering
+	// This converts agente.dias arrays to Maps indexed by fecha for fast access
+	$: agenteDiasMap = $datosReporte?.agentes?.reduce((map, agente) => {
+		const diasByFecha = new Map();
+		agente.dias?.forEach(d => diasByFecha.set(d.fecha, d));
+		map.set(agente, diasByFecha);
+		return map;
+	}, new Map()) || new Map();
+
+	// Precompute totals per day to avoid reduce+find in template
+	// Note: This depends on agenteDiasMap being computed first (Svelte handles this via reactive statement ordering)
+	$: totalesPorDia = (() => {
+		// Ensure agenteDiasMap is ready before computing totals
+		if (!agenteDiasMap.size || !$datosReporte?.dias_columnas) {
+			return new Map();
+		}
+		return $datosReporte.dias_columnas.reduce((map, dia) => {
+			const total = $datosReporte.agentes?.reduce((sum, agente) => {
+				const diaData = agenteDiasMap.get(agente)?.get(dia.fecha);
+				return sum + (diaData?.horas || 0);
+			}, 0) || 0;
+			map.set(dia.fecha, total);
+			return map;
+		}, new Map());
+	})();
+
+	// Helper function to get day data for an agent (uses precomputed map)
+	function getDiaData(agente, fecha) {
+		return agenteDiasMap.get(agente)?.get(fecha);
+	}
+
+	// Helper function to get total for a day (uses precomputed map)
+	function getTotalDia(fecha) {
+		return totalesPorDia.get(fecha) || 0;
+	}
 </script>
 
 <svelte:head>
@@ -901,7 +937,7 @@
 													</div>
 												</td>
 												{#each $datosReporte.dias_columnas as dia}
-													{@const diaData = agente.dias?.find(d => d.fecha === dia.fecha)}
+													{@const diaData = getDiaData(agente, dia.fecha)}
 													<td class="dia-celda" class:con-horas={diaData?.horas > 0} class:fin-semana={dia.dia_semana === 'Sáb' || dia.dia_semana === 'Dom'}>
 														{#if diaData}
 															{#if diaData.tipo === 'guardia'}
@@ -926,10 +962,7 @@
 										<tr class="total-direccion">
 											<td><strong>TOTAL DIRECCIÓN</strong></td>
 											{#each $datosReporte.dias_columnas as dia}
-												{@const totalDia = $datosReporte.agentes.reduce((sum, agente) => {
-													const diaData = agente.dias?.find(d => d.fecha === dia.fecha);
-													return sum + (diaData?.horas || 0);
-												}, 0)}
+												{@const totalDia = getTotalDia(dia.fecha)}
 												<td class="total-dia">
 													{#if totalDia > 0}
 														<strong>{totalDia.toFixed(1)}h</strong>
