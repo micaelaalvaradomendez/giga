@@ -24,6 +24,10 @@ COPY . .
 ARG VITE_API_BASE
 ENV VITE_API_BASE=$VITE_API_BASE
 
+# Declarar variable de build para n8n webhook URL (se pasa desde Railway)
+ARG VITE_N8N_WEBHOOK_URL
+ENV VITE_N8N_WEBHOOK_URL=$VITE_N8N_WEBHOOK_URL
+
 # Build de producción
 RUN if [ -f pnpm-lock.yaml ]; then \
     pnpm run build; \
