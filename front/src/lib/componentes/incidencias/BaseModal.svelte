@@ -40,6 +40,12 @@
 		backdrop-filter: blur(4px);
 		overflow-y: auto;
 		padding: 1rem 0;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-overlay::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal {

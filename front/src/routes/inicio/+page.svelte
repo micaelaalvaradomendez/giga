@@ -2,12 +2,12 @@
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { API_BASE_URL } from "$lib/api.js";
-	import AuthService from "../../lib/login/authService.js";
-	import ModalUsuario from "../../lib/componentes/usuario/ModalUsuario.svelte";
-	import EditarPerfil from "../../lib/componentes/EditarPerfil.svelte";
-	import CambioContrasenaObligatorio from "../../lib/componentes/CambioContrasenaObligatorio.svelte";
-	import CalendarioBase from "../../lib/componentes/calendarioBase.svelte";
-	import { guardiasService } from "../../lib/services.js";
+	import AuthService from "$lib/login/authService.js";
+	import ModalUsuario from "$lib/componentes/usuario/ModalUsuario.svelte";
+	import EditarPerfil from "$lib/componentes/usuario/EditarPerfil.svelte";
+	import CambioContrasenaObligatorio from "$lib/componentes/usuario/CambioContrasenaObligatorio.svelte";
+	import CalendarioBase from "$lib/componentes/calendarioBase.svelte";
+	import { guardiasService } from "$lib/services.js";
 
 	let user = null;
 	let isLoading = true;
@@ -444,6 +444,7 @@
 		justify-content: center;
 		min-height: 80vh;
 		padding: 2rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.loading-spinner {

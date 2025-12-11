@@ -1036,6 +1036,12 @@
 		overflow-y: auto;
 		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-content::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal-header {

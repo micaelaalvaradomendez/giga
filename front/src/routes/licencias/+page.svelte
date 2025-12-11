@@ -1082,25 +1082,12 @@
 		background: white;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 		max-height: 600px;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
 	}
 
 	.table-container::-webkit-scrollbar {
-		height: 8px;
-		width: 8px;
-	}
-
-	.table-container::-webkit-scrollbar-track {
-		background: #f1f5f9;
-		border-radius: 10px;
-	}
-
-	.table-container::-webkit-scrollbar-thumb {
-		background: #cbd5e1;
-		border-radius: 10px;
-	}
-
-	.table-container::-webkit-scrollbar-thumb:hover {
-		background: #94a3b8;
+		display: none;
 	}
 
 	.licencias-table {

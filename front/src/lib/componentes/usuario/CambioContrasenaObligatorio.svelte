@@ -1,6 +1,6 @@
 <script>
     import { createEventDispatcher, onMount } from "svelte";
-    import AuthService from "../login/authService.js";
+    import AuthService from "../../login/authService.js";
 
     const dispatch = createEventDispatcher();
 
@@ -278,6 +278,12 @@
         overflow-y: auto;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         border: 3px solid #e74c3c;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .mandatory-modal::-webkit-scrollbar {
+        display: none;
     }
 
     .modal-header {

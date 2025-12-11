@@ -557,6 +557,17 @@
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
+  :global(html),
+  :global(body) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  :global(html::-webkit-scrollbar),
+  :global(body::-webkit-scrollbar) {
+    display: none;
+  }
+
   .loading-container {
     display: flex;
     flex-direction: column;
@@ -929,24 +940,6 @@
     max-height: 600px;
     overflow-y: auto;
     padding-right: 0.5rem;
-  }
-
-  .incidencias-list::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .incidencias-list::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 10px;
-  }
-
-  .incidencias-list::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
-  }
-
-  .incidencias-list::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
   }
 
   .incidencia-card {

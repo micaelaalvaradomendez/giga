@@ -3,7 +3,7 @@
   import { goto } from "$app/navigation";
   import { guardiasService } from "$lib/services";
   import AuthService from "$lib/login/authService.js";
-  import ModalNotaGuardia from "$lib/componentes/admin/guardias/ModalNotaGuardia.svelte";
+  import ModalNotaGuardia from "$lib/componentes/usuario/ModalNotaGuardia.svelte";
 
   let user = null;
   let token = null;

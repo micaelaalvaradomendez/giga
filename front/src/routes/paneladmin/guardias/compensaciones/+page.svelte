@@ -381,7 +381,7 @@
       // Comparar las horas (formato HH:MM)
       const horaFinProgramada = guardiaData.hora_fin.slice(0, 5);
       const horaFinReal = nuevaCompensacion.hora_fin_real.slice(0, 5);
-      
+
       if (horaFinProgramada === horaFinReal) {
         mostrarConfirmacion(
           "Hora de finalización incorrecta",
@@ -1423,8 +1423,13 @@
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
+  .modal::-webkit-scrollbar {
+    display: none;
+  }
   .modal-header {
     display: flex;
     justify-content: space-between;
@@ -2098,6 +2103,12 @@
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     border: none;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .modal-detalles::-webkit-scrollbar {
+    display: none;
   }
 
   .detalle-seccion {

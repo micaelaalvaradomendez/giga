@@ -1,6 +1,9 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
-	import { crearLicencia, calcularDiasLicencia } from '$lib/paneladmin/controllers/licenciasController.js';
+	import { createEventDispatcher } from "svelte";
+	import {
+		crearLicencia,
+		calcularDiasLicencia,
+	} from "$lib/paneladmin/controllers/licenciasController.js";
 
 	export let show = false;
 	export let tiposLicencia = [];
@@ -13,7 +16,7 @@
 		observaciones: "",
 		justificacion: "",
 		fecha_desde: "",
-		fecha_hasta: ""
+		fecha_hasta: "",
 	};
 
 	let enviando = false;
@@ -25,19 +28,27 @@
 			observaciones: "",
 			justificacion: "",
 			fecha_desde: "",
-			fecha_hasta: ""
+			fecha_hasta: "",
 		};
 		enviando = false;
 	}
 
-	$: diasLicencia = calcularDiasLicencia(formLicencia.fecha_desde, formLicencia.fecha_hasta);
+	$: diasLicencia = calcularDiasLicencia(
+		formLicencia.fecha_desde,
+		formLicencia.fecha_hasta,
+	);
 
 	function cerrarModal() {
-		dispatch('close');
+		dispatch("close");
 	}
 
 	async function handleCrearLicencia() {
-		if (!formLicencia.id_tipo_licencia || !formLicencia.fecha_desde || !formLicencia.fecha_hasta || !formLicencia.justificacion) {
+		if (
+			!formLicencia.id_tipo_licencia ||
+			!formLicencia.fecha_desde ||
+			!formLicencia.fecha_hasta ||
+			!formLicencia.justificacion
+		) {
 			alert("Por favor complete todos los campos obligatorios");
 			return;
 		}
@@ -45,13 +56,13 @@
 		enviando = true;
 		const datos = {
 			...formLicencia,
-			id_agente: userInfo?.id_agente
+			id_agente: userInfo?.id_agente,
 		};
 
 		const resultado = await crearLicencia(datos);
 
 		if (resultado.success) {
-			dispatch('created');
+			dispatch("created");
 			cerrarModal();
 		} else {
 			alert(resultado.error || "Error al crear la licencia");
@@ -61,31 +72,51 @@
 </script>
 
 {#if show}
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<div class="modal-backdrop" on:click={cerrarModal}>
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<!-- svelte-ignore a11y-no-static-element-interactions -->
 		<div class="modal-contenido" on:click|stopPropagation>
 			<div class="modal-header">
 				<h5>Nueva Solicitud de Licencia</h5>
-				<button type="button" class="btn-close" on:click={cerrarModal}>&times;</button>
+				<button type="button" class="btn-close" on:click={cerrarModal}
+					>&times;</button
+				>
 			</div>
 			<div class="modal-body">
 				<form on:submit|preventDefault={handleCrearLicencia}>
 					<div class="form-group">
-						<label for="agente_solicitante">Agente Solicitante</label>
-						<input 
-							type="text" 
-							id="agente_solicitante" 
-							value="{userInfo?.nombre} {userInfo?.apellido}" 
-							disabled 
+						<label for="agente_solicitante"
+							>Agente Solicitante</label
+						>
+						<input
+							type="text"
+							id="agente_solicitante"
+							value="{userInfo?.nombre} {userInfo?.apellido}"
+							disabled
 						/>
-						<small class="form-text">La licencia se solicitará automáticamente para su usuario.</small>
+						<small class="form-text"
+							>La licencia se solicitará automáticamente para su
+							usuario.</small
+						>
 					</div>
 
 					<div class="form-group">
-						<label for="tipo_licencia_crear">Tipo de Licencia *</label>
-						<select id="tipo_licencia_crear" bind:value={formLicencia.id_tipo_licencia} required>
-							<option value="">Seleccione tipo de licencia</option>
+						<label for="tipo_licencia_crear"
+							>Tipo de Licencia *</label
+						>
+						<select
+							id="tipo_licencia_crear"
+							bind:value={formLicencia.id_tipo_licencia}
+							required
+						>
+							<option value="">Seleccione tipo de licencia</option
+							>
 							{#each tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}>{tipo.descripcion}</option>
+								<option value={tipo.id_tipo_licencia}
+									>{tipo.descripcion}</option
+								>
 							{/each}
 						</select>
 					</div>
@@ -93,20 +124,20 @@
 					<div class="row">
 						<div class="form-group" style="flex: 1;">
 							<label for="fecha_desde_crear">Desde *</label>
-							<input 
-								type="date" 
-								id="fecha_desde_crear" 
-								bind:value={formLicencia.fecha_desde} 
-								required 
+							<input
+								type="date"
+								id="fecha_desde_crear"
+								bind:value={formLicencia.fecha_desde}
+								required
 							/>
 						</div>
 						<div class="form-group" style="flex: 1;">
 							<label for="fecha_hasta_crear">Hasta *</label>
-							<input 
-								type="date" 
-								id="fecha_hasta_crear" 
-								bind:value={formLicencia.fecha_hasta} 
-								required 
+							<input
+								type="date"
+								id="fecha_hasta_crear"
+								bind:value={formLicencia.fecha_hasta}
+								required
 							/>
 						</div>
 					</div>
@@ -119,9 +150,9 @@
 
 					<div class="form-group">
 						<label for="justificacion_crear">Justificación *</label>
-						<textarea 
-							id="justificacion_crear" 
-							bind:value={formLicencia.justificacion} 
+						<textarea
+							id="justificacion_crear"
+							bind:value={formLicencia.justificacion}
 							placeholder="Escriba la justificación de la licencia..."
 							rows="3"
 							required
@@ -130,20 +161,31 @@
 
 					<div class="form-group">
 						<label for="observaciones_crear">Observaciones</label>
-						<textarea 
-							id="observaciones_crear" 
-							bind:value={formLicencia.observaciones} 
+						<textarea
+							id="observaciones_crear"
+							bind:value={formLicencia.observaciones}
 							placeholder="Observaciones adicionales (opcional)..."
 							rows="2"
 						></textarea>
 					</div>
 
 					<div class="modal-footer">
-						<button type="button" class="btn-secondary" on:click={cerrarModal} disabled={enviando}>
+						<button
+							type="button"
+							class="btn-secondary"
+							on:click={cerrarModal}
+							disabled={enviando}
+						>
 							Cancelar
 						</button>
-						<button type="submit" class="btn-primary" disabled={enviando}>
-							{enviando ? '⏳ Enviando...' : '✅ Solicitar Licencia'}
+						<button
+							type="submit"
+							class="btn-primary"
+							disabled={enviando}
+						>
+							{enviando
+								? "⏳ Enviando..."
+								: "✅ Solicitar Licencia"}
 						</button>
 					</div>
 				</form>
@@ -176,6 +218,12 @@
 		overflow-y: auto;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-contenido::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal-header {
@@ -342,16 +390,16 @@
 			flex-direction: column;
 			gap: 0.5rem;
 		}
-		
+
 		.modal-contenido {
 			width: 95%;
 			margin: 10px;
 		}
-		
+
 		.modal-header {
 			padding: 1rem;
 		}
-		
+
 		.modal-body {
 			padding: 1rem;
 		}

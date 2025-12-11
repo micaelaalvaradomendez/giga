@@ -1,5 +1,5 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from "svelte";
 
 	export let show = false;
 	export let isEditing = false;
@@ -10,11 +10,11 @@
 	const dispatch = createEventDispatcher();
 
 	function guardar() {
-		dispatch('guardar');
+		dispatch("guardar");
 	}
 
 	function cancelar() {
-		dispatch('cancelar');
+		dispatch("cancelar");
 	}
 </script>
 
@@ -22,7 +22,9 @@
 	<div class="modal-overlay">
 		<div class="modal">
 			<h3>
-				{isEditing ? "Editar tipo de licencia" : "Nuevo tipo de licencia"}
+				{isEditing
+					? "Editar tipo de licencia"
+					: "Nuevo tipo de licencia"}
 			</h3>
 			{#if error}
 				<div class="alert alert-error">{error}</div>
@@ -46,7 +48,11 @@
 				></textarea>
 			</div>
 			<div class="form-actions">
-				<button class="btn-primary" on:click={guardar} disabled={saving}>
+				<button
+					class="btn-primary"
+					on:click={guardar}
+					disabled={saving}
+				>
 					{saving ? "Guardando..." : "Guardar"}
 				</button>
 				<button
@@ -86,6 +92,12 @@
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		animation: modalSlideIn 0.3s ease-out;
 		border: 1px solid #e5e7eb;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal h3 {

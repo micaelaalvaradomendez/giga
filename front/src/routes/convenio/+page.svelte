@@ -537,6 +537,12 @@
 		margin: 0 auto;
 		margin-top: 40px;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.container::-webkit-scrollbar {
+		display: none;
 	}
 
 	.container .card {

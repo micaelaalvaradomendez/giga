@@ -1,5 +1,5 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from "svelte";
 
 	export let show = false;
 	export let tipo = null;
@@ -7,11 +7,11 @@
 	const dispatch = createEventDispatcher();
 
 	function confirmar() {
-		dispatch('confirmar');
+		dispatch("confirmar");
 	}
 
 	function cancelar() {
-		dispatch('cancelar');
+		dispatch("cancelar");
 	}
 </script>
 
@@ -23,7 +23,9 @@
 			</div>
 			<div class="modal-body-confirm">
 				<p>
-					¿Eliminar el tipo de licencia <strong>"{tipo.codigo || tipo.nombre}"</strong>?
+					¿Eliminar el tipo de licencia <strong
+						>"{tipo.codigo || tipo.nombre}"</strong
+					>?
 				</p>
 				<p class="warning-text">
 					Esta acción fallará si hay agentes con este tipo.
@@ -54,7 +56,7 @@
 		align-items: center;
 		z-index: 1000;
 		backdrop-filter: blur(4px);
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.modal-confirm {
@@ -65,6 +67,12 @@
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		overflow: hidden;
 		animation: modalSlideIn 0.3s ease-out;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-confirm::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal-header-warning {

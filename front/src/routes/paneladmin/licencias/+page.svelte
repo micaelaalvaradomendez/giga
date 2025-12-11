@@ -1435,6 +1435,12 @@
 		background: white;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 		max-height: 55vh;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.table-container::-webkit-scrollbar {
+		display: none;
 	}
 
 	.table-container::-webkit-scrollbar {
