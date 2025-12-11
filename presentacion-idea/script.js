@@ -202,15 +202,31 @@ const orbitRing = document.getElementById('orbitRing');
 const centerObject = document.getElementById('centerObject');
 const overlayContainer = document.getElementById('overlayContainer');
 
-const ORBIT_RADIUS = 550; // Debe coincidir con CSS
+// Variable dinámica para el radio
+let orbitRadius = 550;
 let currentRotation = 0;
 let targetRotation = 0;
 let isPaused = false;
 
 // Crear Tarjetas cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
+    updateOrbitRadius(); // Calcular radio inicial
     initializeApp();
+    window.addEventListener('resize', updateOrbitRadius); // Recalcular al redimensionar
 });
+
+function updateOrbitRadius() {
+    const width = window.innerWidth;
+    if (width <= 480) {
+        orbitRadius = 170;
+    } else if (width <= 768) {
+        orbitRadius = 300;
+    } else if (width <= 1024) {
+        orbitRadius = 400;
+    } else {
+        orbitRadius = 550;
+    }
+}
 
 function initializeApp() {
     // Crear Tarjetas
@@ -235,6 +251,14 @@ function initializeApp() {
             openCard(card, slide);
         });
 
+        // Touch end para evitar que el drag dispare el click
+        card.addEventListener('touchend', (e) => {
+            if (!isDragging) {
+                e.stopPropagation();
+                openCard(card, slide);
+            }
+        });
+
         orbitRing.appendChild(card);
     });
 
@@ -252,13 +276,10 @@ function animate() {
     orbitRing.style.transform = `rotateY(-${currentRotation}deg)`;
 
     // Actualizar tarjetas (Mantenerlas mirando al frente y escalar por profundidad)
-    // Actualizar tarjetas (Mantenerlas mirando al frente y escalar por profundidad)
     document.querySelectorAll('.orbit-card').forEach(card => {
         const baseAngle = parseFloat(card.dataset.angle);
 
         // Usamos Math.cos directamente con la diferencia de ángulos
-        // Esto evita saltos bruscos con el modulo cuando se cruza 0/360
-        // Convertimos a radianes: (grados * PI) / 180
         const angleDiff = (baseAngle - currentRotation);
         const radians = (angleDiff * Math.PI) / 180;
 
@@ -271,7 +292,7 @@ function animate() {
 
         card.style.transform = `
             rotateY(${baseAngle}deg) 
-            translateZ(${ORBIT_RADIUS}px) 
+            translateZ(${orbitRadius}px) 
             scale(${scale})
         `;
         card.style.opacity = opacity;
@@ -298,6 +319,7 @@ let isDragging = false;
 let startX = 0;
 let startRotation = 0;
 
+// Mouse Events
 document.addEventListener('mousedown', (e) => {
     if (isPaused) return;
     isDragging = true;
@@ -312,6 +334,23 @@ document.addEventListener('mousemove', (e) => {
 });
 
 document.addEventListener('mouseup', () => isDragging = false);
+
+// Touch Events (Móvil)
+document.addEventListener('touchstart', (e) => {
+    if (isPaused) return;
+    isDragging = true;
+    startX = e.touches[0].clientX;
+    startRotation = targetRotation;
+}, { passive: false });
+
+document.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    // e.preventDefault(); // Evitar scroll vertical nativo al arrastrar
+    const deltaX = e.touches[0].clientX - startX;
+    targetRotation = startRotation - deltaX * 0.8; // Sensibilidad aumentada para touch
+}, { passive: false });
+
+document.addEventListener('touchend', () => isDragging = false);
 
 
 // ================= SISTEMA DE EXPANSIÓN (CLONES) =================

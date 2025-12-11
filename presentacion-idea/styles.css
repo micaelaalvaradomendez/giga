@@ -6,11 +6,37 @@
     /* Cyan Neón */
     --text-color: #e0e0e0;
 
-    /* Dimensiones */
+    /* Dimensiones Default (Desktop) */
     --sphere-size: 280px;
-    /* Tamaño del núcleo */
     --orbit-radius: 550px;
-    /* Radio de la órbita */
+}
+
+/* --- RESPONSIVE VARIABLES --- */
+@media (max-width: 1024px) {
+    :root {
+        --sphere-size: 220px;
+        --orbit-radius: 400px;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --sphere-size: 180px;
+        --orbit-radius: 300px;
+    }
+
+    body {
+        font-size: 14px;
+        /* Base font size reduction */
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --sphere-size: 140px;
+        --orbit-radius: 170px;
+        /* Much closer for mobile portrait */
+    }
 }
 
 * {
@@ -62,6 +88,12 @@ body {
     filter: blur(2px);
 }
 
+@media (max-width: 768px) {
+    .universe.receded {
+        transform: scale(0.5) translateZ(-200px) translateY(-20px);
+    }
+}
+
 /* --- NÚCLEO (PROBLEMA) --- */
 .center-object {
     width: var(--sphere-size);
@@ -96,6 +128,18 @@ body {
     color: var(--accent-color);
     text-shadow: 0 0 20px rgba(255, 42, 109, 0.8);
     margin-bottom: 5px;
+}
+
+@media (max-width: 768px) {
+    .sphere-title {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .sphere-title {
+        font-size: 1.5rem;
+    }
 }
 
 .sphere-subtitle {
@@ -142,6 +186,15 @@ body {
     /* La transformación de posición se hace en JS */
 }
 
+@media (max-width: 768px) {
+    .orbit-card {
+        width: 100px;
+        height: 120px;
+        left: -50px;
+        top: -60px;
+    }
+}
+
 .orbit-card:hover {
     border-color: var(--secondary-color);
     box-shadow: 0 0 30px rgba(5, 217, 232, 0.3);
@@ -154,6 +207,12 @@ body {
     font-size: 3.5rem;
     filter: drop-shadow(0 0 10px rgba(5, 217, 232, 0.5));
     transition: transform 0.3s;
+}
+
+@media (max-width: 768px) {
+    .card-icon {
+        font-size: 2.5rem;
+    }
 }
 
 .orbit-card:hover .card-icon {
