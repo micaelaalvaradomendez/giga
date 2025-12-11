@@ -24,15 +24,12 @@
 
 	onMount(async () => {
 		try {
-			const sessionCheck = await AuthService.checkSession();
+			// Use getCurrentUser from localStorage first (checkSession already called in +layout.svelte)
+			user = AuthService.getCurrentUser();
 
-			if (sessionCheck.authenticated) {
-				user = sessionCheck.user;
-
-				if (
-					sessionCheck.requires_password_change ||
-					AuthService.requiresPasswordChange()
-				) {
+			if (user) {
+				// Check password change requirement from localStorage
+				if (AuthService.requiresPasswordChange()) {
 					showMandatoryPasswordChange = true;
 				}
 

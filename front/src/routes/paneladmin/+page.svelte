@@ -5,9 +5,10 @@
 	import AuditService from "$lib/services/auditService.js";
 
 	// Cleanup references for event listeners
-	let mousemoveHandler = null;
 	let containerRef = null;
 	let initTimeoutId = null;
+	// Store card references and their event handlers for cleanup
+	let cardHandlers = [];
 
 	const allModules = [
 		{
@@ -157,39 +158,48 @@
 				const cards = document.querySelectorAll(".module-card");
 				const container = document.querySelector(".modules-space");
 
-				console.log("🎨 Inicializando animaciones:", {
-					cards: cards.length,
-					container: !!container,
-				});
-
 				if (container && cards.length) {
-					// Use requestAnimationFrame to throttle mousemove updates
-					let ticking = false;
-					
 					// Store reference for cleanup
 					containerRef = container;
-					mousemoveHandler = (e) => {
-						if (ticking) return;
-						
-						ticking = true;
-						requestAnimationFrame(() => {
-							// Only update the card under the cursor
-							const target = e.target.closest(".module-card");
-							if (target) {
-								const rect = target.getBoundingClientRect();
-								const x = e.clientX - rect.left;
-								const y = e.clientY - rect.top;
-								target.style.setProperty("--mouse-x", `${x}px`);
-								target.style.setProperty("--mouse-y", `${y}px`);
-							}
-							ticking = false;
-						});
-					};
 					
-					container.addEventListener("mousemove", mousemoveHandler);
-					console.log("✅ Animaciones inicializadas correctamente");
-				} else {
-					console.warn("⚠️ No se encontraron elementos para animar");
+					// Optimized approach: attach handlers per card with cached rect
+					cards.forEach((card) => {
+						let rect = null;
+						
+						const enterHandler = () => {
+							// Cache bounding rect on pointer enter (only recalculate when entering)
+							rect = card.getBoundingClientRect();
+						};
+						
+						const leaveHandler = () => {
+							rect = null;
+							card.style.removeProperty("--mouse-x");
+							card.style.removeProperty("--mouse-y");
+						};
+						
+						const moveHandler = (e) => {
+							if (!rect) rect = card.getBoundingClientRect(); // Fallback
+							const x = e.clientX - rect.left;
+							const y = e.clientY - rect.top;
+							// Use requestAnimationFrame to batch style updates
+							requestAnimationFrame(() => {
+								card.style.setProperty("--mouse-x", `${x}px`);
+								card.style.setProperty("--mouse-y", `${y}px`);
+							});
+						};
+						
+						card.addEventListener("pointerenter", enterHandler);
+						card.addEventListener("pointerleave", leaveHandler);
+						card.addEventListener("pointermove", moveHandler);
+						
+						// Store handlers for cleanup
+						cardHandlers.push({
+							card,
+							enterHandler,
+							leaveHandler,
+							moveHandler
+						});
+					});
 				}
 			}, 100);
 		} catch (error) {
@@ -204,9 +214,13 @@
 		if (initTimeoutId) {
 			clearTimeout(initTimeoutId);
 		}
-		if (containerRef && mousemoveHandler) {
-			containerRef.removeEventListener("mousemove", mousemoveHandler);
-		}
+		// Clean up all card event handlers
+		cardHandlers.forEach(({ card, enterHandler, leaveHandler, moveHandler }) => {
+			card.removeEventListener("pointerenter", enterHandler);
+			card.removeEventListener("pointerleave", leaveHandler);
+			card.removeEventListener("pointermove", moveHandler);
+		});
+		cardHandlers = [];
 	});
 </script>
 

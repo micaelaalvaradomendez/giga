@@ -60,14 +60,12 @@
 
   onMount(async () => {
     try {
-      // Verificar sesión
-      const sessionCheck = await AuthService.checkSession();
-      if (!sessionCheck.authenticated) {
+      // Use getCurrentUser from localStorage (checkSession already called in +layout.svelte)
+      currentUser = AuthService.getCurrentUser();
+      if (!currentUser) {
         goto("/");
         return;
       }
-
-      currentUser = sessionCheck.user;
 
       // Determinar si es agente (para simplicar lógica de UI)
       const esAgente = !currentUser?.roles?.some((r) =>

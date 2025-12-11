@@ -45,7 +45,7 @@ class IncidenciaEmailService:
                 'notificacion_tipo': 'Nueva Asignación de Incidencia',
                 'mensaje_principal': 'Se te ha asignado una nueva incidencia que requiere tu atención.',
                 'fecha_actual': timezone.now(),
-                'sistema_url': 'http://localhost:3000/incidencias'
+                'sistema_url': f'{settings.FRONTEND_URL}/incidencias'
             }
             
             # Renderizar template HTML unificado
@@ -135,7 +135,7 @@ class IncidenciaEmailService:
                 'estado_anterior': estado_anterior_texto,
                 'nuevo_estado': nuevo_estado_texto,
                 'fecha_actual': timezone.now(),
-                'sistema_url': f'http://localhost:3000/incidencias/{incidencia.id}'
+                'sistema_url': f'{settings.FRONTEND_URL}/incidencias/{incidencia.id}'
             }
             
             # Renderizar template HTML
@@ -160,30 +160,4 @@ class IncidenciaEmailService:
             
         except Exception as e:
             logger.error(f"Error enviando email de cambio de estado para incidencia {incidencia.numero}: {e}")
-            return False
-    
-    @staticmethod
-    def test_envio_email(email_destino="test@ejemplo.com"):
-        """
-        Método para probar la configuración de email.
-        
-        Args:
-            email_destino: Email donde enviar la prueba
-            
-        Returns:
-            bool: True si se envió correctamente
-        """
-        try:
-            send_mail(
-                subject='Prueba de Email - Sistema GIGA',
-                message='Este es un email de prueba del sistema de incidencias.',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email_destino],
-                fail_silently=False
-            )
-            logger.info(f"Email de prueba enviado correctamente a {email_destino}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error en email de prueba: {e}")
             return False

@@ -3,8 +3,6 @@
 
 	// Stores del controlador
 	const { filtros, registros } = auditoriaController;
-	
-	console.log('🔄 FiltrosAuditoria iniciado, stores:', { filtros, registros });
 
 	// Usar stores derivados en lugar de variables reactivas para evitar problemas de SSR
 	import { derived } from 'svelte/store';

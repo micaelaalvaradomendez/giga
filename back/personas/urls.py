@@ -13,6 +13,7 @@ from personas.auth_views import (
     update_email
 )
 from personas.session_views import cerrar_todas_sesiones
+from personas.session_api import login_history
 
 
 # URLs de autenticación
@@ -25,6 +26,7 @@ auth_patterns = [
     path('update-profile/', update_profile, name='update_profile'),
     path('update-email/', update_email, name='update_email'),
     path('close-all-sessions/', cerrar_todas_sesiones, name='close_all_sessions'),  # Nuevo endpoint
+    path('login-history/', login_history, name='login_history'),  # Historial de sesiones
 ]
 
 

@@ -45,12 +45,27 @@
 		// For arrays, compare length first
 		if (Array.isArray(a) && Array.isArray(b)) {
 			if (a.length !== b.length) return false;
+			// Compare elements recursively for small arrays
+			if (a.length <= 10) {
+				for (let i = 0; i < a.length; i++) {
+					if (!valuesEqual(a[i], b[i])) return false;
+				}
+				return true;
+			}
 		}
 
 		// For objects, compare keys count first
 		const keysA = Object.keys(a);
 		const keysB = Object.keys(b);
 		if (keysA.length !== keysB.length) return false;
+
+		// For small objects, compare recursively without JSON.stringify
+		if (keysA.length <= 10) {
+			for (const key of keysA) {
+				if (!(key in b) || !valuesEqual(a[key], b[key])) return false;
+			}
+			return true;
+		}
 
 		// Only fall back to JSON.stringify for complex nested objects
 		return JSON.stringify(a) === JSON.stringify(b);
@@ -173,14 +188,16 @@
 	}
 
 	// Computed properties - Use spread copy to avoid mutating the original array
+	// Optimize: avoid creating new Date() in sort, use precomputed _ts_creado_en timestamp
 	$: registrosOrdenados = [...registros].sort((a, b) => {
 		let valorA = a[ordenarPor];
 		let valorB = b[ordenarPor];
 
-		// Tratamiento especial para fechas
+		// Tratamiento especial para fechas - use precomputed timestamp if available
 		if (ordenarPor === "creado_en") {
-			valorA = new Date(valorA);
-			valorB = new Date(valorB);
+			// Use precomputed timestamp from controller, fallback to Date parsing
+			valorA = a._ts_creado_en ?? new Date(valorA).getTime();
+			valorB = b._ts_creado_en ?? new Date(valorB).getTime();
 		}
 
 		// Tratamiento especial para nombres

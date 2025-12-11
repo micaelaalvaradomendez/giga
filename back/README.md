@@ -43,6 +43,68 @@ class Meta:
    - `Asistencia` - Registro de asistencias
    - `Reportes` - Generación de reportes y sistema de notificaciones por email
 
+## 🗃️ Optimización de Base de Datos
+
+### Sistema de Retención y Archivado
+
+El sistema incluye mecanismos para gestionar el crecimiento de la base de datos:
+
+#### Tablas de Archivo
+- `auditoria_archivo` - Almacena registros de auditoría antiguos
+- `incidencia_archivo` - Almacena incidencias cerradas antiguas
+
+#### Comandos de Mantenimiento
+
+```bash
+# Archivar auditorías más antiguas de 6 meses
+python manage.py archivar_auditorias --months=6
+
+# Archivar incidencias cerradas más antiguas de 12 meses
+python manage.py archivar_incidencias --months=12
+
+# Limpiar sesiones inactivas (más de 7 días)
+python manage.py cleanup_sessions --days=7
+
+# Ver estadísticas de uso de espacio
+python manage.py db_stats --detailed
+
+# Modo dry-run (solo muestra sin ejecutar)
+python manage.py archivar_auditorias --dry-run
+```
+
+#### Scheduler Automático
+
+El sistema incluye tareas programadas automáticas:
+- **Limpieza de sesiones**: Diaria a las 03:00
+- **Archivado de auditorías**: Semanal (domingo 04:00)
+- **Archivado de incidencias**: Mensual (día 1, 04:30)
+
+Control por variable de entorno: `SCHEDULER_ENABLED=true|false`
+
+#### Funciones SQL de Archivado
+
+```sql
+-- Archivar auditorías más antiguas de N meses
+SELECT * FROM archivar_auditorias(6);
+
+-- Archivar incidencias cerradas más antiguas de N meses
+SELECT * FROM archivar_incidencias(12);
+
+-- Limpiar sesiones expiradas
+SELECT * FROM limpiar_sesiones_expiradas(7);
+```
+
+### Buenas Prácticas de Sesiones
+
+El sistema almacena solo datos mínimos en sesión:
+- `user_id` - ID del agente autenticado
+- `is_authenticated` - Flag de autenticación
+
+**NO almacenar en sesión:**
+- Objetos completos de usuario
+- Listas grandes de datos
+- Tokens o archivos
+
 ## Verificación de Funcionamiento
 
 ### Conexión a BD Exitosa
@@ -76,8 +138,19 @@ back/
 ├── personas/       
 │   ├── models.py   
 │   ├── admin.py
-│   └── views.py
+│   ├── views.py
+│   ├── tasks.py            # Tareas de mantenimiento
+│   ├── scheduler.py        # Programador de tareas
+│   └── management/commands/
+│       ├── cleanup_sessions.py
+│       └── limpiar_sesiones.py
 ├── auditoria/      
+│   └── management/commands/
+│       ├── archivar_auditorias.py
+│       └── db_stats.py
+├── incidencias/
+│   └── management/commands/
+│       └── archivar_incidencias.py
 ├── guardias/       
 ├── asistencia/     
 └── manage.py
