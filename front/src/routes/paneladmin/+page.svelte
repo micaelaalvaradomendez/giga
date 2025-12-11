@@ -1,8 +1,13 @@
 <script>
-	import { onMount, tick } from "svelte";
+	import { onMount, onDestroy, tick } from "svelte";
 	import { goto } from "$app/navigation";
 	import AuthService from "$lib/login/authService.js";
 	import AuditService from "$lib/services/auditService.js";
+
+	// Cleanup references for event listeners
+	let mousemoveHandler = null;
+	let containerRef = null;
+	let initTimeoutId = null;
 
 	const allModules = [
 		{
@@ -147,7 +152,7 @@
 			await tick();
 
 			// Usar setTimeout para asegurar que el DOM esté completamente renderizado
-			setTimeout(() => {
+			initTimeoutId = setTimeout(() => {
 				// Inicializar animaciones si hay módulos visibles
 				const cards = document.querySelectorAll(".module-card");
 				const container = document.querySelector(".modules-space");
@@ -158,15 +163,30 @@
 				});
 
 				if (container && cards.length) {
-					container.addEventListener("mousemove", (e) => {
-						for (const card of cards) {
-							const rect = card.getBoundingClientRect();
-							const x = e.clientX - rect.left;
-							const y = e.clientY - rect.top;
-							card.style.setProperty("--mouse-x", `${x}px`);
-							card.style.setProperty("--mouse-y", `${y}px`);
-						}
-					});
+					// Use requestAnimationFrame to throttle mousemove updates
+					let ticking = false;
+					
+					// Store reference for cleanup
+					containerRef = container;
+					mousemoveHandler = (e) => {
+						if (ticking) return;
+						
+						ticking = true;
+						requestAnimationFrame(() => {
+							// Only update the card under the cursor
+							const target = e.target.closest(".module-card");
+							if (target) {
+								const rect = target.getBoundingClientRect();
+								const x = e.clientX - rect.left;
+								const y = e.clientY - rect.top;
+								target.style.setProperty("--mouse-x", `${x}px`);
+								target.style.setProperty("--mouse-y", `${y}px`);
+							}
+							ticking = false;
+						});
+					};
+					
+					container.addEventListener("mousemove", mousemoveHandler);
 					console.log("✅ Animaciones inicializadas correctamente");
 				} else {
 					console.warn("⚠️ No se encontraron elementos para animar");
@@ -176,6 +196,16 @@
 			console.error("Error de autenticación:", error);
 			alert("usuario no autorizado");
 			goto("/");
+		}
+	});
+
+	// Cleanup event listeners and timers on component destroy
+	onDestroy(() => {
+		if (initTimeoutId) {
+			clearTimeout(initTimeoutId);
+		}
+		if (containerRef && mousemoveHandler) {
+			containerRef.removeEventListener("mousemove", mousemoveHandler);
 		}
 	});
 </script>

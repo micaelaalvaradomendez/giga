@@ -975,6 +975,12 @@
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     border: 2px solid #e5e7eb;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .modal-content::-webkit-scrollbar {
+    display: none;
   }
 
   .modal-rechazo {

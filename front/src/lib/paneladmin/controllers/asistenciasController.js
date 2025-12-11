@@ -54,7 +54,7 @@ class AsistenciasController {
 			this.loading.set(true);
 
 			// Verificar sesión
-			const sessionResponse = await fetch('${API_BASE_URL}/personas/auth/check-session/', {
+			const sessionResponse = await fetch(`${API_BASE_URL}/personas/auth/check-session/`, {
 				credentials: 'include'
 			});
 
@@ -101,7 +101,7 @@ class AsistenciasController {
 	// ========== CARGA DE DATOS ==========
 	async cargarAreas() {
 		try {
-			const response = await fetch('${API_BASE_URL}/personas/catalogs/areas/', {
+			const response = await fetch(`${API_BASE_URL}/personas/catalogs/areas/`, {
 				credentials: 'include'
 			});
 
@@ -416,7 +416,7 @@ class AsistenciasController {
 
 			console.log('📤 Enviando petición de marcación:', requestBody);
 
-			const response = await fetch('${API_BASE_URL}/asistencia/marcar/', {
+			const response = await fetch(`${API_BASE_URL}/asistencia/marcar/`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
@@ -522,7 +522,7 @@ class AsistenciasController {
 
 			console.log('📤 Enviando petición de marcación salida:', requestBody);
 
-			const response = await fetch('${API_BASE_URL}/asistencia/marcar/', {
+			const response = await fetch(`${API_BASE_URL}/asistencia/marcar/`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',

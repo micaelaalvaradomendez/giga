@@ -1056,6 +1056,12 @@
 		overflow-y: auto;
 		position: relative;
 		border-radius: 0 0 24px 24px;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.table-container::-webkit-scrollbar {
+		display: none;
 	}
 
 	.table-container::-webkit-scrollbar {

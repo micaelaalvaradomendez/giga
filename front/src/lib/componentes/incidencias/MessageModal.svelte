@@ -60,6 +60,12 @@
 		justify-content: center;
 		z-index: 1000;
 		backdrop-filter: blur(4px);
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-overlay::-webkit-scrollbar {
+		display: none;
 	}
 
 	.mensaje-modal {

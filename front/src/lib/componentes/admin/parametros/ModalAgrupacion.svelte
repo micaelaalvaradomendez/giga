@@ -142,6 +142,12 @@
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		animation: modalSlide 0.3s ease-out;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-content::-webkit-scrollbar {
+		display: none;
 	}
 
 	@keyframes modalSlide {

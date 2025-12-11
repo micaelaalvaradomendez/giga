@@ -34,7 +34,9 @@
 		<div class="modal-contenido">
 			<div class="modal-header">
 				<h5>Aprobar Licencia</h5>
-				<button type="button" class="btn-close" on:click={cerrarModal}>&times;</button>
+				<button type="button" class="btn-close" on:click={cerrarModal}
+					>&times;</button
+				>
 			</div>
 			<div class="modal-body">
 				<div class="licencia-info">
@@ -84,10 +86,7 @@
 						>
 							Cancelar
 						</button>
-						<button
-							type="submit"
-							class="btn-success"
-						>
+						<button type="submit" class="btn-success">
 							✅ Aprobar Licencia
 						</button>
 					</div>
@@ -96,8 +95,6 @@
 		</div>
 	</div>
 {/if}
-
-
 
 <style>
 	.modal-backdrop {
@@ -123,6 +120,12 @@
 		overflow-y: auto;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-contenido::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal-header {
@@ -247,6 +250,4 @@
 		cursor: not-allowed;
 		transform: none;
 	}
-
-
 </style>

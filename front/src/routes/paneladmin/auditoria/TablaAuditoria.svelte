@@ -8,7 +8,7 @@
 	let registrosPorPagina = 25;
 
 	// Ordenamiento
-	let ordenarPor = 'creado_en';
+	let ordenarPor = "creado_en";
 	let ordenAsc = false;
 
 	// Funciones para formatear datos
@@ -28,33 +28,92 @@
 		return auditoriaController.getBadgeColor(accion);
 	}
 
+	// Cache for computed differences to avoid recomputation (keyed by audit record ID)
+	const diffCache = new Map();
+
+	// Fast equality check: true shallow for primitives, deep only when needed for objects
+	function valuesEqual(a, b) {
+		// Handle primitives and null/undefined - fast path
+		if (a === b) return true;
+		if (a === null || b === null || a === undefined || b === undefined)
+			return false;
+		if (typeof a !== typeof b) return false;
+
+		// For primitives, direct comparison is enough
+		if (typeof a !== "object") return a === b;
+
+		// For arrays, compare length first
+		if (Array.isArray(a) && Array.isArray(b)) {
+			if (a.length !== b.length) return false;
+		}
+
+		// For objects, compare keys count first
+		const keysA = Object.keys(a);
+		const keysB = Object.keys(b);
+		if (keysA.length !== keysB.length) return false;
+
+		// Only fall back to JSON.stringify for complex nested objects
+		return JSON.stringify(a) === JSON.stringify(b);
+	}
+
 	// Función para obtener solo las diferencias entre dos objetos
-	function obtenerDiferencias(previo, nuevo) {
-		if (typeof previo !== "object" || typeof nuevo !== "object" || 
-			previo === null || nuevo === null) {
+	// Uses audit record ID for caching when available
+	function obtenerDiferencias(previo, nuevo, recordId = null) {
+		if (
+			typeof previo !== "object" ||
+			typeof nuevo !== "object" ||
+			previo === null ||
+			nuevo === null
+		) {
 			return { previo, nuevo };
+		}
+
+		// Use record ID for cache key if available (most efficient)
+		// Only create string cache key for records without ID
+		const cacheKey =
+			recordId ??
+			`${Object.keys(previo).length}_${Object.keys(nuevo).length}`;
+		if (recordId && diffCache.has(cacheKey)) {
+			return diffCache.get(cacheKey);
 		}
 
 		const diffPrevio = {};
 		const diffNuevo = {};
-		const allKeys = new Set([...Object.keys(previo), ...Object.keys(nuevo)]);
+		const allKeys = new Set([
+			...Object.keys(previo),
+			...Object.keys(nuevo),
+		]);
 
 		allKeys.forEach((key) => {
-			const valorPrevio = JSON.stringify(previo[key]);
-			const valorNuevo = JSON.stringify(nuevo[key]);
+			const valorPrevio = previo[key];
+			const valorNuevo = nuevo[key];
 
-			if (valorPrevio !== valorNuevo) {
-				const claveFormateada = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-				diffPrevio[claveFormateada] = previo[key] ?? "N/A";
-				diffNuevo[claveFormateada] = nuevo[key] ?? "N/A";
+			// Use optimized equality check
+			if (!valuesEqual(valorPrevio, valorNuevo)) {
+				const claveFormateada = key
+					.replace(/_/g, " ")
+					.replace(/\b\w/g, (l) => l.toUpperCase());
+				diffPrevio[claveFormateada] = valorPrevio ?? "N/A";
+				diffNuevo[claveFormateada] = valorNuevo ?? "N/A";
 			}
 		});
 
-		if (Object.keys(diffPrevio).length === 0) {
-			return { previo, nuevo };
+		const result =
+			Object.keys(diffPrevio).length === 0
+				? { previo, nuevo }
+				: { previo: diffPrevio, nuevo: diffNuevo };
+
+		// Only cache if we have a record ID (stable key)
+		if (recordId) {
+			// Cache result (limit cache size to avoid memory issues)
+			if (diffCache.size > 100) {
+				const firstKey = diffCache.keys().next().value;
+				diffCache.delete(firstKey);
+			}
+			diffCache.set(cacheKey, result);
 		}
 
-		return { previo: diffPrevio, nuevo: diffNuevo };
+		return result;
 	}
 
 	// Función para formatear valores JSON de forma inteligente
@@ -72,7 +131,9 @@
 			}
 
 			if (valor.roles_previos && valor.roles_previos.length > 0) {
-				const rolesNombres = valor.roles_previos.map((r) => r.rol_nombre).join(", ");
+				const rolesNombres = valor.roles_previos
+					.map((r) => r.rol_nombre)
+					.join(", ");
 				return `Agente: ${agente}\nRoles Previos: ${rolesNombres}`;
 			}
 
@@ -84,7 +145,10 @@
 			.map(([clave, valorItem]) => {
 				if (valorItem === null || valorItem === undefined) return null;
 
-				if (typeof valorItem === "object" && !Array.isArray(valorItem)) {
+				if (
+					typeof valorItem === "object" &&
+					!Array.isArray(valorItem)
+				) {
 					const subItems = Object.entries(valorItem)
 						.map(([subKey, subValue]) => `${subKey}: ${subValue}`)
 						.join(", ");
@@ -108,21 +172,21 @@
 		paginaActual = 1;
 	}
 
-	// Computed properties
-	$: registrosOrdenados = registros.sort((a, b) => {
+	// Computed properties - Use spread copy to avoid mutating the original array
+	$: registrosOrdenados = [...registros].sort((a, b) => {
 		let valorA = a[ordenarPor];
 		let valorB = b[ordenarPor];
 
 		// Tratamiento especial para fechas
-		if (ordenarPor === 'creado_en') {
+		if (ordenarPor === "creado_en") {
 			valorA = new Date(valorA);
 			valorB = new Date(valorB);
 		}
 
 		// Tratamiento especial para nombres
-		if (ordenarPor === 'creado_por_nombre') {
-			valorA = valorA || 'Sistema';
-			valorB = valorB || 'Sistema';
+		if (ordenarPor === "creado_por_nombre") {
+			valorA = valorA || "Sistema";
+			valorB = valorB || "Sistema";
 		}
 
 		if (valorA < valorB) return ordenAsc ? -1 : 1;
@@ -168,11 +232,15 @@
 				Mostrando {inicio + 1}-{fin} de {registrosOrdenados.length} registros
 			</span>
 		</div>
-		
+
 		<div class="controles-derecha">
 			<label class="registros-por-pagina">
 				Mostrar:
-				<select bind:value={registrosPorPagina} on:change={() => cambiarRegistrosPorPagina(registrosPorPagina)}>
+				<select
+					bind:value={registrosPorPagina}
+					on:change={() =>
+						cambiarRegistrosPorPagina(registrosPorPagina)}
+				>
 					<option value={10}>10</option>
 					<option value={25}>25</option>
 					<option value={50}>50</option>
@@ -190,28 +258,42 @@
 					<th>
 						<!-- Columna de expansión -->
 					</th>
-					<th class="sorteable" on:click={() => ordenar('creado_en')}>
+					<th class="sorteable" on:click={() => ordenar("creado_en")}>
 						📅 Fecha y Hora
-						{#if ordenarPor === 'creado_en'}
-							<span class="sort-indicator">{ordenAsc ? '▲' : '▼'}</span>
+						{#if ordenarPor === "creado_en"}
+							<span class="sort-indicator"
+								>{ordenAsc ? "▲" : "▼"}</span
+							>
 						{/if}
 					</th>
-					<th class="sorteable" on:click={() => ordenar('creado_por_nombre')}>
+					<th
+						class="sorteable"
+						on:click={() => ordenar("creado_por_nombre")}
+					>
 						👤 Usuario
-						{#if ordenarPor === 'creado_por_nombre'}
-							<span class="sort-indicator">{ordenAsc ? '▲' : '▼'}</span>
+						{#if ordenarPor === "creado_por_nombre"}
+							<span class="sort-indicator"
+								>{ordenAsc ? "▲" : "▼"}</span
+							>
 						{/if}
 					</th>
-					<th class="sorteable" on:click={() => ordenar('accion')}>
+					<th class="sorteable" on:click={() => ordenar("accion")}>
 						⚡ Acción
-						{#if ordenarPor === 'accion'}
-							<span class="sort-indicator">{ordenAsc ? '▲' : '▼'}</span>
+						{#if ordenarPor === "accion"}
+							<span class="sort-indicator"
+								>{ordenAsc ? "▲" : "▼"}</span
+							>
 						{/if}
 					</th>
-					<th class="sorteable" on:click={() => ordenar('nombre_tabla')}>
+					<th
+						class="sorteable"
+						on:click={() => ordenar("nombre_tabla")}
+					>
 						📦 Módulo
-						{#if ordenarPor === 'nombre_tabla'}
-							<span class="sort-indicator">{ordenAsc ? '▲' : '▼'}</span>
+						{#if ordenarPor === "nombre_tabla"}
+							<span class="sort-indicator"
+								>{ordenAsc ? "▲" : "▼"}</span
+							>
 						{/if}
 					</th>
 					<th>🔍 ID</th>
@@ -219,32 +301,53 @@
 			</thead>
 			<tbody>
 				{#each registrosPagina as registro (registro.id_auditoria)}
-					<tr class="fila-principal" class:expandida={registrosExpandidos.has(registro.id_auditoria)}>
+					<tr
+						class="fila-principal"
+						class:expandida={registrosExpandidos.has(
+							registro.id_auditoria,
+						)}
+					>
 						<td>
-							<button 
+							<button
 								class="btn-expandir"
-								on:click={() => toggleExpansion(registro.id_auditoria)}
+								on:click={() =>
+									toggleExpansion(registro.id_auditoria)}
 								title="Ver detalles"
 							>
-								{registrosExpandidos.has(registro.id_auditoria) ? '▼' : '▶'}
+								{registrosExpandidos.has(registro.id_auditoria)
+									? "▼"
+									: "▶"}
 							</button>
 						</td>
 						<td class="fecha">
 							<div class="fecha-content">
-								<span class="fecha-principal">{formatearFecha(registro.creado_en)}</span>
-								<span class="fecha-relativa">{new Date(registro.creado_en).toLocaleDateString('es-AR')}</span>
+								<span class="fecha-principal"
+									>{formatearFecha(registro.creado_en)}</span
+								>
+								<span class="fecha-relativa"
+									>{new Date(
+										registro.creado_en,
+									).toLocaleDateString("es-AR")}</span
+								>
 							</div>
 						</td>
 						<td class="usuario">
 							<div class="usuario-content">
-								<span class="usuario-nombre">{registro.creado_por_nombre || 'Sistema'}</span>
+								<span class="usuario-nombre"
+									>{registro.creado_por_nombre ||
+										"Sistema"}</span
+								>
 								{#if registro.id_agente}
-									<span class="usuario-id">ID: {registro.id_agente}</span>
+									<span class="usuario-id"
+										>ID: {registro.id_agente}</span
+									>
 								{/if}
 							</div>
 						</td>
 						<td class="accion">
-							<span class="badge {getBadgeColor(registro.accion)}">
+							<span
+								class="badge {getBadgeColor(registro.accion)}"
+							>
 								{traducirAccion(registro.accion)}
 							</span>
 						</td>
@@ -254,10 +357,10 @@
 							</span>
 						</td>
 						<td class="id-registro">
-							{registro.pk_afectada || 'N/A'}
+							{registro.pk_afectada || "N/A"}
 						</td>
 					</tr>
-					
+
 					{#if registrosExpandidos.has(registro.id_auditoria)}
 						<tr class="fila-detalles">
 							<td colspan="6">
@@ -266,21 +369,47 @@
 										{#if registro.valor_previo}
 											<div class="detalle-seccion">
 												<h4>📋 Valor Anterior</h4>
-												<pre class="valor-json">{#if registro.accion === "ACTUALIZAR"}{formatearValor(obtenerDiferencias(registro.valor_previo, registro.valor_nuevo).previo, registro.accion)}{:else}{formatearValor(registro.valor_previo, registro.accion)}{/if}</pre>
+												<pre
+													class="valor-json">{#if registro.accion === "ACTUALIZAR"}{formatearValor(
+															obtenerDiferencias(
+																registro.valor_previo,
+																registro.valor_nuevo,
+																registro.id_auditoria,
+															).previo,
+															registro.accion,
+														)}{:else}{formatearValor(
+															registro.valor_previo,
+															registro.accion,
+														)}{/if}</pre>
 											</div>
 										{/if}
-										
+
 										{#if registro.valor_nuevo}
 											<div class="detalle-seccion">
 												<h4>📝 Valor Nuevo</h4>
-												<pre class="valor-json">{#if registro.accion === "ACTUALIZAR"}{formatearValor(obtenerDiferencias(registro.valor_previo, registro.valor_nuevo).nuevo, registro.accion)}{:else}{formatearValor(registro.valor_nuevo, registro.accion)}{/if}</pre>
+												<pre
+													class="valor-json">{#if registro.accion === "ACTUALIZAR"}{formatearValor(
+															obtenerDiferencias(
+																registro.valor_previo,
+																registro.valor_nuevo,
+																registro.id_auditoria,
+															).nuevo,
+															registro.accion,
+														)}{:else}{formatearValor(
+															registro.valor_nuevo,
+															registro.accion,
+														)}{/if}</pre>
 											</div>
 										{/if}
 									</div>
-									
+
 									<div class="detalles-meta">
-										<span class="meta-item">🔢 ID Auditoría: {registro.id_auditoria}</span>
-										<span class="meta-item">🕐 Timestamp: {registro.creado_en}</span>
+										<span class="meta-item"
+											>🔢 ID Auditoría: {registro.id_auditoria}</span
+										>
+										<span class="meta-item"
+											>🕐 Timestamp: {registro.creado_en}</span
+										>
 									</div>
 								</div>
 							</td>
@@ -297,29 +426,33 @@
 			<div class="paginacion-info">
 				Página {paginaActual} de {totalPaginas}
 			</div>
-			
+
 			<div class="paginacion-controles">
-				<button 
+				<button
 					class="btn-pagina"
 					disabled={paginaActual === 1}
 					on:click={() => irAPagina(1)}
 				>
 					⏪ Primera
 				</button>
-				
-				<button 
+
+				<button
 					class="btn-pagina"
 					disabled={paginaActual === 1}
 					on:click={() => irAPagina(paginaActual - 1)}
 				>
 					◀ Anterior
 				</button>
-				
+
 				<!-- Números de página -->
 				{#each Array(Math.min(5, totalPaginas)) as _, i}
-					{@const pagina = Math.max(1, Math.min(totalPaginas - 4, paginaActual - 2)) + i}
+					{@const pagina =
+						Math.max(
+							1,
+							Math.min(totalPaginas - 4, paginaActual - 2),
+						) + i}
 					{#if pagina <= totalPaginas}
-						<button 
+						<button
 							class="btn-pagina-num"
 							class:activa={pagina === paginaActual}
 							on:click={() => irAPagina(pagina)}
@@ -328,16 +461,16 @@
 						</button>
 					{/if}
 				{/each}
-				
-				<button 
+
+				<button
 					class="btn-pagina"
 					disabled={paginaActual === totalPaginas}
 					on:click={() => irAPagina(paginaActual + 1)}
 				>
 					Siguiente ▶
 				</button>
-				
-				<button 
+
+				<button
 					class="btn-pagina"
 					disabled={paginaActual === totalPaginas}
 					on:click={() => irAPagina(totalPaginas)}
@@ -390,6 +523,12 @@
 
 	.tabla-wrapper {
 		overflow-x: auto;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.tabla-wrapper::-webkit-scrollbar {
+		display: none;
 	}
 
 	.tabla-auditoria {
@@ -513,7 +652,7 @@
 	}
 
 	.id-registro {
-		font-family: 'Courier New', monospace;
+		font-family: "Courier New", monospace;
 		color: #6b7280;
 		font-size: 0.9rem;
 	}
@@ -549,7 +688,7 @@
 		border: 1px solid #e5e7eb;
 		border-radius: 6px;
 		padding: 12px;
-		font-family: 'Courier New', monospace;
+		font-family: "Courier New", monospace;
 		font-size: 0.8rem;
 		color: #374151;
 		white-space: pre-wrap;
@@ -583,7 +722,8 @@
 		align-items: center;
 	}
 
-	.btn-pagina, .btn-pagina-num {
+	.btn-pagina,
+	.btn-pagina-num {
 		padding: 8px 12px;
 		border: 1px solid #d1d5db;
 		background: white;
@@ -594,7 +734,8 @@
 		transition: all 0.2s ease;
 	}
 
-	.btn-pagina:hover, .btn-pagina-num:hover {
+	.btn-pagina:hover,
+	.btn-pagina-num:hover {
 		background: #f3f4f6;
 		border-color: #9ca3af;
 	}

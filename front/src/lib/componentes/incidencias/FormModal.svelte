@@ -39,6 +39,12 @@
 <style>
 	.modal-body {
 		padding: 2rem;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-body::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal-footer {

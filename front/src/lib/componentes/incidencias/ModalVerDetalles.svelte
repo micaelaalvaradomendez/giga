@@ -167,6 +167,12 @@
 	.modal-detalle-body {
 		max-height: 85vh;
 		overflow-y: auto;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-detalle-body::-webkit-scrollbar {
+		display: none;
 	}
 
 	.detalle-header-badges {
@@ -179,6 +185,12 @@
 		padding: 2rem;
 		overflow-y: auto;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.detalle-content::-webkit-scrollbar {
+		display: none;
 	}
 
 	.loading-container {

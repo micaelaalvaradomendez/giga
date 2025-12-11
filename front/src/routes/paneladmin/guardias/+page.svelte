@@ -4,6 +4,8 @@
   import CalendarioBase from "$lib/componentes/calendarioBase.svelte";
   import { guardiasMainController } from "$lib/paneladmin/controllers/index.js";
 
+  import ModalDetalleDia from "$lib/componentes/admin/guardias/ModalDetalleDia.svelte";
+
   // Items de navegación
   const items = [
     {
@@ -82,7 +84,6 @@
 <section class="guardias-wrap">
   <header class="head">
     <h1>Planificación de Guardias</h1>
-    <p>Elegí una opción para comenzar o revisá el calendario</p>
   </header>
   <div class="grid-general">
     <div class="left">
@@ -147,58 +148,11 @@
 
 <!-- Modal para mostrar guardias de una fecha -->
 {#if $mostrarModal}
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <div class="modal-overlay" on:click={handleCerrarModal}>
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div class="modal-content" on:click|stopPropagation>
-      <div class="modal-header">
-        <h3>
-          Guardias del {guardiasMainController.formatearFecha(
-            $fechaSeleccionada,
-          )}
-        </h3>
-        <button class="close-button" on:click={handleCerrarModal}
-          >&times;</button
-        >
-      </div>
-      <div class="modal-body">
-        {#if $guardiasDeFecha.length > 0}
-          <!-- Agrupar por área y horario -->
-          {@const guardiasPorAreaHora =
-            guardiasMainController.agruparGuardiasPorAreaHora($guardiasDeFecha)}
-
-          <div class="guardias-lista">
-            {#each Object.entries(guardiasPorAreaHora) as [grupo, guardiasGrupo]}
-              <div class="grupo-area">
-                <h4 class="grupo-titulo">{grupo}</h4>
-                <div class="agentes-grupo">
-                  {#each guardiasGrupo as guardia}
-                    <div class="guardia-card">
-                      <div class="agente-info">
-                        <strong>{guardia.agente_nombre}</strong>
-                      </div>
-                      <div class="guardia-detalles">
-                        <span class="tipo tipo-{guardia.tipo}"
-                          >{guardia.tipo}</span
-                        >
-                        <span class="estado estado-{guardia.estado}"
-                          >{guardia.estado}</span
-                        >
-                      </div>
-                    </div>
-                  {/each}
-                </div>
-              </div>
-            {/each}
-          </div>
-        {:else}
-          <p>No hay guardias para esta fecha.</p>
-        {/if}
-      </div>
-    </div>
-  </div>
+  <ModalDetalleDia
+    fecha={$fechaSeleccionada}
+    guardias={$guardiasDeFecha}
+    on:close={handleCerrarModal}
+  />
 {/if}
 
 <style>
@@ -302,17 +256,6 @@
     100% {
       left: 100%;
     }
-  }
-  .head p {
-    color: #0d47a1;
-    font-weight: 600;
-    font-size: 16px;
-    margin-top: 0.5rem;
-    margin-bottom: 10px;
-    padding: 0.5rem 1rem;
-    background: #e3f2fd;
-    border-radius: 8px;
-    display: inline-flex;
   }
 
   .grid-general {
@@ -495,182 +438,8 @@
     border: 1px solid #fecaca;
   }
 
-  /* Modal */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .modal-content {
-    background: white;
-    border-radius: 12px;
-    padding: 0;
-    max-width: 700px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  }
-
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem;
-    border-bottom: 1px solid #eee;
-    background: #f8f9fa;
-    border-radius: 12px 12px 0 0;
-  }
-
-  .modal-header h3 {
-    margin: 0;
-    color: #333;
-    text-transform: capitalize;
-    font-size: 1.1rem;
-  }
-
-  .close-button {
-    background: none;
-    border: none;
-    font-size: 2rem;
-    color: #666;
-    cursor: pointer;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.2s;
-  }
-
-  .close-button:hover {
-    background: #e9ecef;
-    color: #333;
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-  }
-
-  .guardias-lista {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .grupo-area {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1rem;
-    background: #f8f9fa;
-  }
-
-  .grupo-titulo {
-    font-size: 1rem;
-    color: #1e40af;
-    margin: 0 0 1rem 0;
-    font-weight: 600;
-  }
-
-  .agentes-grupo {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .guardia-card {
-    background: white;
-    border-radius: 6px;
-    padding: 0.75rem;
-    border-left: 4px solid #1e40af;
-  }
-
-  .agente-info {
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
-    color: #333;
-  }
-
-  .agente-info strong {
-    color: #1e40af;
-  }
-
-  .guardia-detalles {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .tipo,
-  .estado {
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .tipo-regular {
-    background: #dbeafe;
-    color: #1e40af;
-  }
-
-  .tipo-especial {
-    background: #d1fae5;
-    color: #065f46;
-  }
-
-  .tipo-feriado {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-
-  .tipo-emergencia {
-    background: #fed7aa;
-    color: #9a3412;
-  }
-
-  .estado-planificada {
-    background: #e5e7eb;
-    color: #374151;
-  }
-
-  .estado-confirmada {
-    background: #dbeafe;
-    color: #1e40af;
-  }
-
-  .estado-completada {
-    background: #d1fae5;
-    color: #065f46;
-  }
-
-  .estado-cancelada {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-
   @media (max-width: 900px) {
-    .grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
     .estadisticas {
-      grid-template-columns: 1fr;
-    }
-  }
-  @media (max-width: 640px) {
-    .grid {
       grid-template-columns: 1fr;
     }
   }

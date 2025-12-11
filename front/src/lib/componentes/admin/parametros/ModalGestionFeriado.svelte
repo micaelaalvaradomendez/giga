@@ -36,7 +36,8 @@
 			esNacional = feriado.es_nacional || false;
 			esProvincial = feriado.es_provincial || false;
 			esLocal = feriado.es_local || false;
-			esMultiplesDias = fechaInicio && fechaFin && fechaInicio !== fechaFin;
+			esMultiplesDias =
+				fechaInicio && fechaFin && fechaInicio !== fechaFin;
 		} else {
 			// Modo creación
 			modoEdicion = false;
@@ -128,18 +129,24 @@
 		esProvincial = feriadoExistente.es_provincial || false;
 		esLocal = feriadoExistente.es_local || false;
 		esMultiplesDias = fechaInicio && fechaFin && fechaInicio !== fechaFin;
-		
+
 		// Establecer el feriado para edición
 		feriado = feriadoExistente;
 	}
 
 	async function eliminarFeriadoExistente(feriadoExistente) {
-		if (!confirm(`¿Estás seguro de que deseas eliminar el feriado "${feriadoExistente.nombre}"?`)) {
+		if (
+			!confirm(
+				`¿Estás seguro de que deseas eliminar el feriado "${feriadoExistente.nombre}"?`,
+			)
+		) {
 			return;
 		}
 
 		try {
-			await feriadosController.deleteFeriadoFromModal(feriadoExistente.id_feriado);
+			await feriadosController.deleteFeriadoFromModal(
+				feriadoExistente.id_feriado,
+			);
 			// El modal se cerrará automáticamente después de la eliminación exitosa
 		} catch (error) {
 			console.error("Error eliminando feriado existente:", error);
@@ -158,10 +165,19 @@
 				<h2>
 					{modoEdicion ? "Editar Feriado" : "Agregar Feriado"}
 					{#if existingFeriados.length > 0 && !modoEdicion}
-						<span class="existing-count">({existingFeriados.length} feriado{existingFeriados.length > 1 ? 's' : ''} existente{existingFeriados.length > 1 ? 's' : ''})</span>
+						<span class="existing-count"
+							>({existingFeriados.length} feriado{existingFeriados.length >
+							1
+								? "s"
+								: ""} existente{existingFeriados.length > 1
+								? "s"
+								: ""})</span
+						>
 					{/if}
 				</h2>
-				<button class="close-button" on:click={closeModal}>&times;</button>
+				<button class="close-button" on:click={closeModal}
+					>&times;</button
+				>
 			</div>
 			<div class="modal-body">
 				<!-- Mostrar feriados existentes si los hay -->
@@ -172,23 +188,36 @@
 							{#each existingFeriados as existingFeriado}
 								<div class="existing-item">
 									<div class="existing-info">
-										<span class="existing-name">{existingFeriado.nombre}</span>
-										<span class="existing-type">{existingFeriado.tipo_feriado}</span>
+										<span class="existing-name"
+											>{existingFeriado.nombre}</span
+										>
+										<span class="existing-type"
+											>{existingFeriado.tipo_feriado}</span
+										>
 										{#if existingFeriado.es_multiples_dias}
-											<span class="existing-duration">({existingFeriado.duracion_dias} días)</span>
+											<span class="existing-duration"
+												>({existingFeriado.duracion_dias}
+												días)</span
+											>
 										{/if}
 									</div>
 									<div class="existing-actions">
-										<button 
-											class="btn-edit-existing" 
-											on:click={() => editarFeriadoExistente(existingFeriado)}
+										<button
+											class="btn-edit-existing"
+											on:click={() =>
+												editarFeriadoExistente(
+													existingFeriado,
+												)}
 											title="Editar este feriado"
 										>
 											✏️
 										</button>
-										<button 
-											class="btn-delete-existing" 
-											on:click={() => eliminarFeriadoExistente(existingFeriado)}
+										<button
+											class="btn-delete-existing"
+											on:click={() =>
+												eliminarFeriadoExistente(
+													existingFeriado,
+												)}
 											title="Eliminar este feriado"
 										>
 											🗑️
@@ -225,18 +254,30 @@
 
 				<!-- Tipo de feriado -->
 				<div class="form-group">
-					<label>Tipo de Feriado</label>
+					<label for="tipo">Tipo de Feriado</label>
 					<div class="checkbox-group">
 						<label class="checkbox-label">
-							<input type="checkbox" bind:checked={esNacional} disabled={isSaving || isDeleting} />
+							<input
+								type="checkbox"
+								bind:checked={esNacional}
+								disabled={isSaving || isDeleting}
+							/>
 							Nacional
 						</label>
 						<label class="checkbox-label">
-							<input type="checkbox" bind:checked={esProvincial} disabled={isSaving || isDeleting} />
+							<input
+								type="checkbox"
+								bind:checked={esProvincial}
+								disabled={isSaving || isDeleting}
+							/>
 							Provincial
 						</label>
 						<label class="checkbox-label">
-							<input type="checkbox" bind:checked={esLocal} disabled={isSaving || isDeleting} />
+							<input
+								type="checkbox"
+								bind:checked={esLocal}
+								disabled={isSaving || isDeleting}
+							/>
 							Local
 						</label>
 					</div>
@@ -245,7 +286,12 @@
 				<!-- Opciones de fecha -->
 				<div class="form-group">
 					<label class="checkbox-label">
-						<input type="checkbox" bind:checked={esMultiplesDias} on:change={handleMultipleDaysToggle} disabled={isSaving || isDeleting} />
+						<input
+							type="checkbox"
+							bind:checked={esMultiplesDias}
+							on:change={handleMultipleDaysToggle}
+							disabled={isSaving || isDeleting}
+						/>
 						Feriado de múltiples días
 					</label>
 				</div>
@@ -253,7 +299,9 @@
 				<!-- Fechas -->
 				<div class="form-row">
 					<div class="form-group">
-						<label for="fecha-inicio">Fecha {esMultiplesDias ? 'de Inicio' : ''}</label>
+						<label for="fecha-inicio"
+							>Fecha {esMultiplesDias ? "de Inicio" : ""}</label
+						>
 						<input
 							id="fecha-inicio"
 							type="date"
@@ -277,28 +325,41 @@
 					{/if}
 				</div>
 
-			{#if esMultiplesDias && fechaInicio && fechaFin}
-				{@const duracion = Math.ceil((new Date(fechaFin) - new Date(fechaInicio)) / (1000 * 60 * 60 * 24)) + 1}
-				<div class="duration-info">
-					<span class="duration-text">Duración: {duracion} día{duracion > 1 ? 's' : ''}</span>
-				</div>
-			{/if}
+				{#if esMultiplesDias && fechaInicio && fechaFin}
+					{@const duracion =
+						Math.ceil(
+							(new Date(fechaFin) - new Date(fechaInicio)) /
+								(1000 * 60 * 60 * 24),
+						) + 1}
+					<div class="duration-info">
+						<span class="duration-text"
+							>Duración: {duracion} día{duracion > 1
+								? "s"
+								: ""}</span
+						>
+					</div>
+				{/if}
 
-			<!-- Opción de repetir anualmente (solo para feriados nuevos) -->
-			{#if !modoEdicion}
-				<div class="form-group">
-					<label class="checkbox-label">
-						<input type="checkbox" bind:checked={repetirAnualmente} disabled={isSaving || isDeleting} />
-						Repetir este feriado anualmente (próximos 5 años)
-					</label>
-					{#if repetirAnualmente}
-						<div class="help-text">
-							Se creará este feriado automáticamente para los próximos 5 años en las mismas fechas.
-						</div>
-					{/if}
-				</div>
-			{/if}
-		</div>
+				<!-- Opción de repetir anualmente (solo para feriados nuevos) -->
+				{#if !modoEdicion}
+					<div class="form-group">
+						<label class="checkbox-label">
+							<input
+								type="checkbox"
+								bind:checked={repetirAnualmente}
+								disabled={isSaving || isDeleting}
+							/>
+							Repetir este feriado anualmente (próximos 5 años)
+						</label>
+						{#if repetirAnualmente}
+							<div class="help-text">
+								Se creará este feriado automáticamente para los
+								próximos 5 años en las mismas fechas.
+							</div>
+						{/if}
+					</div>
+				{/if}
+			</div>
 			<div class="modal-actions">
 				<!-- Botón de Eliminar -->
 				{#if feriado}
@@ -355,6 +416,12 @@
 		width: 90%;
 		max-width: 500px;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-content::-webkit-scrollbar {
+		display: none;
 	}
 	.modal-header {
 		display: flex;
@@ -390,9 +457,7 @@
 		border-radius: 8px;
 		box-sizing: border-box;
 	}
-	.form-group input[readonly] {
-		background-color: #f0f0f0;
-	}
+
 	.modal-actions {
 		display: flex;
 		justify-content: flex-end; /* Alinear elementos a los extremos */
@@ -472,7 +537,8 @@
 		gap: 0.25rem;
 	}
 
-	.btn-edit-existing, .btn-delete-existing {
+	.btn-edit-existing,
+	.btn-delete-existing {
 		background: none;
 		border: none;
 		padding: 0.25rem 0.5rem;

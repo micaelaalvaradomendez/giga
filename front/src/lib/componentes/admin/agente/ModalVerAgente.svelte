@@ -1,5 +1,5 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from "svelte";
 
 	export let agente = null;
 	export let isOpen = false;
@@ -8,16 +8,16 @@
 
 	function cerrarModal() {
 		isOpen = false;
-		dispatch('cerrar');
+		dispatch("cerrar");
 	}
 
 	function formatearFecha(fecha) {
-		if (!fecha) return 'N/A';
-		return new Date(fecha).toLocaleDateString('es-AR');
+		if (!fecha) return "N/A";
+		return new Date(fecha).toLocaleDateString("es-AR");
 	}
 
 	function formatearHora(hora) {
-		if (!hora) return 'N/A';
+		if (!hora) return "N/A";
 		return hora;
 	}
 
@@ -25,7 +25,7 @@
 		if (!direccion) return;
 		const direccionCodificada = encodeURIComponent(direccion);
 		const urlMaps = `https://www.google.com/maps/search/?api=1&query=${direccionCodificada}`;
-		window.open(urlMaps, '_blank');
+		window.open(urlMaps, "_blank");
 	}
 </script>
 
@@ -40,7 +40,7 @@
 				<h2>Detalles del Agente</h2>
 				<button class="btn-close" on:click={cerrarModal}>×</button>
 			</div>
-			
+
 			<div class="modal-body">
 				<div class="info-grid">
 					<!-- Información Personal -->
@@ -48,7 +48,9 @@
 						<h3>Información Personal</h3>
 						<div class="info-row">
 							<span class="label">Nombre Completo:</span>
-							<span class="value">{agente.nombre} {agente.apellido}</span>
+							<span class="value"
+								>{agente.nombre} {agente.apellido}</span
+							>
 						</div>
 						<div class="info-row">
 							<span class="label">DNI:</span>
@@ -56,29 +58,41 @@
 						</div>
 						<div class="info-row">
 							<span class="label">CUIL:</span>
-							<span class="value">{agente.cuil || 'N/A'}</span>
+							<span class="value">{agente.cuil || "N/A"}</span>
 						</div>
 						<div class="info-row">
 							<span class="label">Fecha de Nacimiento:</span>
-							<span class="value">{formatearFecha(agente.fecha_nacimiento)}</span>
+							<span class="value"
+								>{formatearFecha(agente.fecha_nacimiento)}</span
+							>
 						</div>
 						<div class="info-row">
 							<span class="label">Email:</span>
-							<span class="value email-value" title={agente.email}>{agente.email}</span>
+							<span class="value email-value" title={agente.email}
+								>{agente.email}</span
+							>
 						</div>
 						<div class="info-row">
 							<span class="label">Teléfono:</span>
-							<span class="value">{agente.telefono || 'N/A'}</span>
+							<span class="value">{agente.telefono || "N/A"}</span
+							>
 						</div>
 						<div class="info-row">
 							<span class="label">Dirección:</span>
 							<span class="value direccion-value">
 								{#if agente.direccion_completa}
-									<span class="direccion-text" title={agente.direccion_completa}>{agente.direccion_completa}</span>
-									<button 
-										class="btn-maps" 
+									<span
+										class="direccion-text"
+										title={agente.direccion_completa}
+										>{agente.direccion_completa}</span
+									>
+									<button
+										class="btn-maps"
 										title="Ver en Google Maps"
-										on:click={() => abrirGoogleMaps(agente.direccion_completa)}
+										on:click={() =>
+											abrirGoogleMaps(
+												agente.direccion_completa,
+											)}
 									>
 										🗺️
 									</button>
@@ -94,7 +108,7 @@
 						<h3>Información Laboral</h3>
 						<div class="info-row">
 							<span class="label">Legajo:</span>
-							<span class="value">{agente.legajo || 'N/A'}</span>
+							<span class="value">{agente.legajo || "N/A"}</span>
 						</div>
 						<div class="info-row">
 							<span class="label">Roles:</span>
@@ -102,12 +116,20 @@
 								<div class="roles-list">
 									{#each agente.roles as rol}
 										<div class="role-card">
-											<span class="badge badge-role">{rol.nombre}</span>
+											<span class="badge badge-role"
+												>{rol.nombre}</span
+											>
 											{#if rol.descripcion}
-												<small class="area-text">{rol.descripcion}</small>
+												<small class="area-text"
+													>{rol.descripcion}</small
+												>
 											{/if}
 											{#if rol.asignado_en}
-												<small class="fecha-text">Desde: {formatearFecha(rol.asignado_en)}</small>
+												<small class="fecha-text"
+													>Desde: {formatearFecha(
+														rol.asignado_en,
+													)}</small
+												>
 											{/if}
 										</div>
 									{/each}
@@ -120,7 +142,10 @@
 							<span class="label">Agrupación:</span>
 							<span class="value">
 								{#if agente.agrupacion_display}
-									<span class="badge badge-{agente.agrupacion?.toLowerCase()}">{agente.agrupacion_display}</span>
+									<span
+										class="badge badge-{agente.agrupacion?.toLowerCase()}"
+										>{agente.agrupacion_display}</span
+									>
 								{:else}
 									N/A
 								{/if}
@@ -130,7 +155,9 @@
 							<span class="label">Área:</span>
 							<span class="value">
 								{#if agente.area_nombre}
-									<span class="badge badge-area">{agente.area_nombre}</span>
+									<span class="badge badge-area"
+										>{agente.area_nombre}</span
+									>
 								{:else}
 									Sin área asignada
 								{/if}
@@ -138,23 +165,33 @@
 						</div>
 						<div class="info-row">
 							<span class="label">Categoría:</span>
-							<span class="value">{agente.categoria_revista || 'N/A'}</span>
+							<span class="value"
+								>{agente.categoria_revista || "N/A"}</span
+							>
 						</div>
 						<div class="info-row">
 							<span class="label">Horario Entrada:</span>
-							<span class="value">{formatearHora(agente.horario_entrada)}</span>
+							<span class="value"
+								>{formatearHora(agente.horario_entrada)}</span
+							>
 						</div>
 						<div class="info-row">
 							<span class="label">Horario Salida:</span>
-							<span class="value">{formatearHora(agente.horario_salida)}</span>
+							<span class="value"
+								>{formatearHora(agente.horario_salida)}</span
+							>
 						</div>
 						<div class="info-row">
 							<span class="label">Estado:</span>
 							<span class="value">
 								{#if agente.activo}
-									<span class="badge badge-activo">✅ Activo</span>
+									<span class="badge badge-activo"
+										>✅ Activo</span
+									>
 								{:else}
-									<span class="badge badge-inactivo">❌ Inactivo</span>
+									<span class="badge badge-inactivo"
+										>❌ Inactivo</span
+									>
 								{/if}
 							</span>
 						</div>
@@ -163,7 +200,9 @@
 			</div>
 
 			<div class="modal-footer">
-				<button class="btn btn-secondary" on:click={cerrarModal}>Cerrar</button>
+				<button class="btn btn-secondary" on:click={cerrarModal}
+					>Cerrar</button
+				>
 			</div>
 		</div>
 	</div>
@@ -191,6 +230,12 @@
 		max-height: 90vh;
 		overflow-y: auto;
 		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-content::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal-header {

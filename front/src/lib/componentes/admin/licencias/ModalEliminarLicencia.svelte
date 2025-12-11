@@ -1,6 +1,6 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
-	import { formatearFecha } from '$lib/paneladmin/controllers/licenciasController.js';
+	import { createEventDispatcher } from "svelte";
+	import { formatearFecha } from "$lib/paneladmin/controllers/licenciasController.js";
 
 	export let show = false;
 	export let licencia = null;
@@ -9,11 +9,11 @@
 	const dispatch = createEventDispatcher();
 
 	function cancelar() {
-		dispatch('cancelar');
+		dispatch("cancelar");
 	}
 
 	function confirmar() {
-		dispatch('confirmar');
+		dispatch("confirmar");
 	}
 </script>
 
@@ -22,11 +22,15 @@
 		<div class="modal-contenido">
 			<div class="modal-header">
 				<h5>🗑️ Eliminar Licencia</h5>
-				<button type="button" class="btn-close" on:click={cancelar}>&times;</button>
+				<button type="button" class="btn-close" on:click={cancelar}
+					>&times;</button
+				>
 			</div>
 			<div class="modal-body">
 				<p>
-					¿Estás seguro de que deseas eliminar la licencia de <strong>{licencia.agente_nombre}</strong>?
+					¿Estás seguro de que deseas eliminar la licencia de <strong
+						>{licencia.agente_nombre}</strong
+					>?
 				</p>
 				<div class="licencia-info">
 					<div class="info-row">
@@ -35,10 +39,13 @@
 					</div>
 					<div class="info-row">
 						<strong>Período:</strong>
-						{formatearFecha(licencia.fecha_desde)} al {formatearFecha(licencia.fecha_hasta)}
+						{formatearFecha(licencia.fecha_desde)} al {formatearFecha(
+							licencia.fecha_hasta,
+						)}
 					</div>
 					<div class="info-row">
-						<strong>Estado:</strong> {licencia.estado}
+						<strong>Estado:</strong>
+						{licencia.estado}
 					</div>
 					<div class="info-row">
 						<strong>Días:</strong>
@@ -46,7 +53,8 @@
 					</div>
 				</div>
 				<p class="warning-text">
-					⚠️ Esta acción no se puede deshacer y eliminará permanentemente la licencia del sistema.
+					⚠️ Esta acción no se puede deshacer y eliminará
+					permanentemente la licencia del sistema.
 				</p>
 				<div class="modal-footer">
 					<button class="btn-secondary" on:click={cancelar}>
@@ -89,8 +97,13 @@
 		overflow-y: auto;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
 	}
 
+	.modal-contenido::-webkit-scrollbar {
+		display: none;
+	}
 	.modal-header {
 		background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
 		color: white;

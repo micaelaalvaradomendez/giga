@@ -603,8 +603,13 @@
 
     .calendar-grid-wrapper {
         overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
         width: 100%;
+    }
+
+    .calendar-grid-wrapper::-webkit-scrollbar {
+        display: none;
     }
 
     .calendar-grid {
@@ -1043,6 +1048,12 @@
         padding: 1.5rem;
         overflow-y: auto;
         flex: 1;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .modal-body::-webkit-scrollbar {
+        display: none;
     }
 
     .modal-fecha {

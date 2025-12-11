@@ -689,6 +689,12 @@
 		border-radius: 24px;
 		box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
 		background: white;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.table-container::-webkit-scrollbar {
+		display: none;
 	}
 
 	.table-container::-webkit-scrollbar {

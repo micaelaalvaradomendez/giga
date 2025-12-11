@@ -11,8 +11,8 @@
 	export let show = false;
 	export let tiposLicencia = [];
 	export let areas = [];
-	export let userRol = null; 
-	export let userArea = null; 
+	export let userRol = null;
+	export let userArea = null;
 
 	let userInfo = null;
 
@@ -32,7 +32,7 @@
 	let agentesDelArea = [];
 	let cargandoAgentes = false;
 	let enviando = false;
-	let areasDisponibles = []; 
+	let areasDisponibles = [];
 
 	let mostrandoConfirmacion = false;
 	let tituloConfirmacion = "";
@@ -44,16 +44,29 @@
 	$: {
 		if (userRol) {
 			// Si es administrador, puede ver todas las áreas
-			if (userRol.toLowerCase() === 'administrador') {
+			if (userRol.toLowerCase() === "administrador") {
 				areasDisponibles = areas;
-			} else if (userRol.toLowerCase() === 'director' || userRol.toLowerCase() === 'jefatura') {
+			} else if (
+				userRol.toLowerCase() === "director" ||
+				userRol.toLowerCase() === "jefatura"
+			) {
 				// Director y Jefatura solo ven su área
-				areasDisponibles = areas.filter(area => area.id_area === userArea);
-				console.log(`🏢 Filtrando áreas para ${userRol}: área ${userArea} encontrada:`, areasDisponibles.length > 0);
+				areasDisponibles = areas.filter(
+					(area) => area.id_area === userArea,
+				);
+				console.log(
+					`🏢 Filtrando áreas para ${userRol}: área ${userArea} encontrada:`,
+					areasDisponibles.length > 0,
+				);
 			} else {
 				areasDisponibles = [];
 			}
-			console.log(`📍 Áreas disponibles para ${userRol}:`, areasDisponibles.length, 'de', areas.length);
+			console.log(
+				`📍 Áreas disponibles para ${userRol}:`,
+				areasDisponibles.length,
+				"de",
+				areas.length,
+			);
 		} else {
 			areasDisponibles = areas;
 		}
@@ -98,7 +111,12 @@
 
 	async function cargarAgentesPorArea(areaId) {
 		console.log("🔄 Cargando agentes para área:", areaId);
-		console.log("🔍 Rol del usuario:", userRol, "Área del usuario:", userArea);
+		console.log(
+			"🔍 Rol del usuario:",
+			userRol,
+			"Área del usuario:",
+			userArea,
+		);
 		if (!areaId) {
 			agentesDelArea = [];
 			return;
@@ -244,7 +262,9 @@
 		<div class="modal-contenido">
 			<div class="modal-header">
 				<h5>Asignar Nueva Licencia</h5>
-				<button type="button" class="btn-close" on:click={cerrarModal}>&times;</button>
+				<button type="button" class="btn-close" on:click={cerrarModal}
+					>&times;</button
+				>
 			</div>
 			<div class="modal-body">
 				<form on:submit|preventDefault={handleAsignarLicencia}>
@@ -308,7 +328,8 @@
 							bind:value={formLicencia.id_tipo_licencia}
 							required
 						>
-							<option value="">Seleccione tipo de licencia</option>
+							<option value="">Seleccione tipo de licencia</option
+							>
 							{#each tiposLicencia as tipo}
 								<option value={tipo.id_tipo_licencia}
 									>{tipo.codigo} - {tipo.descripcion}</option
@@ -440,6 +461,12 @@
 		overflow-y: auto;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-contenido::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal-header {

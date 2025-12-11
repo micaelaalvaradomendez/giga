@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from personas.models import Agente, SesionActiva
 from django.contrib.sessions.models import Session
+from django.db import transaction
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ def cerrar_todas_sesiones(request):
     """
     Cierra todas las sesiones activas de un agente.
     Usado cuando el usuario recibe email de alerta y quiere cerrar todo.
+    Ahora: elimina también las filas de SesionActiva para no acumular datos.
     """
     try:
         # Obtener agente_id del token (simplificado)
@@ -52,14 +54,15 @@ def cerrar_todas_sesiones(request):
                 'sesiones_cerradas': 0
             })
         
-        # Obtener session_keys antes de marcar como inactivas
+        # Obtener session_keys antes de eliminarlas
         session_keys = list(sesiones_activas.values_list('session_key', flat=True))
         
-        # Marcar todas como inactivas
-        sesiones_activas.update(activa=False)
-        
-        # Eliminar de django_session
-        Session.objects.filter(session_key__in=session_keys).delete()
+        # En una transacción: eliminar sesiones Django y filas de SesionActiva
+        with transaction.atomic():
+            # Eliminar de django_session
+            Session.objects.filter(session_key__in=session_keys).delete()
+            # Eliminar registros de SesionActiva para liberar espacio
+            SesionActiva.objects.filter(session_key__in=session_keys).delete()
         
         # Registrar en auditoría
         from personas.auth_views import registrar_auditoria
