@@ -129,7 +129,7 @@ const slides = [
                         <!-- QR Code -->
                         <div style="text-align:center;">
                             <h3 style="color:var(--secondary-color); margin-bottom:15px;">Acceso Web</h3>
-                            <img src="imagenes/qr.png" alt="QR Code GIGA" style="width:200px; height:200px; border:3px solid var(--accent-color); border-radius:10px; box-shadow:0 0 20px rgba(255,42,109,0.3);">
+                            <img src="imagenes/qr-pag.png" alt="QR Code GIGA" style="width:200px; height:200px; border:3px solid var(--accent-color); border-radius:10px; box-shadow:0 0 20px rgba(255,42,109,0.3);">
                             <p style="margin-top:10px; font-size:1.1rem; color:#05d9e8;">giga-untdf.up.railway.app</p>
                         </div>
                         
