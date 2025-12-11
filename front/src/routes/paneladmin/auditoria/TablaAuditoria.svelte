@@ -62,7 +62,7 @@
 		// For small objects, compare recursively without JSON.stringify
 		if (keysA.length <= 10) {
 			for (const key of keysA) {
-				if (!keysB.includes(key) || !valuesEqual(a[key], b[key])) return false;
+				if (!(key in b) || !valuesEqual(a[key], b[key])) return false;
 			}
 			return true;
 		}

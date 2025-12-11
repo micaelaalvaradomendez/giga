@@ -47,8 +47,6 @@
 		const actividadDiaria = Array(7).fill(0);
 		const fechaLabels = [];
 		
-		// Pre-calculate day timestamps for activity buckets
-		const dayBuckets = [];
 		for (let i = 6; i >= 0; i--) {
 			const fecha = new Date();
 			fecha.setDate(fecha.getDate() - i);
@@ -57,7 +55,6 @@
 				weekday: 'short', 
 				day: 'numeric' 
 			}));
-			dayBuckets.push(fecha.getTime());
 		}
 
 		// One day in milliseconds
