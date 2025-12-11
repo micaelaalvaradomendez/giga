@@ -314,51 +314,69 @@
 								<span>Cargando...</span>
 							</div>
 						{:else if asistenciaHoy}
-							<div class="asistencia-estado">
-								<div
-									class="estado-item {asistenciaHoy.tiene_entrada
-										? 'marcado'
-										: 'pendiente'}"
-								>
-									<span class="estado-icon"
-										>{asistenciaHoy.tiene_entrada
-											? "✓"
-											: "○"}</span
-									>
-									<div class="estado-info">
-										<span class="estado-label">Entrada</span
+							{#if asistenciaHoy.es_dia_no_laborable}
+								<div class="dia-no-laborable">
+									<div class="icono-no-laborable">🏖️</div>
+									<h3>Día No Laborable</h3>
+									<p class="motivo-no-laborable">
+										Hoy es <strong
+											>{asistenciaHoy.motivo_no_laborable}</strong
 										>
-										<span class="estado-hora">
-											{asistenciaHoy.hora_entrada
-												? formatearHora(
-														asistenciaHoy.hora_entrada,
-													)
-												: "Sin marcar"}
-										</span>
-									</div>
+									</p>
+									<p class="info-no-laborable">
+										No se registra asistencia en este día.
+									</p>
 								</div>
-								<div
-									class="estado-item {asistenciaHoy.tiene_salida
-										? 'marcado'
-										: 'pendiente'}"
-								>
-									<span class="estado-icon"
-										>{asistenciaHoy.tiene_salida
-											? "✓"
-											: "○"}</span
+							{:else}
+								<div class="asistencia-estado">
+									<div
+										class="estado-item {asistenciaHoy.tiene_entrada
+											? 'marcado'
+											: 'pendiente'}"
 									>
-									<div class="estado-info">
-										<span class="estado-label">Salida</span>
-										<span class="estado-hora">
-											{asistenciaHoy.hora_salida
-												? formatearHora(
-														asistenciaHoy.hora_salida,
-													)
-												: "Sin marcar"}
-										</span>
+										<span class="estado-icon"
+											>{asistenciaHoy.tiene_entrada
+												? "✓"
+												: "○"}</span
+										>
+										<div class="estado-info">
+											<span class="estado-label"
+												>Entrada</span
+											>
+											<span class="estado-hora">
+												{asistenciaHoy.hora_entrada
+													? formatearHora(
+															asistenciaHoy.hora_entrada,
+														)
+													: "Sin marcar"}
+											</span>
+										</div>
+									</div>
+									<div
+										class="estado-item {asistenciaHoy.tiene_salida
+											? 'marcado'
+											: 'pendiente'}"
+									>
+										<span class="estado-icon"
+											>{asistenciaHoy.tiene_salida
+												? "✓"
+												: "○"}</span
+										>
+										<div class="estado-info">
+											<span class="estado-label"
+												>Salida</span
+											>
+											<span class="estado-hora">
+												{asistenciaHoy.hora_salida
+													? formatearHora(
+															asistenciaHoy.hora_salida,
+														)
+													: "Sin marcar"}
+											</span>
+										</div>
 									</div>
 								</div>
-							</div>
+							{/if}
 						{:else}
 							<div class="empty-state">
 								<span class="empty-icon">📋</span>
@@ -1206,5 +1224,43 @@
 		.dashboard-header {
 			margin-bottom: 1rem;
 		}
+	}
+
+	/* Día no laborable styles */
+	.dia-no-laborable {
+		text-align: center;
+		padding: 1.5rem;
+		background: linear-gradient(135deg, #e3f2fd 0%, #f1f8e9 100%);
+		border-radius: 12px;
+		border: 2px solid #4caf50;
+	}
+
+	.icono-no-laborable {
+		font-size: 3rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.dia-no-laborable h3 {
+		color: #2e7d32;
+		margin: 0 0 0.5rem 0;
+		font-size: 1.1rem;
+		font-weight: 600;
+	}
+
+	.motivo-no-laborable {
+		font-size: 1rem;
+		margin-bottom: 0.25rem;
+		color: #2e7d32;
+	}
+
+	.motivo-no-laborable strong {
+		color: #1b5e20;
+		font-weight: 600;
+	}
+
+	.info-no-laborable {
+		font-size: 0.9rem;
+		color: #558b2f;
+		margin: 0;
 	}
 </style>

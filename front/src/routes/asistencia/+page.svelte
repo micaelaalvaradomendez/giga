@@ -158,7 +158,7 @@
 	<!-- Estado actual -->
 	{#if estado.es_dia_no_laborable}
 		<div class="estado-card no-laborable">
-			<h2>� Día No Laborable</h2>
+			<h2>Día No Laborable</h2>
 			<div class="mensaje-no-laborable">
 				<div class="icono-grande">🏖️</div>
 				<p>Hoy es <strong>{estado.motivo_no_laborable}</strong></p>
