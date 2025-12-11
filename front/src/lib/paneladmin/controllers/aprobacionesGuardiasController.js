@@ -153,9 +153,21 @@ class AprobacionesGuardiasController {
 			console.log('📦 Respuesta getCronogramasAprobadas:', response);
 
 			const aprobadas = response.data?.results || response.data || [];
-			this.cronogramasAprobadas.set(aprobadas);
 
-			console.log('✅ Cronogramas publicadas cargadas:', aprobadas.length);
+			// Precalcular si cada cronograma puede ser despublicado
+			const aprobadasConValidacion = await Promise.all(
+				aprobadas.map(async (cronograma) => {
+					const tieneGuardiaPasada = await this.cronogramaTieneGuardiaPasada(cronograma);
+					return {
+						...cronograma,
+						puedeDespublicar: !tieneGuardiaPasada
+					};
+				})
+			);
+
+			this.cronogramasAprobadas.set(aprobadasConValidacion);
+
+			console.log('✅ Cronogramas publicadas cargadas:', aprobadasConValidacion.length);
 		} catch (e) {
 			this.error.set('Error al cargar los cronogramas publicados');
 			console.error('❌ Error cargando aprobadas:', e);
@@ -569,6 +581,14 @@ class AprobacionesGuardiasController {
 	 * @param {Object} cronograma - Cronograma a despublicar
 	 */
 	async despublicar(cronograma) {
+		// Verificar si el cronograma tiene guardias que ya pasaron
+		const tieneGuardiaPasada = await this.cronogramaTieneGuardiaPasada(cronograma);
+
+		if (tieneGuardiaPasada) {
+			alert('No se puede despublicar un cronograma que tiene guardias que ya ocurrieron. Solo se pueden despublicar cronogramas con guardias futuras.');
+			return;
+		}
+
 		if (!confirm('¿Está seguro de despublicar este cronograma? Volverá al estado "pendiente" y podrá editarse o eliminarse.')) {
 			return;
 		}
@@ -649,6 +669,58 @@ class AprobacionesGuardiasController {
 	async recargar() {
 		console.log('🔄 Recargando datos de aprobaciones...');
 		await this.cargarDatos();
+	}
+
+	/**
+	 * Verifica si un cronograma tiene alguna guardia cuya fecha ya pasó
+	 * @param {Object} cronograma - Cronograma a verificar
+	 * @returns {Promise<boolean>} - true si tiene guardias pasadas, false si todas son futuras
+	 */
+	async cronogramaTieneGuardiaPasada(cronograma) {
+		try {
+			let token;
+			this.token.subscribe(t => token = t)();
+
+			// Obtener las guardias del cronograma
+			const response = await guardiasService.getGuardiasPorCronograma(cronograma.id_cronograma, token);
+
+			let guardias = [];
+			if (response.data) {
+				if (Array.isArray(response.data)) {
+					guardias = response.data;
+				} else if (response.data.guardias && Array.isArray(response.data.guardias)) {
+					guardias = response.data.guardias;
+				} else if (response.data.results && Array.isArray(response.data.results)) {
+					guardias = response.data.results;
+				}
+			}
+
+			// Si no hay guardias, permitir despublicar
+			if (guardias.length === 0) {
+				return false;
+			}
+
+			// Obtener la fecha actual (solo la fecha, sin hora)
+			const hoy = new Date();
+			hoy.setHours(0, 0, 0, 0);
+
+			// Verificar si alguna guardia ya pasó
+			const tieneGuardiaPasada = guardias.some(guardia => {
+				if (!guardia.fecha) return false;
+
+				// Crear objeto Date desde la fecha de la guardia
+				const fechaGuardia = new Date(guardia.fecha + 'T00:00:00');
+
+				// Retornar true si la fecha de la guardia es anterior a hoy
+				return fechaGuardia < hoy;
+			});
+
+			return tieneGuardiaPasada;
+		} catch (e) {
+			console.error('❌ Error verificando guardias pasadas:', e);
+			// En caso de error, por seguridad no permitir despublicar
+			return true;
+		}
 	}
 }
 

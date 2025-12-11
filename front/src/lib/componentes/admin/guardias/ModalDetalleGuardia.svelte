@@ -103,15 +103,25 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <button
-                                                class="btn-icon btn-danger-icon"
-                                                on:click={() =>
-                                                    eliminarGuardia(guardia)}
-                                                disabled={loading}
-                                                title="Eliminar guardia"
-                                            >
-                                                🗑️
-                                            </button>
+                                            {#if cronograma?.estado !== "publicada"}
+                                                {@const hoy = new Date()}
+                                                {@const fechaGuardia = new Date(guardia.fecha + 'T00:00:00')}
+                                                {#if fechaGuardia >= hoy}
+                                                    <button
+                                                        class="btn-icon btn-danger-icon"
+                                                        on:click={() =>
+                                                            eliminarGuardia(guardia)}
+                                                        disabled={loading}
+                                                        title="Eliminar guardia"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                {:else}
+                                                    <span class="text-muted" title="No se puede eliminar una guardia que ya ocurrió">-</span>
+                                                {/if}
+                                            {:else}
+                                                <span class="text-muted" title="No se pueden eliminar guardias de un cronograma publicado">-</span>
+                                            {/if}
                                         </td>
                                     </tr>
                                 {/each}

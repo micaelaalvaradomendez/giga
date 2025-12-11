@@ -379,10 +379,12 @@
               >
                 📋 Ver Detalles
               </button>
-              {#if cronograma.estado === "publicada"}
+              {#if cronograma.estado === "publicada" && cronograma.puedeDespublicar}
                 <button
                   class="btn btn-warning"
                   on:click={() => handleDespublicar(cronograma)}
+                  disabled={$loading}
+                  title="Despublicar cronograma"
                 >
                   📤 Despublicar
                 </button>
@@ -877,8 +879,13 @@
     border: 1px solid #d97706;
   }
 
-  .btn-warning:hover {
+  .btn-warning:hover:not(:disabled) {
     background: #d97706;
     border-color: #b45309;
+  }
+
+  .btn-warning:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 </style>
