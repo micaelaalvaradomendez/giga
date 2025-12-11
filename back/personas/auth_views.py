@@ -3,6 +3,7 @@ Vistas de autenticación para el sistema GIGA
 Compatible con Database First y nueva estructura de BD
 """
 import json
+import os
 import secrets
 import string
 from datetime import datetime
@@ -27,22 +28,74 @@ from common.permissions import IsAuthenticatedGIGA
 
 logger = logging.getLogger(__name__)
 
-def registrar_auditoria(agente_id, accion, detalle=""):
-    """Registrar acción en auditoría"""
+# Lista blanca de acciones que SÍ queremos auditar por defecto.
+# Definible por variable de entorno AUDIT_ALLOWLIST separada por comas.
+_DEFAULT_AUDIT_ALLOWLIST = {
+    # Fallos de seguridad
+    'LOGIN_FALLIDO',
+    'CAMBIO_EMAIL_FALLIDO',
+    'CAMBIO_PASSWORD_FALLIDO',
+    'RECUPERACION_FALLIDA',
+    # Acciones administrativas críticas
+    'CIERRE_MASIVO_SESIONES',
+    'SESION_CERRADA_POR_LIMITE',
+    'CREAR_USUARIO',
+    'ELIMINAR_USUARIO',
+    'CAMBIO_ROL',
+    'CAMBIO_PERMISOS',
+    # Cambios de credenciales (seguridad crítica)
+    'RESET_PASSWORD',
+    'RECUPERACION_PASSWORD',
+    'CAMBIO_EMAIL_EXITOSO',
+    'CAMBIO_PASSWORD_EXITOSO',
+}
+
+
+def _get_audit_allowlist():
+    """Obtiene la lista de acciones permitidas desde env o usa default."""
+    env = os.getenv('AUDIT_ALLOWLIST', '')
+    if env:
+        return set([a.strip() for a in env.split(',') if a.strip()])
+    return _DEFAULT_AUDIT_ALLOWLIST
+
+
+def _safe_json_dump(payload, max_len=2048):
+    """Serializa payload a JSON truncando si excede max_len."""
     try:
-        # Crear registro de auditoría básico
-        import json as json_module
+        s = json.dumps(payload, ensure_ascii=False)
+        if len(s) > max_len:
+            # Truncar y añadir indicación
+            return s[:max_len] + '... (truncated)'
+        return s
+    except Exception:
+        return None
+
+
+def registrar_auditoria(agente_id, accion, detalle=""):
+    """
+    Inserta en tabla auditoria sólo si la acción está en la allowlist.
+    Además limita el tamaño del JSON insertado para evitar registros enormes.
+    """
+    try:
+        allowlist = _get_audit_allowlist()
+        if accion not in allowlist:
+            logger.debug(f"Auditoría omitida para acción no crítica: {accion}")
+            return
+
+        valor_json = None
+        if detalle:
+            valor_json = _safe_json_dump({'detalle': detalle}, max_len=2048)
+
         with connection.cursor() as cursor:
-            valor_json = json_module.dumps({'detalle': detalle}) if detalle else None
             cursor.execute(
                 """
                 INSERT INTO auditoria (id_agente, accion, nombre_tabla, pk_afectada, creado_en, valor_nuevo)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 """,
-                [agente_id, accion, 'agente', agente_id or 0, datetime.now(), valor_json]
+                [agente_id, accion, None, None, datetime.now(), valor_json]
             )
     except Exception as e:
-        logger.error(f"Error registrando auditoría: {e}")
+        logger.exception(f"Error registrando auditoría: {e}")
 
 def clean_cuil(cuil_input):
     """Limpia un CUIL removiendo guiones, espacios y caracteres no numéricos"""
@@ -299,8 +352,7 @@ def login_view(request):
             }
         )
 
-        # Registrar login exitoso (auditoría existente)
-        registrar_auditoria(agente.id_agente, "LOGIN_EXITOSO", f"Login desde IP: {ip_address} ({dispositivo}/{navegador})")
+        # Nota: Login exitoso ya se registra en sesion_activa, no es necesario duplicar en auditoria
 
         return Response({
             'success': True,
