@@ -55,24 +55,29 @@ class AuditoriaController {
 				}
 
 				if ($filtros.usuario) {
+					const usuarioLower = $filtros.usuario.toLowerCase();
 					registrosFiltrados = registrosFiltrados.filter(registro => {
 						const usuario = registro.creado_por_nombre || 'Sistema';
-						return usuario.toLowerCase().includes($filtros.usuario.toLowerCase());
+						return usuario.toLowerCase().includes(usuarioLower);
 					});
 				}
 
+				// Optimize date filtering: parse filter dates once outside the loop
 				if ($filtros.fechaDesde) {
-					const fechaDesde = new Date($filtros.fechaDesde);
+					const fechaDesdeTs = new Date($filtros.fechaDesde).getTime();
 					registrosFiltrados = registrosFiltrados.filter(registro => 
-						new Date(registro.creado_en) >= fechaDesde
+						// Use precomputed timestamp if available
+						(registro._ts_creado_en || new Date(registro.creado_en).getTime()) >= fechaDesdeTs
 					);
 				}
 
 				if ($filtros.fechaHasta) {
 					const fechaHasta = new Date($filtros.fechaHasta);
 					fechaHasta.setHours(23, 59, 59, 999); // Incluir todo el día
+					const fechaHastaTs = fechaHasta.getTime();
 					registrosFiltrados = registrosFiltrados.filter(registro => 
-						new Date(registro.creado_en) <= fechaHasta
+						// Use precomputed timestamp if available
+						(registro._ts_creado_en || new Date(registro.creado_en).getTime()) <= fechaHastaTs
 					);
 				}
 
@@ -80,49 +85,49 @@ class AuditoriaController {
 				if ($terminoBusqueda.trim()) {
 					const busqueda = $terminoBusqueda.toLowerCase().trim();
 					
+					// Mapeo de acciones traducidas para búsqueda (static, defined once)
+					const traduccionAccion = {
+						// Acciones generales
+						'CREAR': 'alta de registro',
+						'MODIFICAR': 'modificación',
+						'ELIMINAR': 'registro eliminado',
+						'ACTUALIZAR': 'actualización',
+						'create': 'alta de registro',
+						'update': 'modificación',
+						'delete': 'registro eliminado',
+						
+						// Acciones específicas de asistencias
+						'CREAR_ASISTENCIA': 'crear asistencia',
+						'MARCAR_ENTRADA': 'marcar entrada',
+						'MARCAR_SALIDA': 'marcar salida',
+						'MARCAR_ENTRADA_ADMIN': 'marcar entrada admin',
+						'MARCAR_SALIDA_ADMIN': 'marcar salida admin',
+						'CORREGIR_ASISTENCIA': 'corregir asistencia',
+						'MARCAR_AUSENTE': 'marcar ausente',
+						
+						// Acciones específicas de licencias
+						'CREAR_LICENCIA': 'crear licencia',
+						'APROBAR_LICENCIA': 'aprobar licencia',
+						'RECHAZAR_LICENCIA': 'rechazar licencia',
+						'ELIMINAR_LICENCIA': 'eliminar licencia',
+						
+						// Acciones específicas de tipos de licencia
+						'CREAR_TIPO_LICENCIA': 'crear tipo licencia',
+						'ACTUALIZAR_TIPO_LICENCIA': 'actualizar tipo licencia',
+						'ELIMINAR_TIPO_LICENCIA': 'eliminar tipo licencia',
+						
+						// Acciones específicas de roles
+						'ASIGNAR_ROL': 'asignar rol',
+						'QUITAR_ROL': 'quitar rol',
+						'CAMBIO_ROL_ATOMICO': 'cambio rol',
+						
+						// Acciones de autenticación
+						'LOGIN_EXITOSO': 'login exitoso',
+						'LOGIN_FALLIDO': 'login fallido',
+						'LOGOUT': 'logout'
+					};
+					
 					registrosFiltrados = registrosFiltrados.filter(registro => {
-						// Mapeo de acciones traducidas para búsqueda
-						const traduccionAccion = {
-							// Acciones generales
-							'CREAR': 'alta de registro',
-							'MODIFICAR': 'modificación',
-							'ELIMINAR': 'registro eliminado',
-							'ACTUALIZAR': 'actualización',
-							'create': 'alta de registro',
-							'update': 'modificación',
-							'delete': 'registro eliminado',
-							
-							// Acciones específicas de asistencias
-							'CREAR_ASISTENCIA': 'crear asistencia',
-							'MARCAR_ENTRADA': 'marcar entrada',
-							'MARCAR_SALIDA': 'marcar salida',
-							'MARCAR_ENTRADA_ADMIN': 'marcar entrada admin',
-							'MARCAR_SALIDA_ADMIN': 'marcar salida admin',
-							'CORREGIR_ASISTENCIA': 'corregir asistencia',
-							'MARCAR_AUSENTE': 'marcar ausente',
-							
-							// Acciones específicas de licencias
-							'CREAR_LICENCIA': 'crear licencia',
-							'APROBAR_LICENCIA': 'aprobar licencia',
-							'RECHAZAR_LICENCIA': 'rechazar licencia',
-							'ELIMINAR_LICENCIA': 'eliminar licencia',
-							
-							// Acciones específicas de tipos de licencia
-							'CREAR_TIPO_LICENCIA': 'crear tipo licencia',
-							'ACTUALIZAR_TIPO_LICENCIA': 'actualizar tipo licencia',
-							'ELIMINAR_TIPO_LICENCIA': 'eliminar tipo licencia',
-							
-							// Acciones específicas de roles
-							'ASIGNAR_ROL': 'asignar rol',
-							'QUITAR_ROL': 'quitar rol',
-							'CAMBIO_ROL_ATOMICO': 'cambio rol',
-							
-							// Acciones de autenticación
-							'LOGIN_EXITOSO': 'login exitoso',
-							'LOGIN_FALLIDO': 'login fallido',
-							'LOGOUT': 'logout'
-						};
-
 						// Campos de búsqueda
 						const usuario = (registro.creado_por_nombre || registro.id_agente?.nombre || 'sistema').toLowerCase();
 						const accion = (traduccionAccion[registro.accion] || registro.accion || '').toLowerCase();
@@ -189,9 +194,13 @@ class AuditoriaController {
 					creado_por_nombre = `${registro.id_agente.nombre || ''} ${registro.id_agente.apellido || ''}`.trim();
 				}
 				
+				// Precompute timestamp for efficient sorting (avoid new Date() on each sort)
+				const _ts_creado_en = registro.creado_en ? new Date(registro.creado_en).getTime() : 0;
+				
 				return {
 					...registro,
 					creado_por_nombre,
+					_ts_creado_en,
 					fecha_formateada: this.formatearFecha(registro.creado_en),
 					accion_traducida: this.traducirAccion(registro.accion)
 				};

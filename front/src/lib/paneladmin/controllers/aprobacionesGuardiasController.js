@@ -59,9 +59,8 @@ class AprobacionesGuardiasController {
 		console.log('🔄 Inicializando AprobacionesGuardiasController...');
 		
 		try {
-			const sessionCheck = await AuthService.checkSession();
-			
-			if (!sessionCheck.authenticated) {
+			// Use isAuthenticated check (checkSession already called in +layout.svelte)
+			if (!AuthService.isAuthenticated()) {
 				goto('/');
 				return;
 			}

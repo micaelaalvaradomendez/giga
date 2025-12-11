@@ -38,14 +38,14 @@
 
   onMount(async () => {
     try {
-      const sessionCheck = await AuthService.checkSession();
+      // Use getCurrentUser from localStorage (checkSession already called in +layout.svelte)
+      user = AuthService.getCurrentUser();
 
-      if (!sessionCheck.authenticated) {
+      if (!user) {
         goto("/");
         return;
       }
 
-      user = sessionCheck.user;
       token = localStorage.getItem("token");
 
       await cargarGuardias();
