@@ -5,6 +5,8 @@ Mueve registros más antiguos de N meses a la tabla auditoria_archivo.
 """
 from django.core.management.base import BaseCommand
 from django.db import connection
+from django.utils import timezone
+from dateutil.relativedelta import relativedelta
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,12 +33,15 @@ class Command(BaseCommand):
         dry_run = options['dry_run']
         
         try:
+            # Calcular fecha de corte
+            cutoff_date = timezone.now() - relativedelta(months=months)
+            
             with connection.cursor() as cursor:
                 # Primero verificar si la tabla de archivo existe
                 cursor.execute("""
                     SELECT EXISTS (
                         SELECT FROM information_schema.tables 
-                        WHERE table_name = 'auditoria_archivo'
+                        WHERE table_schema = 'public' AND table_name = 'auditoria_archivo'
                     )
                 """)
                 table_exists = cursor.fetchone()[0]
@@ -48,11 +53,11 @@ class Command(BaseCommand):
                     ))
                     return
                 
-                # Contar registros candidatos
-                cursor.execute("""
-                    SELECT COUNT(*) FROM auditoria 
-                    WHERE creado_en < CURRENT_TIMESTAMP - INTERVAL '%s months'
-                """, [months])
+                # Contar registros candidatos usando fecha calculada
+                cursor.execute(
+                    "SELECT COUNT(*) FROM auditoria WHERE creado_en < %s",
+                    [cutoff_date]
+                )
                 count = cursor.fetchone()[0]
                 
                 self.stdout.write(self.style.WARNING(

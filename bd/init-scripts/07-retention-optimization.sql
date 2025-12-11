@@ -74,8 +74,8 @@ CREATE INDEX IF NOT EXISTS idx_auditoria_agente_fecha ON auditoria(id_agente, cr
 -- Índice para limpieza de sesiones
 CREATE INDEX IF NOT EXISTS idx_sesion_activa_limpieza ON sesion_activa(activa, ultimo_acceso);
 
--- Índice para django_session expire
-CREATE INDEX IF NOT EXISTS idx_django_session_expire ON django_session(expire_date) WHERE expire_date < CURRENT_TIMESTAMP;
+-- Índice para búsqueda de sesiones expiradas por fecha de expiración
+CREATE INDEX IF NOT EXISTS idx_django_session_expire ON django_session(expire_date);
 
 -- =====================================================
 -- 4. FUNCIONES DE ARCHIVADO

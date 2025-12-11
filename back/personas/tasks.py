@@ -5,6 +5,7 @@ Incluye limpieza de sesiones y archivado de datos antiguos.
 """
 from django.utils import timezone
 from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 from personas.models import SesionActiva
 from django.contrib.sessions.models import Session
 from django.db import transaction, connection
@@ -64,12 +65,15 @@ def archive_old_audits(months=6, dry_run=False):
     }
     
     try:
+        # Calcular fecha de corte usando relativedelta
+        cutoff_date = timezone.now() - relativedelta(months=months)
+        
         with connection.cursor() as cursor:
             # Verificar si la tabla de archivo existe
             cursor.execute("""
                 SELECT EXISTS (
                     SELECT FROM information_schema.tables 
-                    WHERE table_name = 'auditoria_archivo'
+                    WHERE table_schema = 'public' AND table_name = 'auditoria_archivo'
                 )
             """)
             if not cursor.fetchone()[0]:
@@ -77,11 +81,11 @@ def archive_old_audits(months=6, dry_run=False):
                 logger.warning(f'archive_old_audits: {result["error"]}')
                 return result
             
-            # Contar candidatas
-            cursor.execute("""
-                SELECT COUNT(*) FROM auditoria 
-                WHERE creado_en < CURRENT_TIMESTAMP - INTERVAL '%s months'
-            """, [months])
+            # Contar candidatas usando fecha calculada
+            cursor.execute(
+                "SELECT COUNT(*) FROM auditoria WHERE creado_en < %s",
+                [cutoff_date]
+            )
             result['candidatas'] = cursor.fetchone()[0]
             
             logger.info(f'archive_old_audits: {result["candidatas"]} registros candidatos (months={months}, dry_run={dry_run})')
@@ -89,7 +93,7 @@ def archive_old_audits(months=6, dry_run=False):
             if result['candidatas'] == 0 or dry_run:
                 return result
             
-            # Ejecutar función de archivo
+            # Ejecutar función de archivo (la función usa INTEGER para meses)
             cursor.execute("SELECT * FROM archivar_auditorias(%s)", [months])
             row = cursor.fetchone()
             if row:
@@ -119,12 +123,15 @@ def archive_old_incidencias(months=12, dry_run=False):
     }
     
     try:
+        # Calcular fecha de corte usando relativedelta
+        cutoff_date = timezone.now() - relativedelta(months=months)
+        
         with connection.cursor() as cursor:
             # Verificar si la tabla de archivo existe
             cursor.execute("""
                 SELECT EXISTS (
                     SELECT FROM information_schema.tables 
-                    WHERE table_name = 'incidencia_archivo'
+                    WHERE table_schema = 'public' AND table_name = 'incidencia_archivo'
                 )
             """)
             if not cursor.fetchone()[0]:
@@ -132,12 +139,12 @@ def archive_old_incidencias(months=12, dry_run=False):
                 logger.warning(f'archive_old_incidencias: {result["error"]}')
                 return result
             
-            # Contar candidatas
+            # Contar candidatas usando fecha calculada
             cursor.execute("""
                 SELECT COUNT(*) FROM incidencia 
                 WHERE estado IN ('cerrada', 'resuelta')
-                  AND fecha_resolucion < CURRENT_TIMESTAMP - INTERVAL '%s months'
-            """, [months])
+                  AND fecha_resolucion < %s
+            """, [cutoff_date])
             result['candidatas'] = cursor.fetchone()[0]
             
             logger.info(f'archive_old_incidencias: {result["candidatas"]} incidencias candidatas (months={months}, dry_run={dry_run})')
@@ -145,7 +152,7 @@ def archive_old_incidencias(months=12, dry_run=False):
             if result['candidatas'] == 0 or dry_run:
                 return result
             
-            # Ejecutar función de archivo
+            # Ejecutar función de archivo (la función usa INTEGER para meses)
             cursor.execute("SELECT * FROM archivar_incidencias(%s)", [months])
             row = cursor.fetchone()
             if row:
