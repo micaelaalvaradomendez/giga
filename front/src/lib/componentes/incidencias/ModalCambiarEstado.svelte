@@ -14,8 +14,8 @@
 <FormModal
 	{show}
 	title="Cambiar Estado - {incidenciaSeleccionada?.numero || ''}"
-	onClose={onClose}
-	onSubmit={onSubmit}
+	{onClose}
+	{onSubmit}
 	submitText="Cambiar Estado"
 	isSubmitting={cambiandoEstado}
 >
@@ -110,5 +110,14 @@
 	:global(.badge-cerrada) {
 		background: linear-gradient(135deg, #6b7280, #4b5563);
 		color: white;
+	}
+
+	/* Responsive */
+	@media (max-width: 480px) {
+		.estado-actual-info p {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
 	}
 </style>

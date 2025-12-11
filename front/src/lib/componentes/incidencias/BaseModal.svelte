@@ -79,6 +79,7 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		gap: 1rem;
 	}
 
 	.modal-header h2 {
@@ -87,6 +88,8 @@
 		font-size: 1.5rem;
 		font-weight: 600;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		word-break: break-word;
+		line-height: 1.3;
 	}
 
 	.close-btn {
@@ -113,10 +116,18 @@
 	/* Responsive */
 	@media (max-width: 768px) {
 		.modal {
-			width: 98vw;
+			width: 95vw;
 			max-width: none;
-			max-height: 98vh;
-			margin: 0.25rem;
+			max-height: 95vh;
+			margin: 0.5rem;
+		}
+
+		.modal-header {
+			padding: 1rem 1.25rem;
+		}
+
+		.modal-header h2 {
+			font-size: 1.25rem;
 		}
 	}
 </style>

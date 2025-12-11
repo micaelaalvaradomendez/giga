@@ -14,8 +14,8 @@
 <FormModal
 	{show}
 	title="Nueva Incidencia"
-	onClose={onClose}
-	onSubmit={onSubmit}
+	{onClose}
+	{onSubmit}
 	submitText="Crear Incidencia"
 	isSubmitting={creandoIncidencia}
 >
@@ -61,7 +61,9 @@
 	<!-- Selector de jefe -->
 	<div class="form-group">
 		<label for="asignado_a">
-			{userRole === "Agente" ? "Asignar a Jefatura *" : "Asignar a Agente *"}
+			{userRole === "Agente"
+				? "Asignar a Jefatura *"
+				: "Asignar a Agente *"}
 		</label>
 		{#if cargandoJefes}
 			<div class="loading-jefes">
@@ -83,8 +85,8 @@
 			</select>
 		{:else}
 			<div class="no-jefes">
-				No hay {userRole === "Agente" ? "jefes" : "agentes"} disponibles en su
-				área
+				No hay {userRole === "Agente" ? "jefes" : "agentes"} disponibles
+				en su área
 			</div>
 		{/if}
 	</div>
@@ -109,5 +111,14 @@
 		border-radius: 8px;
 		background: #fee2e2;
 		font-weight: 500;
+	}
+
+	/* Responsive */
+	@media (max-width: 480px) {
+		.loading-jefes,
+		.no-jefes {
+			font-size: 0.875rem;
+			padding: 0.65rem;
+		}
 	}
 </style>

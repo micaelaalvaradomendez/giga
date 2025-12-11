@@ -16,18 +16,37 @@
 			<div class="mensaje-header {type}">
 				<div class="mensaje-icono">
 					{#if type === "success"}
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-							<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+						<svg
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="currentColor"
+						>
+							<path
+								d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+							/>
 						</svg>
 					{:else if type === "error"}
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+						<svg
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="currentColor"
+						>
 							<path
 								d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
 							/>
 						</svg>
 					{:else if type === "warning"}
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-							<path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+						<svg
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="currentColor"
+						>
+							<path
+								d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"
+							/>
 						</svg>
 					{/if}
 				</div>
@@ -138,6 +157,7 @@
 		display: flex;
 		justify-content: flex-end;
 		padding: 1rem 1.5rem 1.5rem;
+		gap: 0.5rem;
 	}
 
 	.btn-mensaje {
@@ -179,9 +199,45 @@
 			margin: 1rem;
 		}
 
+		.mensaje-header {
+			padding: 1.25rem;
+		}
+
 		.mensaje-contenido,
 		.mensaje-acciones {
 			padding: 1rem;
+		}
+
+		.btn-mensaje {
+			padding: 0.65rem 1.5rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.mensaje-modal {
+			width: 90%;
+		}
+
+		.mensaje-header {
+			padding: 1rem;
+			flex-wrap: wrap;
+		}
+
+		.mensaje-header h3 {
+			font-size: 1.1rem;
+		}
+
+		.mensaje-contenido {
+			padding: 1rem;
+		}
+
+		.mensaje-acciones {
+			padding: 0.75rem 1rem 1rem;
+		}
+
+		.btn-mensaje {
+			width: 100%;
+			padding: 0.75rem;
 		}
 	}
 </style>

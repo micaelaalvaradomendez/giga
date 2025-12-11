@@ -2,6 +2,7 @@
 	import Navbar from "$lib/componentes/navbar.svelte";
 	import Footer from "$lib/componentes/footer.svelte";
 	import Menu from "$lib/componentes/menu.svelte";
+	import Breadcrumbs from "$lib/componentes/breadcrumbs.svelte";
 	import { onMount } from "svelte";
 	import { AuthService } from "$lib/login/authService.js";
 	let isMenuOpen = false;
@@ -26,7 +27,10 @@
 
 <div class="layout-container" class:menu-open={isMenuOpen}>
 	<main>
-		<slot />
+		<div class="main-content-wrapper">
+			<Breadcrumbs />
+			<slot />
+		</div>
 	</main>
 </div>
 
@@ -81,5 +85,10 @@
 		box-sizing: border-box;
 	}
 
-
+	.main-content-wrapper {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		height: 100%;
+	}
 </style>

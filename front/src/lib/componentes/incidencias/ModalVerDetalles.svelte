@@ -9,7 +9,7 @@
 	export let onCambiarEstado = () => {};
 </script>
 
-<BaseModal {show} title="Detalle de Incidencia" maxWidth="900px" onClose={onClose}>
+<BaseModal {show} title="Detalle de Incidencia" maxWidth="900px" {onClose}>
 	<div class="modal-detalle-body">
 		<div class="detalle-header-badges">
 			{#if incidenciaSeleccionada?.fecha_resolucion}
@@ -28,8 +28,12 @@
 			<div class="detalle-content">
 				<!-- Información principal -->
 				<div class="detalle-section">
-					<div class="detalle-numero">#{incidenciaSeleccionada.numero}</div>
-					<h3 class="detalle-titulo">{incidenciaSeleccionada.titulo}</h3>
+					<div class="detalle-numero">
+						#{incidenciaSeleccionada.numero}
+					</div>
+					<h3 class="detalle-titulo">
+						{incidenciaSeleccionada.titulo}
+					</h3>
 				</div>
 
 				<!-- Descripción -->
@@ -48,7 +52,9 @@
 							{#if incidenciaSeleccionada.estado}
 								<div class="estado-actual">
 									<strong>Estado:</strong>
-									<span class="badge badge-{incidenciaSeleccionada.estado}">
+									<span
+										class="badge badge-{incidenciaSeleccionada.estado}"
+									>
 										{incidenciaSeleccionada.estado_display ||
 											incidenciaSeleccionada.estado}
 									</span>
@@ -66,7 +72,10 @@
 								</div>
 							{/if}
 							{#if incidenciaSeleccionada.puede_cambiar_estado}
-								<button class="btn-cambiar-estado" on:click={onCambiarEstado}>
+								<button
+									class="btn-cambiar-estado"
+									on:click={onCambiarEstado}
+								>
 									Cambiar Estado
 								</button>
 							{/if}
@@ -79,7 +88,8 @@
 					<div class="detalle-item">
 						<strong>Creada por:</strong>
 						<span>
-							{incidenciaSeleccionada.creado_por_nombre || "No especificado"}
+							{incidenciaSeleccionada.creado_por_nombre ||
+								"No especificado"}
 						</span>
 					</div>
 
@@ -87,7 +97,7 @@
 						<strong>Fecha de creación:</strong>
 						<span>
 							{IncidenciasService.formatearFecha(
-								incidenciaSeleccionada.fecha_creacion
+								incidenciaSeleccionada.fecha_creacion,
 							)}
 						</span>
 					</div>
@@ -95,7 +105,9 @@
 					{#if incidenciaSeleccionada.asignado_a_nombre}
 						<div class="detalle-item">
 							<strong>Asignada a:</strong>
-							<span>{incidenciaSeleccionada.asignado_a_nombre}</span>
+							<span
+								>{incidenciaSeleccionada.asignado_a_nombre}</span
+							>
 						</div>
 					{/if}
 
@@ -104,7 +116,7 @@
 							<strong>Fecha de asignación:</strong>
 							<span>
 								{IncidenciasService.formatearFecha(
-									incidenciaSeleccionada.fecha_asignacion
+									incidenciaSeleccionada.fecha_asignacion,
 								)}
 							</span>
 						</div>
@@ -122,7 +134,7 @@
 							<strong>Fecha de resolución:</strong>
 							<span>
 								{IncidenciasService.formatearFecha(
-									incidenciaSeleccionada.fecha_resolucion
+									incidenciaSeleccionada.fecha_resolucion,
 								)}
 							</span>
 						</div>
@@ -147,12 +159,19 @@
 							{#each incidenciaSeleccionada.comentarios_seguimiento as comentario}
 								<div class="comentario-item">
 									<div class="comentario-meta">
-										<strong>{comentario.autor || "Usuario"}</strong>
+										<strong
+											>{comentario.autor ||
+												"Usuario"}</strong
+										>
 										<span class="comentario-fecha">
-											{IncidenciasService.formatearFecha(comentario.fecha)}
+											{IncidenciasService.formatearFecha(
+												comentario.fecha,
+											)}
 										</span>
 									</div>
-									<div class="comentario-texto">{comentario.comentario}</div>
+									<div class="comentario-texto">
+										{comentario.comentario}
+									</div>
 								</div>
 							{/each}
 						</div>
@@ -392,9 +411,9 @@
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.3s ease;
-		margin-left: auto;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		box-shadow: 0 2px 8px rgba(76, 81, 191, 0.3);
+		white-space: nowrap;
 	}
 
 	.btn-cambiar-estado:hover {
@@ -465,7 +484,11 @@
 	/* Responsive */
 	@media (max-width: 768px) {
 		.detalle-content {
-			padding: 0.75rem;
+			padding: 1.25rem;
+		}
+
+		.detalle-header-badges {
+			padding: 1rem 1.25rem 0;
 		}
 
 		.detalle-grid {
@@ -476,6 +499,47 @@
 		.detalle-resolucion {
 			padding: 1rem;
 			font-size: 0.95rem;
+		}
+
+		.estado-prioridad-container {
+			gap: 0.75rem;
+		}
+
+		.btn-cambiar-estado {
+			width: 100%;
+			margin-left: 0;
+			margin-top: 0.5rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.detalle-content {
+			padding: 1rem;
+		}
+
+		.detalle-header-badges {
+			padding: 0.75rem 1rem 0;
+		}
+
+		.detalle-titulo {
+			font-size: 1.25rem;
+		}
+
+		.detalle-section h4 {
+			font-size: 1rem;
+		}
+
+		.estado-actual,
+		.prioridad-actual {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.25rem;
+		}
+
+		.comentario-meta {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.25rem;
 		}
 	}
 </style>

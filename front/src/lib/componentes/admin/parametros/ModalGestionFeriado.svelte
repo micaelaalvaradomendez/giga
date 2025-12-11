@@ -1,5 +1,6 @@
 <script>
 	import { createEventDispatcher } from "svelte";
+	import BaseModal from "$lib/componentes/incidencias/BaseModal.svelte";
 
 	export let isOpen = false;
 	export let feriado = null;
@@ -111,7 +112,7 @@
 		}
 
 		try {
-			await ferladosController.deleteFeriadoFromModal(feriado.id_feriado);
+			await feriadosController.deleteFeriadoFromModal(feriado.id_feriado);
 		} catch (error) {
 			// El error ya se maneja en el controlador
 			console.error("Error eliminando feriado:", error);
@@ -152,361 +153,329 @@
 			console.error("Error eliminando feriado existente:", error);
 		}
 	}
+
+	$: modalTitle = modoEdicion ? "Editar Feriado" : "Agregar Feriado";
 </script>
 
-{#if isOpen}
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
-	<!-- svelte-ignore a11y-no-static-element-interactions -->
-	<div class="modal-backdrop" on:click={closeModal}>
-		<!-- svelte-ignore a11y-click-events-have-key-events -->
-		<!-- svelte-ignore a11y-no-static-element-interactions -->
-		<div class="modal-content" on:click|stopPropagation>
-			<div class="modal-header">
-				<h2>
-					{modoEdicion ? "Editar Feriado" : "Agregar Feriado"}
-					{#if existingFeriados.length > 0 && !modoEdicion}
-						<span class="existing-count"
-							>({existingFeriados.length} feriado{existingFeriados.length >
-							1
-								? "s"
-								: ""} existente{existingFeriados.length > 1
-								? "s"
-								: ""})</span
-						>
-					{/if}
-				</h2>
-				<button class="close-button" on:click={closeModal}
-					>&times;</button
-				>
-			</div>
-			<div class="modal-body">
-				<!-- Mostrar feriados existentes si los hay -->
-				{#if existingFeriados.length > 0 && !modoEdicion}
-					<div class="existing-feriados">
-						<h4>Feriados existentes en esta fecha:</h4>
-						<div class="existing-list">
-							{#each existingFeriados as existingFeriado}
-								<div class="existing-item">
-									<div class="existing-info">
-										<span class="existing-name"
-											>{existingFeriado.nombre}</span
-										>
-										<span class="existing-type"
-											>{existingFeriado.tipo_feriado}</span
-										>
-										{#if existingFeriado.es_multiples_dias}
-											<span class="existing-duration"
-												>({existingFeriado.duracion_dias}
-												días)</span
-											>
-										{/if}
-									</div>
-									<div class="existing-actions">
-										<button
-											class="btn-edit-existing"
-											on:click={() =>
-												editarFeriadoExistente(
-													existingFeriado,
-												)}
-											title="Editar este feriado"
-										>
-											✏️
-										</button>
-										<button
-											class="btn-delete-existing"
-											on:click={() =>
-												eliminarFeriadoExistente(
-													existingFeriado,
-												)}
-											title="Eliminar este feriado"
-										>
-											🗑️
-										</button>
-									</div>
-								</div>
-							{/each}
+<BaseModal
+	show={isOpen}
+	title={modalTitle}
+	maxWidth="600px"
+	onClose={closeModal}
+>
+	<div class="modal-body">
+		<!-- Mostrar feriados existentes si los hay -->
+		{#if existingFeriados.length > 0 && !modoEdicion}
+			<div class="existing-feriados">
+				<h4>Feriados existentes en esta fecha:</h4>
+				<div class="existing-list">
+					{#each existingFeriados as existingFeriado}
+						<div class="existing-item">
+							<div class="existing-info">
+								<span class="existing-name"
+									>{existingFeriado.nombre}</span
+								>
+								<span class="existing-type"
+									>{existingFeriado.tipo_feriado}</span
+								>
+								{#if existingFeriado.es_multiples_dias}
+									<span class="existing-duration"
+										>({existingFeriado.duracion_dias}
+										días)</span
+									>
+								{/if}
+							</div>
+							<div class="existing-actions">
+								<button
+									class="btn-edit-existing"
+									on:click={() =>
+										editarFeriadoExistente(existingFeriado)}
+									title="Editar este feriado"
+								>
+									✏️
+								</button>
+								<button
+									class="btn-delete-existing"
+									on:click={() =>
+										eliminarFeriadoExistente(
+											existingFeriado,
+										)}
+									title="Eliminar este feriado"
+								>
+									🗑️
+								</button>
+							</div>
 						</div>
-					</div>
-				{/if}
+					{/each}
+				</div>
+			</div>
+		{/if}
 
-				<!-- Campos del formulario -->
-				<div class="form-group">
-					<label for="nombre">Nombre del Feriado</label>
+		<!-- Campos del formulario -->
+		<div class="form-group">
+			<label for="nombre">Nombre del Feriado *</label>
+			<input
+				id="nombre"
+				type="text"
+				bind:value={nombreFeriado}
+				placeholder="Ej: Día de la Independencia"
+				disabled={isSaving || isDeleting}
+				required
+			/>
+		</div>
+
+		<div class="form-group">
+			<label for="descripcion">Descripción (opcional)</label>
+			<textarea
+				id="descripcion"
+				bind:value={descripcionFeriado}
+				placeholder="Descripción adicional del feriado"
+				disabled={isSaving || isDeleting}
+			></textarea>
+		</div>
+
+		<!-- Tipo de feriado -->
+		<div class="form-group">
+			<label for="tipo">Tipo de Feriado</label>
+			<div class="checkbox-group">
+				<label class="checkbox-label">
 					<input
-						id="nombre"
-						type="text"
-						bind:value={nombreFeriado}
-						placeholder="Ej: Día de la Independencia"
+						type="checkbox"
+						bind:checked={esNacional}
+						disabled={isSaving || isDeleting}
+					/>
+					Nacional
+				</label>
+				<label class="checkbox-label">
+					<input
+						type="checkbox"
+						bind:checked={esProvincial}
+						disabled={isSaving || isDeleting}
+					/>
+					Provincial
+				</label>
+				<label class="checkbox-label">
+					<input
+						type="checkbox"
+						bind:checked={esLocal}
+						disabled={isSaving || isDeleting}
+					/>
+					Local
+				</label>
+			</div>
+		</div>
+
+		<!-- Opciones de fecha -->
+		<div class="form-group">
+			<label class="checkbox-label">
+				<input
+					type="checkbox"
+					bind:checked={esMultiplesDias}
+					on:change={handleMultipleDaysToggle}
+					disabled={isSaving || isDeleting}
+				/>
+				Feriado de múltiples días
+			</label>
+		</div>
+
+		<!-- Fechas -->
+		<div class="form-row">
+			<div class="form-group">
+				<label for="fecha-inicio"
+					>Fecha {esMultiplesDias ? "de Inicio" : ""}</label
+				>
+				<input
+					id="fecha-inicio"
+					type="date"
+					bind:value={fechaInicio}
+					disabled={isSaving || isDeleting}
+					required
+				/>
+			</div>
+			{#if esMultiplesDias}
+				<div class="form-group">
+					<label for="fecha-fin">Fecha de Fin</label>
+					<input
+						id="fecha-fin"
+						type="date"
+						bind:value={fechaFin}
+						min={fechaInicio}
 						disabled={isSaving || isDeleting}
 						required
 					/>
 				</div>
+			{/if}
+		</div>
 
-				<div class="form-group">
-					<label for="descripcion">Descripción (opcional)</label>
-					<textarea
-						id="descripcion"
-						bind:value={descripcionFeriado}
-						placeholder="Descripción adicional del feriado"
+		{#if esMultiplesDias && fechaInicio && fechaFin}
+			{@const duracion =
+				Math.ceil(
+					(new Date(fechaFin) - new Date(fechaInicio)) /
+						(1000 * 60 * 60 * 24),
+				) + 1}
+			<div class="duration-info">
+				<span class="duration-text"
+					>Duración: {duracion} día{duracion > 1 ? "s" : ""}</span
+				>
+			</div>
+		{/if}
+
+		<!-- Opción de repetir anualmente (solo para feriados nuevos) -->
+		{#if !modoEdicion}
+			<div class="form-group">
+				<label class="checkbox-label">
+					<input
+						type="checkbox"
+						bind:checked={repetirAnualmente}
 						disabled={isSaving || isDeleting}
-					></textarea>
-				</div>
-
-				<!-- Tipo de feriado -->
-				<div class="form-group">
-					<label for="tipo">Tipo de Feriado</label>
-					<div class="checkbox-group">
-						<label class="checkbox-label">
-							<input
-								type="checkbox"
-								bind:checked={esNacional}
-								disabled={isSaving || isDeleting}
-							/>
-							Nacional
-						</label>
-						<label class="checkbox-label">
-							<input
-								type="checkbox"
-								bind:checked={esProvincial}
-								disabled={isSaving || isDeleting}
-							/>
-							Provincial
-						</label>
-						<label class="checkbox-label">
-							<input
-								type="checkbox"
-								bind:checked={esLocal}
-								disabled={isSaving || isDeleting}
-							/>
-							Local
-						</label>
-					</div>
-				</div>
-
-				<!-- Opciones de fecha -->
-				<div class="form-group">
-					<label class="checkbox-label">
-						<input
-							type="checkbox"
-							bind:checked={esMultiplesDias}
-							on:change={handleMultipleDaysToggle}
-							disabled={isSaving || isDeleting}
-						/>
-						Feriado de múltiples días
-					</label>
-				</div>
-
-				<!-- Fechas -->
-				<div class="form-row">
-					<div class="form-group">
-						<label for="fecha-inicio"
-							>Fecha {esMultiplesDias ? "de Inicio" : ""}</label
-						>
-						<input
-							id="fecha-inicio"
-							type="date"
-							bind:value={fechaInicio}
-							disabled={isSaving || isDeleting}
-							required
-						/>
-					</div>
-					{#if esMultiplesDias}
-						<div class="form-group">
-							<label for="fecha-fin">Fecha de Fin</label>
-							<input
-								id="fecha-fin"
-								type="date"
-								bind:value={fechaFin}
-								min={fechaInicio}
-								disabled={isSaving || isDeleting}
-								required
-							/>
-						</div>
-					{/if}
-				</div>
-
-				{#if esMultiplesDias && fechaInicio && fechaFin}
-					{@const duracion =
-						Math.ceil(
-							(new Date(fechaFin) - new Date(fechaInicio)) /
-								(1000 * 60 * 60 * 24),
-						) + 1}
-					<div class="duration-info">
-						<span class="duration-text"
-							>Duración: {duracion} día{duracion > 1
-								? "s"
-								: ""}</span
-						>
-					</div>
-				{/if}
-
-				<!-- Opción de repetir anualmente (solo para feriados nuevos) -->
-				{#if !modoEdicion}
-					<div class="form-group">
-						<label class="checkbox-label">
-							<input
-								type="checkbox"
-								bind:checked={repetirAnualmente}
-								disabled={isSaving || isDeleting}
-							/>
-							Repetir este feriado anualmente (próximos 5 años)
-						</label>
-						{#if repetirAnualmente}
-							<div class="help-text">
-								Se creará este feriado automáticamente para los
-								próximos 5 años en las mismas fechas.
-							</div>
-						{/if}
+					/>
+					Repetir este feriado anualmente (próximos 5 años)
+				</label>
+				{#if repetirAnualmente}
+					<div class="help-text">
+						Se creará este feriado automáticamente para los próximos
+						5 años en las mismas fechas.
 					</div>
 				{/if}
 			</div>
-			<div class="modal-actions">
-				<!-- Botón de Eliminar -->
-				{#if feriado}
-					<button
-						type="button"
-						class="btn-danger"
-						disabled={isSaving || isDeleting}
-						on:click={handleDelete}
-					>
-						{isDeleting ? "Eliminando..." : "Eliminar"}
-					</button>
-				{/if}
+		{/if}
+	</div>
 
-				<div class="save-actions">
-					<button
-						type="button"
-						class="btn-secondary"
-						on:click={closeModal}
-						disabled={isSaving || isDeleting}
-					>
-						Cancelar
-					</button>
-					<button
-						type="button"
-						class="btn-primary"
-						disabled={isSaving || isDeleting}
-						on:click={handleSave}
-					>
-						{isSaving ? "Guardando..." : "Guardar"}
-					</button>
-				</div>
-			</div>
+	<div class="modal-footer">
+		<!-- Botón de Eliminar -->
+		{#if feriado}
+			<button
+				type="button"
+				class="btn-danger"
+				disabled={isSaving || isDeleting}
+				on:click={handleDelete}
+			>
+				{isDeleting ? "Eliminando..." : "Eliminar"}
+			</button>
+		{/if}
+
+		<div class="save-actions">
+			<button
+				type="button"
+				class="btn-cancel"
+				on:click={closeModal}
+				disabled={isSaving || isDeleting}
+			>
+				Cancelar
+			</button>
+			<button
+				type="button"
+				class="btn-save"
+				disabled={isSaving || isDeleting}
+				on:click={handleSave}
+			>
+				{isSaving ? "Guardando..." : "Guardar"}
+			</button>
 		</div>
 	</div>
-{/if}
+</BaseModal>
 
 <style>
-	.modal-backdrop {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0.6);
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		z-index: 1000;
-	}
-	.modal-content {
-		background: white;
-		padding: 1.5rem;
-		border-radius: 12px;
-		width: 90%;
-		max-width: 500px;
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	.modal-body {
+		padding: 2rem;
+		max-height: 70vh;
+		overflow-y: auto;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
 
-	.modal-content::-webkit-scrollbar {
+	.modal-body::-webkit-scrollbar {
 		display: none;
 	}
-	.modal-header {
+
+	.modal-footer {
 		display: flex;
+		flex-wrap: wrap;
 		justify-content: space-between;
 		align-items: center;
-		border-bottom: 1px solid #eee;
-		padding-bottom: 1rem;
-		margin-bottom: 1.5rem;
-	}
-	.modal-header h2 {
-		margin: 0;
-		font-size: 1.5rem;
-		color: #0f345c;
-	}
-	.close-button {
-		background: none;
-		border: none;
-		font-size: 2rem;
-		cursor: pointer;
-	}
-	.form-group {
-		margin-bottom: 1rem;
-	}
-	.form-group label {
-		display: block;
-		margin-bottom: 0.5rem;
-		font-weight: 600;
-	}
-	.form-group input {
-		width: 100%;
-		padding: 0.75rem;
-		border: 1px solid #ccc;
-		border-radius: 8px;
-		box-sizing: border-box;
+		gap: 0.75rem;
+		padding: 0 2rem 2rem;
 	}
 
-	.modal-actions {
-		display: flex;
-		justify-content: flex-end; /* Alinear elementos a los extremos */
-		align-items: center;
-		gap: 1rem;
-		margin-top: 2rem;
-	}
 	.save-actions {
 		display: flex;
-		gap: 1rem;
+		gap: 0.75rem;
+		flex-wrap: wrap;
 	}
 
-	.btn-primary,
-	.btn-secondary,
+	/* Botones con estilos unificados */
+	.btn-cancel,
+	.btn-save,
 	.btn-danger {
-		padding: 0.7rem 1.3rem;
-		border: none;
+		padding: 0.75rem 1.5rem;
 		border-radius: 8px;
-		cursor: pointer;
-		font-size: 16px;
 		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		border: none;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		font-size: 0.875rem;
+		white-space: nowrap;
+		min-width: fit-content;
 	}
-	.btn-primary {
-		background-color: #367acc;
+
+	.btn-cancel {
+		background: #6c757d;
 		color: white;
 	}
-	.btn-secondary {
-		background-color: #6c757d;
-		color: white;
+
+	.btn-cancel:hover:not(:disabled) {
+		background: #5a6268;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 	}
+
+	.btn-save {
+		background: linear-gradient(135deg, #4c51bf, #5b21b6);
+		color: white;
+		box-shadow: 0 4px 15px rgba(76, 81, 191, 0.3);
+	}
+
+	.btn-save:hover:not(:disabled) {
+		background: linear-gradient(135deg, #5b21b6, #6d28d9);
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(76, 81, 191, 0.4);
+	}
+
 	.btn-danger {
-		background-color: #c53030;
+		background: linear-gradient(135deg, #ef4444, #dc2626);
 		color: white;
+		box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+	}
+
+	.btn-danger:hover:not(:disabled) {
+		background: linear-gradient(135deg, #dc2626, #b91c1c);
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+	}
+
+	.btn-cancel:disabled,
+	.btn-save:disabled,
+	.btn-danger:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		transform: none;
 	}
 
 	/* Feriados existentes */
 	.existing-feriados {
-		background-color: #f8f9fa;
-		border: 1px solid #dee2e6;
-		border-radius: 8px;
-		padding: 1rem;
+		background-color: #f8fafc;
+		border: 1px solid #e5e7eb;
+		border-radius: 12px;
+		padding: 1.25rem;
 		margin-bottom: 1.5rem;
 	}
 
 	.existing-feriados h4 {
 		margin: 0 0 0.75rem 0;
 		font-size: 1rem;
-		color: #495057;
+		color: #374151;
+		font-weight: 600;
 	}
 
 	.existing-list {
@@ -519,10 +488,17 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 0.5rem;
+		padding: 0.75rem;
 		background-color: white;
-		border-radius: 4px;
-		border-left: 3px solid #007bff;
+		border-radius: 8px;
+		border-left: 4px solid #4c51bf;
+		transition: all 0.2s ease;
+		gap: 0.5rem;
+	}
+
+	.existing-item:hover {
+		transform: translateX(4px);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
 
 	.existing-info {
@@ -530,11 +506,14 @@
 		align-items: center;
 		gap: 0.5rem;
 		flex: 1;
+		flex-wrap: wrap;
+		min-width: 0;
 	}
 
 	.existing-actions {
 		display: flex;
 		gap: 0.25rem;
+		flex-shrink: 0;
 	}
 
 	.btn-edit-existing,
@@ -544,7 +523,7 @@
 		padding: 0.25rem 0.5rem;
 		border-radius: 4px;
 		cursor: pointer;
-		font-size: 0.8rem;
+		font-size: 1rem;
 		transition: background-color 0.2s ease;
 	}
 
@@ -558,39 +537,69 @@
 
 	.existing-name {
 		font-weight: 600;
-		color: #0f345c;
+		color: #1f2937;
+		word-break: break-word;
 	}
 
 	.existing-type {
-		background-color: #e3f2fd;
-		color: #1976d2;
-		padding: 0.25rem 0.5rem;
+		background-color: #e0e7ff;
+		color: #4c51bf;
+		padding: 0.25rem 0.65rem;
 		border-radius: 12px;
-		font-size: 0.8rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		white-space: nowrap;
 	}
 
 	.existing-duration {
-		color: #666;
+		color: #6b7280;
 		font-size: 0.85rem;
 		font-style: italic;
 	}
 
-	.existing-count {
-		font-size: 0.9rem;
-		color: #666;
-		font-weight: normal;
+	/* Formulario */
+	.form-group {
+		margin-bottom: 1.5rem;
 	}
 
-	/* Formulario */
+	.form-group label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-weight: 600;
+		color: #374151;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		font-size: 0.875rem;
+	}
+
+	.form-group input,
 	.form-group textarea {
 		width: 100%;
 		padding: 0.75rem;
-		border: 1px solid #ccc;
+		border: 2px solid #e5e7eb;
 		border-radius: 8px;
+		font-size: 0.875rem;
+		transition: all 0.3s ease;
 		box-sizing: border-box;
-		min-height: 80px;
-		font-family: inherit;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		color: #374151;
+	}
+
+	.form-group input:focus,
+	.form-group textarea:focus {
+		outline: none;
+		border-color: #667eea;
+		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+	}
+
+	.form-group textarea {
 		resize: vertical;
+		min-height: 100px;
+	}
+
+	.form-group input:disabled,
+	.form-group textarea:disabled {
+		background-color: #f5f5f5;
+		cursor: not-allowed;
 	}
 
 	.form-row {
@@ -612,47 +621,105 @@
 		font-size: 0.9rem;
 		line-height: 1.4;
 		gap: 0.5rem;
+		font-weight: 400;
+		color: #374151;
 	}
 
 	.checkbox-label input[type="checkbox"] {
 		width: auto;
 		margin: 0;
+		cursor: pointer;
 	}
 
 	.duration-info {
-		background-color: #e8f5e8;
-		border: 1px solid #c3e6c3;
-		border-radius: 6px;
+		background-color: #ecfdf5;
+		border: 1px solid #a7f3d0;
+		border-radius: 8px;
 		padding: 0.75rem;
 		margin-top: 0.5rem;
 	}
 
 	.duration-text {
-		color: #155724;
+		color: #065f46;
 		font-weight: 600;
 		font-size: 0.9rem;
 	}
 
 	.help-text {
 		font-size: 0.8rem;
-		color: #666;
+		color: #6b7280;
 		margin-top: 0.5rem;
-		padding: 0.5rem;
-		background-color: #e4ebf3;
-		border-radius: 4px;
-		border-left: 3px solid #007bff;
-		line-height: 1.4;
+		padding: 0.65rem;
+		background-color: #eff6ff;
+		border-radius: 6px;
+		border-left: 3px solid #3b82f6;
+		line-height: 1.5;
 	}
 
 	/* Responsive */
-	@media (max-width: 600px) {
+	@media (max-width: 768px) {
+		.modal-body {
+			padding: 1.5rem;
+		}
+
+		.modal-footer {
+			padding: 0 1.5rem 1.5rem;
+			gap: 0.5rem;
+		}
+
 		.form-row {
 			grid-template-columns: 1fr;
+		}
+
+		.btn-cancel,
+		.btn-save,
+		.btn-danger {
+			padding: 0.65rem 1.25rem;
+			font-size: 0.8125rem;
+		}
+
+		.existing-item {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.existing-actions {
+			width: 100%;
+			justify-content: flex-end;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.modal-body {
+			padding: 1rem;
+		}
+
+		.modal-footer {
+			padding: 0 1rem 1rem;
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.save-actions {
+			flex-direction: column;
+			width: 100%;
+		}
+
+		.btn-cancel,
+		.btn-save,
+		.btn-danger {
+			width: 100%;
+			padding: 0.75rem;
 		}
 
 		.checkbox-group {
 			flex-direction: column;
 			gap: 0.75rem;
+		}
+
+		.existing-info {
+			flex-direction: column;
+			align-items: flex-start;
 		}
 	}
 </style>

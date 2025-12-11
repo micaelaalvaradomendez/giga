@@ -420,8 +420,17 @@
 			margin: 1rem;
 		}
 
+		.modal-header {
+			padding: 1.5rem 1.5rem 1rem;
+		}
+
+		.modal-body {
+			padding: 1.5rem;
+		}
+
 		.modal-footer {
 			flex-direction: column;
+			padding: 1rem 1.5rem;
 		}
 	}
 </style>

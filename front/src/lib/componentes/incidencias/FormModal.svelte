@@ -49,7 +49,8 @@
 
 	.modal-footer {
 		display: flex;
-		gap: 1rem;
+		flex-wrap: wrap;
+		gap: 0.75rem;
 		justify-content: flex-end;
 		padding: 0 2rem 2rem;
 	}
@@ -64,6 +65,8 @@
 		border: none;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		font-size: 0.875rem;
+		white-space: nowrap;
+		min-width: fit-content;
 	}
 
 	.btn-cancel {
@@ -142,5 +145,41 @@
 	:global(.modal-body .form-group select:disabled) {
 		background-color: #f5f5f5;
 		cursor: not-allowed;
+	}
+
+	/* Responsive */
+	@media (max-width: 768px) {
+		.modal-body {
+			padding: 1.5rem;
+		}
+
+		.modal-footer {
+			padding: 0 1.5rem 1.5rem;
+			gap: 0.5rem;
+		}
+
+		.btn-cancel,
+		.btn-save {
+			padding: 0.65rem 1.25rem;
+			font-size: 0.8125rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.modal-body {
+			padding: 1rem;
+		}
+
+		.modal-footer {
+			padding: 0 1rem 1rem;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
+		.btn-cancel,
+		.btn-save {
+			width: 100%;
+			padding: 0.75rem;
+		}
 	}
 </style>

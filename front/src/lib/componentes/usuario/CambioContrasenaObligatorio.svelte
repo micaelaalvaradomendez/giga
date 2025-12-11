@@ -447,4 +447,27 @@
     .submit-button:disabled:hover {
         background: linear-gradient(135deg, #27ae60, #2ecc71);
     }
+
+    @media (max-width: 600px) {
+        .mandatory-modal {
+            width: 95%;
+            margin: 1rem;
+        }
+
+        .modal-header {
+            padding: 1.5rem 1rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem 1rem;
+        }
+
+        .form-group input {
+            padding: 10px;
+        }
+    }
 </style>

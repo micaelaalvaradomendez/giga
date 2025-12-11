@@ -116,6 +116,32 @@ const slides = [
                 </div>
             </div>
         `
+    },
+    {
+        id: 11, // Nuevo ID
+        title: "Escalabilidad",
+        icon: "🌍",
+        content: `
+            <p>GIGA trasciende a Protección Civil. Su arquitectura abstracta permite gestion de turnos en:</p>
+            <ul>
+                <li><strong>Salud:</strong> Guardias médicas y cronogramas hospitalarios.</li>
+                <li><strong>Industria:</strong> Turnos rotativos en fábricas 24/7.</li>
+                <li><strong>Seguridad:</strong> Despliegue territorial (Policía/Bomberos).</li>
+            </ul>
+        `
+    },
+    {
+        id: 12, // Nuevo ID
+        title: "Futuro",
+        icon: "🔮",
+        content: `
+            <p>Roadmap de evolución tecnológica (GIGA 2.0):</p>
+            <ul>
+                <li><strong>Biometría Real (WebAuthn):</strong> Uso de huella/rostro del celular para validar identidad física.</li>
+                <li><strong>Geofencing:</strong> Validación de ubicación GPS para guardias de campo.</li>
+                <li><strong>Modo Offline (PWA):</strong> Operatividad sin conexión para zonas de emergencia.</li>
+            </ul>
+        `
     }
 ];
 
@@ -267,10 +293,11 @@ function animate() {
 
 // Control de Rotación con Mouse Wheel
 window.addEventListener('wheel', (e) => {
+    e.preventDefault(); // Evitar scroll de la página
     if (!isPaused) {
         targetRotation += e.deltaY * 0.1;
     }
-});
+}, { passive: false }); // Permitir preventDefault
 
 // Control de Rotación Arrastrando (Touch/Mouse)
 let isDragging = false;
@@ -345,8 +372,10 @@ function createOverlay(sourceElement, data, isHero) {
         align-items: center;
         opacity: 0;
         transition: opacity 0.3s ease;
+        pointer-events: auto; /* IMPORTANTE: Habilitar clicks */
     `;
 
+    // Crear el clon (modal)
     // Crear el clon (modal)
     const clone = document.createElement('div');
     clone.className = `expanded-card ${isHero ? 'hero-mode' : ''}`;
@@ -376,7 +405,6 @@ function createOverlay(sourceElement, data, isHero) {
         `).join('');
 
         clone.innerHTML = `
-            <div class="close-btn">&times;</div>
             <div class="expanded-content">
                 <h2>${data.title}</h2>
                 <p class="hero-subtitle">${data.subtitle}</p>
@@ -389,15 +417,16 @@ function createOverlay(sourceElement, data, isHero) {
                     </div>
                 </div>
             </div>
+            <div class="close-btn">&times;</div>
         `;
     } else {
         // Contenido normal para slides
         clone.innerHTML = `
-            <div class="close-btn">&times;</div>
             <div class="expanded-content">
                 <h2>${data.title}</h2>
                 <div class="body-text">${data.content}</div>
             </div>
+            <div class="close-btn">&times;</div>
         `;
     }
 
@@ -422,13 +451,37 @@ function createOverlay(sourceElement, data, isHero) {
     });
 
     // Click en el fondo oscuro (backdrop) para cerrar
-    // Solo cerrar si el click es directamente en el overlay, no en sus hijos
     overlay.addEventListener('click', (e) => {
-        // Si el click fue directamente en el overlay (no propagado desde el modal)
         if (e.target === overlay) {
             closeOverlay(overlay, clone, rect, isHero);
         }
     });
+
+    // DETECCIÓN GEOMÉTRICA PARA EL NÚCLEO (CÍRCULO)
+    // Si es Hero, el div es cuadrado pero se ve redondo.
+    // Si clickean en las esquinas (fuera del radio), debe cerrarse.
+    if (isHero) {
+        clone.addEventListener('click', (e) => {
+            // Coordenadas del click relativas al centro del modal
+            const modalRect = clone.getBoundingClientRect();
+            const centerX = modalRect.left + modalRect.width / 2;
+            const centerY = modalRect.top + modalRect.height / 2;
+
+            const clickX = e.clientX;
+            const clickY = e.clientY;
+
+            // Distancia del click al centro
+            const distance = Math.sqrt(Math.pow(clickX - centerX, 2) + Math.pow(clickY - centerY, 2));
+
+            // Radio del círculo (usamos el menor lado por seguridad, aunque debería ser cuadrado)
+            const radius = modalRect.width / 2;
+
+            // Si la distancia es mayor al radio, clickearon en la "esquina" invisible
+            if (distance > radius) {
+                closeOverlay(overlay, clone, rect, isHero);
+            }
+        });
+    }
 
     // Si es hero, agregar funcionalidad de tabs
     if (isHero) {

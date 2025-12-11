@@ -263,14 +263,14 @@
     }
 
     .btn-secondary {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: rgba(255, 255, 255, 0.8);
+        background: rgba(64, 123, 255, 0.1);
+        border: 1px solid rgba(64, 123, 255, 0.2);
+        color: #407bff;
     }
 
     .btn-secondary:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.15);
-        color: #fff;
+        background: rgba(64, 123, 255, 0.15);
+        color: #2c57c7;
     }
 
     .btn-danger {
@@ -282,5 +282,32 @@
     .btn-danger:hover:not(:disabled) {
         background: rgba(244, 67, 54, 0.3);
         transform: translateY(-2px);
+    }
+    @media (max-width: 600px) {
+        .modal-glass {
+            width: 95%;
+            margin: 1rem;
+            max-height: 85vh;
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            flex-direction: column;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+        }
+
+        .btn-primary,
+        .btn-secondary,
+        .btn-danger {
+            width: 100%;
+        }
     }
 </style>
