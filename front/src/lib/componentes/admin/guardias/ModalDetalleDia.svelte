@@ -133,22 +133,25 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    padding: 1rem;
   }
 
   .modal-content {
     background: white;
     border-radius: 16px;
     padding: 0;
-    max-width: 600px; /* Un poco más angosto para parecer lista moderna */
-    width: 90%;
-    max-height: 80vh;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    border: none;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
@@ -163,31 +166,35 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: none;
   }
 
   .modal-header h3 {
     margin: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
+    color: white; /* Ensure text is white */
+    font-size: 1.3rem;
+    font-weight: 700;
   }
 
   .close-button {
-    background: rgba(255, 255, 255, 0.2);
+    background: none;
     border: none;
-    font-size: 1.5rem;
-    line-height: 1;
+    font-size: 25px;
     color: white;
     cursor: pointer;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+    padding: 0;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
+    border-radius: 50%;
+    transition: all 0.3s ease;
   }
-  .close-button:hover { background: rgba(255, 255, 255, 0.4); }
+  .close-button:hover { 
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+  }
 
   /* Body */
   .modal-body {

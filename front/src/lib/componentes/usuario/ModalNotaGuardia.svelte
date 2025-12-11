@@ -123,9 +123,8 @@
     }
 
     .modal-glass {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(0, 0, 0, 0.1);
+        background: white;
+        border: none;
         border-radius: 20px;
         max-width: 600px;
         width: 100%;
@@ -136,32 +135,43 @@
     }
 
     .modal-header {
+        background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+        border-radius: 20px 20px 0 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .modal-header h2 {
         margin: 0;
-        color: #173263;
+        color: white;
         font-size: 1.5rem;
+        font-weight: 600;
     }
 
     .btn-close {
-        background: none;
+        background: rgba(255, 255, 255, 0.2);
         border: none;
-        color: rgba(0, 0, 0, 0.6);
+        color: white;
         font-size: 1.5rem;
         font-weight: 600;
         cursor: pointer;
         padding: 0.25rem 0.5rem;
-        transition: color 0.3s ease;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .btn-close:hover {
-        color: #000000;
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
     }
 
     .modal-body {

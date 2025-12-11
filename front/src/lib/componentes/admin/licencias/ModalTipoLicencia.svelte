@@ -21,14 +21,18 @@
 {#if show}
 	<div class="modal-overlay">
 		<div class="modal">
-			<h3>
-				{isEditing
-					? "Editar tipo de licencia"
-					: "Nuevo tipo de licencia"}
-			</h3>
-			{#if error}
-				<div class="alert alert-error">{error}</div>
-			{/if}
+			<div class="modal-header">
+				<h3>
+					{isEditing
+						? "Editar tipo de licencia"
+						: "Nuevo tipo de licencia"}
+				</h3>
+				<button class="btn-close" on:click={cancelar}>&times;</button>
+			</div>
+			<div class="modal-body">
+				{#if error}
+					<div class="alert alert-error">{error}</div>
+				{/if}
 			<div class="form-row">
 				<label for="codigo">Código / Nombre *</label>
 				<input
@@ -64,6 +68,7 @@
 				</button>
 			</div>
 		</div>
+		</div>
 	</div>
 {/if}
 
@@ -85,30 +90,64 @@
 
 	.modal {
 		background: white;
-		padding: 2rem;
+		padding: 0;
 		border-radius: 16px;
 		width: 520px;
 		max-width: 92%;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		animation: modalSlideIn 0.3s ease-out;
-		border: 1px solid #e5e7eb;
+		border: none;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
+		overflow: hidden;
 	}
 
 	.modal::-webkit-scrollbar {
 		display: none;
 	}
 
-	.modal h3 {
-		margin-top: 0;
-		color: #1e293b;
-		margin-bottom: 1.5rem;
+	.modal-header {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		padding: 1.5rem 2rem;
+		border-radius: 16px 16px 0 0;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.modal-header h3 {
+		margin: 0;
+		color: white;
 		font-size: 1.5rem;
-		text-align: center;
-		font-weight: 700;
-		padding-bottom: 1rem;
-		border-bottom: 2px solid #e5e7eb;
+		font-weight: 600;
+	}
+
+	.btn-close {
+		background: rgba(255, 255, 255, 0.2);
+		border: none;
+		color: white;
+		font-size: 1.8rem;
+		font-weight: 600;
+		cursor: pointer;
+		padding: 0;
+		border-radius: 8px;
+		transition: all 0.3s ease;
+		width: 32px;
+		height: 32px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
+	}
+
+	.btn-close:hover {
+		background: rgba(255, 255, 255, 0.3);
+		transform: scale(1.1);
+	}
+
+	.modal-body {
+		padding: 2rem;
 	}
 
 	.form-row {

@@ -227,7 +227,7 @@
 	}
 
 	.modal-header {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
 		padding: 1.5rem 2rem;
 		border-radius: 16px 16px 0 0;
