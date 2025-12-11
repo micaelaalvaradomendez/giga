@@ -13,7 +13,7 @@ class Command(BaseCommand):
             '--days',
             type=int,
             default=7,
-            help='Eliminar sesiones inactivas y con ultimo_acceso older than DAYS (default: 7)'
+            help='Eliminar sesiones inactivas y con ultimo_acceso más antiguos de DAYS días (default: 7)'
         )
         parser.add_argument(
             '--dry-run',

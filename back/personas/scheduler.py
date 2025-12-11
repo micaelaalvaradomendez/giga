@@ -28,7 +28,7 @@ def start_scheduler():
         scheduler = BackgroundScheduler()
         # Programar tarea diaria a las 03:00 (UTC local ajustar si hace falta)
         scheduler.add_job(
-            lambda: _run_cleanup(),
+            _run_cleanup,
             trigger=CronTrigger(hour=3, minute=0),
             id='cleanup_sessions_daily',
             replace_existing=True,

@@ -1,6 +1,5 @@
 from django.apps import AppConfig
 import logging
-import os
 import sys
 
 logger = logging.getLogger(__name__)
@@ -13,9 +12,8 @@ class PersonasConfig(AppConfig):
         # Iniciar scheduler solo en proceso de servidor (evitar comandos manage.py como migrate)
         try:
             # Evitar ejecución en procesos de migración/collectstatic/tests:
-            argv = " ".join(sys.argv).lower()
             disallowed = ['makemigrations', 'migrate', 'collectstatic', 'test', 'shell', 'loaddata']
-            if any(cmd in argv for cmd in disallowed):
+            if len(sys.argv) > 1 and sys.argv[1] in disallowed:
                 logger.debug('No se inicia scheduler (comando manage.py detectado).')
                 return
 

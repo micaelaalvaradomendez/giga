@@ -18,8 +18,8 @@ def cleanup_sessions(days=7, dry_run=False):
     """
     cutoff = timezone.now() - timedelta(days=days)
     qs = SesionActiva.objects.filter(Q(activa=False) | Q(ultimo_acceso__lt=cutoff))
-    total = qs.count()
     session_keys = list(qs.values_list('session_key', flat=True))
+    total = len(session_keys)
 
     result = {
         'candidatas': total,
