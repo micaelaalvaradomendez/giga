@@ -252,29 +252,22 @@ function animate() {
     orbitRing.style.transform = `rotateY(-${currentRotation}deg)`;
 
     // Actualizar tarjetas (Mantenerlas mirando al frente y escalar por profundidad)
+    // Actualizar tarjetas (Mantenerlas mirando al frente y escalar por profundidad)
     document.querySelectorAll('.orbit-card').forEach(card => {
         const baseAngle = parseFloat(card.dataset.angle);
 
-        // Calcular ángulo relativo actual (0 = frente)
-        // Ajustamos para que sea un valor entre 0 y 360
-        let relativeAngle = (baseAngle - currentRotation) % 360;
-        if (relativeAngle < 0) relativeAngle += 360;
+        // Usamos Math.cos directamente con la diferencia de ángulos
+        // Esto evita saltos bruscos con el modulo cuando se cruza 0/360
+        // Convertimos a radianes: (grados * PI) / 180
+        const angleDiff = (baseAngle - currentRotation);
+        const radians = (angleDiff * Math.PI) / 180;
 
-        // Calcular escala basada en profundidad (Coseno)
-        // 0 grados (frente) = scale 1.2
-        // 180 grados (atrás) = scale 0.6
-        const radians = (relativeAngle * Math.PI) / 180;
-        const depth = Math.cos(radians); // 1 a -1
+        // Depth: 1 (frente) a -1 (atrás)
+        const depth = Math.cos(radians);
 
         const scale = 0.8 + (depth * 0.4); // Rango 0.4 a 1.2
         const opacity = 0.3 + ((depth + 1) / 2) * 0.7; // Rango 0.3 a 1.0
         const zIndex = Math.floor((depth + 1) * 100);
-
-        // Aplicar transformaciones
-        // Importante: rotateY(${baseAngle}deg) posiciona en el círculo
-        // translateZ empuja al radio
-        // rotateY(${-baseAngle + currentRotation}deg) contrarresta la rotación para que el texto mire al frente (billboard)
-        // Pero como queremos efecto 3D puro, solo escalamos.
 
         card.style.transform = `
             rotateY(${baseAngle}deg) 
@@ -295,7 +288,8 @@ function animate() {
 window.addEventListener('wheel', (e) => {
     e.preventDefault(); // Evitar scroll de la página
     if (!isPaused) {
-        targetRotation += e.deltaY * 0.1;
+        // Reducimos la sensibilidad para evitar saltos muy grandes
+        targetRotation += e.deltaY * 0.05;
     }
 }, { passive: false }); // Permitir preventDefault
 
