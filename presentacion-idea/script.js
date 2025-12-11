@@ -32,17 +32,47 @@ const slides = [
         id: 6,
         title: "Tecnología",
         icon: "💻",
-        content: `
-            <p>Stack Tecnológico moderno y escalable:</p>
-            <div style="display:flex; justify-content:space-around; margin-top:30px; font-size:1.5rem;">
-                <div>🐍 Django REST</div>
-                <div>⚡ SvelteKit</div>
-                <div>🐘 PostgreSQL</div>
-                <div>🐳 Docker</div>
-            </div>
-            <br>
-            <p>Arquitectura de Microservicios orquestada con Docker Compose y NGINX como Gateway.</p>
-        `
+        tabs: [
+            {
+                id: "backend",
+                title: "Backend",
+                icon: "🐍",
+                content: `
+                    <p>Django REST Framework con PostgreSQL</p>
+                    <ul>
+                        <li>API RESTful</li>
+                        <li>Autenticación JWT</li>
+                        <li>ORM Database First</li>
+                    </ul>
+                `
+            },
+            {
+                id: "frontend",
+                title: "Frontend",
+                icon: "⚡",
+                content: `
+                    <p>SvelteKit con TypeScript</p>
+                    <ul>
+                        <li>SSR/SPA Híbrido</li>
+                        <li>Reactivo</li>
+                        <li>Optimizado</li>
+                    </ul>
+                `
+            },
+            {
+                id: "infraestructura",
+                title: "Infraestructura",
+                icon: "🐳",
+                content: `
+                    <p>Docker + Railway</p>
+                    <ul>
+                        <li>Microservicios</li>
+                        <li>CI/CD Automático</li>
+                        <li>NGINX Gateway</li>
+                    </ul>
+                `
+            }
+        ]
     },
     {
         id: 7,
@@ -87,35 +117,65 @@ const slides = [
         id: 10,
         title: "Sistema Final",
         icon: "🚀",
-        content: `
-            <p style="text-align:center; font-size:1.3rem; margin-bottom:30px;">El sistema está operativo y en producción.</p>
-            
-            <div style="display:flex; justify-content:center; align-items:center; gap:50px; margin-top:30px;">
-                <!-- QR Code -->
-                <div style="text-align:center;">
-                    <h3 style="color:var(--secondary-color); margin-bottom:15px;">Acceso Web</h3>
-                    <img src="imagenes/qr.png" alt="QR Code GIGA" style="width:200px; height:200px; border:3px solid var(--accent-color); border-radius:10px; box-shadow:0 0 20px rgba(255,42,109,0.3);">
-                    <p style="margin-top:10px; font-size:1.1rem; color:#05d9e8;">giga-untdf.up.railway.app</p>
-                </div>
-                
-                <!-- Credenciales de Acceso -->
-                <div style="background:rgba(255,255,255,0.05); padding:30px; border-radius:15px; border:1px solid rgba(5,217,232,0.3); min-width:350px;">
-                    <h3 style="color:var(--accent-color); margin-bottom:20px; text-align:center;">Credenciales de Prueba</h3>
+        tabs: [
+            {
+                id: "acceso-web",
+                title: "Acceso Web",
+                icon: "🌐",
+                content: `
+                    <p style="text-align:center; font-size:1.3rem; margin-bottom:30px;">El sistema está operativo y en producción.</p>
                     
-                    <div style="margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.3); border-radius:8px;">
-                        <p style="font-size:0.9rem; color:#888; margin-bottom:5px;">Usuario 1:</p>
-                        <p style="font-family:monospace; font-size:1.1rem;"><strong>CUIL:</strong> 20-12345678-9</p>
-                        <p style="font-family:monospace; font-size:1.1rem;"><strong>Contraseña:</strong> demo123</p>
+                    <div style="display:flex; justify-content:center; align-items:center; gap:50px; margin-top:30px;">
+                        <!-- QR Code -->
+                        <div style="text-align:center;">
+                            <h3 style="color:var(--secondary-color); margin-bottom:15px;">Acceso Web</h3>
+                            <img src="imagenes/qr.png" alt="QR Code GIGA" style="width:200px; height:200px; border:3px solid var(--accent-color); border-radius:10px; box-shadow:0 0 20px rgba(255,42,109,0.3);">
+                            <p style="margin-top:10px; font-size:1.1rem; color:#05d9e8;">giga-untdf.up.railway.app</p>
+                        </div>
+                        
+                        <!-- Credenciales de Acceso -->
+                        <div style="background:rgba(255,255,255,0.05); padding:30px; border-radius:15px; border:1px solid rgba(5,217,232,0.3); min-width:350px;">
+                            <h3 style="color:var(--accent-color); margin-bottom:20px; text-align:center;">Credenciales de Prueba</h3>
+                            
+                            <div style="margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.3); border-radius:8px;">
+                                <p style="font-size:0.9rem; color:#888; margin-bottom:5px;">Usuario 1:</p>
+                                <p style="font-family:monospace; font-size:1.1rem;"><strong>CUIL:</strong> 20-12345678-9</p>
+                                <p style="font-family:monospace; font-size:1.1rem;"><strong>Contraseña:</strong> demo123</p>
+                            </div>
+                            
+                            <div style="padding:15px; background:rgba(0,0,0,0.3); border-radius:8px;">
+                                <p style="font-size:0.9rem; color:#888; margin-bottom:5px;">Usuario 2:</p>
+                                <p style="font-family:monospace; font-size:1.1rem;"><strong>CUIL:</strong> 27-98765432-1</p>
+                                <p style="font-family:monospace; font-size:1.1rem;"><strong>Contraseña:</strong> demo456</p>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div style="padding:15px; background:rgba(0,0,0,0.3); border-radius:8px;">
-                        <p style="font-size:0.9rem; color:#888; margin-bottom:5px;">Usuario 2:</p>
-                        <p style="font-family:monospace; font-size:1.1rem;"><strong>CUIL:</strong> 27-98765432-1</p>
-                        <p style="font-family:monospace; font-size:1.1rem;"><strong>Contraseña:</strong> demo456</p>
+                `
+            },
+            {
+                id: "presentacion",
+                title: "Presentación",
+                icon: "📊",
+                content: `
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
+                        <h3 style="color:var(--secondary-color);">Equipo de Desarrollo</h3>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; text-align:left; font-size:1.1rem;">
+                            <div>• Aguila Cárcamo Tayra Belén</div>
+                            <div>• Alvarado Mendez Micaela</div>
+                            <div>• Criniti Teresa</div>
+                            <div>• Frers Pamela</div>
+                            <div>• García Cristian</div>
+                            <div>• Gomez Antonaz Leandro</div>
+                        </div>
+                        
+                        <div style="margin-top:30px; text-align:center;">
+                            <h3 style="color:var(--accent-color); margin-bottom:15px;">Acceder a la Presentación</h3>
+                            <img src="imagenes/qr-prest.png" alt="QR Presentación" style="width:180px; height:180px; border:3px solid var(--secondary-color); border-radius:10px; box-shadow:0 0 20px rgba(77, 238, 234, 0.3);">
+                        </div>
                     </div>
-                </div>
-            </div>
-        `
+                `
+            }
+        ]
     },
     {
         id: 11, // Nuevo ID
@@ -345,7 +405,7 @@ document.addEventListener('touchstart', (e) => {
 
 document.addEventListener('touchmove', (e) => {
     if (!isDragging) return;
-    // e.preventDefault(); // Evitar scroll vertical nativo al arrastrar
+    e.preventDefault(); // Evitar scroll vertical nativo al arrastrar
     const deltaX = e.touches[0].clientX - startX;
     targetRotation = startRotation - deltaX * 0.8; // Sensibilidad aumentada para touch
 }, { passive: false });
@@ -453,14 +513,46 @@ function createOverlay(sourceElement, data, isHero) {
             <div class="close-btn">&times;</div>
         `;
     } else {
-        // Contenido normal para slides
-        clone.innerHTML = `
-            <div class="expanded-content">
-                <h2>${data.title}</h2>
-                <div class="body-text">${data.content}</div>
-            </div>
-            <div class="close-btn">&times;</div>
-        `;
+        // Verificar si el slide tiene tabs
+        if (data.tabs && data.tabs.length > 0) {
+            // Generar HTML de tabs (igual que en hero)
+            const tabsHTML = data.tabs.map((tab, index) => `
+                <button class="tab-btn ${index === 0 ? 'active' : ''}" data-tab="${tab.id}">
+                    <span class="tab-icon">${tab.icon}</span>
+                    <span class="tab-title">${tab.title}</span>
+                </button>
+            `).join('');
+
+            const tabContentsHTML = data.tabs.map((tab, index) => `
+                <div class="tab-content ${index === 0 ? 'active' : ''}" data-tab="${tab.id}">
+                    ${tab.content}
+                </div>
+            `).join('');
+
+            clone.innerHTML = `
+                <div class="expanded-content">
+                    <h2>${data.title}</h2>
+                    <div class="tabs-container">
+                        <div class="tabs-nav">
+                            ${tabsHTML}
+                        </div>
+                        <div class="tabs-body">
+                            ${tabContentsHTML}
+                        </div>
+                    </div>
+                </div>
+                <div class="close-btn">&times;</div>
+            `;
+        } else {
+            // Contenido normal para slides sin tabs
+            clone.innerHTML = `
+                <div class="expanded-content">
+                    <h2>${data.title}</h2>
+                    <div class="body-text">${data.content}</div>
+                </div>
+                <div class="close-btn">&times;</div>
+            `;
+        }
     }
 
     // Agregar modal al overlay
@@ -516,8 +608,8 @@ function createOverlay(sourceElement, data, isHero) {
         });
     }
 
-    // Si es hero, agregar funcionalidad de tabs
-    if (isHero) {
+    // Si tiene tabs, agregar funcionalidad
+    if (data.tabs && data.tabs.length > 0) {
         const tabButtons = clone.querySelectorAll('.tab-btn');
         const tabContents = clone.querySelectorAll('.tab-content');
 
@@ -526,11 +618,9 @@ function createOverlay(sourceElement, data, isHero) {
                 e.stopPropagation();
                 const tabId = btn.dataset.tab;
 
-                // Remover active de todos
                 tabButtons.forEach(b => b.classList.remove('active'));
                 tabContents.forEach(c => c.classList.remove('active'));
 
-                // Activar el seleccionado
                 btn.classList.add('active');
                 const activeContent = clone.querySelector(`.tab-content[data-tab="${tabId}"]`);
                 if (activeContent) {
