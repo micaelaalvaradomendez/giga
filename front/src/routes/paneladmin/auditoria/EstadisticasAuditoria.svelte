@@ -4,6 +4,7 @@
 	export let registros = [];
 
 	// Función para obtener estadísticas generales
+	// Optimized: reduce Date instantiation in loops
 	function calcularEstadisticas(registros) {
 		if (!registros || registros.length === 0) {
 			return {
@@ -18,13 +19,17 @@
 			};
 		}
 
+		// Calculate reference dates once
 		const hoy = new Date();
 		hoy.setHours(0, 0, 0, 0);
+		const hoyTs = hoy.getTime();
 		
 		const inicioSemana = new Date(hoy);
 		inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+		const inicioSemanaTs = inicioSemana.getTime();
 		
 		const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+		const inicioMesTs = inicioMes.getTime();
 
 		// Contadores básicos
 		const stats = {
@@ -41,7 +46,7 @@
 		// Crear array para actividad diaria (últimos 7 días)
 		const actividadDiaria = Array(7).fill(0);
 		const fechaLabels = [];
-
+		
 		for (let i = 6; i >= 0; i--) {
 			const fecha = new Date();
 			fecha.setDate(fecha.getDate() - i);
@@ -52,24 +57,32 @@
 			}));
 		}
 
+		// One day in milliseconds
+		const oneDay = 24 * 60 * 60 * 1000;
+
 		// Procesar cada registro
 		registros.forEach(registro => {
-			const fechaRegistro = new Date(registro.creado_en);
+			// Use precomputed timestamp if available, otherwise parse once
+			const tsRegistro = registro._ts_creado_en || new Date(registro.creado_en).getTime();
+			
+			// Create date only for resetting time (needed for day comparison)
+			const fechaRegistro = new Date(tsRegistro);
 			fechaRegistro.setHours(0, 0, 0, 0);
+			const fechaRegistroTs = fechaRegistro.getTime();
 
 			// Contadores por fecha
-			if (fechaRegistro >= hoy) {
+			if (fechaRegistroTs >= hoyTs) {
 				stats.hoy++;
 			}
-			if (fechaRegistro >= inicioSemana) {
+			if (fechaRegistroTs >= inicioSemanaTs) {
 				stats.estaSemana++;
 			}
-			if (fechaRegistro >= inicioMes) {
+			if (fechaRegistroTs >= inicioMesTs) {
 				stats.esteMes++;
 			}
 
-			// Actividad diaria (últimos 7 días)
-			const diasAtras = Math.floor((hoy - fechaRegistro) / (1000 * 60 * 60 * 24));
+			// Actividad diaria (últimos 7 días) - use timestamp comparison
+			const diasAtras = Math.floor((hoyTs - fechaRegistroTs) / oneDay);
 			if (diasAtras >= 0 && diasAtras < 7) {
 				actividadDiaria[6 - diasAtras]++;
 			}
