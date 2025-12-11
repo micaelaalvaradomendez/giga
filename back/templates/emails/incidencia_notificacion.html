@@ -72,7 +72,7 @@
         .action-button {
             display: inline-block;
             background-color: #007bff;
-            color: white;
+            color: white !important;
             padding: 12px 24px;
             text-decoration: none;
             border-radius: 5px;
@@ -113,7 +113,7 @@
         </div>
 
         <div class="content">
-            <p>Hola {{ destinatario.first_name|default:destinatario.username }},</p>
+            <p>Hola {{ destinatario.nombre }} {{ destinatario.apellido }},</p>
             
             <p>{{ mensaje_principal }}</p>
 
@@ -141,13 +141,13 @@
                 
                 <div class="info-row">
                     <span class="info-label">Creado por:</span>
-                    <span class="info-value">{{ incidencia.creado_por.first_name|default:incidencia.creado_por.username }}</span>
+                    <span class="info-value">{{ incidencia.creado_por.nombre }} {{ incidencia.creado_por.apellido }}</span>
                 </div>
                 
                 {% if incidencia.asignado_a %}
                 <div class="info-row">
                     <span class="info-label">Asignado a:</span>
-                    <span class="info-value">{{ incidencia.asignado_a.first_name|default:incidencia.asignado_a.username }}</span>
+                    <span class="info-value">{{ incidencia.asignado_a.nombre }} {{ incidencia.asignado_a.apellido }}</span>
                 </div>
                 {% endif %}
                 

@@ -312,16 +312,12 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
 # Credenciales (usar variables de entorno en producción)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='giga.sistema.untdf.25@gmail.com')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')  # App password de Gmail
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')  # App password de Gmail - DEBE configurarse en variables de entorno
 
 # Remitente por defecto
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Sistema GIGA <giga.sistema.untdf.25@gmail.com>')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Sistema GIGA <noreply@example.com>')
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
-
-# Para desarrollo: mostrar emails en consola si no hay password configurada
-if not EMAIL_HOST_PASSWORD and DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # URL del frontend para links en emails
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
