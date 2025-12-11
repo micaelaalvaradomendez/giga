@@ -92,7 +92,7 @@ def registrar_auditoria(agente_id, accion, detalle=""):
                 INSERT INTO auditoria (id_agente, accion, nombre_tabla, pk_afectada, creado_en, valor_nuevo)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 """,
-                [agente_id, accion, None, None, datetime.now(), valor_json]
+                [agente_id, accion, 'auth', agente_id, datetime.now(), valor_json]
             )
     except Exception as e:
         logger.exception(f"Error registrando auditoría: {e}")
