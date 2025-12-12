@@ -733,272 +733,49 @@
 						</div>
 					</div>
 				{:else}
-					<!-- Vista previa reporte general -->
-					<div class="reporte-general">
-						<div class="reporte-header">
-							<h3>Planilla General/Preventiva</h3>
-							<div class="datos-area">
-								<p><strong>Dirección:</strong> {$datosReporte.area_nombre}</p>
-								<p><strong>Mes:</strong> {$datosReporte.periodo.mes}</p>
-								<p><strong>Período:</strong> {$datosReporte.periodo.fecha_desde} - {$datosReporte.periodo.fecha_hasta}</p>
+					<!-- Vista previa simplificada reporte general -->
+					<div class="reporte-general simple">
+						<div class="summary-grid">
+							<div class="summary-card">
+								<p class="summary-label">Área/Dirección</p>
+								<p class="summary-value">{$datosReporte.area_nombre || 'Según permisos'}</p>
+							</div>
+							<div class="summary-card">
+								<p class="summary-label">Período</p>
+								<p class="summary-value">{$datosReporte.periodo?.fecha_desde} - {$datosReporte.periodo?.fecha_hasta}</p>
+							</div>
+							<div class="summary-card">
+								<p class="summary-label">Agentes</p>
+								<p class="summary-value">{$datosReporte.totales?.total_agentes || ($datosReporte.agentes?.length || 0)}</p>
+							</div>
+							<div class="summary-card">
+								<p class="summary-label">Horas totales</p>
+								<p class="summary-value">{$datosReporte.totales?.total_horas_direccion || $datosReporte.totales?.horas || '-'}</p>
 							</div>
 						</div>
 
-						<div class="tabla-container">
-							<table class="tabla-reporte tabla-individual">
-								<thead>
-									<tr>
-										<th>Día</th>
-										<th>Horario Habitual / Novedad</th>
-										<th>Horario de Guardia</th>
-										<th>Horas</th>
-										<th>Motivo de la Guardia</th>
-									</tr>
-								</thead>
-								<tbody>
-									{#each ($datosReporte?.dias_mes || []).slice(0, 10) as dia}
-										<tr class:dia-con-guardia={dia.tiene_guardia} class:fin-semana={!dia.horario_habitual_inicio}>
-											<td class="dia-fecha">
-												<div class="fecha-completa">
-													<span class="numero-dia">{dia.dia_mes}</span>
-													<span class="nombre-dia">{dia.dia_semana}</span>
-												</div>
-											</td>
-											<td class="horario-novedad">
-												{#if dia.novedad && dia.novedad !== "Jornada habitual"}
-													<span class="novedad">{dia.novedad}</span>
-												{:else if dia.horario_habitual_inicio}
-													<span class="horario-habitual">{dia.horario_habitual_inicio} - {dia.horario_habitual_fin}</span>
-												{:else}
-													<span class="sin-jornada">-</span>
-												{/if}
-											</td>
-											<td class="horario-guardia">
-												{#if dia.guardia_inicio}
-													<span class="horario-guardia-valor">{dia.guardia_inicio} - {dia.guardia_fin}</span>
-													{#if dia.horas_efectivas > 0}
-														<span class="presentismo-ok">✓</span>
-													{:else}
-														<span class="presentismo-pendiente">⚠</span>
-													{/if}
-												{:else}
-													-
-												{/if}
-											</td>
-											<td class="horas-columna text-center">
-												{#if dia.horas_planificadas > 0}
-													<div class="horas-planificadas">{dia.horas_planificadas}h</div>
-													{#if dia.horas_efectivas > 0 && dia.horas_efectivas !== dia.horas_planificadas}
-														<div class="horas-efectivas">({dia.horas_efectivas}h efec.)</div>
-													{/if}
-												{:else}
-													-
-												{/if}
-											</td>
-											<td class="motivo-guardia">
-												{#if dia.motivo_guardia}
-													<span class="motivo">{dia.motivo_guardia}</span>
-												{:else}
-													-
-												{/if}
-											</td>
-										</tr>
-									{/each}
-								</tbody>
-								<tfoot>
-									<tr class="total-row">
-										<td><strong>TOTAL</strong></td>
-										<td colspan="3" class="text-center">
-											<strong>Días con guardias: {$datosReporte.totales.total_dias_trabajados}</strong>
-										</td>
-										<td class="text-center">
-											<strong>{$datosReporte.totales.total_horas_planificadas}h</strong>
-										</td>
-									</tr>
-								</tfoot>
-							</table>
-						</div>
-
-						{#if ($datosReporte?.dias_mes || []).length > 10}
-							<div class="vista-limitada">
-								<p>Mostrando 10 de {($datosReporte?.dias_mes || []).length} días. Exporte para ver el reporte completo.</p>
-							</div>
-						{/if}
-
-						<div class="totales-reporte">
-							<div class="totales-row">
-								<div class="total-item">
-									<span class="total-label">Total días con guardias:</span>
-									<span class="total-valor">{$datosReporte.totales.total_dias_trabajados}</span>
-								</div>
-								<div class="total-item">
-									<span class="total-label">Horas planificadas:</span>
-									<span class="total-valor">{$datosReporte.totales.total_horas_planificadas || $datosReporte.totales.total_horas_guardia}h</span>
-								</div>
-								<div class="total-item">
-									<span class="total-label">Promedio horas/día:</span>
-									<span class="total-valor">{$datosReporte.totales.promedio_horas_dia}h</span>
-								</div>
-							</div>
-							
-							<div class="presentismo-info">
-								<h4>📊 Información de Presentismo</h4>
-								<div class="totales-row">
-									<div class="total-item success">
-										<span class="total-label">Días con presentismo:</span>
-										<span class="total-valor">{$datosReporte.totales.dias_con_presentismo || 0}</span>
-									</div>
-									<div class="total-item warning">
-										<span class="total-label">Días sin registro:</span>
-										<span class="total-valor">{$datosReporte.totales.dias_sin_presentismo || 0}</span>
-									</div>
-									<div class="total-item">
-										<span class="total-label">Horas efectivas:</span>
-										<span class="total-valor">{$datosReporte.totales.total_horas_efectivas || 0}h</span>
-									</div>
-									<div class="total-item">
-										<span class="total-label">% Presentismo:</span>
-										<span class="total-valor">{$datosReporte.totales.porcentaje_presentismo || 0}%</span>
-									</div>
-								</div>
-								
-								{#if ($datosReporte.totales.dias_sin_presentismo || 0) > 0}
-									<div class="alerta-presentismo">
-										<p>⚠️ <strong>Nota:</strong> Hay guardias sin registro de presentismo. Las horas efectivas se registran cuando el agente marca entrada y salida durante su guardia en el sistema de asistencias.</p>
-									</div>
+						<div class="list-preview">
+							<p class="summary-label">Agentes (vista breve)</p>
+							<ul>
+								{#each ($datosReporte.agentes || []).slice(0, 8) as agente}
+									<li class="list-item">
+										<div>
+											<strong>{agente.nombre_completo}</strong>
+											<span class="muted">· Legajo {agente.legajo}</span>
+										</div>
+										<div class="muted">{agente.area || 'Sin área'} · {agente.total_horas || 0} h</div>
+									</li>
+								{/each}
+								{#if ($datosReporte.agentes || []).length > 8}
+									<li class="muted">... y {( $datosReporte.agentes || []).length - 8} más</li>
 								{/if}
-							</div>
+							</ul>
+						</div>
+
+						<div class="preview-note">
+							<p>🔎 Vista reducida para validación rápida. Usa Exportar para ver la grilla completa.</p>
 						</div>
 					</div>
-
-						{#if $datosReporte.dias_columnas && $datosReporte.dias_columnas.length > 0}
-							<div class="tabla-container tabla-grilla">
-								<table class="tabla-reporte tabla-general">
-									<thead>
-										<tr>
-											<th rowspan="2" class="agente-header">Agente y Legajo</th>
-											<th colspan="{$datosReporte.dias_columnas.length}" class="dias-header">Días del mes</th>
-											<th rowspan="2" class="total-header">Total</th>
-										</tr>
-										<tr class="dias-numeros">
-											{#each $datosReporte.dias_columnas as dia}
-												<th class="dia-numero" class:fin-semana={dia.dia_semana === 'Sáb' || dia.dia_semana === 'Dom'}>
-													<div class="dia-info">
-														<span class="numero">{dia.dia}</span>
-														<span class="dia-sem">{dia.dia_semana}</span>
-													</div>
-												</th>
-											{/each}
-										</tr>
-									</thead>
-									<tbody>
-										{#each $datosReporte.agentes.slice(0, 5) as agente}
-											<tr>
-												<td class="agente-info">
-													<div class="nombre-legajo">
-														<span class="nombre">{agente.nombre_completo}</span>
-														<span class="legajo">Leg: {agente.legajo}</span>
-													</div>
-												</td>
-												{#each $datosReporte.dias_columnas as dia}
-													{@const diaData = agente.dias?.find(d => d.fecha === dia.fecha)}
-													<td class="dia-celda" class:con-horas={diaData?.horas > 0} class:fin-semana={dia.dia_semana === 'Sáb' || dia.dia_semana === 'Dom'}>
-														{#if diaData}
-															{#if diaData.tipo === 'guardia'}
-																<span class="horas-guardia">{diaData.valor}</span>
-															{:else if diaData.valor === '-'}
-																<span class="sin-actividad">-</span>
-															{:else}
-																<span class="novedad">{diaData.valor}</span>
-															{/if}
-														{:else}
-															<span class="sin-datos">-</span>
-														{/if}
-													</td>
-												{/each}
-												<td class="total-agente">
-													<strong>{agente.total_horas}h</strong>
-												</td>
-											</tr>
-										{/each}
-									</tbody>
-									<tfoot>
-										<tr class="total-direccion">
-											<td><strong>TOTAL DIRECCIÓN</strong></td>
-											{#each $datosReporte.dias_columnas as dia}
-												{@const totalDia = $datosReporte.agentes.reduce((sum, agente) => {
-													const diaData = agente.dias?.find(d => d.fecha === dia.fecha);
-													return sum + (diaData?.horas || 0);
-												}, 0)}
-												<td class="total-dia">
-													{#if totalDia > 0}
-														<strong>{totalDia.toFixed(1)}h</strong>
-													{:else}
-														-
-													{/if}
-												</td>
-											{/each}
-											<td class="total-general">
-												<strong>{$datosReporte.totales.total_horas_direccion}h</strong>
-											</td>
-										</tr>
-									</tfoot>
-								</table>
-							</div>
-							
-							{#if $datosReporte.agentes.length > 5}
-								<div class="vista-limitada">
-									<p>Mostrando 5 de {$datosReporte.agentes.length} agentes. Exporte para ver el reporte completo con todos los agentes.</p>
-								</div>
-							{/if}
-						{:else}
-							<!-- Fallback si no hay datos de días por columnas -->
-							<div class="tabla-container">
-								<table class="tabla-reporte">
-									<thead>
-										<tr>
-											<th>Agente</th>
-											<th>Legajo</th>
-											<th>Total Horas</th>
-											<th>Estado</th>
-										</tr>
-									</thead>
-									<tbody>
-										{#each $datosReporte.agentes as agente}
-											<tr>
-												<td>{agente.nombre_completo}</td>
-												<td>{agente.legajo}</td>
-												<td class="text-center">{agente.total_horas}h</td>
-												<td>
-													{#if agente.total_horas > 0}
-														<span class="badge badge-activo">Activo</span>
-													{:else}
-														<span class="badge badge-inactivo">Sin guardias</span>
-													{/if}
-												</td>
-											</tr>
-										{/each}
-									</tbody>
-								</table>
-							</div>
-						{/if}
-
-						<div class="totales-reporte">
-							<div class="totales-row">
-								<div class="total-item">
-									<span class="total-label">Total agentes:</span>
-									<span class="total-valor">{$datosReporte.totales.total_agentes}</span>
-								</div>
-								<div class="total-item">
-									<span class="total-label">Total horas dirección:</span>
-									<span class="total-valor">{$datosReporte.totales.total_horas_direccion || $datosReporte.totales.total_horas_todas}h</span>
-								</div>
-								<div class="total-item">
-									<span class="total-label">Promedio por agente:</span>
-									<span class="total-valor">{$datosReporte.totales.promedio_horas_agente}h</span>
-								</div>
-							</div>
-						</div>
 				{/if}
 			</div>
 		</section>
@@ -1271,6 +1048,48 @@
 		background: #fff8e1;
 	}
 
+	/* Preview simple */
+	.summary-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+	.summary-card {
+		border: 1px solid #e9ecef;
+		border-radius: 10px;
+		padding: 12px;
+		background: #f8fafc;
+	}
+	.summary-label {
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: #6c757d;
+		margin: 0 0 4px 0;
+	}
+	.summary-value {
+		font-weight: 700;
+		color: #2c3e50;
+		margin: 0;
+	}
+	.list-preview ul {
+		list-style: none;
+		padding: 0;
+		margin: 8px 0 0 0;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.list-item {
+		border: 1px solid #e9ecef;
+		border-radius: 10px;
+		padding: 10px 12px;
+		background: #fff;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
 	.opciones-adicionales {
 		display: flex;
 		gap: 2rem;

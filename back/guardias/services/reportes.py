@@ -123,17 +123,17 @@ def _aplicar_reglas_por_rol(filtros: Dict, rol: str, agente_ctx: Agente) -> Dict
         filtros["agente"] = [agente_ctx.id_agente]
         if filtros.get("area"):
             raise ReporteError("El rol agente no puede filtrar por area")
-        area_scope = [agente_ctx.id_area_id] if agente_ctx.id_area_id else []
+        area_scope = [agente_ctx.id_area] if agente_ctx.id_area else []
 
     elif rol == "jefatura":
-        if not agente_ctx.id_area_id:
+        if not agente_ctx.id_area:
             raise ReporteError("La jefatura no tiene un area asignada")
-        area_scope = [agente_ctx.id_area_id]
-        filtros["area"] = [agente_ctx.id_area_id]
+        area_scope = [agente_ctx.id_area]
+        filtros["area"] = [agente_ctx.id_area]
         if filtros.get("agente"):
             for agente_id in filtros["agente"]:
                 agente_filtro = _obtener_agente(agente_id)
-                if agente_filtro.id_area_id != agente_ctx.id_area_id:
+                if agente_filtro.id_area != agente_ctx.id_area:
                     raise ReporteError("El agente indicado no pertenece a su area")
 
     elif rol == "director":
@@ -156,12 +156,12 @@ def _aplicar_reglas_por_rol(filtros: Dict, rol: str, agente_ctx: Agente) -> Dict
             if filtros.get("agente"):
                 for agente_id in filtros["agente"]:
                     agente_filtro = _obtener_agente(agente_id)
-                    if agente_filtro.id_area_id not in area_ids_permitidas:
+                    if agente_filtro.id_area not in area_ids_permitidas:
                         raise ReporteError("Algún agente indicado no pertenece a su jerarquía")
                 # opcional: no forzar area si no viene; se usa scope
 
     elif rol == "administrador":
-        area_scope = None  # sin limite
+        area_scope = []  # sin limite
         if filtros.get("area"):
             area_scope = []
             for area_id in filtros["area"]:
@@ -203,15 +203,15 @@ def _obtener_area(area_id: int) -> Area:
 def _armar_reporte_individual(filtros: Dict, permisos: Dict) -> Dict:
     agente_id = filtros["agente"][0]
     agente = _obtener_agente(agente_id)
-    if permisos.get("area_scope") is not None and agente.id_area_id not in permisos["area_scope"]:
+    if permisos.get("area_scope") is not None and agente.id_area not in permisos["area_scope"]:
         raise ReporteError("El agente indicado esta fuera de su alcance")
 
     guardias_qs = _query_guardias(filtros, permisos)
-    guardias_qs = guardias_qs.filter(id_agente_id=agente.id_agente)
+    guardias_qs = guardias_qs.filter(id_agente=agente.id_agente)
 
     dias_data = []
     for guardia in guardias_qs.order_by("fecha", "hora_inicio"):
-        asistencia = _buscar_asistencia(guardia.id_agente_id, guardia.fecha)
+        asistencia = _buscar_asistencia(guardia.id_agente, guardia.fecha)
         dias_data.append({
             "fecha": guardia.fecha.strftime(DATE_FMT),
             "dia_semana": guardia.fecha.strftime("%A"),
@@ -232,7 +232,7 @@ def _armar_reporte_individual(filtros: Dict, permisos: Dict) -> Dict:
             "id": agente.id_agente,
             "nombre": f"{agente.nombre} {agente.apellido}",
             "legajo": agente.legajo,
-            "area": agente.id_area_id,
+            "area": agente.id_area,
         },
         "filtros": _filtros_serializables(filtros),
         "dias": dias_data,
@@ -267,7 +267,7 @@ def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
     for agente in agentes_qs:
         dias_valores = []
         total_horas_agente = 0
-        guardias_agente = [g for g in guardias_qs if g.id_agente_id == agente.id_agente]
+        guardias_agente = [g for g in guardias_qs if g.id_agente == agente.id_agente]
         guardias_por_fecha = {g.fecha.strftime(DATE_FMT): g for g in guardias_agente}
 
         for fecha_str in dias_fechas:
@@ -345,16 +345,18 @@ def _generar_rango_dias(desde, hasta):
 
 def _buscar_asistencia(agente_id: int, fecha):
     try:
-        return Asistencia.objects.get(id_agente_id=agente_id, fecha=fecha)
+        return Asistencia.objects.get(id_agente=agente_id, fecha=fecha)
     except Asistencia.DoesNotExist:
         return None
 
 
 def _filtros_serializables(filtros: Dict):
+    fecha_desde = filtros.get("fecha_desde")
+    fecha_hasta = filtros.get("fecha_hasta")
     return {
         "agente": filtros.get("agente"),
         "area": filtros.get("area"),
-        "fecha_desde": filtros.get("fecha_desde").strftime(DATE_FMT) if filtros.get("fecha_desde") else None,
-        "fecha_hasta": filtros.get("fecha_hasta").strftime(DATE_FMT) if filtros.get("fecha_hasta") else None,
+        "fecha_desde": fecha_desde.strftime(DATE_FMT) if fecha_desde else None,
+        "fecha_hasta": fecha_hasta.strftime(DATE_FMT) if fecha_hasta else None,
         "tipo_guardia": filtros.get("tipo_guardia"),
     }

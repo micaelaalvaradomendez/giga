@@ -316,69 +316,78 @@
     <section class="card">
       <h3>Vista previa</h3>
       {#if tipoReporte === "individual"}
-        <p><strong>Agente:</strong> {resultado.agente?.nombre} {resultado.agente?.apellido} ({resultado.agente?.legajo})</p>
-        <p><strong>Período:</strong> {resultado.filtros?.fecha_desde} - {resultado.filtros?.fecha_hasta}</p>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Día</th>
-              <th>Horario</th>
-              <th>Horas planificadas</th>
-              <th>Horas efectivas</th>
-              <th>Motivo</th>
-              <th>Estado asistencia</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each resultado.dias || [] as d}
-              <tr>
-                <td>{d.fecha}</td>
-                <td>{d.dia_semana}</td>
-                <td>{d.horario_guardia_inicio} - {d.horario_guardia_fin}</td>
-                <td>{d.horas_planificadas}</td>
-                <td>{d.horas_efectivas}</td>
-                <td>{d.motivo_guardia}</td>
-                <td>{d.estado_asistencia}</td>
-              </tr>
+        <div class="preview-grid">
+          <div class="mini-card">
+            <p class="label">Agente</p>
+            <p class="value">{resultado.agente?.nombre} {resultado.agente?.apellido} ({resultado.agente?.legajo})</p>
+          </div>
+          <div class="mini-card">
+            <p class="label">Área</p>
+            <p class="value">{resultado.agente?.area || "N/D"}</p>
+          </div>
+          <div class="mini-card">
+            <p class="label">Período</p>
+            <p class="value">{resultado.filtros?.fecha_desde} - {resultado.filtros?.fecha_hasta}</p>
+          </div>
+          <div class="mini-card">
+            <p class="label">Horas totales</p>
+            <p class="value">{resultado.totales?.horas_efectivas ?? resultado.totales?.total_horas ?? "-"}</p>
+          </div>
+        </div>
+        <div class="list-preview">
+          <p class="label">Resumen días</p>
+          <ul>
+            {#each (resultado.dias || []).slice(0, 5) as d}
+              <li>
+                <span>{d.fecha} · {d.dia_semana}</span>
+                <span class="muted">{d.horario_guardia_inicio && d.horario_guardia_fin ? `${d.horario_guardia_inicio}-${d.horario_guardia_fin}` : "Sin horario"}</span>
+              </li>
             {/each}
-          </tbody>
-        </table>
+            {#if (resultado.dias || []).length > 5}
+              <li class="muted">... y {(resultado.dias || []).length - 5} más</li>
+            {/if}
+          </ul>
+        </div>
       {:else}
-        <p><strong>Áreas:</strong> {areaSeleccionadas.length ? areaSeleccionadas.map((id) => optionsAreas.find((o) => String(o.value) === String(id))?.label).filter(Boolean).join(", ") : "(según permisos)"}</p>
-        <p><strong>Agentes:</strong> {agentesSeleccionados.length ? agentesSeleccionados.map((id) => optionsAgentes.find((o) => String(o.value) === String(id))?.label).filter(Boolean).join(", ") : "Todos"}</p>
-        <p><strong>Período:</strong> {resultado.filtros?.fecha_desde} - {resultado.filtros?.fecha_hasta}</p>
-        <div class="table-scroll">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Agente</th>
-                <th>Legajo</th>
-                {#each resultado.dias_columnas || [] as dc}
-                  <th>{dc.fecha}</th>
-                {/each}
-                <th>Total horas</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each resultado.agentes || [] as ag}
-                <tr>
-                  <td>{ag.nombre_completo}</td>
-                  <td>{ag.legajo}</td>
-                  {#each resultado.dias_columnas || [] as dc}
-                    {#if ag.dias}
-                      {#each ag.dias.filter((d) => d.fecha === dc.fecha) as celda}
-                        <td>{celda.valor}</td>
-                      {/each}
-                    {:else}
-                      <td></td>
-                    {/if}
-                  {/each}
-                  <td>{ag.total_horas}</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
+        <div class="preview-grid">
+          <div class="mini-card">
+            <p class="label">Áreas</p>
+            <p class="value">
+              {#if areaSeleccionadas.length}
+                {areaSeleccionadas.map((id) => optionsAreas.find((o) => String(o.value) === String(id))?.label).filter(Boolean).join(", ")}
+              {:else}
+                (según permisos)
+              {/if}
+            </p>
+          </div>
+          <div class="mini-card">
+            <p class="label">Período</p>
+            <p class="value">{resultado.filtros?.fecha_desde} - {resultado.filtros?.fecha_hasta}</p>
+          </div>
+          <div class="mini-card">
+            <p class="label">Agentes incluidos</p>
+            <p class="value">{resultado.totales?.agentes ?? (resultado.agentes || []).length}</p>
+          </div>
+          <div class="mini-card">
+            <p class="label">Horas total</p>
+            <p class="value">{resultado.totales?.horas ?? resultado.totales?.total_horas ?? "-"}</p>
+          </div>
+        </div>
+        <div class="list-preview">
+          <p class="label">Agentes (vista breve)</p>
+          <ul>
+            {#each (resultado.agentes || []).slice(0, 8) as ag}
+              <li>
+                <div>
+                  <strong>{ag.nombre_completo}</strong> <span class="muted">· Legajo {ag.legajo}</span>
+                </div>
+                <span class="muted">{ag.area || "Sin área"} · {ag.total_horas ?? 0} h</span>
+              </li>
+            {/each}
+            {#if (resultado.agentes || []).length > 8}
+              <li class="muted">... y {(resultado.agentes || []).length - 8} más</li>
+            {/if}
+          </ul>
         </div>
       {/if}
     </section>
@@ -417,6 +426,14 @@
   .table th, .table td { border: 1px solid #e5e7eb; padding: 10px; font-size: 14px; }
   .table th { background: #f8fafc; text-align: left; font-weight: 700; }
   .table-scroll { overflow-x: auto; }
+
+  /* Vista previa simple */
+  .preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .mini-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; background: #f9fafb; }
+  .mini-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 4px; }
+  .mini-card .value { font-weight: 700; color: #0f172a; }
+  .list-preview ul { list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-direction: column; gap: 8px; }
+  .list-preview li { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; display: flex; flex-direction: column; gap: 4px; }
 
   /* Multiselect styles */
   .multiselect { position: relative; width: 100%; }

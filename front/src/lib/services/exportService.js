@@ -218,10 +218,14 @@ export async function exportarPDF(tipoReporte, datosReporte, filtros) {
             throw new Error('La exportación PDF solo está disponible en el navegador');
         }
         
-        // Preparar datos para envío al backend
+        // Preparar datos para envío al backend (flatten, sin anidar filtros)
         const payload = {
             tipo_reporte: tipoReporte,
-            filtros: filtros,
+            fecha_desde: filtros?.fecha_desde,
+            fecha_hasta: filtros?.fecha_hasta,
+            area: filtros?.area_id ?? filtros?.area,
+            agente: filtros?.agente_id ?? filtros?.agente,
+            tipo_guardia: filtros?.tipo_guardia,
             configuracion: {
                 ...PDF_CONFIG,
                 reporte_especifico: PDF_REPORTES_CONFIG[tipoReporte]

@@ -592,29 +592,36 @@ class ReporteController {
 
 	async _exportarPDFMejorado(tipo, datos, filtros) {
 		try {
-			const payload = {
-				tipo_reporte: tipo,
-				fecha_desde: filtros.fecha_desde,
-				fecha_hasta: filtros.fecha_hasta,
-				area: filtros.area_id,
-				agente: filtros.agente_id,
-				tipo_guardia: filtros.tipo_guardia,
-				configuracion: {
-					reporte_especifico: {
-						orientacion: this.opcionesExport?.orientation || 'portrait'
+			// Solo usamos el backend nuevo para individual/general; el resto usa exportación cliente
+			if (tipo === 'individual' || tipo === 'general') {
+				const payload = {
+					tipo_reporte: tipo,
+					fecha_desde: filtros.fecha_desde,
+					fecha_hasta: filtros.fecha_hasta,
+					area: filtros.area_id || null,
+					agente: filtros.agente_id || null,
+					tipo_guardia: filtros.tipo_guardia || null,
+					configuracion: {
+						reporte_especifico: {
+							orientacion: this.opcionesExport?.orientation || 'portrait'
+						}
 					}
-				}
-			};
+				};
 
-			const response = await guardiasService.exportarReportePDF(payload);
-			const blob = response.data;
-			const nombreArchivo = this._generarNombreArchivo(tipo, 'pdf');
-			this._descargarBlob(blob, nombreArchivo);
+				const response = await guardiasService.exportarReportePDF(payload);
+				// Forzar tipo PDF y nombre con extensión .pdf
+				const blob = new Blob([response.data], { type: response?.headers?.['content-type'] || 'application/pdf' });
+				const nombreArchivo = this._generarNombreArchivo(tipo, 'pdf');
+				this._descargarBlob(blob, nombreArchivo);
 
-			return { mensaje: 'PDF generado correctamente desde el servidor' };
+				return { mensaje: 'PDF generado correctamente desde el servidor' };
+			}
+
+			// Otros tipos siguen usando el exportador cliente
+			return await exportService.exportarPDF(tipo, datos, filtros);
 		} catch (error) {
-			console.warn('âš ï¸ ExportaciÃ³n PDF desde backend fallÃ³, usando cliente:', error);
-			// Fallback a exportaciÃ³n desde cliente
+			console.warn('⚠️ Exportación PDF desde backend falló, usando cliente:', error);
+			// Fallback a exportación desde cliente
 			return await exportService.exportarPDF(tipo, datos, filtros);
 		}
 	}
@@ -783,7 +790,6 @@ class ReporteController {
 	async _obtenerTipoReporteActual() {
 		return new Promise((resolve) => {
 			const unsubscribe = this.tipoReporteActual.subscribe((value) => {
-				unsubscribe();
 				resolve(value);
 			});
 		});
@@ -801,7 +807,7 @@ class ReporteController {
 	async _obtenerDatosReporte() {
 		return new Promise((resolve) => {
 			const unsubscribe = this.datosReporte.subscribe((value) => {
-				unsubscribe();
+
 				resolve(value);
 			});
 		});
@@ -810,7 +816,6 @@ class ReporteController {
 	async _obtenerFiltrosDisponibles() {
 		return new Promise((resolve) => {
 			const unsubscribe = this.filtrosDisponibles.subscribe((value) => {
-				unsubscribe();
 				resolve(value);
 			});
 		});
@@ -1572,14 +1577,25 @@ class ReporteController {
 				params.append('tipo_guardia', filtros.tipo_guardia);
 			}
 			
-			// Llamar al servicio apropiado
+			// No existen exportarReporteIndividual/General en guardiasService; usar export genérico que ya creamos
+			const payload = {
+				tipo_reporte: tipo,
+				fecha_desde: filtros.fecha_desde,
+				fecha_hasta: filtros.fecha_hasta,
+				area: filtros.area_id,
+				agente: filtros.agente_id,
+				tipo_guardia: filtros.tipo_guardia
+			};
+
 			let response;
-			if (tipo === 'individual') {
-				response = await guardiasService.exportarReporteIndividual(params.toString(), formato);
+			if (formato === 'pdf') {
+				response = await guardiasService.exportarReportePDF(payload);
+			} else if (formato === 'xlsx') {
+				response = await guardiasService.exportarReporteExcel(payload);
 			} else {
-				response = await guardiasService.exportarReporteGeneral(params.toString(), formato);
+				response = await guardiasService.exportarReporteCSV(payload);
 			}
-			
+
 			return response.data; // Axios devuelve el blob en response.data
 		} catch (error) {
 			console.error('Error exportando reporte:', error);
@@ -1718,8 +1734,6 @@ class ReporteController {
 // Instancia singleton para el administrador
 export const reporteController = new ReporteController();
 export default reporteController;
-
-
 
 
 
