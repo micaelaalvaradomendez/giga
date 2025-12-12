@@ -4,6 +4,8 @@
   import { guardiasService } from "$lib/services";
   import AuthService from "$lib/login/authService.js";
   import ModalNotaGuardia from "$lib/componentes/usuario/ModalNotaGuardia.svelte";
+  import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+  import { modalAlert, showAlert, showConfirm } from "$lib/stores/modalAlertStore.js";
 
   let user = null;
   let token = null;
@@ -155,7 +157,7 @@
 
   async function guardarNota() {
     if (!guardiaSeleccionada || !notaTexto.trim()) {
-      alert("Debe escribir una nota");
+      await showAlert("Debe escribir una nota", "warning", "Advertencia");
       return;
     }
 
@@ -185,8 +187,10 @@
       cerrarModalNota();
     } catch (err) {
       console.error("Error guardando nota:", err);
-      alert(
+      await showAlert(
         "Error al guardar la nota: " + (err.message || "Error desconocido"),
+        "error",
+        "Error"
       );
     } finally {
       guardandoNota = false;
@@ -194,7 +198,18 @@
   }
 
   async function eliminarNota() {
-    if (!notaId || !confirm("¿Está seguro de eliminar esta nota?")) {
+    if (!notaId) {
+      return;
+    }
+    
+    const confirmado = await showConfirm(
+      "¿Está seguro de eliminar esta nota?",
+      "Eliminar Nota",
+      "Eliminar",
+      "Cancelar"
+    );
+    
+    if (!confirmado) {
       return;
     }
 
@@ -209,8 +224,10 @@
       cerrarModalNota();
     } catch (err) {
       console.error("Error eliminando nota:", err);
-      alert(
+      await showAlert(
         "Error al eliminar la nota: " + (err.message || "Error desconocido"),
+        "error",
+        "Error"
       );
     } finally {
       guardandoNota = false;
@@ -567,6 +584,19 @@
   on:cerrar={cerrarModalNota}
   on:guardar={guardarNota}
   on:eliminar={eliminarNota}
+/>
+
+<ModalAlert
+  bind:show={$modalAlert.show}
+  type={$modalAlert.type}
+  title={$modalAlert.title}
+  message={$modalAlert.message}
+  showConfirmButton={$modalAlert.showConfirmButton}
+  confirmText={$modalAlert.confirmText}
+  showCancelButton={$modalAlert.showCancelButton}
+  cancelText={$modalAlert.cancelText}
+  on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+  on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 
 <style>

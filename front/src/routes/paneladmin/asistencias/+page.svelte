@@ -3,6 +3,8 @@
     import { goto } from "$app/navigation";
     import { asistenciasController } from "$lib/paneladmin/controllers";
     import ModalCorreccionAsistencia from "$lib/componentes/admin/asistencias/ModalCorreccionAsistencia.svelte";
+    import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+    import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
 
     // Obtener stores del controlador
     const {
@@ -73,28 +75,36 @@
     async function handleMarcarEntrada() {
         const result = await asistenciasController.marcarEntrada();
         if (result.message) {
-            alert(result.message);
+            const tipo = result.success ? "success" : "error";
+            const titulo = result.success ? "Éxito" : "Error";
+            await showAlert(result.message, tipo, titulo);
         }
     }
 
     async function handleMarcarSalida() {
         const result = await asistenciasController.marcarSalida();
         if (result.message) {
-            alert(result.message);
+            const tipo = result.success ? "success" : "error";
+            const titulo = result.success ? "Éxito" : "Error";
+            await showAlert(result.message, tipo, titulo);
         }
     }
 
     async function handleCorregirAsistencia() {
         const result = await asistenciasController.corregirAsistencia();
         if (result.message) {
-            alert(result.message);
+            const tipo = result.success ? "success" : "error";
+            const titulo = result.success ? "Éxito" : "Error";
+            await showAlert(result.message, tipo, titulo);
         }
     }
 
     async function handleMarcarAusente() {
         const result = await asistenciasController.marcarComoAusente();
         if (result.message) {
-            alert(result.message);
+            const tipo = result.success ? "success" : "error";
+            const titulo = result.success ? "Éxito" : "Error";
+            await showAlert(result.message, tipo, titulo);
         }
     }
 
@@ -344,8 +354,10 @@
                                                     asistencia,
                                                 );
                                             } else {
-                                                alert(
+                                                showAlert(
                                                     "Error: Datos de asistencia no disponibles",
+                                                    "error",
+                                                    "Error",
                                                 );
                                                 console.error(
                                                     "❌ Asistencia es null:",
@@ -380,6 +392,20 @@
     on:corregir={handleCorregirAsistencia}
     on:marcarAusente={handleMarcarAusente}
     on:toggleHoraEspecifica={handleCheckboxChange}
+/>
+
+<!-- Modal de alertas -->
+<ModalAlert
+    bind:show={$modalAlert.show}
+    type={$modalAlert.type}
+    title={$modalAlert.title}
+    message={$modalAlert.message}
+    showConfirmButton={$modalAlert.showConfirmButton}
+    confirmText={$modalAlert.confirmText}
+    showCancelButton={$modalAlert.showCancelButton}
+    cancelText={$modalAlert.cancelText}
+    on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+    on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 
 <style>

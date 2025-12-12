@@ -6,6 +6,8 @@
 	import ModalEditarAgente from "$lib/componentes/admin/agente/ModalEditarAgente.svelte";
 	import ModalEliminarAgente from "$lib/componentes/admin/agente/ModalEliminarAgente.svelte";
 	import ModalAgregarAgente from "$lib/componentes/admin/agente/ModalAgregarAgente.svelte";
+	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+	import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
 
 	/** @type {import('./$types').PageData} */
 
@@ -108,10 +110,10 @@
 				formData,
 			);
 			if (result.success) {
-				alert(result.message);
+				await showAlert(result.message, "success", "Éxito");
 			}
 		} catch (error) {
-			alert(error.message);
+			await showAlert(error.message, "error", "Error");
 		}
 	}
 
@@ -123,10 +125,10 @@
 			const result =
 				await usuariosController.confirmarEliminacionAgente(agente);
 			if (result.success) {
-				alert(result.message);
+				await showAlert(result.message, "success", "Éxito");
 			}
 		} catch (error) {
-			alert(error.message);
+			await showAlert(error.message, "error", "Error");
 		}
 	}
 
@@ -137,10 +139,10 @@
 		try {
 			const result = await usuariosController.crearNuevoAgente(formData);
 			if (result.success) {
-				alert(result.message);
+				await showAlert(result.message, "success", "Éxito");
 			}
 		} catch (error) {
-			alert(error.message);
+			await showAlert(error.message, "error", "Error");
 		}
 	}
 </script>
@@ -362,6 +364,20 @@
 	rolesDisponibles={$rolesDisponibles}
 	on:cerrar={cerrarModales}
 	on:guardar={crearNuevoAgente}
+/>
+
+<!-- Modal de alertas -->
+<ModalAlert
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	showConfirmButton={$modalAlert.showConfirmButton}
+	confirmText={$modalAlert.confirmText}
+	showCancelButton={$modalAlert.showCancelButton}
+	cancelText={$modalAlert.cancelText}
+	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 
 <style>

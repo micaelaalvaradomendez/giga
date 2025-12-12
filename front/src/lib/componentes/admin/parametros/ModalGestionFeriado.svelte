@@ -1,5 +1,6 @@
 <script>
 	import { createEventDispatcher } from "svelte";
+	import { showAlert, showConfirm } from "$lib/stores/modalAlertStore.js";
 
 	export let isOpen = false;
 	export let feriado = null;
@@ -71,17 +72,17 @@
 
 	async function handleSave() {
 		if (!nombreFeriado.trim()) {
-			alert("Por favor ingresa un nombre para el feriado");
+			showAlert("Por favor ingresa un nombre para el feriado", "warning", "Advertencia");
 			return;
 		}
 
 		if (!fechaInicio || !fechaFin) {
-			alert("Por favor selecciona las fechas");
+			showAlert("Por favor selecciona las fechas", "warning", "Advertencia");
 			return;
 		}
 
 		if (new Date(fechaFin) < new Date(fechaInicio)) {
-			alert("La fecha fin debe ser mayor o igual a la fecha inicio");
+			showAlert("La fecha fin debe ser mayor o igual a la fecha inicio", "warning", "Advertencia");
 			return;
 		}
 
@@ -106,7 +107,7 @@
 	async function handleDelete() {
 		if (!feriado?.id_feriado) return;
 
-		if (!confirm("¿Estás seguro de que deseas eliminar este feriado?")) {
+		if (!await showConfirm("¿Estás seguro de que deseas eliminar este feriado?", "Confirmar Eliminación", "Eliminar", "Cancelar")) {
 			return;
 		}
 
@@ -136,8 +137,11 @@
 
 	async function eliminarFeriadoExistente(feriadoExistente) {
 		if (
-			!confirm(
+			!await showConfirm(
 				`¿Estás seguro de que deseas eliminar el feriado "${feriadoExistente.nombre}"?`,
+				"Confirmar Eliminación",
+				"Eliminar",
+				"Cancelar"
 			)
 		) {
 			return;

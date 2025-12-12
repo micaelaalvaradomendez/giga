@@ -1,5 +1,6 @@
 <script>
 	import { createEventDispatcher } from "svelte";
+	import { showAlert } from "$lib/stores/modalAlertStore.js";
 
 	// Props
 	export let show = false;
@@ -21,7 +22,7 @@
 
 	function handleAprobar() {
 		if (!licencia?.id_licencia) {
-			alert("Error: No se ha seleccionado una licencia válida");
+			showAlert("Error: No se ha seleccionado una licencia válida", "error", "Error");
 			return;
 		}
 

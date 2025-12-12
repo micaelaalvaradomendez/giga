@@ -9,6 +9,8 @@
   import ModalNuevaIncidencia from "$lib/componentes/incidencias/ModalNuevaIncidencia.svelte";
   import ModalCambiarEstado from "$lib/componentes/incidencias/ModalCambiarEstado.svelte";
   import ModalVerDetalles from "$lib/componentes/incidencias/ModalVerDetalles.svelte";
+  import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+  import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
 
   let loading = true;
   let currentUser = null;
@@ -213,12 +215,12 @@
 
   async function guardarIncidencia() {
     if (!nuevaIncidencia.titulo.trim() || !nuevaIncidencia.descripcion.trim()) {
-      alert("Por favor complete todos los campos obligatorios");
+      await showAlert("Por favor complete todos los campos obligatorios", "warning", "Advertencia");
       return;
     }
 
     if (!nuevaIncidencia.asignado_a_id) {
-      alert("Debe seleccionar un destinatario para asignar la incidencia");
+      await showAlert("Debe seleccionar un destinatario para asignar la incidencia", "warning", "Advertencia");
       return;
     }
 
@@ -294,12 +296,12 @@
 
   async function guardarCambioEstado() {
     if (!nuevoEstado) {
-      alert("Debe seleccionar un nuevo estado");
+      await showAlert("Debe seleccionar un nuevo estado", "warning", "Advertencia");
       return;
     }
 
     if (nuevoEstado === incidenciaSeleccionada.estado) {
-      alert("Debe seleccionar un estado diferente al actual");
+      await showAlert("Debe seleccionar un estado diferente al actual", "warning", "Advertencia");
       return;
     }
 
@@ -544,6 +546,20 @@
   {cambiandoEstado}
   onClose={cerrarCambiarEstadoModal}
   onSubmit={guardarCambioEstado}
+/>
+
+<!-- Modal de alertas -->
+<ModalAlert
+  bind:show={$modalAlert.show}
+  type={$modalAlert.type}
+  title={$modalAlert.title}
+  message={$modalAlert.message}
+  showConfirmButton={$modalAlert.showConfirmButton}
+  confirmText={$modalAlert.confirmText}
+  showCancelButton={$modalAlert.showCancelButton}
+  cancelText={$modalAlert.cancelText}
+  on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+  on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 
 <style>

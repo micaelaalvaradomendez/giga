@@ -1,5 +1,6 @@
 <script>
 	import { createEventDispatcher } from "svelte";
+	import { showAlert } from "$lib/stores/modalAlertStore.js";
 
 	// Props
 	export let show = false;
@@ -22,12 +23,12 @@
 
 	function handleRechazar() {
 		if (!licencia?.id_licencia) {
-			alert("Error: Licencia no válida");
+			showAlert("Error: Licencia no válida", "error", "Error");
 			return;
 		}
 
 		if (!formRechazo.motivo.trim()) {
-			alert("Debe proporcionar un motivo para rechazar la licencia.");
+			showAlert("Debe proporcionar un motivo para rechazar la licencia.", "warning", "Advertencia");
 			return;
 		}
 

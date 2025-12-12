@@ -9,6 +9,8 @@
 	import ModalHorarios from "$lib/componentes/admin/parametros/ModalHorarios.svelte";
 	import ModalEliminar from "$lib/componentes/admin/parametros/ModalEliminar.svelte";
 	import ModalHorarioGlobal from "$lib/componentes/admin/parametros/ModalHorarioGlobal.svelte";
+	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+	import { modalAlert } from "$lib/stores/modalAlertStore.js";
 
 	// Obtener referencias a los stores individuales
 	const {
@@ -629,6 +631,19 @@
 	isSaving={guardandoHorarioGlobal}
 	on:guardar={guardarHorarioGlobal}
 	on:cerrar={cerrarModalHorarioGlobal}
+/>
+
+<ModalAlert
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	showConfirmButton={$modalAlert.showConfirmButton}
+	confirmText={$modalAlert.confirmText}
+	showCancelButton={$modalAlert.showCancelButton}
+	cancelText={$modalAlert.cancelText}
+	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 
 <style>

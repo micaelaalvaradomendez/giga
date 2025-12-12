@@ -1,5 +1,6 @@
 <script>
 	import { createEventDispatcher } from "svelte";
+	import { showAlert } from "$lib/stores/modalAlertStore.js";
 
 	export let isOpen = false;
 	export let isSaving = false;
@@ -17,12 +18,12 @@
 
 	function guardar() {
 		if (!horarioEntrada || !horarioSalida) {
-			alert("Debe completar ambos horarios");
+			showAlert("Debe completar ambos horarios", "warning", "Advertencia");
 			return;
 		}
 
 		if (horarioEntrada >= horarioSalida) {
-			alert("La hora de entrada debe ser anterior a la hora de salida");
+			showAlert("La hora de entrada debe ser anterior a la hora de salida", "warning", "Advertencia");
 			return;
 		}
 

@@ -5,6 +5,8 @@
     import CalendarioBase from "$lib/componentes/calendarioBase.svelte";
     import ModalGestionFeriado from "$lib/componentes/admin/parametros/ModalGestionFeriado.svelte";
     import { feriadosController } from "$lib/paneladmin/controllers";
+    import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+    import { modalAlert } from "$lib/stores/modalAlertStore.js";
 
     // Stores del controlador
     const { feriados, loading, error, success, modalGestionFeriado } =
@@ -104,6 +106,19 @@
     existingFeriados={$modalGestionFeriado.existingFeriados || []}
     {feriadosController}
     on:close={closeModal}
+/>
+
+<ModalAlert
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	showConfirmButton={$modalAlert.showConfirmButton}
+	confirmText={$modalAlert.confirmText}
+	showCancelButton={$modalAlert.showCancelButton}
+	cancelText={$modalAlert.cancelText}
+	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 
 <style>

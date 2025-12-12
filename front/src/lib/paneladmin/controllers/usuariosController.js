@@ -555,19 +555,12 @@ class UsuariosController {
 	 */
 	async actualizarAgenteEnLista(idAgente) {
 		try {
-			const response = await personasService.getAgente(idAgente);
-			const agenteActualizado = response.data;
-
-			this.agentes.update(agentes => {
-				const index = agentes.findIndex(a => a.id_agente === idAgente);
-				if (index !== -1) {
-					agentes[index] = agenteActualizado;
-				}
-				return [...agentes]; // Trigger reactivity
-			});
+			console.log('🔄 Recargando lista completa de agentes...');
+			// Recargar toda la lista para asegurar datos completos (area_nombre, roles, etc.)
+			await this.cargarAgentes();
+			console.log('✅ Lista de agentes recargada correctamente');
 		} catch (error) {
-			console.error('Error actualizando agente en lista:', error);
-			// Recargar toda la lista como fallback
+			console.error('❌ Error recargando lista de agentes:', error);
 			await this.cargarAgentes();
 		}
 	}

@@ -4,6 +4,7 @@
 		crearLicencia,
 		calcularDiasLicencia,
 	} from "$lib/paneladmin/controllers/licenciasController.js";
+	import { showAlert } from "$lib/stores/modalAlertStore.js";
 
 	export let show = false;
 	export let tiposLicencia = [];
@@ -49,7 +50,7 @@
 			!formLicencia.fecha_hasta ||
 			!formLicencia.justificacion
 		) {
-			alert("Por favor complete todos los campos obligatorios");
+			await showAlert("Por favor complete todos los campos obligatorios", "warning", "Advertencia");
 			return;
 		}
 
@@ -65,7 +66,7 @@
 			dispatch("created");
 			cerrarModal();
 		} else {
-			alert(resultado.error || "Error al crear la licencia");
+			await showAlert(resultado.error || "Error al crear la licencia", "error", "Error");
 		}
 		enviando = false;
 	}

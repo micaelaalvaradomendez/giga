@@ -3,6 +3,8 @@
 	import { goto } from "$app/navigation";
 	import AuthService from "$lib/login/authService.js";
 	import AuditService from "$lib/services/auditService.js";
+	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+	import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
 
 	// Cleanup references for event listeners
 	let containerRef = null;
@@ -80,7 +82,7 @@
 					rol: "desconocido",
 					userId: 0,
 				});
-				alert("usuario no autorizado");
+				await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
 				goto("/");
 				return;
 			}
@@ -137,7 +139,7 @@
 					rol: userRoles[0] || "agente",
 					userId: userInfo.id,
 				});
-				alert("usuario no autorizado");
+				await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
 				goto("/inicio");
 				return;
 			}
@@ -204,7 +206,7 @@
 			}, 100);
 		} catch (error) {
 			console.error("Error de autenticación:", error);
-			alert("usuario no autorizado");
+			await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
 			goto("/");
 		}
 	});
@@ -267,6 +269,19 @@
 		</div>
 	{/each}
 </div>
+
+<ModalAlert
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	showConfirmButton={$modalAlert.showConfirmButton}
+	confirmText={$modalAlert.confirmText}
+	showCancelButton={$modalAlert.showCancelButton}
+	cancelText={$modalAlert.cancelText}
+	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
+/>
 
 <style>
 	.dashboard-welcome {

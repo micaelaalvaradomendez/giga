@@ -6,6 +6,8 @@
 	import ModalEliminar from "$lib/componentes/admin/parametros/ModalEliminar.svelte";
 	import { organigramaController } from "$lib/paneladmin/controllers";
 	import { API_BASE_URL } from "$lib/api";
+	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+	import { modalAlert, showAlert, showConfirm } from "$lib/stores/modalAlertStore.js";
 
 	let organigramaData = null;
 	let loading = true;
@@ -165,11 +167,14 @@
 	async function sincronizarConAreas() {
 		if (!browser) return;
 
-		if (
-			!confirm(
-				"¿Sincronizar el organigrama con la estructura actual de áreas? Esto reemplazará el organigrama actual.",
-			)
-		) {
+		const confirmado = await showConfirm(
+			"¿Sincronizar el organigrama con la estructura actual de áreas? Esto reemplazará el organigrama actual.",
+			"Sincronizar con Áreas",
+			"Sincronizar",
+			"Cancelar"
+		);
+		
+		if (!confirmado) {
 			return;
 		}
 
@@ -191,8 +196,10 @@
 				const result = await response.json();
 				if (result.success) {
 					console.log("✅ Organigrama sincronizado correctamente");
-					alert(
+					await showAlert(
 						"Organigrama sincronizado exitosamente con las áreas del sistema",
+						"success",
+						"Éxito"
 					);
 
 					// Recargar el organigrama
@@ -208,7 +215,7 @@
 			}
 		} catch (error) {
 			console.error("❌ Error sincronizando organigrama:", error);
-			alert(`Error al sincronizar: ${error.message}`);
+			await showAlert(`Error al sincronizar: ${error.message}`, "error", "Error");
 			return false;
 		} finally {
 			loading = false;
@@ -261,7 +268,7 @@
 			}
 		} catch (error) {
 			console.error("❌ Error guardando organigrama:", error);
-			alert("Error al guardar los cambios: " + error.message);
+			await showAlert("Error al guardar los cambios: " + error.message, "error", "Error");
 			return false;
 		} finally {
 			loading = false;
@@ -395,7 +402,7 @@
 
 	async function handleSubmit() {
 		if (!formData.nombre.trim()) {
-			alert("El nombre es obligatorio");
+			await showAlert("El nombre es obligatorio", "warning", "Advertencia");
 			return;
 		}
 
@@ -507,13 +514,13 @@
 						const saved = await saveOrganigrama();
 						if (saved) {
 							organigramaData = { ...organigramaData }; // Trigger reactivity
-							alert("✅ Organigrama importado exitosamente");
+							await showAlert("✅ Organigrama importado exitosamente", "success", "Éxito");
 						}
 					} else {
-						alert("❌ Formato de archivo inválido");
+						await showAlert("❌ Formato de archivo inválido", "error", "Error");
 					}
 				} catch (error) {
-					alert("❌ Error al importar el archivo: " + error.message);
+					await showAlert("❌ Error al importar el archivo: " + error.message, "error", "Error");
 				}
 			};
 			reader.readAsText(file);
@@ -721,6 +728,20 @@
 	type="nodo"
 	on:cerrar={closeDeleteModal}
 	on:confirmar={handleDelete}
+/>
+
+<!-- Modal de alertas -->
+<ModalAlert
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	showConfirmButton={$modalAlert.showConfirmButton}
+	confirmText={$modalAlert.confirmText}
+	showCancelButton={$modalAlert.showCancelButton}
+	cancelText={$modalAlert.cancelText}
+	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 
 <!-- Modal -->

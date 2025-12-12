@@ -38,6 +38,7 @@
 	import ModalTipoLicencia from "$lib/componentes/admin/licencias/ModalTipoLicencia.svelte";
 	import ModalConfirmarEliminarTipo from "$lib/componentes/admin/licencias/ModalConfirmarEliminarTipo.svelte";
 	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+	import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
 
 	let vistaActual = "licencias";
 
@@ -50,12 +51,7 @@
 	let esAgente = false;
 	let esJefaturaODirector = false;
 
-	let alertConfig = {
-		show: false,
-		type: "info",
-		title: "",
-		message: "",
-	};
+
 
 	let showModalSolicitar = false;
 	let showModalCrear = false;
@@ -401,17 +397,9 @@
 	}
 
 	function mostrarAlerta(mensaje, tipo = "info") {
-		alertConfig = {
-			show: true,
-			type: tipo,
-			title:
-				tipo === "error"
-					? "Error"
-					: tipo === "success"
-						? "Éxito"
-						: "Información",
-			message: mensaje,
-		};
+		const titles = { error: "Error", success: "Éxito", info: "Información" };
+		const title = titles[tipo] || "Información";
+		showAlert(mensaje, tipo, title);
 	}
 
 	function cerrarModales() {
@@ -1040,6 +1028,19 @@
 	tipo={tipoAEliminar}
 	on:confirmar={confirmarEliminacion}
 	on:cancelar={cancelarEliminacion}
+/>
+
+<ModalAlert
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	showConfirmButton={$modalAlert.showConfirmButton}
+	confirmText={$modalAlert.confirmText}
+	showCancelButton={$modalAlert.showCancelButton}
+	cancelText={$modalAlert.cancelText}
+	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 
 <style>
