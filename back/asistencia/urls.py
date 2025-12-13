@@ -12,6 +12,7 @@ urlpatterns = [
     # Endpoints para administradores
     path('admin/listar/', views.listar_asistencias_admin, name='listar_asistencias'),
     path('admin/resumen/', views.resumen_asistencias, name='resumen_asistencias'),
+    path('admin/licencias/', views.gestionar_licencias, name='admin_licencias'),  # Admin endpoint for licenses
     path('admin/corregir/<int:asistencia_id>/', views.corregir_asistencia, name='corregir_asistencia'),
     path('admin/marcar-ausente/<int:asistencia_id>/', views.marcar_como_ausente, name='marcar_como_ausente'),
     

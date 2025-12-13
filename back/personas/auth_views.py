@@ -28,6 +28,32 @@ from common.permissions import IsAuthenticatedGIGA
 
 logger = logging.getLogger(__name__)
 
+def send_email_async(subject, message, recipient_list):
+    """
+    Send email asynchronously to avoid blocking the login process.
+    Uses threading to send email in background.
+    """
+    from threading import Thread
+    from django.core.mail import send_mail
+    from django.conf import settings
+    
+    def _send():
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=recipient_list,
+                fail_silently=True
+            )
+            logger.info(f"Email sent asynchronously to {recipient_list}")
+        except Exception as e:
+            logger.error(f"Error sending async email: {e}")
+    
+    # Start thread to send email
+    thread = Thread(target=_send, daemon=True)
+    thread.start()
+
 # Lista blanca de acciones que SÍ queremos auditar por defecto.
 # Definible por variable de entorno AUDIT_ALLOWLIST separada por comas.
 _DEFAULT_AUDIT_ALLOWLIST = {
@@ -132,30 +158,19 @@ def login_view(request):
         # Limpiar entrada (remover espacios, guiones, etc.)
         clean_input = clean_cuil(cuil_dni)
         
-        agente = None
+        # Optimized: Single query with Q objects to check CUIL and DNI
+        from django.db.models import Q
         
-        # Intentar buscar por CUIL primero (si tiene 11 dígitos)
-        if len(clean_input) == 11:
-            try:
-                agente = Agente.objects.get(cuil=clean_input, activo=True)
-            except Agente.DoesNotExist:
-                pass
+        # Build DNI to check
+        dni_to_check = clean_input if len(clean_input) == 8 else (clean_input[2:10] if len(clean_input) == 11 else None)
         
-        # Si no se encontró por CUIL, intentar por DNI
-        if not agente:
-            # Si tiene 11 dígitos, extraer DNI del CUIL (posición 2-9)
-            if len(clean_input) == 11:
-                dni_from_cuil = clean_input[2:10]
-                try:
-                    agente = Agente.objects.get(dni=dni_from_cuil, activo=True)
-                except Agente.DoesNotExist:
-                    pass
-            # Si tiene 8 dígitos, es DNI directo
-            elif len(clean_input) == 8:
-                try:
-                    agente = Agente.objects.get(dni=clean_input, activo=True)
-                except Agente.DoesNotExist:
-                    pass
+        # Single optimized query with prefetch_related for roles and area
+        agente = Agente.objects.select_related('id_area').prefetch_related(
+            'agenterol_set__id_rol'
+        ).filter(
+            Q(cuil=clean_input) | Q(dni=dni_to_check),
+            activo=True
+        ).first()
         
         # Si no se encontró el agente
         if not agente:
@@ -173,17 +188,16 @@ def login_view(request):
                 'message': 'CUIL o contraseña incorrectos'
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Obtener roles del agente
-        agente_roles = AgenteRol.objects.filter(id_agente=agente).select_related('id_rol')
+        # Obtener roles del agente (already prefetched)
         roles = []
-        for agente_rol in agente_roles:
+        for agente_rol in agente.agenterol_set.all():
             roles.append({
                 'id': agente_rol.id_rol.id_rol,
                 'nombre': agente_rol.id_rol.nombre,
                 'descripcion': agente_rol.id_rol.descripcion
             })
 
-        # Obtener área
+        # Obtener área (already select_related)
         area_info = None
         if agente.id_area:
             area_info = {
@@ -191,11 +205,18 @@ def login_view(request):
                 'nombre': agente.id_area.nombre
             }
 
-        # Verificar si necesita cambiar contraseña (si es igual al DNI)
-        requires_password_change = password == agente.dni
+        # Check if password needs to be changed
+        # Note: This should ideally be a field on the model, not a runtime comparison
+        requires_password_change = False
         password_reset_reason = ""
-        if requires_password_change:
-            password_reset_reason = "La contraseña es igual al DNI y debe ser cambiada por seguridad"
+        try:
+            # Use check_password to avoid plain text comparison
+            if agente.check_password(agente.dni):
+                requires_password_change = True
+                password_reset_reason = "La contraseña es igual al DNI y debe ser cambiada por seguridad"
+        except Exception:
+            # If check fails, don't block login
+            pass
 
         # Preparar respuesta del usuario
         user_data = {
@@ -292,51 +313,51 @@ def login_view(request):
             logger.info(f"Sesión más antigua de agente {agente.id_agente} cerrada por límite (total: {count_sesiones})")
         
         elif count_sesiones == 1:
-            # Segunda sesión: Enviar email de alerta
+            # Segunda sesión: Enviar email de alerta asíncrono
             try:
-                from django.core.mail import send_mail
                 from django.conf import settings
                 
                 # URL para cerrar todas las sesiones
                 close_sessions_url = f"{settings.FRONTEND_URL}/cerrar-sesiones?token={agente.id_agente}"
                 
-                send_mail(
+                email_message = f"""
+                    Estimado/a {agente.nombre} {agente.apellido},
+
+                    Se ha detectado un nuevo inicio de sesión en tu cuenta del Sistema GIGA:
+
+                    📍 Información del Nuevo Acceso:
+                    • Dispositivo: {dispositivo}
+                    • Navegador: {navegador}
+                    • Dirección IP: {ip_address}
+                    • Fecha y Hora: {timezone.now().strftime('%d/%m/%Y %H:%M:%S')}
+
+                    📱 Sesiones Activas Actuales: 2
+
+                    Si fuiste tú quien inició sesión, puedes ignorar este mensaje.
+
+                    ⚠️ Si NO reconoces este acceso:
+                    Por tu seguridad, te recomendamos cerrar todas las sesiones activas inmediatamente.
+
+                    👉 Cerrar todas mis sesiones: {close_sessions_url}
+
+                    Nota: Este sistema permite hasta 2 sesiones simultáneas. Si intentas abrir una tercera sesión, 
+                    la sesión más antigua se cerrará automáticamente.
+
+                    Saludos,
+                    Sistema GIGA - Protección Civil UNTDF
+                """
+                
+                # Send email asynchronously to avoid blocking login
+                send_email_async(
                     subject='🔔 GIGA - Nueva Sesión Detectada',
-                    message=f"""
-                        Estimado/a {agente.nombre} {agente.apellido},
-
-                        Se ha detectado un nuevo inicio de sesión en tu cuenta del Sistema GIGA:
-
-                        📍 Información del Nuevo Acceso:
-                        • Dispositivo: {dispositivo}
-                        • Navegador: {navegador}
-                        • Dirección IP: {ip_address}
-                        • Fecha y Hora: {timezone.now().strftime('%d/%m/%Y %H:%M:%S')}
-
-                        📱 Sesiones Activas Actuales: 2
-
-                        Si fuiste tú quien inició sesión, puedes ignorar este mensaje.
-
-                        ⚠️ Si NO reconoces este acceso:
-                        Por tu seguridad, te recomendamos cerrar todas las sesiones activas inmediatamente.
-
-                        👉 Cerrar todas mis sesiones: {close_sessions_url}
-
-                        Nota: Este sistema permite hasta 2 sesiones simultáneas. Si intentas abrir una tercera sesión, 
-                        la sesión más antigua se cerrará automáticamente.
-
-                        Saludos,
-                        Sistema GIGA - Protección Civil UNTDF
-                    """,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[agente.email],
-                    fail_silently=True  # No fallar si email falla
+                    message=email_message,
+                    recipient_list=[agente.email]
                 )
                 
-                logger.info(f"Email de alerta de sesión enviado a {agente.email}")
+                logger.info(f"Email de alerta de sesión programado para {agente.email}")
                 
             except Exception as e:
-                logger.error(f"Error enviando email de alerta de sesión: {e}")
+                logger.error(f"Error programando email de alerta de sesión: {e}")
                 # No fallar el login si el email falla
         
         # Registrar o actualizar sesión activa

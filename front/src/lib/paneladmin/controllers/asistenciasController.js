@@ -7,6 +7,7 @@
 import { writable, derived } from 'svelte/store';
 import { goto } from '$app/navigation';
 import { API_BASE_URL } from '$lib/api.js';
+import { AuthService } from '$lib/login/authService.js';
 
 class AsistenciasController {
 	constructor() {
@@ -53,27 +54,18 @@ class AsistenciasController {
 		try {
 			this.loading.set(true);
 
-			// Verificar sesión
-			const sessionResponse = await fetch(`${API_BASE_URL}/personas/auth/check-session/`, {
-				credentials: 'include'
-			});
-
-			if (!sessionResponse.ok) {
+			// Verificar sesión desde localStorage (evita llamada redundante)
+			const currentUser = AuthService.getCurrentUser();
+			
+			if (!currentUser || !AuthService.isAuthenticated()) {
 				goto('/');
 				return;
 			}
 
-			const sessionData = await sessionResponse.json();
-
-			if (!sessionData.authenticated) {
-				goto('/');
-				return;
-			}
-
-			this.agente.set(sessionData.user);
+			this.agente.set(currentUser);
 
 			// Verificar permisos
-			const roles = sessionData.user.roles || [];
+			const roles = currentUser.roles || [];
 			const roleNames = roles.map((r) => r.nombre);
 
 			if (
