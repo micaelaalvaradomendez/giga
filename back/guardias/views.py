@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.db.models import Q, Sum, Count, F
 from django.db import transaction
 from datetime import datetime, date
+from django.contrib.staticfiles import finders
 import logging
 
 from .models import Cronograma, Guardia, ResumenGuardiaMes, ReglaPlus, ParametrosArea, Feriado, HoraCompensacion
@@ -1738,6 +1739,530 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    # ========================
+    # ENDPOINTS DE EXPORTACION
+    # ========================
+    
+    @action(detail=False, methods=['get','post'])
+    def exportar_pdf(self, request):
+        """
+        Genera y descarga un reporte en formato PDF con formato institucional
+        """
+        try:
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import letter, A4, landscape
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import mm
+            from django.http import HttpResponse
+            from io import BytesIO
+            import os
+            
+            # Obtener datos de la request
+            tipo_reporte = request.data.get('tipo_reporte', 'general')
+            filtros = {
+                'agente': request.data.get('agente'),
+                'area': request.data.get('area'),
+                'fecha_desde': request.data.get('fecha_desde'),
+                'fecha_hasta': request.data.get('fecha_hasta'),
+                'tipo_guardia': request.data.get('tipo_guardia')
+            }
+            configuracion = request.data.get('configuracion', {})
+            metadatos = request.data.get('metadatos', {})
+            is_general = (tipo_reporte == "general")
+
+            # Obtener contexto de usuario y datos del reporte
+            agente_sesion = obtener_agente_sesion(request)
+            if not agente_sesion:
+                return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user_ctx = {
+                'agente': agente_sesion,
+                'rol': obtener_rol_agente(agente_sesion)
+            }
+
+            datos_reporte = obtener_datos_reporte(filtros, tipo_reporte, user_ctx)
+            
+            # Configurar el documento
+            buffer = BytesIO()
+            
+            # Determinar orientacion segun tipo de reporte
+            is_general = (tipo_reporte == "general")
+            page_size = landscape(A4) if is_general else A4
+
+            doc = SimpleDocTemplate(
+                buffer,
+                pagesize=page_size,
+                leftMargin=18 if is_general else 72,
+                rightMargin=18 if is_general else 72,
+                topMargin=18 if is_general else 72,
+                bottomMargin=18 if is_general else 72,
+            )
+            
+            # Preparar elementos del documento
+            elements = []
+            styles = getSampleStyleSheet()
+            
+            # Configurar estilos institucionales
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontSize=16,
+                fontName='Helvetica-Bold',
+                spaceAfter=30,
+                alignment=1  # Centrado
+            )
+            
+            header_style = ParagraphStyle(
+                'CustomHeader',
+                parent=styles['Normal'],
+                fontSize=12,
+                fontName='Helvetica-Bold',
+                spaceAfter=12
+            )
+            
+            normal_style = ParagraphStyle(
+                'CustomNormal',
+                parent=styles['Normal'],
+                fontSize=10,
+                fontName='Helvetica'
+            )
+            
+            # ========================================
+            # CABECERA INSTITUCIONAL
+            # ========================================
+            
+            # Logo institucional (si existe)
+            logo_path = finders.find("logoGobByN.jpeg") or finders.find("logoGobColor.jpeg")
+            if logo_path:
+                try:
+                    logo = Image(logo_path, width=22*mm, height=22*mm)
+                    elements.append(logo)
+                except Exception as e:
+                    print("No se pudo cargar el logo:", e)
+            
+            # TÃ­tulo del reporte
+            reporte_config = configuracion.get('reporte_especifico', {})
+            titulo_reporte = reporte_config.get('titulo', f'Reporte {tipo_reporte.replace("_", " ").title()}')
+            
+            elements.append(Paragraph(titulo_reporte, title_style))
+            elements.append(Spacer(1, 12))
+            
+            # InformaciÃ³n institucional
+            elementos_cabecera = [
+                "Universidad Nacional de Tierra del Fuego",
+                "Sistema GIGA - GestiÃ³n Integral de Guardias y Asistencias",
+                f"Fecha de GeneraciÃ³n: {metadatos.get('fecha_generacion', '')}",
+                f"Filtros Aplicados: {metadatos.get('filtros_aplicados', '')}"
+            ]
+            
+            for elemento in elementos_cabecera:
+                elements.append(Paragraph(elemento, normal_style))
+            
+            elements.append(Spacer(1, 20))
+            
+            # ========================================
+            # CUERPO DEL REPORTE 
+            # ========================================
+            
+            # Generar tabla segun tipo de reporte usando datos reales
+            tabla_data = self._generar_tabla_pdf(tipo_reporte, datos_reporte, filtros)
+            
+            if tabla_data and len(tabla_data) > 0:
+                # Crear tabla
+                tabla = Table(tabla_data)
+                
+                # Aplicar estilos a la tabla
+                tabla.setStyle(TableStyle([
+                    # Encabezado
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    
+                    # Cuerpo
+                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                    ('FONTSIZE', (0, 1), (-1, -1), 9),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    
+                    # Alternar colores de filas
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.beige, colors.white])
+                ]))
+                
+                elements.append(tabla)
+                elements.append(Spacer(1, 20))
+            
+            # ========================================
+            # PIE DE PAGINA CON FIRMAS
+            # ========================================
+            
+            # Espacio para firmas
+            elements.append(Spacer(1, 40))
+            
+            firma_data = [
+                ['', ''],
+                ['_' * 30, '_' * 30],
+                ['Jefe de Ãrea', 'RR.HH./LiquidaciÃ³n'],
+                ['Firma y Sello', 'Firma y Sello']
+            ]
+            
+            firma_tabla = Table(firma_data, colWidths=[70*mm, 70*mm])
+            firma_tabla.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 10),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('TOPPADDING', (0, 0), (-1, -1), 12),
+            ]))
+            
+            elements.append(firma_tabla)
+            
+            # Pie institucional
+            elements.append(Spacer(1, 20))
+            elements.append(Paragraph(
+                "2025 - UNTDF - Ushuaia - Tierra del Fuego",
+                ParagraphStyle('Footer', parent=normal_style, alignment=1, fontSize=8)
+            ))
+            
+            # Generar PDF
+            doc.build(elements)
+            
+            # Preparar respuesta
+            buffer.seek(0)
+            response = HttpResponse(buffer, content_type='application/pdf')
+            
+            # Generar nombre de archivo
+            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"GIGA_{tipo_reporte}_{timestamp}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+            
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ImportError:
+            logger.error("ReportLab no estÃ¡ instalado. Instale con: pip install reportlab")
+            return Response(
+                {'error': 'Funcionalidad de PDF no disponible. Contacte al administrador.'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as e:
+            logger.error(f"Error generando PDF: {e}")
+            return Response(
+                {'error': f'Error generando PDF: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _generar_tabla_pdf(self, tipo_reporte, datos, filtros):
+        """Genera datos de tabla especÃ­ficos para cada tipo de reporte usando los datos reales."""
+        if tipo_reporte == 'individual':
+            headers = ['Fecha', 'DÃ­a Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad']
+            rows = [headers]
+
+            for dia in datos.get('dias', []):
+                horario_guardia = ""
+                if dia.get('horario_guardia_inicio') and dia.get('horario_guardia_fin'):
+                    horario_guardia = f"{dia['horario_guardia_inicio']}-{dia['horario_guardia_fin']}"
+
+                rows.append([
+                    dia.get('fecha', ''),
+                    dia.get('dia_semana', ''),
+                    horario_guardia,
+                    dia.get('horas_planificadas', ''),
+                    dia.get('horas_efectivas', ''),
+                    dia.get('motivo_guardia', ''),
+                    dia.get('novedad', ''),
+                ])
+            return rows
+
+            # Reporte general: se arma como grilla Agente x DÃ­a
+        if tipo_reporte == 'general':
+            import calendar
+            from datetime import datetime
+            
+            fd = filtros.get("fecha_desde")  # "YYYY-MM-DD"
+            dt = datetime.strptime(fd, "%Y-%m-%d")
+            anio, mes = dt.year, dt.month
+            cant_dias = calendar.monthrange(anio, mes)[1]
+
+            headers = ['Apellido y Nombre', 'Legajo'] + [str(d) for d in range(1, cant_dias + 1)] + ['Total']
+            rows = [headers]
+
+            for agente in datos.get('agentes', []):
+                mapa = {}
+                for dia in agente.get("dias", []):
+                    f = dia.get("fecha")
+                    if not f:
+                        continue
+                    dtn = datetime.strptime(f, "%Y-%m-%d")
+                    if dtn.year == anio and dtn.month == mes:
+                        mapa[dtn.day] = dia.get("valor", 0)
+
+                fila = [agente.get('nombre_completo', ''), agente.get('legajo', '')]
+                total = 0
+
+                for d in range(1, cant_dias + 1):
+                    v = mapa.get(d, 0) or 0
+                    total += v
+                    fila.append(v)
+
+                fila.append(total)
+                rows.append(fila)
+
+            return rows
+
+        # Fallback genÃ©rico
+        headers = ['Item', 'DescripciÃ³n', 'Valor']
+        rows = [
+            headers,
+            ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), ''],
+            ['PerÃ­odo', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", ''],
+            ['Estado', 'Generado exitosamente', ''],
+        ]
+        return rows
+    
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    def exportar_csv(self, request):
+        """
+        Genera y descarga un reporte en formato CSV
+        """
+        try:
+            import csv
+            from django.http import HttpResponse
+            from io import StringIO
+            
+            # Obtener datos de la request
+            tipo_reporte = request.data.get('tipo_reporte', 'general')
+            filtros = {
+                'agente': request.data.get('agente'),
+                'area': request.data.get('area'),
+                'fecha_desde': request.data.get('fecha_desde'),
+                'fecha_hasta': request.data.get('fecha_hasta'),
+                'tipo_guardia': request.data.get('tipo_guardia')
+            }
+            configuracion = request.data.get('configuracion', {})
+
+            agente_sesion = obtener_agente_sesion(request)
+            if not agente_sesion:
+                return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user_ctx = {
+                'agente': agente_sesion,
+                'rol': obtener_rol_agente(agente_sesion)
+            }
+
+            datos_reporte = obtener_datos_reporte(filtros, tipo_reporte, user_ctx)
+            
+            # Crear buffer para CSV
+            output = StringIO()
+            writer = csv.writer(output)
+            
+            # Escribir cabecera informativa
+            writer.writerow(['# Sistema GIGA - Reporte de Guardias y Asistencias'])
+            writer.writerow(['# Universidad Nacional de Tierra del Fuego'])
+            writer.writerow([f'# Tipo de Reporte: {tipo_reporte.replace("_", " ").title()}'])
+            writer.writerow([f'# PerÃ­odo: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'])
+            writer.writerow([f'# Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'])
+            writer.writerow([])  # LÃ­nea vacÃ­a
+            
+            # Generar datos segÃºn tipo de reporte
+            datos_csv = self._generar_datos_csv(tipo_reporte, datos_reporte, filtros)
+            
+            # Escribir datos
+            for fila in datos_csv:
+                writer.writerow(fila)
+            
+            # Preparar respuesta
+            response = HttpResponse(output.getvalue(), content_type='text/csv')
+            
+            # Generar nombre de archivo
+            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"GIGA_{tipo_reporte}_{timestamp}.csv"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+            
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error generando CSV: {e}")
+            return Response(
+                {'error': f'Error generando CSV: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    def exportar_excel(self, request):
+        """
+        Genera y descarga un reporte en formato Excel
+        """
+        try:
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill, Alignment
+            from django.http import HttpResponse
+            from io import BytesIO
+            
+            # Obtener datos de la request
+            tipo_reporte = request.data.get('tipo_reporte', 'general')
+            filtros = {
+                'agente': request.data.get('agente'),
+                'area': request.data.get('area'),
+                'fecha_desde': request.data.get('fecha_desde'),
+                'fecha_hasta': request.data.get('fecha_hasta'),
+                'tipo_guardia': request.data.get('tipo_guardia')
+            }
+
+            agente_sesion = obtener_agente_sesion(request)
+            if not agente_sesion:
+                return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user_ctx = {
+                'agente': agente_sesion,
+                'rol': obtener_rol_agente(agente_sesion)
+            }
+
+            datos_reporte = obtener_datos_reporte(filtros, tipo_reporte, user_ctx)
+            
+            # Crear workbook
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = f"Reporte {tipo_reporte.title()}"
+            
+            # Estilos
+            header_font = Font(bold=True, color="FFFFFF")
+            header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+            center_alignment = Alignment(horizontal="center", vertical="center")
+            
+            # Cabecera informativa
+            ws['A1'] = 'Sistema GIGA - Universidad Nacional de Tierra del Fuego'
+            ws['A1'].font = Font(bold=True, size=14)
+            ws['A2'] = f'Reporte: {tipo_reporte.replace("_", " ").title()}'
+            ws['A3'] = f'PerÃ­odo: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'
+            ws['A4'] = f'Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'
+            
+            # LÃ­nea vacÃ­a
+            row_start = 6
+            
+            # Generar datos
+            datos_excel = self._generar_datos_csv(tipo_reporte, datos_reporte, filtros)
+            
+            # Escribir encabezados
+            if datos_excel:
+                headers = datos_excel[0]
+                for col, header in enumerate(headers, 1):
+                    cell = ws.cell(row=row_start, column=col)
+                    cell.value = header
+                    cell.font = header_font
+                    cell.fill = header_fill
+                    cell.alignment = center_alignment
+                
+                # Escribir datos
+                for row_idx, fila in enumerate(datos_excel[1:], row_start + 1):
+                    for col_idx, valor in enumerate(fila, 1):
+                        ws.cell(row=row_idx, column=col_idx, value=valor)
+                
+                # Ajustar ancho de columnas
+                for column in ws.columns:
+                    max_length = 0
+                    column_letter = column[0].column_letter
+                    for cell in column:
+                        try:
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                        except:
+                            pass
+                    adjusted_width = min(max_length + 2, 30)
+                    ws.column_dimensions[column_letter].width = adjusted_width
+            
+            # Guardar en buffer
+            buffer = BytesIO()
+            wb.save(buffer)
+            buffer.seek(0)
+            
+            # Preparar respuesta
+            response = HttpResponse(
+                buffer,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            
+            # Generar nombre de archivo
+            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"GIGA_{tipo_reporte}_{timestamp}.xlsx"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+            
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ImportError:
+            logger.error("openpyxl no estÃ¡ instalado. Instale con: pip install openpyxl")
+            return Response(
+                {'error': 'Funcionalidad de Excel no disponible. Contacte al administrador.'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as e:
+            logger.error(f"Error generando Excel: {e}")
+            return Response(
+                {'error': f'Error generando Excel: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _generar_datos_csv(self, tipo_reporte, datos, filtros):
+        """Genera datos en formato de filas para CSV/Excel usando los datos reales."""
+        if tipo_reporte == 'individual':
+            headers = ['Fecha', 'DÃ­a Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad', 'Estado Asistencia']
+            rows = [headers]
+
+            for dia in datos.get('dias', []):
+                horario_guardia = ""
+                if dia.get('horario_guardia_inicio') and dia.get('horario_guardia_fin'):
+                    horario_guardia = f"{dia['horario_guardia_inicio']}-{dia['horario_guardia_fin']}"
+
+                rows.append([
+                    dia.get('fecha', ''),
+                    dia.get('dia_semana', ''),
+                    horario_guardia,
+                    dia.get('horas_planificadas', ''),
+                    dia.get('horas_efectivas', ''),
+                    dia.get('motivo_guardia', ''),
+                    dia.get('novedad', ''),
+                    dia.get('estado_asistencia', ''),
+                ])
+            return rows
+
+        if tipo_reporte == 'general':
+            dias = datos.get('dias_columnas', [])
+            headers = ['Agente', 'Legajo'] + [d.get('fecha', '') for d in dias] + ['Total Horas']
+            rows = [headers]
+
+            for agente in datos.get('agentes', []):
+                fila = [
+                    agente.get('nombre_completo', ''),
+                    agente.get('legajo', '')
+                ]
+                for d in dias:
+                    fecha = d.get('fecha')
+                    celda = next((dia for dia in agente.get('dias', []) if dia.get('fecha') == fecha), {})
+                    fila.append(celda.get('valor', ''))
+                fila.append(agente.get('total_horas', ''))
+                rows.append(fila)
+            return rows
+
+        # Formato genÃ©rico
+        headers = ['DescripciÃ³n', 'Valor', 'Observaciones']
+        rows = [
+            headers,
+            ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), 'Generado automÃ¡ticamente'],
+            ['PerÃ­odo Consultado', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", 'Rango de fechas seleccionado'],
+            ['Fecha de GeneraciÃ³n', timezone.now().strftime("%d/%m/%Y %H:%M"), 'Momento de creaciÃ³n del reporte'],
+            ['Sistema', 'GIGA - UNTDF', 'Universidad Nacional de Tierra del Fuego'],
+        ]
+        return rows
+
+
+
 
 class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
     """ViewSet para resumen mensual con cÃ¡lculo automÃ¡tico de plus"""
@@ -2704,511 +3229,6 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 {'error': f'Error generando reporte: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-    # ========================
-    # ENDPOINTS DE EXPORTACIÃ“N
-    # ========================
-    
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def exportar_pdf(self, request):
-        """
-        Genera y descarga un reporte en formato PDF con formato institucional
-        """
-        try:
-            from reportlab.lib import colors
-            from reportlab.lib.pagesizes import letter, A4, landscape
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib.units import inch
-            from django.http import HttpResponse
-            from io import BytesIO
-            import os
-            
-            # Obtener datos de la request
-            tipo_reporte = request.data.get('tipo_reporte', 'general')
-            filtros = {
-                'agente': request.data.get('agente'),
-                'area': request.data.get('area'),
-                'fecha_desde': request.data.get('fecha_desde'),
-                'fecha_hasta': request.data.get('fecha_hasta'),
-                'tipo_guardia': request.data.get('tipo_guardia')
-            }
-            configuracion = request.data.get('configuracion', {})
-            metadatos = request.data.get('metadatos', {})
-
-            # Obtener contexto de usuario y datos del reporte
-            agente_sesion = obtener_agente_sesion(request)
-            if not agente_sesion:
-                return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
-
-            user_ctx = {
-                'agente': agente_sesion,
-                'rol': obtener_rol_agente(agente_sesion)
-            }
-
-            datos_reporte = obtener_datos_reporte(filtros, tipo_reporte, user_ctx)
-            
-            # Configurar el documento
-            buffer = BytesIO()
-            
-            # Determinar orientaciÃ³n segÃºn tipo de reporte
-            orientacion = configuracion.get('reporte_especifico', {}).get('orientacion', 'portrait')
-            page_size = landscape(A4) if orientacion == 'landscape' else A4
-            
-            # Crear documento
-            doc = SimpleDocTemplate(
-                buffer,
-                pagesize=page_size,
-                rightMargin=72,
-                leftMargin=72,
-                topMargin=72,
-                bottomMargin=72
-            )
-            
-            # Preparar elementos del documento
-            elements = []
-            styles = getSampleStyleSheet()
-            
-            # Configurar estilos institucionales
-            title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=styles['Heading1'],
-                fontSize=16,
-                fontName='Helvetica-Bold',
-                spaceAfter=30,
-                alignment=1  # Centrado
-            )
-            
-            header_style = ParagraphStyle(
-                'CustomHeader',
-                parent=styles['Normal'],
-                fontSize=12,
-                fontName='Helvetica-Bold',
-                spaceAfter=12
-            )
-            
-            normal_style = ParagraphStyle(
-                'CustomNormal',
-                parent=styles['Normal'],
-                fontSize=10,
-                fontName='Helvetica'
-            )
-            
-            # ========================================
-            # CABECERA INSTITUCIONAL
-            # ========================================
-            
-            # Logo institucional (si existe)
-            logo_path = os.path.join(os.path.dirname(__file__), '../../static/logos/logo-untdf.png')
-            if os.path.exists(logo_path):
-                try:
-                    logo = Image(logo_path, width=60, height=60)
-                    elements.append(logo)
-                except:
-                    pass  # Si no se puede cargar el logo, continuar sin Ã©l
-            
-            # TÃ­tulo del reporte
-            reporte_config = configuracion.get('reporte_especifico', {})
-            titulo_reporte = reporte_config.get('titulo', f'Reporte {tipo_reporte.replace("_", " ").title()}')
-            
-            elements.append(Paragraph(titulo_reporte, title_style))
-            elements.append(Spacer(1, 12))
-            
-            # InformaciÃ³n institucional
-            elementos_cabecera = [
-                "Universidad Nacional de Tierra del Fuego",
-                "Sistema GIGA - GestiÃ³n Integral de Guardias y Asistencias",
-                f"Fecha de GeneraciÃ³n: {metadatos.get('fecha_generacion', '')}",
-                f"Filtros Aplicados: {metadatos.get('filtros_aplicados', '')}"
-            ]
-            
-            for elemento in elementos_cabecera:
-                elements.append(Paragraph(elemento, normal_style))
-            
-            elements.append(Spacer(1, 20))
-            
-            # ========================================
-            # CUERPO DEL REPORTE 
-            # ========================================
-            
-            # Generar tabla segÃºn tipo de reporte usando datos reales
-            tabla_data = self._generar_tabla_pdf(tipo_reporte, datos_reporte, filtros)
-            
-            if tabla_data and len(tabla_data) > 0:
-                # Crear tabla
-                tabla = Table(tabla_data)
-                
-                # Aplicar estilos a la tabla
-                tabla.setStyle(TableStyle([
-                    # Encabezado
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, 0), 10),
-                    
-                    # Cuerpo
-                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                    ('FONTSIZE', (0, 1), (-1, -1), 9),
-                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    
-                    # Alternar colores de filas
-                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.beige, colors.white])
-                ]))
-                
-                elements.append(tabla)
-                elements.append(Spacer(1, 20))
-            
-            # ========================================
-            # PIE DE PÃGINA CON FIRMAS
-            # ========================================
-            
-            # Espacio para firmas
-            elements.append(Spacer(1, 40))
-            
-            firma_data = [
-                ['', ''],
-                ['_' * 30, '_' * 30],
-                ['Jefe de Ãrea', 'RR.HH./LiquidaciÃ³n'],
-                ['Firma y Sello', 'Firma y Sello']
-            ]
-            
-            firma_tabla = Table(firma_data, colWidths=[3*inch, 3*inch])
-            firma_tabla.setStyle(TableStyle([
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 1), (-1, -1), 10),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('TOPPADDING', (0, 0), (-1, -1), 12),
-            ]))
-            
-            elements.append(firma_tabla)
-            
-            # Pie institucional
-            elements.append(Spacer(1, 20))
-            elements.append(Paragraph(
-                "2025 - UNTDF - Ushuaia - Tierra del Fuego",
-                ParagraphStyle('Footer', parent=normal_style, alignment=1, fontSize=8)
-            ))
-            
-            # Generar PDF
-            doc.build(elements)
-            
-            # Preparar respuesta
-            buffer.seek(0)
-            response = HttpResponse(buffer, content_type='application/pdf')
-            
-            # Generar nombre de archivo
-            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"GIGA_{tipo_reporte}_{timestamp}.pdf"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            
-            return response
-            
-        except ReporteError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except ImportError:
-            logger.error("ReportLab no estÃ¡ instalado. Instale con: pip install reportlab")
-            return Response(
-                {'error': 'Funcionalidad de PDF no disponible. Contacte al administrador.'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        except Exception as e:
-            logger.error(f"Error generando PDF: {e}")
-            return Response(
-                {'error': f'Error generando PDF: {str(e)}'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    def _generar_tabla_pdf(self, tipo_reporte, datos, filtros):
-        """Genera datos de tabla especÃ­ficos para cada tipo de reporte usando los datos reales."""
-        if tipo_reporte == 'individual':
-            headers = ['Fecha', 'DÃ­a Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad']
-            rows = [headers]
-
-            for dia in datos.get('dias', []):
-                horario_guardia = ""
-                if dia.get('horario_guardia_inicio') and dia.get('horario_guardia_fin'):
-                    horario_guardia = f"{dia['horario_guardia_inicio']}-{dia['horario_guardia_fin']}"
-
-                rows.append([
-                    dia.get('fecha', ''),
-                    dia.get('dia_semana', ''),
-                    horario_guardia,
-                    dia.get('horas_planificadas', ''),
-                    dia.get('horas_efectivas', ''),
-                    dia.get('motivo_guardia', ''),
-                    dia.get('novedad', ''),
-                ])
-            return rows
-
-            # Reporte general: se arma como grilla Agente x DÃ­a
-        if tipo_reporte == 'general':
-            dias = datos.get('dias_columnas', [])
-            headers = ['Agente', 'Legajo'] + [d.get('fecha', '') for d in dias] + ['Total Horas']
-            rows = [headers]
-
-            for agente in datos.get('agentes', []):
-                fila = [
-                    agente.get('nombre_completo', ''),
-                    agente.get('legajo', '')
-                ]
-                for d in dias:
-                    fecha = d.get('fecha')
-                    celda = next((dia for dia in agente.get('dias', []) if dia.get('fecha') == fecha), {})
-                    fila.append(celda.get('valor', ''))
-                fila.append(agente.get('total_horas', ''))
-                rows.append(fila)
-            return rows
-
-        # Fallback genÃ©rico
-        headers = ['Item', 'DescripciÃ³n', 'Valor']
-        rows = [
-            headers,
-            ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), ''],
-            ['PerÃ­odo', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", ''],
-            ['Estado', 'Generado exitosamente', ''],
-        ]
-        return rows
-    
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def exportar_csv(self, request):
-        """
-        Genera y descarga un reporte en formato CSV
-        """
-        try:
-            import csv
-            from django.http import HttpResponse
-            from io import StringIO
-            
-            # Obtener datos de la request
-            tipo_reporte = request.data.get('tipo_reporte', 'general')
-            filtros = {
-                'agente': request.data.get('agente'),
-                'area': request.data.get('area'),
-                'fecha_desde': request.data.get('fecha_desde'),
-                'fecha_hasta': request.data.get('fecha_hasta'),
-                'tipo_guardia': request.data.get('tipo_guardia')
-            }
-            configuracion = request.data.get('configuracion', {})
-
-            agente_sesion = obtener_agente_sesion(request)
-            if not agente_sesion:
-                return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
-
-            user_ctx = {
-                'agente': agente_sesion,
-                'rol': obtener_rol_agente(agente_sesion)
-            }
-
-            datos_reporte = obtener_datos_reporte(filtros, tipo_reporte, user_ctx)
-            
-            # Crear buffer para CSV
-            output = StringIO()
-            writer = csv.writer(output)
-            
-            # Escribir cabecera informativa
-            writer.writerow(['# Sistema GIGA - Reporte de Guardias y Asistencias'])
-            writer.writerow(['# Universidad Nacional de Tierra del Fuego'])
-            writer.writerow([f'# Tipo de Reporte: {tipo_reporte.replace("_", " ").title()}'])
-            writer.writerow([f'# PerÃ­odo: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'])
-            writer.writerow([f'# Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'])
-            writer.writerow([])  # LÃ­nea vacÃ­a
-            
-            # Generar datos segÃºn tipo de reporte
-            datos_csv = self._generar_datos_csv(tipo_reporte, datos_reporte, filtros)
-            
-            # Escribir datos
-            for fila in datos_csv:
-                writer.writerow(fila)
-            
-            # Preparar respuesta
-            response = HttpResponse(output.getvalue(), content_type='text/csv')
-            
-            # Generar nombre de archivo
-            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"GIGA_{tipo_reporte}_{timestamp}.csv"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            
-            return response
-            
-        except ReporteError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            logger.error(f"Error generando CSV: {e}")
-            return Response(
-                {'error': f'Error generando CSV: {str(e)}'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def exportar_excel(self, request):
-        """
-        Genera y descarga un reporte en formato Excel
-        """
-        try:
-            import openpyxl
-            from openpyxl.styles import Font, PatternFill, Alignment
-            from django.http import HttpResponse
-            from io import BytesIO
-            
-            # Obtener datos de la request
-            tipo_reporte = request.data.get('tipo_reporte', 'general')
-            filtros = {
-                'agente': request.data.get('agente'),
-                'area': request.data.get('area'),
-                'fecha_desde': request.data.get('fecha_desde'),
-                'fecha_hasta': request.data.get('fecha_hasta'),
-                'tipo_guardia': request.data.get('tipo_guardia')
-            }
-
-            agente_sesion = obtener_agente_sesion(request)
-            if not agente_sesion:
-                return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
-
-            user_ctx = {
-                'agente': agente_sesion,
-                'rol': obtener_rol_agente(agente_sesion)
-            }
-
-            datos_reporte = obtener_datos_reporte(filtros, tipo_reporte, user_ctx)
-            
-            # Crear workbook
-            wb = openpyxl.Workbook()
-            ws = wb.active
-            ws.title = f"Reporte {tipo_reporte.title()}"
-            
-            # Estilos
-            header_font = Font(bold=True, color="FFFFFF")
-            header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-            center_alignment = Alignment(horizontal="center", vertical="center")
-            
-            # Cabecera informativa
-            ws['A1'] = 'Sistema GIGA - Universidad Nacional de Tierra del Fuego'
-            ws['A1'].font = Font(bold=True, size=14)
-            ws['A2'] = f'Reporte: {tipo_reporte.replace("_", " ").title()}'
-            ws['A3'] = f'PerÃ­odo: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'
-            ws['A4'] = f'Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'
-            
-            # LÃ­nea vacÃ­a
-            row_start = 6
-            
-            # Generar datos
-            datos_excel = self._generar_datos_csv(tipo_reporte, datos_reporte, filtros)
-            
-            # Escribir encabezados
-            if datos_excel:
-                headers = datos_excel[0]
-                for col, header in enumerate(headers, 1):
-                    cell = ws.cell(row=row_start, column=col)
-                    cell.value = header
-                    cell.font = header_font
-                    cell.fill = header_fill
-                    cell.alignment = center_alignment
-                
-                # Escribir datos
-                for row_idx, fila in enumerate(datos_excel[1:], row_start + 1):
-                    for col_idx, valor in enumerate(fila, 1):
-                        ws.cell(row=row_idx, column=col_idx, value=valor)
-                
-                # Ajustar ancho de columnas
-                for column in ws.columns:
-                    max_length = 0
-                    column_letter = column[0].column_letter
-                    for cell in column:
-                        try:
-                            if len(str(cell.value)) > max_length:
-                                max_length = len(str(cell.value))
-                        except:
-                            pass
-                    adjusted_width = min(max_length + 2, 30)
-                    ws.column_dimensions[column_letter].width = adjusted_width
-            
-            # Guardar en buffer
-            buffer = BytesIO()
-            wb.save(buffer)
-            buffer.seek(0)
-            
-            # Preparar respuesta
-            response = HttpResponse(
-                buffer,
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-            
-            # Generar nombre de archivo
-            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"GIGA_{tipo_reporte}_{timestamp}.xlsx"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            
-            return response
-            
-        except ReporteError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except ImportError:
-            logger.error("openpyxl no estÃ¡ instalado. Instale con: pip install openpyxl")
-            return Response(
-                {'error': 'Funcionalidad de Excel no disponible. Contacte al administrador.'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        except Exception as e:
-            logger.error(f"Error generando Excel: {e}")
-            return Response(
-                {'error': f'Error generando Excel: {str(e)}'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    def _generar_datos_csv(self, tipo_reporte, datos, filtros):
-        """Genera datos en formato de filas para CSV/Excel usando los datos reales."""
-        if tipo_reporte == 'individual':
-            headers = ['Fecha', 'DÃ­a Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad', 'Estado Asistencia']
-            rows = [headers]
-
-            for dia in datos.get('dias', []):
-                horario_guardia = ""
-                if dia.get('horario_guardia_inicio') and dia.get('horario_guardia_fin'):
-                    horario_guardia = f"{dia['horario_guardia_inicio']}-{dia['horario_guardia_fin']}"
-
-                rows.append([
-                    dia.get('fecha', ''),
-                    dia.get('dia_semana', ''),
-                    horario_guardia,
-                    dia.get('horas_planificadas', ''),
-                    dia.get('horas_efectivas', ''),
-                    dia.get('motivo_guardia', ''),
-                    dia.get('novedad', ''),
-                    dia.get('estado_asistencia', ''),
-                ])
-            return rows
-
-        if tipo_reporte == 'general':
-            dias = datos.get('dias_columnas', [])
-            headers = ['Agente', 'Legajo'] + [d.get('fecha', '') for d in dias] + ['Total Horas']
-            rows = [headers]
-
-            for agente in datos.get('agentes', []):
-                fila = [
-                    agente.get('nombre_completo', ''),
-                    agente.get('legajo', '')
-                ]
-                for d in dias:
-                    fecha = d.get('fecha')
-                    celda = next((dia for dia in agente.get('dias', []) if dia.get('fecha') == fecha), {})
-                    fila.append(celda.get('valor', ''))
-                fila.append(agente.get('total_horas', ''))
-                rows.append(fila)
-            return rows
-
-        # Formato genÃ©rico
-        headers = ['DescripciÃ³n', 'Valor', 'Observaciones']
-        rows = [
-            headers,
-            ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), 'Generado automÃ¡ticamente'],
-            ['PerÃ­odo Consultado', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", 'Rango de fechas seleccionado'],
-            ['Fecha de GeneraciÃ³n', timezone.now().strftime("%d/%m/%Y %H:%M"), 'Momento de creaciÃ³n del reporte'],
-            ['Sistema', 'GIGA - UNTDF', 'Universidad Nacional de Tierra del Fuego'],
-        ]
-        return rows
 
     @action(detail=True, methods=['patch'])
     def aprobar(self, request, pk=None):

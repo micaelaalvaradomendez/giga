@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from django.db.models import F, Q
-
 from guardias.models import Guardia
 from personas.models import Agente, Area
 from asistencia.models import Asistencia
@@ -62,29 +61,38 @@ def obtener_datos_reporte(filtros: Dict, tipo_reporte: str, user_ctx: Dict):
 
 
 def _normalizar_filtros(filtros: Dict) -> Dict:
-    """Devuelve copia limpia de filtros con tipos correctos (acepta simples o listas)."""
-    filtros = filtros or {}
+    def clean(v):
+        if v in ("", "null", "None", None):
+            return None
+        return v
 
-    def to_list_int(value):
-        if value in [None, ""]:
-            return []
-        if isinstance(value, (list, tuple)):
-            return [_to_int_or_none(v) for v in value if _to_int_or_none(v) is not None]
-        # aceptar string separada por comas
-        if isinstance(value, str) and "," in value:
-            parts = [p.strip() for p in value.split(",") if p.strip()]
-            return [_to_int_or_none(p) for p in parts if _to_int_or_none(p) is not None]
-        val = _to_int_or_none(value)
-        return [val] if val is not None else []
+    out = {}
 
-    limpio = {
-        "agente": to_list_int(filtros.get("agente")),
-        "area": to_list_int(filtros.get("area")),
-        "tipo_guardia": filtros.get("tipo_guardia"),
-        "fecha_desde": _parse_fecha(filtros.get("fecha_desde"), requerido=True),
-        "fecha_hasta": _parse_fecha(filtros.get("fecha_hasta"), requerido=True),
-    }
-    return limpio
+    out["agente"] = filtros.get("agente")
+    if out["agente"] is not None:
+        out["agente"] = out["agente"] if isinstance(out["agente"], list) else [out["agente"]]
+
+    out["area"] = filtros.get("area")
+    if out["area"] is not None:
+        out["area"] = out["area"] if isinstance(out["area"], list) else [out["area"]]
+
+    out["tipo_guardia"] = clean(filtros.get("tipo_guardia"))
+
+    fd = clean(filtros.get("fecha_desde"))
+    fh = clean(filtros.get("fecha_hasta"))
+
+    if fd:
+        out["fecha_desde"] = datetime.strptime(fd, "%Y-%m-%d").date()
+    else:
+        out["fecha_desde"] = None
+
+    if fh:
+        out["fecha_hasta"] = datetime.strptime(fh, "%Y-%m-%d").date()
+    else:
+        out["fecha_hasta"] = None
+
+    return out
+
 
 
 def _to_int_or_none(valor) -> Optional[int]:
@@ -106,10 +114,19 @@ def _parse_fecha(valor, requerido=False):
 
 
 def _validar_rango_fechas(filtros: Dict):
-    fecha_desde = filtros.get("fecha_desde")
-    fecha_hasta = filtros.get("fecha_hasta")
-    if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
-        raise ReporteError("Fecha desde no puede ser mayor que fecha hasta")
+    fd = filtros.get("fecha_desde")
+    fh = filtros.get("fecha_hasta")
+
+    if fd and fh:
+        if isinstance(fd, str):
+            fd = datetime.strptime(fd, "%Y-%m-%d").date()
+            filtros["fecha_desde"] = fd
+        if isinstance(fh, str):
+            fh = datetime.strptime(fh, "%Y-%m-%d").date()
+            filtros["fecha_hasta"] = fh
+
+        if fd > fh:
+            raise ReporteError("Fecha desde no puede ser mayor que fecha hasta")
 
 
 def _aplicar_reglas_por_rol(filtros: Dict, rol: str, agente_ctx: Agente) -> Dict:
@@ -267,17 +284,19 @@ def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
     for agente in agentes_qs:
         dias_valores = []
         total_horas_agente = 0
-        guardias_agente = [g for g in guardias_qs if g.id_agente == agente.id_agente]
+        guardias_agente = [g for g in guardias_qs if g.id_agente_id == agente.id_agente]
         guardias_por_fecha = {g.fecha.strftime(DATE_FMT): g for g in guardias_agente}
 
         for fecha_str in dias_fechas:
             guardia = guardias_por_fecha.get(fecha_str)
             if guardia:
-                # Solo contamos horas efectivas; si no existen, se considera 0
-                valor = guardia.horas_efectivas or 0
+                # Tomar horas efectivas; si no hay, usar planificadas como fallback
+                valor = guardia.horas_efectivas
+                if valor is None:
+                    valor = guardia.horas_planificadas or 0
                 total_horas_agente += valor
             else:
-                valor = ""
+                valor = 0
             dias_valores.append({"fecha": fecha_str, "valor": valor})
 
         agentes_data.append({
@@ -292,7 +311,7 @@ def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
     total_horas = sum(a["total_horas"] for a in agentes_data)
 
     return {
-        "tipo": "general",
+        "tipo": "regular",
         "filtros": _filtros_serializables(filtros),
         "dias_columnas": dias_columnas,
         "agentes": agentes_data,
@@ -304,11 +323,21 @@ def _query_guardias(filtros: Dict, permisos: Dict):
     fecha_desde = filtros["fecha_desde"]
     fecha_hasta = filtros["fecha_hasta"]
 
-    qs = Guardia.objects.filter(
+    base_q = Q(
         fecha__gte=fecha_desde,
         fecha__lte=fecha_hasta,
         activa=True,
-    ).select_related("id_agente", "id_cronograma")
+    )
+
+    cruza_medianoche_q = Q(
+        fecha=fecha_desde - timedelta(days=1),
+        hora_inicio__gt=F("hora_fin"),
+        activa=True,
+    )
+
+    qs = Guardia.objects.filter(base_q | cruza_medianoche_q).select_related(
+        "id_agente", "id_cronograma"
+    )
 
     if filtros.get("tipo_guardia"):
         qs = qs.filter(tipo=filtros["tipo_guardia"])
@@ -316,19 +345,13 @@ def _query_guardias(filtros: Dict, permisos: Dict):
     if filtros.get("agente"):
         qs = qs.filter(id_agente_id__in=filtros["agente"])
 
-    if filtros.get("area"):
-        qs = qs.filter(id_agente__id_area_id__in=filtros["area"])
-    elif permisos.get("area_scope"):
+    if permisos.get("area_scope") is not None:
         qs = qs.filter(id_agente__id_area_id__in=permisos["area_scope"])
+    elif filtros.get("area"):
+        qs = qs.filter(id_agente__id_area_id__in=filtros["area"])
 
-    # Guardias que cruzan medianoche: incluir si caen en dia final
-    qs = qs | Guardia.objects.filter(
-        fecha__lt=fecha_desde,
-        fecha__gte=fecha_desde - timedelta(days=1),
-        hora_inicio__gt=F("hora_fin"),
-        activa=True,
-    )
     return qs
+
 
 
 def _generar_rango_dias(desde, hasta):

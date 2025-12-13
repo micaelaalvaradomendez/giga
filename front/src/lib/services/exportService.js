@@ -281,11 +281,10 @@ export async function exportarCSV(tipoReporte, datosReporte, filtros, formato = 
             throw new Error('La exportación CSV/Excel solo está disponible en el navegador');
         }
         
-        // Preparar datos para envío al backend
         const payload = {
             tipo_reporte: tipoReporte,
             filtros: filtros,
-            formato: formato, // 'csv' o 'xlsx'
+            formato: formato,
             configuracion: {
                 incluir_cabeceras: true,
                 incluir_totales: true,
