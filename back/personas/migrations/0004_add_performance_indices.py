@@ -10,19 +10,13 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Add indices for Agente lookups
+        # Add composite indices for Agente lookups (these can be used for single-column queries too)
         migrations.RunSQL(
             sql="""
-                CREATE INDEX IF NOT EXISTS idx_agente_cuil ON agente(cuil);
-                CREATE INDEX IF NOT EXISTS idx_agente_dni ON agente(dni);
-                CREATE INDEX IF NOT EXISTS idx_agente_activo ON agente(activo);
                 CREATE INDEX IF NOT EXISTS idx_agente_cuil_activo ON agente(cuil, activo);
                 CREATE INDEX IF NOT EXISTS idx_agente_dni_activo ON agente(dni, activo);
             """,
             reverse_sql="""
-                DROP INDEX IF EXISTS idx_agente_cuil;
-                DROP INDEX IF EXISTS idx_agente_dni;
-                DROP INDEX IF EXISTS idx_agente_activo;
                 DROP INDEX IF EXISTS idx_agente_cuil_activo;
                 DROP INDEX IF EXISTS idx_agente_dni_activo;
             """

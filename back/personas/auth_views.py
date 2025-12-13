@@ -34,6 +34,10 @@ def send_email_async(subject, message, recipient_list):
     """
     Send email asynchronously to avoid blocking the login process.
     Uses threading to send email in background.
+    
+    Note: Uses daemon threads for simplicity. In production, consider using
+    a proper task queue (e.g., Celery) for guaranteed delivery and better
+    reliability in case of application shutdown.
     """
     def _send():
         try:
@@ -48,7 +52,8 @@ def send_email_async(subject, message, recipient_list):
         except Exception as e:
             logger.error(f"Error sending async email: {e}")
     
-    # Start thread to send email
+    # Start daemon thread to send email
+    # Daemon thread will terminate when main program exits
     thread = Thread(target=_send, daemon=True)
     thread.start()
 
@@ -160,17 +165,28 @@ def login_view(request):
         if len(clean_input) == 8:
             dni_to_check = clean_input
         elif len(clean_input) == 11:
-            dni_to_check = clean_input[2:10]  # Extract DNI from CUIL (positions 2-9)
+            dni_to_check = clean_input[2:10]  # Extract DNI from CUIL (positions 2-9 inclusive, 8 digits)
         else:
             dni_to_check = None
         
+        # Build query with proper null handling
+        query_filter = Q(activo=True)
+        if len(clean_input) == 11:
+            query_filter &= Q(cuil=clean_input) | Q(dni=dni_to_check)
+        elif len(clean_input) == 8:
+            query_filter &= Q(dni=clean_input)
+        else:
+            # Invalid input length - will return None
+            agente = None
+            query_filter = None
+        
         # Single optimized query with prefetch_related for roles and area
-        agente = Agente.objects.select_related('id_area').prefetch_related(
-            'agenterol_set__id_rol'
-        ).filter(
-            Q(cuil=clean_input) | Q(dni=dni_to_check),
-            activo=True
-        ).first()
+        if query_filter is not None:
+            agente = Agente.objects.select_related('id_area').prefetch_related(
+                'agenterol_set__id_rol'
+            ).filter(query_filter).first()
+        else:
+            agente = None
         
         # Si no se encontró el agente
         if not agente:
@@ -206,11 +222,12 @@ def login_view(request):
             }
 
         # Check if password needs to be changed
-        # Note: This should ideally be a field on the model, not a runtime comparison
+        # Note: This checks if the user's password is still set to their DNI (common default)
+        # check_password() properly compares the plain DNI against the hashed password
         requires_password_change = False
         password_reset_reason = ""
         try:
-            # Use check_password to avoid plain text comparison
+            # Check if password equals DNI by comparing plain DNI with hashed password
             if agente.check_password(agente.dni):
                 requires_password_change = True
                 password_reset_reason = "La contraseña es igual al DNI y debe ser cambiada por seguridad"
