@@ -10,7 +10,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Add composite indices for Agente lookups (these can be used for single-column queries too)
+        # Add composite indices for Agente lookups
+        # Note: Uses actual table names ('agente', 'sesion_activa') as defined in models
+        # This is a database-first design where tables already exist without Django prefixes
         migrations.RunSQL(
             sql="""
                 CREATE INDEX IF NOT EXISTS idx_agente_cuil_activo ON agente(cuil, activo);
