@@ -212,8 +212,6 @@ const PDF_REPORTES_CONFIG = {
  */
 export async function exportarPDF(tipoReporte, datosReporte, filtros) {
     try {
-        console.log('🔄 Iniciando exportación PDF...', { tipoReporte, filtros });
-        
         if (!browser) {
             throw new Error('La exportación PDF solo está disponible en el navegador');
         }
@@ -226,6 +224,8 @@ export async function exportarPDF(tipoReporte, datosReporte, filtros) {
             area: filtros?.area_id ?? filtros?.area,
             agente: filtros?.agente_id ?? filtros?.agente,
             tipo_guardia: filtros?.tipo_guardia,
+            incluir_licencias: filtros?.incluir_licencias,
+            incluir_feriados: filtros?.incluir_feriados,
             configuracion: {
                 ...PDF_CONFIG,
                 reporte_especifico: PDF_REPORTES_CONFIG[tipoReporte]
@@ -265,7 +265,6 @@ export async function exportarPDF(tipoReporte, datosReporte, filtros) {
         };
         
     } catch (error) {
-        console.error('❌ Error al exportar PDF:', error);
         throw new Error(`Error al generar PDF: ${error.message}`);
     }
 }

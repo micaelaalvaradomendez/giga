@@ -368,7 +368,6 @@
 			<label class="checkbox-container">
 				<input 
 					type="checkbox" 
-					bind:checked={$filtrosSeleccionados.incluir_licencias}
 					on:change={(e) => handleFiltroChange('incluir_licencias', e.target.checked)}
 					disabled={$cargandoGeneral}
 				/>
@@ -379,7 +378,6 @@
 			<label class="checkbox-container">
 				<input 
 					type="checkbox" 
-					bind:checked={$filtrosSeleccionados.incluir_feriados}
 					on:change={(e) => handleFiltroChange('incluir_feriados', e.target.checked)}
 					disabled={$cargandoGeneral}
 				/>

@@ -11,12 +11,13 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from django.db.models import F, Q
-from guardias.models import Guardia
+from guardias.models import Guardia, Feriado
 from personas.models import Agente, Area
-from asistencia.models import Asistencia
+from asistencia.models import Asistencia, Licencia, TipoLicencia
 from common.permissions import obtener_area_y_subareas, obtener_rol_agente
 
 DATE_FMT = "%Y-%m-%d"
+ESTADO_LICENCIA = "aprobada"
 
 
 class ReporteError(Exception):
@@ -60,6 +61,20 @@ def obtener_datos_reporte(filtros: Dict, tipo_reporte: str, user_ctx: Dict):
 # ---------------------------------------------------------------------------
 
 
+from datetime import datetime
+
+def _to_bool(v):
+    # acepta True/False, "true"/"false", 1/0, "1"/"0"
+    if isinstance(v, bool):
+        return v
+    if v is None:
+        return False
+    if isinstance(v, (int, float)):
+        return bool(v)
+    if isinstance(v, str):
+        return v.strip().lower() in ("1", "true", "t", "yes", "y", "si", "sí", "on")
+    return False
+
 def _normalizar_filtros(filtros: Dict) -> Dict:
     def clean(v):
         if v in ("", "null", "None", None):
@@ -68,6 +83,7 @@ def _normalizar_filtros(filtros: Dict) -> Dict:
 
     out = {}
 
+    # listas
     out["agente"] = filtros.get("agente")
     if out["agente"] is not None:
         out["agente"] = out["agente"] if isinstance(out["agente"], list) else [out["agente"]]
@@ -78,18 +94,16 @@ def _normalizar_filtros(filtros: Dict) -> Dict:
 
     out["tipo_guardia"] = clean(filtros.get("tipo_guardia"))
 
+    # fechas
     fd = clean(filtros.get("fecha_desde"))
     fh = clean(filtros.get("fecha_hasta"))
 
-    if fd:
-        out["fecha_desde"] = datetime.strptime(fd, "%Y-%m-%d").date()
-    else:
-        out["fecha_desde"] = None
+    out["fecha_desde"] = datetime.strptime(fd, "%Y-%m-%d").date() if fd else None
+    out["fecha_hasta"] = datetime.strptime(fh, "%Y-%m-%d").date() if fh else None
 
-    if fh:
-        out["fecha_hasta"] = datetime.strptime(fh, "%Y-%m-%d").date()
-    else:
-        out["fecha_hasta"] = None
+    # flags feriados y licencias
+    out["incluir_feriados"] = _to_bool(filtros.get("incluir_feriados"))
+    out["incluir_licencias"] = _to_bool(filtros.get("incluir_licencias"))
 
     return out
 
@@ -263,18 +277,74 @@ def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
     agentes_qs = Agente.objects.filter(activo=True)
     if filtros.get("agente"):
         agentes_qs = agentes_qs.filter(id_agente__in=filtros["agente"])
-    if area_scope:
+    if area_scope is not None:
         agentes_qs = agentes_qs.filter(id_area_id__in=area_scope)
     elif filtros.get("area"):
         agentes_qs = agentes_qs.filter(id_area_id__in=filtros["area"])
 
     agentes_qs = agentes_qs.select_related("id_area").order_by("apellido", "nombre")
+
+    fecha_desde = filtros["fecha_desde"]
+    fecha_hasta = filtros["fecha_hasta"]
+
+    incluir_licencias = filtros.get("incluir_licencias", False)
+    incluir_feriados = filtros.get("incluir_feriados", False)
+
+    # =========================
+    # LICENCIAS
+    # =========================
+    licencias_map = {}  # { agente_id: { 'YYYY-MM-DD': 'VAC' } }
+
+    if incluir_licencias:
+        licencias_qs = (
+            Licencia.objects
+            .filter(
+                id_agente_id__in=agentes_qs.values_list("id_agente", flat=True),
+                estado=ESTADO_LICENCIA,  # ej: "aprobada"
+                fecha_desde__lte=fecha_hasta,
+                fecha_hasta__gte=fecha_desde,
+            )
+            .select_related("id_tipo_licencia")
+        )
+
+        for lic in licencias_qs:
+            codigo = lic.id_tipo_licencia.codigo or "LIC"
+            d = lic.fecha_desde
+            while d <= lic.fecha_hasta:
+                if fecha_desde <= d <= fecha_hasta:
+                    licencias_map.setdefault(lic.id_agente_id, {})[d.strftime(DATE_FMT)] = codigo
+                d += timedelta(days=1)
+
+    # =========================
+    # FERIADOS
+    # =========================
+    feriados_set = set()  # { 'YYYY-MM-DD' }
+
+    if incluir_feriados:
+        feriados_qs = Feriado.feriados_en_rango(fecha_desde, fecha_hasta)
+        for fer in feriados_qs:
+            for f in fer.get_fechas_incluidas():
+                if fecha_desde <= f <= fecha_hasta:
+                    feriados_set.add(f.strftime(DATE_FMT))
+
+    # =========================
+    # GUARDIAS
+    # =========================
     guardias_qs = list(
-        _query_guardias(filtros, permisos).filter(id_agente_id__in=agentes_qs.values_list("id_agente", flat=True))
+        _query_guardias(filtros, permisos).filter(
+            id_agente_id__in=agentes_qs.values_list("id_agente", flat=True)
+        )
     )
 
-    # Solo días con guardias dentro del alcance
-    dias_fechas = sorted({g.fecha.strftime(DATE_FMT) for g in guardias_qs})
+    # ✅ días = guardias + licencias + feriados
+    dias_set = {g.fecha.strftime(DATE_FMT) for g in guardias_qs}
+    if incluir_licencias:
+        for per_agente in licencias_map.values():
+            dias_set.update(per_agente.keys())
+    if incluir_feriados:
+        dias_set.update(feriados_set)
+
+    dias_fechas = sorted(dias_set)
     dias_columnas = [
         {"fecha": f, "dia_semana": datetime.strptime(f, DATE_FMT).strftime("%A")}
         for f in dias_fechas
@@ -284,25 +354,38 @@ def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
     for agente in agentes_qs:
         dias_valores = []
         total_horas_agente = 0
+
         guardias_agente = [g for g in guardias_qs if g.id_agente_id == agente.id_agente]
         guardias_por_fecha = {g.fecha.strftime(DATE_FMT): g for g in guardias_agente}
 
         for fecha_str in dias_fechas:
-            guardia = guardias_por_fecha.get(fecha_str)
-            if guardia:
-                # Tomar horas efectivas; si no hay, usar planificadas como fallback
-                valor = guardia.horas_efectivas
-                if valor is None:
-                    valor = guardia.horas_planificadas or 0
-                total_horas_agente += valor
+            # 1) LICENCIA
+            lic_code = licencias_map.get(agente.id_agente, {}).get(fecha_str)
+            if lic_code:
+                valor = lic_code
+
+            # 2) FERIADO
+            elif fecha_str in feriados_set:
+                valor = "FER"
+
+            # 3) GUARDIA
             else:
-                valor = 0
+                guardia = guardias_por_fecha.get(fecha_str)
+                if guardia:
+                    valor = guardia.horas_efectivas
+                    if valor is None:
+                        valor = guardia.horas_planificadas or 0
+                    total_horas_agente += (valor or 0)
+                else:
+                    valor = 0
+
             dias_valores.append({"fecha": fecha_str, "valor": valor})
 
         agentes_data.append({
             "id": agente.id_agente,
             "nombre_completo": f"{agente.nombre} {agente.apellido}",
             "legajo": agente.legajo,
+            "cuil": getattr(agente, "cuil", "") or "",
             "area": agente.id_area.nombre if agente.id_area else "",
             "dias": dias_valores,
             "total_horas": total_horas_agente,
@@ -311,7 +394,7 @@ def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
     total_horas = sum(a["total_horas"] for a in agentes_data)
 
     return {
-        "tipo": "regular",
+        "tipo": filtros.get("tipo_guardia") or "regular",
         "filtros": _filtros_serializables(filtros),
         "dias_columnas": dias_columnas,
         "agentes": agentes_data,

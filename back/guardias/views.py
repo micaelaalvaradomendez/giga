@@ -1,5 +1,5 @@
 ﻿"""
-Views para la app guardias - ImplementaciÃ³n de Fase 1 con lÃ³gica existente.
+Views para la app guardias - Implementacion de Fase 1 con logica existente.
 """
 
 from rest_framework import viewsets, status
@@ -14,7 +14,7 @@ from django.contrib.staticfiles import finders
 import logging
 
 from .models import Cronograma, Guardia, ResumenGuardiaMes, ReglaPlus, ParametrosArea, Feriado, HoraCompensacion
-# Importar funciones de validaciÃ³n de dÃ­as laborables
+# Importar funciones de validacion de dÃ­as laborables
 from asistencia.views import es_dia_laborable, get_motivo_no_laborable
 from auditoria.models import Auditoria
 from .serializers import (
@@ -565,7 +565,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 estado_guardias = 'planificada'
                 guardias_activas = True
             
-            # Validar fecha y duraciÃ³n de guardia antes de crear
+            # Validar fecha y duracion de guardia antes de crear
             from datetime import datetime
             from .utils import ValidadorHorarios
             
@@ -579,8 +579,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Validar duraciÃ³n de la guardia  
-            from datetime import time, datetime as dt
+            # Validar duracion de la guardia  
+            from datetime import datetime as dt
             hora_inicio_obj = dt.strptime(data['hora_inicio'], '%H:%M').time()
             hora_fin_obj = dt.strptime(data['hora_fin'], '%H:%M').time()
             
@@ -1653,7 +1653,9 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             'area': data_in.get('area'),
             'fecha_desde': data_in.get('fecha_desde'),
             'fecha_hasta': data_in.get('fecha_hasta'),
-            'tipo_guardia': data_in.get('tipo_guardia')
+            'tipo_guardia': data_in.get('tipo_guardia'),
+            'incluir_feriados': data_in.get('incluir_feriados'),
+            'incluir_licencias': data_in.get('incluir_licencias')
         }
 
         agente_sesion = obtener_agente_sesion(request)
@@ -1750,13 +1752,13 @@ class GuardiaViewSet(viewsets.ModelViewSet):
         """
         try:
             from reportlab.lib import colors
-            from reportlab.lib.pagesizes import letter, A4, landscape
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+            from reportlab.lib.pagesizes import A3, A4, landscape
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
             from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
             from reportlab.lib.units import mm
             from django.http import HttpResponse
+            from datetime import datetime as dt
             from io import BytesIO
-            import os
             
             # Obtener datos de la request
             tipo_reporte = request.data.get('tipo_reporte', 'general')
@@ -1765,8 +1767,11 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 'area': request.data.get('area'),
                 'fecha_desde': request.data.get('fecha_desde'),
                 'fecha_hasta': request.data.get('fecha_hasta'),
-                'tipo_guardia': request.data.get('tipo_guardia')
+                'tipo_guardia': request.data.get('tipo_guardia'),
+                'incluir_feriados': request.data.get('incluir_feriados'),
+                'incluir_licencias': request.data.get('incluir_licencias'),
             }
+
             configuracion = request.data.get('configuracion', {})
             metadatos = request.data.get('metadatos', {})
             is_general = (tipo_reporte == "general")
@@ -1788,7 +1793,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             
             # Determinar orientacion segun tipo de reporte
             is_general = (tipo_reporte == "general")
-            page_size = landscape(A4) if is_general else A4
+            page_size = landscape(A3) if is_general else A3
 
             doc = SimpleDocTemplate(
                 buffer,
@@ -1811,14 +1816,6 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 fontName='Helvetica-Bold',
                 spaceAfter=30,
                 alignment=1  # Centrado
-            )
-            
-            header_style = ParagraphStyle(
-                'CustomHeader',
-                parent=styles['Normal'],
-                fontSize=12,
-                fontName='Helvetica-Bold',
-                spaceAfter=12
             )
             
             normal_style = ParagraphStyle(
@@ -1848,11 +1845,11 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             elements.append(Paragraph(titulo_reporte, title_style))
             elements.append(Spacer(1, 12))
             
-            # InformaciÃ³n institucional
+            # Informacion institucional
             elementos_cabecera = [
                 "Universidad Nacional de Tierra del Fuego",
-                "Sistema GIGA - GestiÃ³n Integral de Guardias y Asistencias",
-                f"Fecha de GeneraciÃ³n: {metadatos.get('fecha_generacion', '')}",
+                "Sistema GIGA - Gestion Integral de Guardias y Asistencias",
+                f"Fecha de Generacion: {metadatos.get('fecha_generacion', '')}",
                 f"Filtros Aplicados: {metadatos.get('filtros_aplicados', '')}"
             ]
             
@@ -1867,32 +1864,128 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             
             # Generar tabla segun tipo de reporte usando datos reales
             tabla_data = self._generar_tabla_pdf(tipo_reporte, datos_reporte, filtros)
-            
-            if tabla_data and len(tabla_data) > 0:
-                # Crear tabla
-                tabla = Table(tabla_data)
-                
-                # Aplicar estilos a la tabla
-                tabla.setStyle(TableStyle([
-                    # Encabezado
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, 0), 10),
-                    
-                    # Cuerpo
-                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                    ('FONTSIZE', (0, 1), (-1, -1), 9),
-                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    
-                    # Alternar colores de filas
-                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.beige, colors.white])
-                ]))
-                
-                elements.append(tabla)
-                elements.append(Spacer(1, 20))
+
+            # ---- GENERAL: múltiples tablas por mes
+            if tipo_reporte == "general" and isinstance(tabla_data, dict) and "bloques" in tabla_data:
+                meses_nombre = [
+                    "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                    "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
+                ]
+
+                mes_title_style = ParagraphStyle(
+                    'MesTitle',
+                    parent=styles['Heading2'],
+                    fontName='Helvetica-Bold',
+                    fontSize=12,
+                    spaceAfter=6,
+                    spaceBefore=10
+                )
+
+                info_style = ParagraphStyle(
+                    'InfoStyle',
+                    parent=styles['Normal'],
+                    fontName='Helvetica',
+                    fontSize=9,
+                    spaceAfter=2
+                )
+
+                # Detalles (area/período/flags)
+                area_txt = metadatos.get("area_nombre") or str(filtros.get("area") or "")
+                tipo_txt = f"Tipo de Guardia: {filtros.get('tipo_guardia') or 'Regular'}"
+                flags_txt = f"Licencias: {'Sí' if filtros.get('incluir_licencias') else 'No'} | Feriados: {'Sí' if filtros.get('incluir_feriados') else 'No'}"
+
+                bloques = tabla_data["bloques"]
+
+                for i, bloque in enumerate(bloques):
+                    anio = bloque["anio"]
+                    mes = bloque["mes"]
+                    rows = bloque["rows"]
+                    weekend_cols = bloque["weekend_cols"]
+
+                    # Período del mes (recortado al rango real)
+                    import calendar
+                    from datetime import date
+                    last_day = calendar.monthrange(anio, mes)[1]
+                    mes_inicio = date(anio, mes, 1)
+                    mes_fin = date(anio, mes, last_day)
+
+                    # recortar a fecha_desde/fecha_hasta
+                    fd = filtros.get("fecha_desde")
+                    fh = filtros.get("fecha_hasta")
+                    if not hasattr(fd, "year"):
+                        fd = dt.strptime(fd, "%Y-%m-%d").date()
+                    if not hasattr(fh, "year"):
+                        fh = dt.strptime(fh, "%Y-%m-%d").date()
+
+                    periodo_inicio = max(fd, mes_inicio)
+                    periodo_fin = min(fh, mes_fin)
+
+                    # Título del mes
+                    elements.append(Paragraph(f"{meses_nombre[mes-1]} {anio}", mes_title_style))
+                    elements.append(Paragraph(f"Área: {area_txt}", info_style))
+                    elements.append(Paragraph(f"Período: {periodo_inicio.strftime('%d/%m/%Y')} al {periodo_fin.strftime('%d/%m/%Y')}", info_style))
+                    elements.append(Paragraph(tipo_txt, info_style))
+                    elements.append(Paragraph(flags_txt, info_style))
+                    elements.append(Spacer(1, 6))
+
+                    # Tabla mensual
+                    tabla = Table(rows)
+
+                    base_style = [
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 9),
+
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('FONTSIZE', (0, 1), (-1, -1), 8),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ]
+
+                    weekend_fill = colors.HexColor("#7BE69A")  
+                    for col in weekend_cols:
+                        base_style.append(('BACKGROUND', (col, 1), (col, -1), weekend_fill))
+
+                    tabla.setStyle(TableStyle(base_style))
+                    elements.append(tabla)
+                    elements.append(Spacer(1, 14))
+                    if i < len(bloques) - 1:
+                        elements.append(PageBreak())
+
+            else:
+                weekend_cols = []
+                if isinstance(tabla_data, tuple):
+                    tabla_rows, weekend_cols = tabla_data
+                else:
+                    tabla_rows = tabla_data
+
+                if tabla_rows and len(tabla_rows) > 0:
+                    tabla = Table(tabla_rows)
+
+                    base_style = [
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 10),
+
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('FONTSIZE', (0, 1), (-1, -1), 9),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+
+                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.beige, colors.white]),
+                    ]
+
+                    weekend_fill = colors.HexColor("#7BE69A")
+                    for col in weekend_cols:
+                        base_style.append(('BACKGROUND', (col, 1), (col, -1), weekend_fill))
+
+                    tabla.setStyle(TableStyle(base_style))
+                    elements.append(tabla)
+                    elements.append(Spacer(1, 20))
             
             # ========================================
             # PIE DE PAGINA CON FIRMAS
@@ -1904,7 +1997,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             firma_data = [
                 ['', ''],
                 ['_' * 30, '_' * 30],
-                ['Jefe de Ãrea', 'RR.HH./LiquidaciÃ³n'],
+                ['Jefe de Area', 'RR.HH./Liquidacion'],
                 ['Firma y Sello', 'Firma y Sello']
             ]
             
@@ -1922,7 +2015,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             # Pie institucional
             elements.append(Spacer(1, 20))
             elements.append(Paragraph(
-                "2025 - UNTDF - Ushuaia - Tierra del Fuego",
+                '"Las Islas Malvinas, Georgias y Sándwich del Sur, y los espacios maritímos e insulares correspondientes son Argentinos"',
                 ParagraphStyle('Footer', parent=normal_style, alignment=1, fontSize=8)
             ))
             
@@ -1943,7 +2036,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
         except ReporteError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except ImportError:
-            logger.error("ReportLab no estÃ¡ instalado. Instale con: pip install reportlab")
+            logger.error("ReportLab no esta instalado. Instale con: pip install reportlab")
             return Response(
                 {'error': 'Funcionalidad de PDF no disponible. Contacte al administrador.'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -1955,10 +2048,24 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
+
+    def _meses_en_rango(self, fd: date, fh: date):
+        """Devuelve lista [(anio, mes), ...] desde fd hasta fh inclusive."""
+        meses = []
+        cur = fd.replace(day=1)
+        end = fh.replace(day=1)
+        while cur <= end:
+            meses.append((cur.year, cur.month))
+            if cur.month == 12:
+                cur = cur.replace(year=cur.year + 1, month=1)
+            else:
+                cur = cur.replace(month=cur.month + 1)
+        return meses
+
     def _generar_tabla_pdf(self, tipo_reporte, datos, filtros):
-        """Genera datos de tabla especÃ­ficos para cada tipo de reporte usando los datos reales."""
+        """Genera datos de tabla especificos para cada tipo de reporte usando los datos reales."""
         if tipo_reporte == 'individual':
-            headers = ['Fecha', 'DÃ­a Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad']
+            headers = ['Fecha', 'Dia Semana', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad']
             rows = [headers]
 
             for dia in datos.get('dias', []):
@@ -1977,48 +2084,97 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 ])
             return rows
 
-            # Reporte general: se arma como grilla Agente x DÃ­a
+        # Reporte general: se arma como grilla Agente x Di­a
         if tipo_reporte == 'general':
             import calendar
-            from datetime import datetime
-            
-            fd = filtros.get("fecha_desde")  # "YYYY-MM-DD"
-            dt = datetime.strptime(fd, "%Y-%m-%d")
-            anio, mes = dt.year, dt.month
-            cant_dias = calendar.monthrange(anio, mes)[1]
+            from datetime import datetime as dt
 
-            headers = ['Apellido y Nombre', 'Legajo'] + [str(d) for d in range(1, cant_dias + 1)] + ['Total']
-            rows = [headers]
+            fd = filtros.get("fecha_desde")
+            fh = filtros.get("fecha_hasta")
 
-            for agente in datos.get('agentes', []):
-                mapa = {}
-                for dia in agente.get("dias", []):
-                    f = dia.get("fecha")
-                    if not f:
-                        continue
-                    dtn = datetime.strptime(f, "%Y-%m-%d")
-                    if dtn.year == anio and dtn.month == mes:
-                        mapa[dtn.day] = dia.get("valor", 0)
+            if not hasattr(fd, "year"):
+                fd = dt.strptime(fd, "%Y-%m-%d").date()
+            if not hasattr(fh, "year"):
+                fh = dt.strptime(fh, "%Y-%m-%d").date()
 
-                fila = [agente.get('nombre_completo', ''), agente.get('legajo', '')]
-                total = 0
+            meses = self._meses_en_rango(fd, fh)
 
-                for d in range(1, cant_dias + 1):
-                    v = mapa.get(d, 0) or 0
-                    total += v
-                    fila.append(v)
+            bloques = []
+            for anio, mes in meses:
+                cant_dias = calendar.monthrange(anio, mes)[1]
 
-                fila.append(total)
-                rows.append(fila)
+                weekend_cols = []
+                for day in range(1, cant_dias + 1):
+                    dow = dt(anio, mes, day).weekday()  
+                    if dow in (5, 6):
+                        weekend_cols.append(2 + (day - 1))  
 
-            return rows
+                headers = ['Apellido y Nombre', 'CUIL'] + [str(d) for d in range(1, 32)] + ['Total']
+                rows = [headers]
 
-        # Fallback genÃ©rico
-        headers = ['Item', 'DescripciÃ³n', 'Valor']
+                totales_por_dia = {d: 0 for d in range(1, 32)}
+                total_general_mes = 0
+
+                for agente in datos.get('agentes', []):
+                    mapa = {}
+                    for dia in agente.get("dias", []):
+                        f = dia.get("fecha")
+                        if not f:
+                            continue
+                        dtn = dt.strptime(f, "%Y-%m-%d")
+                        if dtn.year == anio and dtn.month == mes:
+                            mapa[dtn.day] = dia.get("valor", "")
+
+                    fila = [agente.get('nombre_completo', ''), agente.get('cuil', '')]
+                    total_agente = 0
+
+                    for d in range(1, 32):
+                        if d <= cant_dias:
+                            v = mapa.get(d, "")
+
+                            if isinstance(v, (int, float)) and v > 0:
+                                total_agente += v
+                                totales_por_dia[d] += v
+                                total_general_mes += v
+                                fila.append(f"{int(v)} hs" if float(v).is_integer() else f"{v} hs")
+                            else:
+                                if isinstance(v, str) and v.strip():
+                                    fila.append(v.strip())
+                                else:
+                                    fila.append("")
+                        else:
+                            fila.append("")
+
+                    fila.append(f"{int(total_agente)} hs" if float(total_agente).is_integer() else f"{total_agente} hs")
+                    rows.append(fila)
+
+                fila_total = ["Total", ""]
+                for d in range(1, 32):
+                    if d <= cant_dias:
+                        td = totales_por_dia[d]
+                        fila_total.append(f"{int(td)} hs" if td > 0 else "")
+                    else:
+                        fila_total.append("")
+                fila_total.append(f"{int(total_general_mes)} hs" if total_general_mes > 0 else "")
+                rows.append(fila_total)
+
+                bloques.append({
+                    "anio": anio,
+                    "mes": mes,
+                    "rows": rows,
+                    "weekend_cols": weekend_cols,
+                    "cant_dias": cant_dias,
+                })
+
+            return {"bloques": bloques}
+
+
+        # Fallback generico
+        headers = ['Item', 'Descripcion', 'Valor']
         rows = [
             headers,
             ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), ''],
-            ['PerÃ­odo', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", ''],
+            ['Periodo', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", ''],
             ['Estado', 'Generado exitosamente', ''],
         ]
         return rows
@@ -2063,7 +2219,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             writer.writerow(['# Sistema GIGA - Reporte de Guardias y Asistencias'])
             writer.writerow(['# Universidad Nacional de Tierra del Fuego'])
             writer.writerow([f'# Tipo de Reporte: {tipo_reporte.replace("_", " ").title()}'])
-            writer.writerow([f'# PerÃ­odo: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'])
+            writer.writerow([f'# Peri­odo: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'])
             writer.writerow([f'# Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'])
             writer.writerow([])  # LÃ­nea vacÃ­a
             
@@ -2139,7 +2295,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             ws['A1'] = 'Sistema GIGA - Universidad Nacional de Tierra del Fuego'
             ws['A1'].font = Font(bold=True, size=14)
             ws['A2'] = f'Reporte: {tipo_reporte.replace("_", " ").title()}'
-            ws['A3'] = f'PerÃ­odo: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'
+            ws['A3'] = f'Perio­do: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'
             ws['A4'] = f'Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'
             
             # LÃ­nea vacÃ­a
@@ -2251,12 +2407,12 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             return rows
 
         # Formato genÃ©rico
-        headers = ['DescripciÃ³n', 'Valor', 'Observaciones']
+        headers = ['Descripcion', 'Valor', 'Observaciones']
         rows = [
             headers,
-            ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), 'Generado automÃ¡ticamente'],
-            ['PerÃ­odo Consultado', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", 'Rango de fechas seleccionado'],
-            ['Fecha de GeneraciÃ³n', timezone.now().strftime("%d/%m/%Y %H:%M"), 'Momento de creaciÃ³n del reporte'],
+            ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), 'Generado automaticamente'],
+            ['Periodo Consultado', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", 'Rango de fechas seleccionado'],
+            ['Fecha de Generacion', timezone.now().strftime("%d/%m/%Y %H:%M"), 'Momento de creacion del reporte'],
             ['Sistema', 'GIGA - UNTDF', 'Universidad Nacional de Tierra del Fuego'],
         ]
         return rows
@@ -2849,7 +3005,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 )
             
             from personas.models import Agente
-            from datetime import datetime, time
+            from datetime import datetime
             agente_solicitante = Agente.objects.get(id_agente=agente_solicitante_id)
             
             # Convertir hora_fin_real de string a objeto time
@@ -2900,7 +3056,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             )
         
         try:
-            from personas.models import Agente, Area
+            from personas.models import Area
             from datetime import datetime
             
             fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
@@ -3006,7 +3162,6 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
         
         try:
             from asistencia.models import Asistencia
-            from personas.models import Agente
             from datetime import datetime, timedelta
             
             fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()

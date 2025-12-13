@@ -3,8 +3,8 @@ import { personasService, guardiasService } from '$lib/services.js';
 import exportService from '$lib/services/exportService.js';
 
 /**
- * Controlador para la gestiÃ³n de reportes de administrador
- * Centraliza toda la lÃ³gica de negocio relacionada con reportes y exportaciones
+ * Controlador para la gestion de reportes de administrador
+ * Centraliza toda la logica de negocio relacionada con reportes y exportaciones
  */
 class ReporteController {
 	constructor() {
@@ -34,8 +34,8 @@ class ReporteController {
 			area_id: null,
 			agente_id: null,
 			tipo_guardia: '',
+			incluir_feriados: true,
 			incluir_licencias: true,
-			incluir_feriados: true
 		});
 		
 		// Datos del reporte generado
@@ -558,10 +558,10 @@ class ReporteController {
 				throw new Error('Tipo de reporte invÃ¡lido para exportaciÃ³n');
 			}
 			
-			// Preparar informaciÃ³n de filtros enriquecida
+			// Preparar informacion de filtros enriquecida
 			const filtrosEnriquecidos = await this._enrichFiltros(filtros);
 			
-			// Intentar usar el servicio de exportaciÃ³n
+			// Intentar usar el servicio de exportacion
 			let resultado;
 			try {
 				if (formato === 'pdf') {
@@ -601,6 +601,8 @@ class ReporteController {
 					area: filtros.area_id || null,
 					agente: filtros.agente_id || null,
 					tipo_guardia: filtros.tipo_guardia || null,
+					incluir_feriados: filtros.incluir_feriados ?? false,
+					incluir_licencias: filtros.incluir_licencias ?? false,
 					configuracion: {
 						reporte_especifico: {
 							orientacion: this.opcionesExport?.orientation || 'portrait'
@@ -783,7 +785,6 @@ class ReporteController {
 	}
 	
 	_obtenerFiltrosActuales() {
-		// Leer el valor actual del store de forma sÃ­ncrona
 		return get(this.filtrosSeleccionados);
 	}
 	
@@ -1695,10 +1696,12 @@ class ReporteController {
 				fecha_desde: filtros.fecha_desde,
 				fecha_hasta: filtros.fecha_hasta,
 				tipo_guardia: filtros.tipo_guardia,
-				agente: filtros.agente_id
+				agente: filtros.agente_id,
+				incluir_feriados: filtros.incluir_feriados,
+				incluir_licencias: filtros.incluir_licencias
 			};
 
-			console.log('ðŸ’¡ Generando reporte general (POST) con body:', body);
+			console.log('¡Generando reporte general (POST) con body:', body);
 
 			const response = await guardiasService.getReporteGeneral(body);
 			const reporte = response.data;
