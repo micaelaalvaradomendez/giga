@@ -6,7 +6,7 @@
 
 import { writable, derived } from 'svelte/store';
 import { goto } from '$app/navigation';
-import { API_BASE_URL } from '$lib/api.js';
+import { asistenciaService, personasService } from '$lib/services.js';
 import { AuthService } from '$lib/login/authService.js';
 
 class AsistenciasController {
@@ -93,16 +93,10 @@ class AsistenciasController {
 	// ========== CARGA DE DATOS ==========
 	async cargarAreas() {
 		try {
-			const response = await fetch(`${API_BASE_URL}/personas/catalogs/areas/`, {
-				credentials: 'include'
-			});
-
-			if (response.ok) {
-				const data = await response.json();
-				const areasData = data.data?.results || data.results || data;
-				this.areas.set(areasData);
-				console.log('✅ Áreas cargadas:', areasData.length);
-			}
+			const response = await personasService.getAreas();
+			const areasData = response.data?.data?.results || response.data?.results || response.data;
+			this.areas.set(areasData);
+			console.log('✅ Áreas cargadas:', areasData.length);
 		} catch (error) {
 			console.error('Error al cargar áreas:', error);
 		}
@@ -134,43 +128,46 @@ class AsistenciasController {
 
 			if (tab === 'todas') {
 				// Para "todas", cargar asistencias registradas + ausentes
-				const urlAsistencias = `/api/asistencia/admin/listar/?fecha_desde=${fecha}&fecha_hasta=${fecha}${area ? `&area_id=${area}` : ''}`;
-				const urlAusentes = `/api/asistencia/admin/listar/?fecha_desde=${fecha}&fecha_hasta=${fecha}&estado=sin_entrada${area ? `&area_id=${area}` : ''}`;
+				const paramsAsistencias = { fecha_desde: fecha, fecha_hasta: fecha };
+				const paramsAusentes = { fecha_desde: fecha, fecha_hasta: fecha, estado: 'sin_entrada' };
+				
+				if (area) {
+					paramsAsistencias.area_id = area;
+					paramsAusentes.area_id = area;
+				}
 
-				console.log('🔍 Cargando todas las asistencias con URLs:', urlAsistencias, urlAusentes);
+				console.log('🔍 Cargando todas las asistencias con parámetros:', paramsAsistencias, paramsAusentes);
 
 				const [responseAsistencias, responseAusentes] = await Promise.all([
-					fetch(urlAsistencias, { credentials: 'include' }),
-					fetch(urlAusentes, { credentials: 'include' })
+					asistenciaService.getAsistenciasAdmin(paramsAsistencias),
+					asistenciaService.getAsistenciasAdmin(paramsAusentes)
 				]);
 
-				if (responseAsistencias.ok && responseAusentes.ok) {
-					const dataAsistencias = await responseAsistencias.json();
-					const dataAusentes = await responseAusentes.json();
+				const dataAsistencias = responseAsistencias.data;
+				const dataAusentes = responseAusentes.data;
 
-					console.log('📊 Datos cargados:', {
-						asistencias_registradas: dataAsistencias.data?.length || 0,
-						ausentes: dataAusentes.data?.length || 0,
-						primer_ausente: dataAusentes.data?.[0]
-					});
+				console.log('📊 Datos cargados:', {
+					asistencias_registradas: dataAsistencias.data?.length || 0,
+					ausentes: dataAusentes.data?.length || 0,
+					primer_ausente: dataAusentes.data?.[0]
+				});
 
-					// Combinar ambos arrays
-					asistenciasData = [
-						...(dataAsistencias.data || []),
-						...(dataAusentes.data || [])
-					];
+				// Combinar ambos arrays
+				asistenciasData = [
+					...(dataAsistencias.data || []),
+					...(dataAusentes.data || [])
+				];
 
-					// Verificar estructura de primer ausente si existe
-					if (dataAusentes.data && dataAusentes.data.length > 0) {
-						console.log('🔍 Estructura del primer ausente:', dataAusentes.data[0]);
-					}
+				// Verificar estructura de primer ausente si existe
+				if (dataAusentes.data && dataAusentes.data.length > 0) {
+					console.log('🔍 Estructura del primer ausente:', dataAusentes.data[0]);
 				}
 			} else {
 				// Para tabs específicas, usar el filtro correspondiente
-				let url = `/api/asistencia/admin/listar/?fecha_desde=${fecha}&fecha_hasta=${fecha}`;
+				const params = { fecha_desde: fecha, fecha_hasta: fecha };
 
 				if (area) {
-					url += `&area_id=${area}`;
+					params.area_id = area;
 				}
 
 				if (tab !== 'licencias' && tab !== 'salidas_auto') {
@@ -180,20 +177,14 @@ class AsistenciasController {
 						sin_entrada: 'sin_entrada'
 					};
 					if (estadoMap[tab]) {
-						url += `&estado=${estadoMap[tab]}`;
+						params.estado = estadoMap[tab];
 					}
 				}
 
-				console.log('🔍 Cargando asistencias con URL:', url);
+				console.log('🔍 Cargando asistencias con parámetros:', params);
 
-				const response = await fetch(url, {
-					credentials: 'include'
-				});
-
-				if (response.ok) {
-					const data = await response.json();
-					asistenciasData = data.data || [];
-				}
+				const response = await asistenciaService.getAsistenciasAdmin(params);
+				asistenciasData = response.data?.data || [];
 			}
 
 			this.asistencias.set(asistenciasData);
@@ -209,20 +200,13 @@ class AsistenciasController {
 			this.fechaSeleccionada.subscribe((value) => (fecha = value))();
 			this.areaSeleccionada.subscribe((value) => (area = value))();
 
-			let url = `/api/asistencia/admin/resumen/?fecha=${fecha}`;
-
+			const params = { fecha };
 			if (area) {
-				url += `&area_id=${area}`;
+				params.area_id = area;
 			}
 
-			const response = await fetch(url, {
-				credentials: 'include'
-			});
-
-			if (response.ok) {
-				const data = await response.json();
-				this.resumen.set(data.data);
-			}
+			const response = await asistenciaService.getResumenAdmin(params);
+			this.resumen.set(response.data?.data);
 		} catch (error) {
 			console.error('Error al cargar resumen:', error);
 		}
@@ -234,20 +218,13 @@ class AsistenciasController {
 			this.fechaSeleccionada.subscribe((value) => (fecha = value))();
 			this.areaSeleccionada.subscribe((value) => (area = value))();
 
-			let url = `/api/asistencia/admin/licencias/?fecha=${fecha}`;
-
+			const params = { fecha };
 			if (area) {
-				url += `&area_id=${area}`;
+				params.area_id = area;
 			}
 
-			const response = await fetch(url, {
-				credentials: 'include'
-			});
-
-			if (response.ok) {
-				const data = await response.json();
-				this.licencias.set(data.data || []);
-			}
+			const response = await asistenciaService.getLicenciasAdmin(params);
+			this.licencias.set(response.data?.data || []);
 		} catch (error) {
 			console.error('Error al cargar licencias:', error);
 		}
@@ -408,22 +385,16 @@ class AsistenciasController {
 
 			console.log('📤 Enviando petición de marcación:', requestBody);
 
-			const response = await fetch(`${API_BASE_URL}/asistencia/marcar/`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify(requestBody)
-			});
+			const response = await asistenciaService.marcarAsistencia(requestBody);
+			const data = response.data;
+			console.log('📥 Respuesta del servidor:', data);
 
-			const data = await response.json();
-			console.log('📥 Respuesta del servidor:', { status: response.status, data });
-
-			if (response.ok && data.success) {
+			if (data.success) {
 				this.cerrarModal();
 				await this.cargarDatos();
 				return { success: true, message: '✅ Entrada marcada correctamente' };
 			} else {
-				console.error('❌ Error en marcación:', { status: response.status, data });
+				console.error('❌ Error en marcación:', data);
 				let mensaje = data.message || 'No se pudo marcar la entrada';
 				if (data.tipo === 'dia_no_laborable') {
 					mensaje = '📅 ' + mensaje;
@@ -514,15 +485,9 @@ class AsistenciasController {
 
 			console.log('📤 Enviando petición de marcación salida:', requestBody);
 
-			const response = await fetch(`${API_BASE_URL}/asistencia/marcar/`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify(requestBody)
-			});
-
-			const data = await response.json();
-			console.log('📥 Respuesta del servidor (salida):', { status: response.status, data });
+			const response = await asistenciaService.marcarAsistencia(requestBody);
+			const data = response.data;
+			console.log('📥 Respuesta del servidor (salida):', data);
 
 			if (response.ok && data.success) {
 				this.cerrarModal();
@@ -768,15 +733,9 @@ class AsistenciasController {
 				body: requestBody
 			});
 
-			const response = await fetch(`/api/asistencia/admin/corregir/${asistencia.id_asistencia}/`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify(requestBody)
-			});
-
-			const data = await response.json();
-			console.log('📥 Respuesta del servidor (corrección):', { status: response.status, data });
+			const response = await asistenciaService.corregirAsistencia(asistencia.id_asistencia, requestBody);
+			const data = response.data;
+			console.log('📥 Respuesta del servidor (corrección):', data);
 
 			if (response.ok && data.success) {
 				this.cerrarModal();
@@ -896,17 +855,11 @@ class AsistenciasController {
 		}
 
 		try {
-			const response = await fetch(`/api/asistencia/admin/marcar-ausente/${asistencia.id_asistencia}/`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify({
-					observacion: observacion.trim()
-				})
+			const response = await asistenciaService.marcarAusente(asistencia.id_asistencia, {
+				observacion: observacion.trim()
 			});
-
-			const data = await response.json();
-			console.log('📥 Respuesta marcar ausente:', { status: response.status, data });
+			const data = response.data;
+			console.log('📥 Respuesta marcar ausente:', data);
 
 			if (response.ok && data.success) {
 				this.cerrarModal();

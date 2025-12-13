@@ -121,6 +121,14 @@ export const asistenciaService = {
   updateTipoLicencia: (id, data, token = null) => createApiClient(token).put(`/asistencia/admin/tipos-licencia/actualizar/${id}/`, data),
   deleteTipoLicencia: (id, token = null) => createApiClient(token).delete(`/asistencia/admin/tipos-licencia/eliminar/${id}/`),
 
+  // Admin - Asistencias
+  getAsistenciasAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/listar/?${params}`),
+  getResumenAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/resumen/?${params}`),
+  getLicenciasAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/licencias/?${params}`),
+  corregirAsistencia: (id, data, token = null) => createApiClient(token).patch(`/asistencia/admin/corregir/${id}/`, data),
+  marcarAusente: (id, data, token = null) => createApiClient(token).patch(`/asistencia/admin/marcar-ausente/${id}/`, data),
+  marcarAsistencia: (data, token = null) => createApiClient(token).post('/asistencia/marcar/', data),
+
   // Novedades
   getNovedades: () => api.get('/asistencia/novedades/'),
   getNovedad: (id) => api.get(`/asistencia/novedades/${id}/`),

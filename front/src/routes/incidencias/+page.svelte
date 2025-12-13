@@ -366,24 +366,32 @@
       {:else}
         <!-- Navegación por tabs y búsqueda -->
         <div class="tabs-container">
-          <div class="tabs">
-            <button
-              class="tab {tabActiva === 'todas' ? 'active' : ''}"
-              on:click={() => cambiarTab("todas")}
-            >
-              Todas las Incidencias ({todasCount})
-            </button>
-            <button
-              class="tab {tabActiva === 'mias' ? 'active' : ''}"
-              on:click={() => cambiarTab("mias")}
-            >
-              Mis Incidencias ({miasCount})
-            </button>
-            <button
-              class="tab {tabActiva === 'asignadas' ? 'active' : ''}"
-              on:click={() => cambiarTab("asignadas")}
-            >
-              Asignadas a Mí ({asignadasCount})
+          <div class="tabs-row">
+            <div class="tabs">
+              <button
+                class="tab {tabActiva === 'todas' ? 'active' : ''}"
+                on:click={() => cambiarTab("todas")}
+              >
+                Todas las Incidencias ({todasCount})
+              </button>
+              <button
+                class="tab {tabActiva === 'mias' ? 'active' : ''}"
+                on:click={() => cambiarTab("mias")}
+              >
+                Mis Incidencias ({miasCount})
+              </button>
+              <button
+                class="tab {tabActiva === 'asignadas' ? 'active' : ''}"
+                on:click={() => cambiarTab("asignadas")}
+              >
+                Asignadas a Mí ({asignadasCount})
+              </button>
+            </div>
+
+            <button class="btn-crear" on:click={crearNuevaIncidencia}>
+              + {userRole === "Agente"
+                ? "Contactar Jefatura"
+                : "Contactar Agente"}
             </button>
           </div>
 
@@ -416,12 +424,6 @@
                 <span class="checkbox-label">Incluir cerradas</span>
               </label>
             </div>
-
-            <button class="btn-crear" on:click={crearNuevaIncidencia}>
-              + {userRole === "Agente"
-                ? "Contactar Jefatura"
-                : "Contactar Agente"}
-            </button>
           </div>
         </div>
 
@@ -776,6 +778,21 @@
     }
   }
 
+  .tabs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .tabs-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
   .tabs {
     display: flex;
     align-items: center;
@@ -792,6 +809,11 @@
   }
 
   @media (max-width: 768px) {
+    .tabs-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
     .controls {
       width: 100%;
       flex-direction: column;
