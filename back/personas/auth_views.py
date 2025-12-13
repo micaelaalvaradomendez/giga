@@ -11,6 +11,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db import transaction, connection
+from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -19,6 +20,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from threading import Thread
 from .models import Agente, AgenteRol, Rol, Area
 from auditoria.models import Auditoria
 import logging
@@ -33,10 +35,6 @@ def send_email_async(subject, message, recipient_list):
     Send email asynchronously to avoid blocking the login process.
     Uses threading to send email in background.
     """
-    from threading import Thread
-    from django.core.mail import send_mail
-    from django.conf import settings
-    
     def _send():
         try:
             send_mail(
@@ -158,11 +156,13 @@ def login_view(request):
         # Limpiar entrada (remover espacios, guiones, etc.)
         clean_input = clean_cuil(cuil_dni)
         
-        # Optimized: Single query with Q objects to check CUIL and DNI
-        from django.db.models import Q
-        
-        # Build DNI to check
-        dni_to_check = clean_input if len(clean_input) == 8 else (clean_input[2:10] if len(clean_input) == 11 else None)
+        # Build DNI to check - extract from CUIL if applicable
+        if len(clean_input) == 8:
+            dni_to_check = clean_input
+        elif len(clean_input) == 11:
+            dni_to_check = clean_input[2:10]  # Extract DNI from CUIL (positions 2-9)
+        else:
+            dni_to_check = None
         
         # Single optimized query with prefetch_related for roles and area
         agente = Agente.objects.select_related('id_area').prefetch_related(
@@ -214,8 +214,9 @@ def login_view(request):
             if agente.check_password(agente.dni):
                 requires_password_change = True
                 password_reset_reason = "La contraseña es igual al DNI y debe ser cambiada por seguridad"
-        except Exception:
-            # If check fails, don't block login
+        except (ValueError, TypeError, AttributeError) as e:
+            # If check fails, don't block login but log the error
+            logger.warning(f"Error checking if password equals DNI for agente {agente.id_agente}: {e}")
             pass
 
         # Preparar respuesta del usuario
