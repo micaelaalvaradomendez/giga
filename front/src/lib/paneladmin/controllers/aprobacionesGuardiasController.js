@@ -123,7 +123,7 @@ class AprobacionesGuardiasController {
 
 			// Filtrar cronogramas que NO están publicados (pendientes, aprobados, generados, etc.)
 			const pendientes = todosCronogramas.filter(cronograma =>
-				cronograma.estado !== 'publicada' && cronograma.estado !== 'rechazada'
+				cronograma.estado !== 'publicada' && cronograma.estado !== 'rechazada' && cronograma.estado !== 'aprobada'
 			);
 
 			this.cronogramasPendientes.set(pendientes);
