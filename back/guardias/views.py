@@ -1793,7 +1793,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             from reportlab.lib.pagesizes import A4, landscape
             from reportlab.platypus import (
                 SimpleDocTemplate, Table, TableStyle,
-                Paragraph, Spacer, PageBreak
+                Paragraph, Spacer, PageBreak, KeepTogether
             )
             from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
             from reportlab.lib.units import mm
@@ -2183,24 +2183,27 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             # Firmas (más abajo, cerca del pie)
             # =========================
             # ajustá: + = más abajo, - = más arriba
-            elements.append(Spacer(1, 170))
+            elements.append(Spacer(1, 30 * mm))
 
             firma_data = [
                 ["", ""],
-                ["_" * 30, "_" * 30],
+                ["_" * 22, "_" * 22],
                 ["Jefe de Área", "RR.HH./Liquidación"],
                 ["Firma y Sello", "Firma y Sello"],
             ]
 
-            firma_tabla = Table(firma_data, colWidths=[70 * mm, 70 * mm])
+            firma_tabla = Table(firma_data, colWidths=[65 * mm, 65 * mm])
             firma_tabla.setStyle(TableStyle([
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-                ("FONTSIZE", (0, 1), (-1, -1), 10),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 12),
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("TOPPADDING", (0, 0), (-1, -1), 1),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
             ]))
-            elements.append(firma_tabla)
+            elements.append(KeepTogether([firma_tabla]))
 
             # =========================
             # Build PDF
