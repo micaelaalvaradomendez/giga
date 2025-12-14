@@ -8,6 +8,7 @@
 	import CambioContrasenaObligatorio from "$lib/componentes/usuario/CambioContrasenaObligatorio.svelte";
 	import CalendarioBase from "$lib/componentes/calendarioBase.svelte";
 	import { guardiasService } from "$lib/services.js";
+    import Notificaciones from "$lib/componentes/notificaciones/Notificaciones.svelte";
 
 	let user = null;
 	let isLoading = true;
@@ -219,14 +220,18 @@
 					¡Bienvenido/a, {user.first_name}!
 				</h1>
 
-				<!-- Avatar clickeable -->
-				<button class="user-avatar" on:click={toggleModalUsuario}>
-					<div class="avatar-circle">
-						{getIniciales()}
-					</div>
-					<span class="avatar-name">{user.first_name}</span>
-					<span class="avatar-icon">▼</span>
-				</button>
+				<div class="header-actions">
+                    <!-- Avatar clickeable -->
+                    <button class="user-avatar" on:click={toggleModalUsuario}>
+                        <div class="avatar-circle">
+                            {getIniciales()}
+                        </div>
+                        <span class="avatar-name">{user.first_name}</span>
+                        <span class="avatar-icon">▼</span>
+                    </button>
+
+                    <Notificaciones />
+                </div>
 			</div>
 		</header>
 
@@ -504,7 +509,9 @@
 		width: 100%;
 		max-width: 100%;
 		box-sizing: border-box;
-		overflow-x: hidden;
+		/* overflow-x: hidden; REMOVED to allow dropdown overflow */
+        position: relative;
+        z-index: 100;
 	}
 
 	.header-content {
@@ -517,8 +524,14 @@
 		gap: 0.5rem;
 		flex-wrap: wrap;
 		box-sizing: border-box;
-		overflow-x: hidden;
+		/* overflow-x: hidden; REMOVED to allow dropdown overflow */
 	}
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
 
 	@media (min-width: 1024px) {
 		.header-content {
