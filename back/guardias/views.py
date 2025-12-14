@@ -1790,7 +1790,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
         """
         try:
             from reportlab.lib import colors
-            from reportlab.lib.pagesizes import A3, landscape
+            from reportlab.lib.pagesizes import A4, landscape
             from reportlab.platypus import (
                 SimpleDocTemplate, Table, TableStyle,
                 Paragraph, Spacer, PageBreak
@@ -1807,8 +1807,54 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             # =========================
             # Helpers
             # =========================
-            MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
-                     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+            MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+            
+            MAX_DIAS_TABLA = 16
+
+            def _col_widths_fixed(doc, max_dias=MAX_DIAS_TABLA):
+                """
+                Mismos anchos para tabla 1 y 2.
+                Ajustá estos mm a tu gusto.
+                """
+                w_nombre = 55 * mm
+                w_cuil   = 28 * mm
+                w_total  = 16 * mm
+
+                disponible = doc.width - (w_nombre + w_cuil + w_total)
+                w_dia = max(5 * mm, disponible / max_dias)
+
+                return [w_nombre, w_cuil] + ([w_dia] * max_dias) + [w_total]
+
+
+            def _weekend_cols_to_table_cols(weekend_cols_originales, desde, hasta, max_dias=MAX_DIAS_TABLA):
+                """
+                weekend_cols_originales viene con índices del rows original:
+                0=Nombre,1=CUIL, 2=dia1, 3=dia2...
+                Acá devolvemos índices para la tabla spliteada y padded.
+                """
+                cols = []
+                for col in weekend_cols_originales:
+                    dia = (col - 2) + 1  # col 2 => día 1
+                    if desde <= dia <= hasta:
+                        # en la tabla split, el día 'desde' cae en col 2
+                        cols.append(2 + (dia - desde))
+                return cols
+
+            def split_rows_por_dias(rows, desde, hasta):
+                """
+                desde / hasta = números de día (1-based)
+                """
+                inicio = 2 + (desde - 1)
+                fin = 2 + hasta
+
+                nuevas_rows = []
+                for row in rows:
+                    nuevas_rows.append(
+                        row[:2] + row[inicio:fin] + [row[-1]]
+                    )
+
+                return nuevas_rows
 
             def _to_date(v):
                 if v is None:
@@ -1817,29 +1863,29 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                     return v
                 return dt.strptime(v, "%Y-%m-%d").date()
 
-            def draw_membrete(canvas, doc):
+            def draw_header(canvas, doc):
                 canvas.saveState()
 
                 page_w, page_h = doc.pagesize
-                center_x = page_w / 2
 
-                # === Logo ===
-                logo_path = finders.find(
-                    "logos/logoGobByN.jpeg") or finders.find("logos/logoGobColor.jpeg")
-                logo_w = 35 * mm
-                logo_h = 22 * mm
-
-                # Pegado arriba
+                # =========================
+                # CONFIG header
+                # =========================
+                left_x = doc.leftMargin + 35
                 top_pad = 6 * mm
                 y_top = page_h - top_pad
-                y_logo = y_top - logo_h
 
+                # --- LOGO (arriba izquierda) ---
+                logo_path = finders.find("logos/logoGobByN.jpeg") or finders.find("logos/logoGobColor.jpeg")
+                logo_w = 22 * mm
+                logo_h = 18 * mm
+
+                y_logo = y_top - logo_h
                 if logo_path:
                     try:
-                        x_logo = center_x - (logo_w / 2)
                         canvas.drawImage(
                             logo_path,
-                            x_logo, y_logo,
+                            left_x, y_logo,
                             width=logo_w, height=logo_h,
                             preserveAspectRatio=True,
                             mask="auto"
@@ -1847,31 +1893,41 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                     except Exception:
                         pass
 
-                # Texto debajo del logo
-                y_text = y_logo - 3 * mm
-                canvas.setFont("Helvetica-Oblique", 9)
-                canvas.drawCentredString(
-                    center_x, y_text,
-                    "Provincia de Tierra del Fuego, Antártida e Islas del Atlántico Sur"
-                )
+                # --- TEXTO institucional debajo del logo (izquierda) ---
+                y_inst = y_logo - 3 * mm
 
-                y_text -= 4 * mm
-                canvas.setFont("Helvetica", 9)
-                canvas.drawCentredString(
-                    center_x, y_text, "República Argentina")
+                canvas.setFont("Helvetica-Oblique", 7)
+                canvas.drawString(left_x - 25, y_inst, "Provincia de Tierra del Fuego, Antártida")
+                y_inst -= 3.2 * mm
 
-                y_text -= 6 * mm
+                # esta línea va corrida a la derecha
+                canvas.drawString(left_x - 2 * mm, y_inst, "e Islas del Atlántico Sur")
+                y_inst -= 3.2 * mm
+
+                canvas.setFont("Helvetica", 7)
+                # esta línea va más corrida a la derecha
+                canvas.drawString(left_x - 1 * mm, y_inst, "República Argentina")
+                y_inst -= 4.2 * mm
+
+                canvas.setFont("Helvetica-Bold", 7)
+                canvas.drawString(left_x - 30, y_inst, "SUBSECRETARÍA DE SEGURIDAD VIAL")
+
+                # --- TÍTULO centrado (como primera imagen) ---
+                center_x = page_w / 2
+                canvas.setFont("Helvetica-Bold", 12)
+                canvas.drawCentredString(center_x, y_top - 2 * mm, titulo_linea_1)
+
                 canvas.setFont("Helvetica-Bold", 10)
-                canvas.drawCentredString(
-                    center_x, y_text, "SUBSECRETARÍA DE SEGURIDAD VIAL")
+                canvas.drawCentredString(center_x, y_top - 8.5 * mm, titulo_linea_2)
 
-                # Línea separadora (por arriba del contenido)
-                y_line = y_text - 4 * mm
+                # --- Divider (si lo querés: fino y bien arriba del contenido) ---
+                y_div = page_h - doc.topMargin + 2 * mm
                 canvas.setLineWidth(0.6)
-                canvas.line(doc.leftMargin, y_line,
-                            page_w - doc.rightMargin, y_line)
+                canvas.line(doc.leftMargin, y_div, page_w - doc.rightMargin, y_div)
 
-                # Pie Malvinas (fijo abajo)
+                # =========================
+                # FOOTER Malvinas (una sola vez)
+                # =========================
                 footer_text = (
                     "Las Islas Malvinas, Georgias y Sándwich del Sur, "
                     "y los espacios marítimos e insulares correspondientes son Argentinos"
@@ -1896,7 +1952,6 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 "incluir_licencias": request.data.get("incluir_licencias"),
             }
 
-            configuracion = request.data.get("configuracion", {})
             is_general = (tipo_reporte == "general")
 
             # =========================
@@ -1918,15 +1973,15 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             # Doc setup
             # =========================
             buffer = BytesIO()
-            page_size = landscape(A3) if is_general else A3
+            page_size = landscape(A4) if is_general else A4
 
             doc = SimpleDocTemplate(
                 buffer,
                 pagesize=page_size,
                 leftMargin=18 if is_general else 72,
                 rightMargin=18 if is_general else 72,
-                topMargin=55 * mm if is_general else 72,  # deja aire para membrete
-                bottomMargin=18 if is_general else 72,
+                topMargin=46 * mm if is_general else 72,   
+                bottomMargin=18 * mm if is_general else 72
             )
 
             styles = getSampleStyleSheet()
@@ -1955,24 +2010,11 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             mes_fin = MESES[fh_title.month - 1] if fh_title else ""
             anio = fh_title.year if fh_title else ""
 
+            titulo_linea_1 = f"Planilla General {area_nombre}"
             if fd_title and fh_title and fd_title.month == fh_title.month and fd_title.year == fh_title.year:
-                periodo_txt = f"mes {mes_inicio}, {anio}"
+                titulo_linea_2 = f"Mes {mes_inicio}, {anio}"
             else:
-                periodo_txt = f"mes {mes_inicio}–{mes_fin}, {anio}"
-
-            titulo_reporte = f"Planilla General {area_nombre} {periodo_txt}"
-
-            title_style = ParagraphStyle(
-                "Title",
-                parent=styles["Heading1"],
-                fontName="Helvetica-Bold",
-                fontSize=14,
-                alignment=1,
-                spaceAfter=6,
-            )
-
-            elements.append(Paragraph(titulo_reporte, title_style))
-            elements.append(Spacer(1, 6 * mm))
+                titulo_linea_2 = f"Periodo {mes_inicio} - {mes_fin}, {anio}"
 
             # =========================
             # Tablas
@@ -1984,20 +2026,44 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 "InfoStyle",
                 parent=styles["Normal"],
                 fontName="Helvetica",
-                fontSize=9,
-                spaceAfter=2,
+                fontSize=8,   
+                leading=9,    
+                spaceAfter=0,
             )
 
             if tipo_reporte == "general" and isinstance(tabla_data, dict) and "bloques" in tabla_data:
                 bloques = tabla_data["bloques"]
 
+                def _weekend_cols_split(weekend_cols, desde, hasta):
+                    """
+                    weekend_cols vienen como columnas absolutas de la tabla original:
+                    0 nombre, 1 cuil, 2..32 días 1..31, 33 total
+                    Al cortar días, hay que mapear esas columnas al nuevo índice.
+                    """
+                    out = []
+                    for col in weekend_cols:
+                        day = col - 1  
+                        if desde <= day <= hasta:
+                            new_col = 2 + (day - desde)
+                            out.append(new_col)
+                    return out
+
+                def _col_widths_for(rows_split):
+                    dias_visibles = len(rows_split[0]) - 3
+                    return (
+                        [55 * mm] +        
+                        [28 * mm] +      
+                        [7 * mm] * dias_visibles + 
+                        [16 * mm]            
+                    )
+            
                 for i, bloque in enumerate(bloques):
                     anio = bloque["anio"]
                     mes = bloque["mes"]
                     rows = bloque["rows"]
                     weekend_cols = bloque["weekend_cols"]
+                    cant_dias = bloque["cant_dias"]
 
-                    # Período del mes (recortado al rango real)
                     import calendar
                     from datetime import date
 
@@ -2011,64 +2077,107 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                     periodo_inicio = max(fd, mes_inicio_dt)
                     periodo_fin = min(fh, mes_fin_dt)
 
-                    # Info del mes (labels en negrita)
-                    elements.append(
-                        Paragraph(f"<b>Área:</b> {area_nombre}", info_style))
-                    elements.append(Paragraph(
-                        f"<b>Período:</b> {periodo_inicio.strftime('%d/%m/%Y')} al {periodo_fin.strftime('%d/%m/%Y')}",
-                        info_style
-                    ))
-                    elements.append(Paragraph(
-                        f"<b>Tipo de Guardia:</b> {filtros.get('tipo_guardia') or 'Regular'}",
-                        info_style
-                    ))
-                    elements.append(Paragraph(
-                        f"<b>Licencias:</b> {'Sí' if filtros.get('incluir_licencias') else 'No'} | "
-                        f"<b>Feriados:</b> {'Sí' if filtros.get('incluir_feriados') else 'No'}",
-                        info_style
-                    ))
-                    elements.append(Spacer(1, 6))
+                    info_cells = [
+                        [
+                            Paragraph(f"<b>Área:</b> {area_nombre}", info_style),
+                            Paragraph(f"<b>Período:</b> {periodo_inicio.strftime('%d/%m/%Y')} al {periodo_fin.strftime('%d/%m/%Y')}", info_style),
+                        ],
+                        [
+                            Paragraph(f"<b>Tipo de Guardia:</b> {filtros.get('tipo_guardia') or 'Regular'}", info_style),
+                            Paragraph(
+                                f"<b>Licencias:</b> {'Sí' if filtros.get('incluir_licencias') else 'No'} | "
+                                f"<b>Feriados:</b> {'Sí' if filtros.get('incluir_feriados') else 'No'}",
+                                info_style
+                            ),
+                        ],
+                    ]
 
-                    # Tabla
-                    tabla = Table(rows)
+                    info_table = Table(
+                        info_cells,
+                        colWidths=[(doc.width * 0.5), (doc.width * 0.5)]
+                    )
 
-                    base_style = [
+                    info_table.setStyle(TableStyle([
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                    ]))
+
+                    elements.append(info_table)
+                    elements.append(Spacer(1, 10))
+
+                    # =========================
+                    # TABLA QUINCENA 1 (1–15)
+                    # =========================
+
+                    hasta_1 = min(15, cant_dias)
+                    rows_1 = split_rows_por_dias(rows, 1, hasta_1)
+                    weekend_1 = _weekend_cols_split(weekend_cols, 1, hasta_1)
+
+                    base_style_1 = [
                         ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
                         ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
                         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                        ("FONTSIZE", (0, 0), (-1, 0), 9),
-
+                        ("FONTSIZE", (0, 0), (-1, 0), 8),
                         ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-                        ("FONTSIZE", (0, 1), (-1, -1), 8),
-                        ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+                        ("FONTSIZE", (0, 1), (-1, -1), 7),
+                        ("GRID", (0, 0), (-1, -1), 0.4, colors.black),
                         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                        ("TOPPADDING", (0, 0), (-1, -1), 1),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
                     ]
 
                     weekend_fill = colors.HexColor("#7BE69A")
-                    for col in weekend_cols:
-                        base_style.append(
-                            ("BACKGROUND", (col, 1), (col, -1), weekend_fill))
+                    for col in weekend_1:
+                        base_style_1.append(("BACKGROUND", (col, 1), (col, -1), weekend_fill))
 
-                    tabla.setStyle(TableStyle(base_style))
-                    elements.append(tabla)
+                    tabla_1 = Table(rows_1, colWidths=_col_widths_for(rows_1), repeatRows=1, hAlign="CENTER")
+                    tabla_1.setStyle(TableStyle(base_style_1))
+                    elements.append(tabla_1)
+                    elements.append(Spacer(1, 6))
 
-                    # Firmas solo al final del doc (no por mes)
+                    # =========================
+                    # TABLA QUINCENA 2 (16–fin)
+                    # =========================
+                    if cant_dias > 15:
+                        desde_2 = 16
+                        hasta_2 = cant_dias
+
+                        rows_2 = split_rows_por_dias(rows, desde_2, hasta_2)
+                        weekend_2 = _weekend_cols_split(weekend_cols, desde_2, hasta_2)
+
+                        base_style_2 = [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, 0), 8),
+                            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                            ("FONTSIZE", (0, 1), (-1, -1), 7),
+                            ("GRID", (0, 0), (-1, -1), 0.4, colors.black),
+                            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                            ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                            ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                            ("TOPPADDING", (0, 0), (-1, -1), 1),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                        ]
+
+                        for col in weekend_2:
+                            base_style_2.append(("BACKGROUND", (col, 1), (col, -1), weekend_fill))
+
+                        n_day_cols_2 = len(rows_2[0]) - 3
+                        tabla_2 = Table(rows_2, colWidths=_col_widths_for(rows_2), repeatRows=1, hAlign="CENTER")
+                        tabla_2.setStyle(TableStyle(base_style_2))
+                        elements.append(tabla_2)
+
+                    # Salto de página por mes
                     if i < len(bloques) - 1:
                         elements.append(PageBreak())
-
-            else:
-                # Otros reportes (si los usás)
-                if isinstance(tabla_data, tuple):
-                    tabla_rows, weekend_cols = tabla_data
-                else:
-                    tabla_rows, weekend_cols = tabla_data, []
-
-                tabla = Table(tabla_rows)
-                tabla.setStyle(TableStyle([
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
-                ]))
-                elements.append(tabla)
 
             # =========================
             # Firmas (más abajo, cerca del pie)
@@ -2096,8 +2205,8 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             # =========================
             # Build PDF
             # =========================
-            doc.build(elements, onFirstPage=draw_membrete,
-                      onLaterPages=draw_membrete)
+            doc.build(elements, onFirstPage=draw_header,
+                      onLaterPages=draw_header)
 
             buffer.seek(0)
             response = HttpResponse(buffer, content_type="application/pdf")
