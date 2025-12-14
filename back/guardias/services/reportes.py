@@ -272,15 +272,28 @@ def _armar_reporte_individual(filtros: Dict, permisos: Dict) -> Dict:
 
 
 def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
-    area_scope = permisos.get("area_scope")
+    area_scope = permisos.get("area_scope", [])
 
     agentes_qs = Agente.objects.filter(activo=True)
+
+    # Filtro por agente puntual
     if filtros.get("agente"):
         agentes_qs = agentes_qs.filter(id_agente__in=filtros["agente"])
-    if area_scope is not None:
+
+    # Filtro por área
+    area_filtro = filtros.get("area")
+
+    if area_filtro:
+        # Normalizamos a lista
+        if not isinstance(area_filtro, (list, tuple, set)):
+            area_filtro = [area_filtro]
+
+        agentes_qs = agentes_qs.filter(
+            id_area_id__in=set(area_scope) & set(area_filtro)
+        )
+    else:
+        # No eligió área → solo lo que puede ver
         agentes_qs = agentes_qs.filter(id_area_id__in=area_scope)
-    elif filtros.get("area"):
-        agentes_qs = agentes_qs.filter(id_area_id__in=filtros["area"])
 
     agentes_qs = agentes_qs.select_related("id_area").order_by("apellido", "nombre")
 
