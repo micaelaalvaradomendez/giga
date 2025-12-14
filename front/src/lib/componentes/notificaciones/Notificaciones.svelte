@@ -53,39 +53,12 @@
             let data = response.data?.results || response.data || [];
             notificaciones = data.filter((n) => !n.leida);
         } catch (e) {
-            console.error(e);
-            const mocks = [
-                {
-                    id: 1,
-                    tipo: "GUARDIA",
-                    titulo: "Nueva Guardia Asignada",
-                    mensaje: "Se te ha asignado una guardia el 15/12",
-                    leida: false,
-                    fecha_creacion: new Date().toISOString(),
-                },
-                {
-                    id: 2,
-                    tipo: "LICENCIA",
-                    titulo: "Licencia Aprobada",
-                    mensaje: "Tu licencia por vacaciones ha sido aprobada",
-                    leida: false,
-                    fecha_creacion: new Date(
-                        Date.now() - 86400000,
-                    ).toISOString(),
-                },
-                {
-                    id: 3,
-                    tipo: "INCIDENCIA",
-                    titulo: "Incidencia Resuelta",
-                    mensaje:
-                        "La incidencia #1234 ha sido marcada como resuelta",
-                    leida: false,
-                    fecha_creacion: new Date(
-                        Date.now() - 172800000,
-                    ).toISOString(),
-                },
-            ];
-            notificaciones = mocks.filter((n) => !n.leida);
+
+            console.error("Error cargando notificaciones:", e);
+            if (e.response && e.response.data) {
+                console.error("Detalle del error:", e.response.data);
+            }
+            notificaciones = [];
         } finally {
             loading = false;
             actualizarContador();

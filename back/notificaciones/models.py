@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from personas.models import Agente
 
 class Notificacion(models.Model):
     TIPO_CHOICES = (
@@ -17,7 +17,7 @@ class Notificacion(models.Model):
         ('GENERICO', 'Generico'),
     )
 
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notificaciones')
+    agente = models.ForeignKey(Agente, on_delete=models.CASCADE, related_name='notificaciones', db_column='id_agente')
     titulo = models.CharField(max_length=255)
     mensaje = models.TextField()
     tipo = models.CharField(max_length=50, choices=TIPO_CHOICES, default='GENERICO')
@@ -26,9 +26,11 @@ class Notificacion(models.Model):
     link = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
+        managed = False
+        db_table = 'notificacion'
         ordering = ['-fecha_creacion']
         verbose_name = 'Notificación'
         verbose_name_plural = 'Notificaciones'
 
     def __str__(self):
-        return f"{self.usuario.username} - {self.titulo}"
+        return f"{self.agente.nombre} {self.agente.apellido} - {self.titulo}"

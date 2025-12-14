@@ -136,11 +136,11 @@
 
 		return guardias
 			.filter((g) => {
-				const fechaGuardia = new Date(g.fecha);
+				const fechaGuardia = new Date(g.fecha + "T00:00:00");
 				fechaGuardia.setHours(0, 0, 0, 0);
 				return fechaGuardia >= hoy;
 			})
-			.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+			.sort((a, b) => new Date(a.fecha + "T00:00:00") - new Date(b.fecha + "T00:00:00"))
 			.slice(0, 3);
 	}
 
@@ -265,12 +265,12 @@
 											<div class="guardia-fecha">
 												<span class="fecha-dia"
 													>{new Date(
-														guardia.fecha,
+														guardia.fecha + "T00:00:00",
 													).getDate()}</span
 												>
 												<span class="fecha-mes">
 													{new Date(
-														guardia.fecha,
+														guardia.fecha + "T00:00:00",
 													).toLocaleDateString(
 														"es-AR",
 														{ month: "short" },

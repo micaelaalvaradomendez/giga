@@ -10,8 +10,14 @@ class NotificacionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Filtra notificaciones no leidas 
-        return Notificacion.objects.filter(usuario=self.request.user, leida=False).order_by('-fecha_creacion')
+        # Filtra notificaciones no leidas para el AGENTE en sesión
+        agente_id = self.request.session.get('user_id')
+        if not agente_id:
+            return Notificacion.objects.none()
+            
+        return Notificacion.objects.filter(agente_id=agente_id, leida=False).order_by('-fecha_creacion')
+
+
 
     @action(detail=True, methods=['post'])
     def marcar_leida(self, request, pk=None):
