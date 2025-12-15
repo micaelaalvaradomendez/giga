@@ -509,15 +509,6 @@ class AuditoriaController {
 		});
 	}
 
-
-
-	/**
-	 * Actualiza los filtros activos
-	 */
-	actualizarFiltros(nuevosFiltros) {
-		this.filtros.set(nuevosFiltros);
-	}
-
 	/**
 	 * Limpia todos los filtros
 	 */
