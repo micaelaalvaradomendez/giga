@@ -644,7 +644,6 @@ Sistema GIGA - Protección Civil
             'message': 'Error interno del servidor'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@csrf_exempt
 @api_view(['POST', 'OPTIONS'])
 @permission_classes([IsAuthenticatedGIGA])
 def update_email(request):
@@ -732,7 +731,6 @@ def update_email(request):
             'message': 'Error interno del servidor'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@csrf_exempt
 @api_view(['POST', 'OPTIONS'])
 @permission_classes([IsAuthenticatedGIGA])  # Requiere sesión válida
 def change_password(request):
