@@ -188,7 +188,7 @@
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
 		padding: 30px 40px;
-		margin: 0 0 2rem 0;
+		margin: 0 0 0.5rem 0;
 		border-radius: 28px;
 		overflow: hidden;
 		box-sizing: border-box;
@@ -308,7 +308,8 @@
 		.header-organigrama {
 			padding: 1rem;
 			flex-direction: column;
-			align-items: flex-start;
+			align-items: center;
+			text-align: center;
 			gap: 1rem;
 			width: 100%;
 			box-sizing: border-box;
@@ -318,12 +319,20 @@
 			font-size: 1.75rem; 
 			margin-bottom: 0.5rem;
 			max-width: 100%;
-			width: fit-content;
+			width: 100%;
+			text-align: center;
+			display: block;
+		}
+
+		.header-organigrama h1::after {
+			left: 50%;
+			transform: translateX(-50%);
+			animation: moveLine 2s linear infinite;
 		}
 
 		.info-actualización {
 			width: 100%;
-			align-items: flex-start;
+			align-items: center;
 		}
 
 		.organigrama-container {

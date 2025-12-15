@@ -881,13 +881,23 @@
 <!-- El componente AdminNodeRenderer se importa al inicio -->
 
 <style>
+	.admin-container {
+		width: 100%;
+		max-width: 1660px;
+		margin: 0 auto;
+		padding: 1.5rem 1rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		box-sizing: border-box;
+	}
+
 	.admin-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin: 0 25px 0 25px;
-		padding-bottom: 20px;
+		margin: 0;
+		padding: 0 2rem 20px 2rem; 
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		gap: 2rem;
 	}
 
 	.admin-header-title {
@@ -895,7 +905,7 @@
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
 		padding: 30px 40px;
-		margin: 0 20px 0 0;
+		margin: 0 40px 0 0;
 		max-width: 1000px;
 		border-radius: 28px;
 		overflow: hidden;
@@ -1001,6 +1011,27 @@
 		border-radius: 8px;
 		padding: 2rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.organigrama-admin {
+		width: 100%;
+	}
+
+	.root-node-container {
+		width: 100%;
+	}
+
+	/* Hacer que los nodos admin ocupen todo el ancho */
+	.organigrama-admin :global(.admin-node-container) {
+		width: 100%;
+		max-width: none;
+	}
+
+	.organigrama-admin :global(.admin-node) {
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.loading {
@@ -1261,21 +1292,146 @@
 	@media (max-width: 768px) {
 		.admin-container {
 			padding: 1rem;
+			overflow-x: hidden;
 		}
 
 		.admin-header {
 			flex-direction: column;
 			gap: 1rem;
-			align-items: stretch;
+			align-items: center; /* Centrar todo el header */
+			margin: 0 0 1.5rem 0;
+			padding-bottom: 0;
+			width: 100%;
+		}
+
+		.admin-header-title {
+			padding: 1.5rem 1rem;
+			margin: 0;
+			border-radius: 16px;
+			width: 100%;
+			text-align: center;
+			box-sizing: border-box;
+		}
+
+		.admin-header-title h1 {
+			font-size: 1.5rem;
+			margin: 0;
+			width: 100%;
 		}
 
 		.admin-actions {
+			flex-direction: column;
+			gap: 0.75rem;
+			width: 100%;
+			align-items: center;
+		}
+
+		.admin-actions .btn {
+			width: 100%;
+			font-size: 1rem;
+			padding: 14px;
+			text-align: center;
 			justify-content: center;
+			margin: 0 !important;
+			border-radius: 10px;
+		}
+
+		.admin-content {
+			padding: 1rem;
+			border-radius: 12px;
+			width: 100%;
+			box-sizing: border-box;
+		}
+
+		.organigrama-admin {
+			overflow-x: auto;
+			width: 100%;
+		}
+
+		.root-node-container {
+			padding: 0.5rem;
+			margin-bottom: 1rem;
+			width: 100%;
+			box-sizing: border-box;
+		}
+
+		.unsaved-warning {
+			font-size: 0.9rem;
+			padding: 1rem;
+			margin-bottom: 1rem;
+			width: 100%;
+			box-sizing: border-box;
+		}
+
+		.modal-overlay {
+			padding: 0.5rem;
 		}
 
 		.modal-content {
-			width: 95%;
-			margin: 1rem;
+			width: 100%;
+			max-width: 100%;
+			margin: 0;
+			max-height: 90vh;
+			border-radius: 12px;
+		}
+
+		.modal-header {
+			padding: 1rem;
+		}
+
+		.modal-header h2 {
+			font-size: 1.2rem;
+		}
+
+		.modal-body {
+			padding: 1rem;
+		}
+
+		.modal-footer {
+			padding: 1rem;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
+		.btn-cancel,
+		.btn-save {
+			width: 100%;
+			padding: 12px;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.admin-container {
+			padding: 0.5rem;
+		}
+
+		.admin-header-title {
+			padding: 16px 12px;
+			border-radius: 14px;
+		}
+
+		.admin-header-title h1 {
+			font-size: 18px;
+		}
+
+		.admin-actions .btn {
+			flex: 1 1 100%;
+			font-size: 0.8rem;
+		}
+
+		.admin-content {
+			padding: 0.75rem;
+		}
+
+		.form-group label {
+			font-size: 0.9rem;
+		}
+
+		.form-group input,
+		.form-group select,
+		.form-group textarea {
+			padding: 0.6rem;
+			font-size: 0.9rem;
 		}
 	}
 </style>

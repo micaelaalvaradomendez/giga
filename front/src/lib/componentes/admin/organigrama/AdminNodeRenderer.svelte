@@ -283,28 +283,87 @@
 
 	/* Responsive */
 	@media (max-width: 768px) {
+		.admin-node-container {
+			max-width: 100%;
+			overflow: hidden;
+		}
+
 		.admin-node {
 			padding: 0.75rem;
+			margin: 0.25rem 0;
+			max-width: 100%;
+			box-sizing: border-box;
 		}
 
 		.node-header {
 			flex-direction: column;
 			align-items: flex-start;
+			gap: 0.5rem;
 		}
 
 		.node-main {
 			width: 100%;
+			flex-wrap: wrap;
+		}
+
+		.node-content {
+			max-width: calc(100% - 50px);
+			word-wrap: break-word;
+			overflow-wrap: break-word;
+		}
+
+		.node-title {
+			font-size: 1rem;
+			word-wrap: break-word;
+		}
+
+		.node-description {
+			font-size: 0.8rem;
+		}
+
+		.node-contact {
+			font-size: 0.75rem;
+			word-break: break-all;
 		}
 
 		.node-actions {
 			width: 100%;
-			justify-content: flex-end;
+			justify-content: center;
 			margin-top: 0.5rem;
 		}
 
+		.action-btn {
+			width: 36px;
+			height: 36px;
+		}
+
 		.children-container {
-			margin-left: 1rem;
-			padding-left: 1rem;
+			margin-left: 0.5rem;
+			padding-left: 0.75rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.admin-node {
+			padding: 0.6rem;
+		}
+
+		.node-icon {
+			font-size: 1.25rem;
+		}
+
+		.node-title {
+			font-size: 0.95rem;
+		}
+
+		.node-titular,
+		.node-agents {
+			font-size: 0.75rem;
+		}
+
+		.children-container {
+			margin-left: 0.25rem;
+			padding-left: 0.5rem;
 		}
 	}
 </style>
