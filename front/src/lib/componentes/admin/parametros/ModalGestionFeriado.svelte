@@ -736,27 +736,40 @@
 	}
 
 	/* Responsive */
-	@media (max-width: 600px) {
+	@media (max-width: 768px) {
+		.modal-overlay {
+			padding: 1rem;
+		}
+
+		.modal-content {
+			max-width: 100%;
+			max-height: 90vh;
+		}
+
+		.modal-header {
+			padding: 1.25rem 1rem;
+		}
+
+		.modal-header h2 {
+			font-size: 1.2rem;
+		}
+
+		.modal-body {
+			padding: 1.25rem;
+		}
+
 		.form-row {
 			grid-template-columns: 1fr;
 		}
 
-		.checkbox-group {
-			flex-direction: column;
-			gap: 0.75rem;
-		}
-
 		.modal-footer {
-			flex-direction: column;
+			padding: 1rem;
+			flex-wrap: wrap;
 		}
 
 		.modal-footer button {
-			width: 100%;
-		}
-
-		.save-actions {
-			width: 100%;
-			margin-left: 0;
+			padding: 0.6rem 1rem;
+			font-size: 0.9rem;
 		}
 	}
 </style>
