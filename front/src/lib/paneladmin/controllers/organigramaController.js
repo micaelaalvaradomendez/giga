@@ -68,6 +68,28 @@ class OrganigramaController {
 			}
 		);
 
+		this.agentesParaSelect = derived(this.agentes, ($agentes) => {
+			if (!Array.isArray($agentes)) return [];
+			return $agentes
+				.filter(a => a.activo !== false)
+				.map(a => ({
+					id: a.id_agente || a.id,
+					nombre_completo: `${a.apellido}, ${a.nombre}`,
+					legajo: a.legajo || "",
+					email: a.email || "",
+					telefono: a.telefono || "",
+					area_id: a.area_id || a.id_area || null,
+				}))
+				.sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
+		});
+
+		this.agenteById = derived(this.agentesParaSelect, ($list) => {
+			const m = new Map();
+			for (const a of $list) m.set(a.id, a);
+			return m;
+		});
+
+
 		// Store derivado para estadísticas
 		this.estadisticas = derived(
 			[this.agentes, this.areas, this.roles],
@@ -339,6 +361,7 @@ class OrganigramaController {
 		this.filtroRol.set('');
 		this.busqueda.set('');
 	}
+
 
 	/**
 	 * Exportar organigrama (para futuras funcionalidades)
