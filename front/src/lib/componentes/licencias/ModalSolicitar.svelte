@@ -54,21 +54,31 @@
 			return;
 		}
 
-		enviando = true;
-		const datos = {
-			...formLicencia,
-			id_agente: userInfo?.id_agente,
-		};
-
-		const resultado = await crearLicencia(datos);
-
-		if (resultado.success) {
-			dispatch("created");
-			cerrarModal();
-		} else {
-			await showAlert(resultado.error || "Error al crear la licencia", "error", "Error");
+		// Validar que fecha_hasta no sea anterior a fecha_desde
+		if (formLicencia.fecha_hasta < formLicencia.fecha_desde) {
+			await showAlert("La fecha de finalización no puede ser anterior a la fecha de inicio", "warning", "Advertencia");
+			return;
 		}
-		enviando = false;
+
+		enviando = true;
+		
+		try {
+			const datos = {
+				...formLicencia,
+				id_agente: userInfo?.id_agente,
+			};
+
+			const resultado = await crearLicencia(datos);
+
+			if (resultado.success) {
+				dispatch("created");
+				cerrarModal();
+			} else {
+				await showAlert(resultado.error || "Error al crear la licencia", "error", "Error");
+			}
+		} finally {
+			enviando = false;
+		}
 	}
 </script>
 
@@ -138,6 +148,7 @@
 								type="date"
 								id="fecha_hasta_crear"
 								bind:value={formLicencia.fecha_hasta}
+								min={formLicencia.fecha_desde}
 								required
 							/>
 						</div>

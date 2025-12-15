@@ -34,6 +34,7 @@
 	import ModalRechazar from "$lib/componentes/admin/licencias/ModalRechazar.svelte";
 	import ModalSolicitar from "$lib/componentes/licencias/ModalSolicitar.svelte";
 	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+	import { modalAlert } from "$lib/stores/modalAlertStore.js";
 
 	let vistaActual = "licencias"; // 'licencias' o 'tipos'
 
@@ -862,6 +863,20 @@
 	on:confirm={handleAlertConfirm}
 	on:cancel={handleAlertCancel}
 	on:close={handleAlertClose}
+/>
+
+<!-- ModalAlert para showAlert() del store -->
+<ModalAlert
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	showConfirmButton={$modalAlert.showConfirmButton}
+	confirmText={$modalAlert.confirmText}
+	showCancelButton={$modalAlert.showCancelButton}
+	cancelText={$modalAlert.cancelText}
+	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 
 <style>

@@ -1382,9 +1382,10 @@ def crear_licencia_impl(request):
         )
         
         if licencias_existentes.exists():
+            licencia_solapada = licencias_existentes.first()
             return Response({
                 'success': False,
-                'message': 'Ya existe una licencia en ese período'
+                'message': f'Ya existe una licencia {licencia_solapada.estado} en ese período (del {licencia_solapada.fecha_desde} al {licencia_solapada.fecha_hasta})'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Determinar estado inicial
@@ -1441,6 +1442,9 @@ def crear_licencia_impl(request):
                 'message': f'Licencia {"asignada" if estado_inicial == "aprobada" else "solicitada"} correctamente',
                 'data': serializer.data
             }, status=status.HTTP_201_CREATED)
+        else:
+            logger.error(f"Errores de validación del serializer: {serializer.errors}")
+            logger.error(f"Datos enviados: {licencia_data}")
         
         return Response({
             'success': False,
