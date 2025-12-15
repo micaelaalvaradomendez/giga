@@ -393,13 +393,15 @@
 					</div>
 					<div class="card-body">
 						<div class="accesos-grid">
+							{#if esAdministrador()}
 							<button
 								class="acceso-btn"
-								on:click={() => goto("/reportes")}
+								on:click={() => goto("paneladmin/reportes")}
 							>
 								<span class="acceso-icon">📊</span>
 								<span class="acceso-label">Reportes</span>
 							</button>
+							{/if}
 							<button
 								class="acceso-btn"
 								on:click={() => goto("/guardias")}

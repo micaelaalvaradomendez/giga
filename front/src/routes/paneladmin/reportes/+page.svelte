@@ -166,6 +166,7 @@
 	<!-- Selector de tipo de reporte -->
 	<section class="selector-tipo">
 			<div class="selector-tipo-container">
+				{#if false}
 				<label class="selector-opcion">
 					<input 
 						type="radio" 
@@ -179,7 +180,7 @@
 						<span>Planilla detallada de guardias por agente</span>
 					</div>
 				</label>
-				
+				{/if}
 				<label class="selector-opcion">
 					<input 
 						type="radio" 
@@ -193,7 +194,7 @@
 						<span>Resumen de guardias por área/dirección</span>
 					</div>
 				</label>
-				
+				{#if false}
 				<label class="selector-opcion">
 					<input 
 						type="radio" 
@@ -207,6 +208,7 @@
 						<span>Horas de guardia programadas vs efectivas (fines de semana/feriados únicamente)</span>
 					</div>
 				</label>
+				{/if}
 			</div>
 			<div class="selector-tipo-container">
 				<label class="selector-opcion">
@@ -458,7 +460,7 @@
 						{/if}
 						Exportar PDF
 					</button>
-					
+					{#if false}
 					<button 
 						class="btn btn-exportar btn-excel"
 						disabled={$exportando}
@@ -471,6 +473,7 @@
 						{/if}
 						Exportar Excel
 					</button>
+					{/if}
 				</div>
 			</div>
 
@@ -826,9 +829,8 @@
 
 <style>
 	.container-reportes {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 2rem;
+		max-width: 100vw;
+		padding: 2rem 10vw;
 		min-height: 100vh;
 	}
 
