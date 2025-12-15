@@ -177,8 +177,9 @@
 		width: 100%;
 		max-width: 1600px;
 		margin: 0 auto;
-		padding: 1rem 0;
+		padding: 1.5rem 1rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		box-sizing: border-box;
 	}
 
 	.header-organigrama {
@@ -187,9 +188,11 @@
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
 		padding: 30px 40px;
-		margin: 0;
+		margin: 0 0 2rem 0;
 		border-radius: 28px;
 		overflow: hidden;
+		box-sizing: border-box;
+		width: 100%;
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
 			0 20px 60px rgba(30, 64, 175, 0.4);
@@ -225,6 +228,10 @@
 		padding-bottom: 12px;
 		overflow: hidden;
 		display: inline-block;
+		white-space: normal;
+		word-break: break-word;
+		line-height: 1.2;
+		max-width: 100%;
 	}
 
 	.header-organigrama h1::after {
@@ -290,21 +297,37 @@
 	}
 
 	/* Responsive */
-	@media (max-width: 768px) {
+	@media (max-width: 640px) {
 		.container-organigrama {
-			padding: 1rem;
+			padding: 1rem 0.75rem 1.5rem;
+			width: 100%;
+			box-sizing: border-box;
+			overflow-x: hidden;
 		}
 
 		.header-organigrama {
-			padding: 1.5rem;
+			padding: 1rem;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 1rem;
+			width: 100%;
+			box-sizing: border-box;
 		}
 
 		.header-organigrama h1 {
-			font-size: 2rem;
+			font-size: 1.75rem; 
+			margin-bottom: 0.5rem;
+			max-width: 100%;
+			width: fit-content;
+		}
+
+		.info-actualización {
+			width: 100%;
+			align-items: flex-start;
 		}
 
 		.organigrama-container {
-			padding: 1rem;
+			padding: 0.5rem;
 		}
 	}
 </style>

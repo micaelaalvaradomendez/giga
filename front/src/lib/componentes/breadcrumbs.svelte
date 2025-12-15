@@ -133,12 +133,17 @@
     /* Ajustes para móvil */
     @media (max-width: 768px) {
         .breadcrumbs-container {
-            margin: 16px 16px 0 16px;
-            padding: 12px 16px;
+            margin: 16px auto 0;
+            padding: 10px 14px;
+            width: calc(100% - 32px);
+            max-width: 100%;
+            overflow-x: visible;
         }
 
         ol {
             font-size: 13px;
+            flex-wrap: wrap; /* Permitir que baje de línea */
+            justify-content: center; /* Centrar si es necesario, o flex-start */
         }
     }
 </style>

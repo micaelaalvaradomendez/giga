@@ -569,8 +569,17 @@
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 1rem 1.5rem;
+    padding: 1.5rem 1rem 1.5rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  @media (max-width: 640px) {
+    .incidencias-container {
+      padding: 1rem 0.75rem 1.5rem;
+      width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
   }
 
   :global(html),
@@ -625,6 +634,15 @@
       0 20px 60px rgba(30, 64, 175, 0.4);
     margin-bottom: 1.5rem;
     box-sizing: border-box;
+    height: auto;
+    width: 100%;
+  }
+
+  @media (max-width: 640px) {
+    .header {
+      padding: 12px 8px;
+      margin-bottom: 1rem;
+    }
   }
 
   @media (min-width: 640px) {
@@ -679,6 +697,10 @@
     display: block;
     max-width: 100%;
     word-wrap: break-word;
+    word-break: break-word; /* Ensure long words break */
+    white-space: normal;
+    height: auto;
+    line-height: 1.3;
   }
 
   @media (min-width: 480px) {
@@ -812,6 +834,23 @@
     .tabs-row {
       flex-direction: column;
       align-items: stretch;
+      overflow-x: hidden;
+      white-space: normal;
+    }
+
+    .tabs {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+      overflow-x: hidden;
+      padding-bottom: 0;
+      height: auto;
+    }
+
+    .tab {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 0.5rem;
     }
 
     .controls {
@@ -993,11 +1032,19 @@
     border-color: #cbd5e1;
   }
 
+  @media (max-width: 640px) {
+    .incidencia-card {
+      padding: 1rem;
+    }
+  }
+
   .incidencia-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .incidencia-numero {
@@ -1087,6 +1134,8 @@
     font-size: 1.125rem;
     font-weight: 700;
     color: #1f2937;
+    word-wrap: break-word;
+    word-break: break-word;
   }
 
   .incidencia-descripcion {
@@ -1100,13 +1149,48 @@
     justify-content: space-between;
     align-items: flex-end;
     gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 768px) {
+    .incidencia-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    
+    .incidencia-badges {
+      flex-wrap: wrap;
+    }
+
+    .incidencia-footer {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1.5rem;
+    }
+
+    .incidencia-meta {
+      width: 100%;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .incidencia-actions {
+      width: 100%;
+    }
+    
+    .btn-secondary {
+      width: 100%;
+    }
   }
 
   .incidencia-meta {
     display: flex;
     flex-wrap: wrap;
+    flex-wrap: wrap;
     gap: 1rem;
     flex: 1;
+    width: 100%;
   }
 
   .meta-item {

@@ -191,6 +191,12 @@
 	@media (max-width: 768px) {
 		.node {
 			padding: 0.75rem;
+			margin: 0.5rem 0.25rem 0.5rem 0; /* Ajustar margen derecho */
+		}
+
+		.node-container {
+			width: auto; /* Dejar que el padding del contenedor padre maneje el ancho */
+			padding-right: 0.5rem;
 		}
 
 		.children-container {
