@@ -6,12 +6,17 @@ import { browser } from '$app/environment';
 const getApiBaseUrl = () => {
 	// En el navegador (cliente)
 	if (browser) {
-		// Usar la variable de entorno o el valor por defecto (nginx)
+		// Usar variable VITE_API_BASE (disponible en build time)
 		return import.meta.env.VITE_API_BASE || '/api';
 	}
-	
+
 	// En el servidor (SSR)
-	// En Docker (tanto dev como prod): usar el nombre del servicio del contenedor
+	// Usar variable de entorno normal (disponible en runtime)
+	if (typeof process !== 'undefined' && process.env?.API_BASE_URL) {
+		return process.env.API_BASE_URL;
+	}
+
+	// Fallback para desarrollo local con Docker
 	return 'http://giga-django:8000/api';
 };
 
@@ -66,22 +71,22 @@ export class API {
 		const response = await api.get(url);
 		return response.data;
 	}
-	
+
 	static async post(url, data) {
 		const response = await api.post(url, data);
 		return response.data;
 	}
-	
+
 	static async put(url, data) {
 		const response = await api.put(url, data);
 		return response.data;
 	}
-	
+
 	static async delete(url) {
 		const response = await api.delete(url);
 		return response.data;
 	}
-	
+
 	static async patch(url, data) {
 		const response = await api.patch(url, data);
 		return response.data;

@@ -41,38 +41,82 @@
 
 {#if show}
     <div class="modal-overlay" transition:fade>
-        <div class="modal-alert" transition:scale={{ duration: 200 }}>
-            <div class="alert-header alert-{type}">
-                <div class="alert-icon">
+        <div
+            class="modal-alert"
+            transition:scale={{ duration: 200, start: 0.9 }}
+        >
+            <div class="alert-content">
+                <div class="alert-icon {type}">
                     {#if type === "success"}
-                        ✅
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
                     {:else if type === "warning"}
-                        ⚠️
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path
+                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                            ></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
                     {:else if type === "error"}
-                        ❌
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>
                     {:else}
-                        ℹ️
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
                     {/if}
                 </div>
-                <h3>{title}</h3>
-                <button class="alert-close" on:click={close}>×</button>
-            </div>
 
-            <div class="alert-body">
-                <p>{message}</p>
-            </div>
+                <h3 class="alert-title">{title}</h3>
+                <p class="alert-message">{message}</p>
 
-            <div class="alert-footer">
-                {#if showCancelButton}
-                    <button class="btn-cancel" on:click={cancel}>
-                        {cancelText}
-                    </button>
-                {/if}
-                {#if showConfirmButton}
-                    <button class="btn-confirm btn-{type}" on:click={confirm}>
-                        {confirmText}
-                    </button>
-                {/if}
+                <div class="alert-actions">
+                    {#if showCancelButton}
+                        <button class="btn-cancel" on:click={cancel}>
+                            {cancelText}
+                        </button>
+                    {/if}
+                    {#if showConfirmButton}
+                        <button class="btn-confirm" on:click={confirm}>
+                            {confirmText}
+                        </button>
+                    {/if}
+                </div>
             </div>
         </div>
     </div>
@@ -85,140 +129,122 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.4);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 9999;
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(2px);
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
 
     .modal-alert {
         background: white;
-        border-radius: 16px;
-        width: 400px;
-        max-width: 90vw;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        border-radius: 20px;
+        max-width: min(400px, 90vw);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         overflow: hidden;
+        padding: 2rem;
+        text-align: center;
     }
 
-    .alert-header {
+    .alert-content {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        padding: 1.5rem;
-        color: white;
-        position: relative;
-    }
-
-    .alert-header.alert-success {
-        background: linear-gradient(135deg, #10b981, #059669);
-    }
-
-    .alert-header.alert-error {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-    }
-
-    .alert-header.alert-warning {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-    }
-
-    .alert-header.alert-info {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     }
 
     .alert-icon {
-        font-size: 1.5rem;
-        margin-right: 0.75rem;
-    }
-
-    .alert-header h3 {
-        margin: 0;
-        font-size: 1.25rem;
-        font-weight: 600;
-        flex: 1;
-    }
-
-    .alert-close {
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
-        color: white;
-        font-size: 1.5rem;
-        width: 32px;
-        height: 32px;
+        width: 80px;
+        height: 80px;
         border-radius: 50%;
-        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: background 0.2s;
+        margin-bottom: 1.5rem;
+        border: 4px solid transparent;
     }
 
-    .alert-close:hover {
-        background: rgba(255, 255, 255, 0.3);
+    .alert-icon svg {
+        width: 40px;
+        height: 40px;
     }
 
-    .alert-body {
-        padding: 1.5rem;
+    .alert-icon.success {
+        color: #10b981;
+        border-color: #d1fae5;
+        background-color: #ecfdf5;
     }
 
-    .alert-body p {
-        margin: 0;
-        color: #374151;
-        line-height: 1.5;
+    .alert-icon.warning {
+        color: #f59e0b;
+        border-color: #fde68a;
+        background-color: #fffbeb;
+    }
+
+    .alert-icon.error {
+        color: #ef4444;
+        border-color: #fee2e2;
+        background-color: #fef2f2;
+    }
+
+    .alert-icon.info {
+        color: #3b82f6;
+        border-color: #dbeafe;
+        background-color: #eff6ff;
+    }
+
+    .alert-title {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .alert-message {
+        margin: 0 0 2rem 0;
+        color: #6b7280;
         font-size: 1rem;
+        line-height: 1.5;
     }
 
-    .alert-footer {
+    .alert-actions {
         display: flex;
-        gap: 0.75rem;
-        justify-content: flex-end;
-        padding: 1rem 1.5rem 1.5rem;
+        gap: 1rem;
+        justify-content: center;
+        width: 100%;
     }
 
     .btn-confirm,
     .btn-cancel {
-        padding: 0.75rem 1.5rem;
+        padding: 0.75rem 2rem;
         border: none;
-        border-radius: 8px;
+        border-radius: 10px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s;
-        font-size: 0.875rem;
+        font-size: 1rem;
+        min-width: 120px;
     }
 
     .btn-confirm {
-        color: white;
-    }
-
-    .btn-confirm.btn-success {
-        background: #10b981;
-    }
-
-    .btn-confirm.btn-error {
-        background: #ef4444;
-    }
-
-    .btn-confirm.btn-warning {
-        background: #f59e0b;
-    }
-
-    .btn-confirm.btn-info {
         background: #3b82f6;
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
     }
 
     .btn-confirm:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        background: #2563eb;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.6);
     }
 
     .btn-cancel {
-        background: #6b7280;
-        color: white;
+        background: #f3f4f6;
+        color: #4b5563;
     }
 
     .btn-cancel:hover {
-        background: #4b5563;
-        transform: translateY(-1px);
+        background: #e5e7eb;
     }
 </style>

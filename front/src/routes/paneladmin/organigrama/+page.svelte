@@ -4,6 +4,10 @@
 	import OrganigramaViewer from "$lib/componentes/admin/organigrama/OrganigramaViewer.svelte";
 	import AdminNodeRenderer from "$lib/componentes/admin/organigrama/AdminNodeRenderer.svelte";
 	import ModalEliminar from "$lib/componentes/admin/parametros/ModalEliminar.svelte";
+	import { organigramaController } from "$lib/paneladmin/controllers";
+	import { API_BASE_URL } from "$lib/api";
+	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+	import { modalAlert, showAlert, showConfirm } from "$lib/stores/modalAlertStore.js";
 
 	let organigramaData = null;
 	let loading = true;
@@ -77,10 +81,13 @@
 			console.log("🔄 Cargando organigrama desde API...");
 
 			// CARGAR DESDE API DEL BACKEND
-			const response = await fetch("/api/personas/organigrama/", {
-				method: "GET",
-				credentials: "include",
-			});
+			const response = await fetch(
+				`${API_BASE_URL}/personas/organigrama/`,
+				{
+					method: "GET",
+					credentials: "include",
+				},
+			);
 
 			console.log("📡 Response status:", response.status);
 
@@ -160,11 +167,14 @@
 	async function sincronizarConAreas() {
 		if (!browser) return;
 
-		if (
-			!confirm(
-				"¿Sincronizar el organigrama con la estructura actual de áreas? Esto reemplazará el organigrama actual.",
-			)
-		) {
+		const confirmado = await showConfirm(
+			"¿Sincronizar el organigrama con la estructura actual de áreas? Esto reemplazará el organigrama actual.",
+			"Sincronizar con Áreas",
+			"Sincronizar",
+			"Cancelar"
+		);
+		
+		if (!confirmado) {
 			return;
 		}
 
@@ -172,7 +182,7 @@
 			loading = true;
 
 			const response = await fetch(
-				"/api/personas/organigrama/sincronizar/",
+				`${API_BASE_URL}/personas/organigrama/sincronizar/`,
 				{
 					method: "POST",
 					credentials: "include",
@@ -186,8 +196,10 @@
 				const result = await response.json();
 				if (result.success) {
 					console.log("✅ Organigrama sincronizado correctamente");
-					alert(
+					await showAlert(
 						"Organigrama sincronizado exitosamente con las áreas del sistema",
+						"success",
+						"Éxito"
 					);
 
 					// Recargar el organigrama
@@ -203,7 +215,7 @@
 			}
 		} catch (error) {
 			console.error("❌ Error sincronizando organigrama:", error);
-			alert(`Error al sincronizar: ${error.message}`);
+			await showAlert(`Error al sincronizar: ${error.message}`, "error", "Error");
 			return false;
 		} finally {
 			loading = false;
@@ -217,19 +229,22 @@
 			loading = true;
 
 			// GUARDAR EN LA API DEL BACKEND
-			const response = await fetch("/api/personas/organigrama/save/", {
-				method: "POST",
-				credentials: "include",
-				headers: {
-					"Content-Type": "application/json",
+			const response = await fetch(
+				`${API_BASE_URL}/personas/organigrama/save/`,
+				{
+					method: "POST",
+					credentials: "include",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						nombre: "Secretaría de Protección Civil",
+						estructura: organigramaData.organigrama,
+						version: organigramaData.version || "1.0.0",
+						creado_por: "Administrador",
+					}),
 				},
-				body: JSON.stringify({
-					nombre: "Secretaría de Protección Civil",
-					estructura: organigramaData.organigrama,
-					version: organigramaData.version || "1.0.0",
-					creado_por: "Administrador",
-				}),
-			});
+			);
 
 			if (response.ok) {
 				const result = await response.json();
@@ -253,7 +268,7 @@
 			}
 		} catch (error) {
 			console.error("❌ Error guardando organigrama:", error);
-			alert("Error al guardar los cambios: " + error.message);
+			await showAlert("Error al guardar los cambios: " + error.message, "error", "Error");
 			return false;
 		} finally {
 			loading = false;
@@ -387,7 +402,7 @@
 
 	async function handleSubmit() {
 		if (!formData.nombre.trim()) {
-			alert("El nombre es obligatorio");
+			await showAlert("El nombre es obligatorio", "warning", "Advertencia");
 			return;
 		}
 
@@ -499,13 +514,13 @@
 						const saved = await saveOrganigrama();
 						if (saved) {
 							organigramaData = { ...organigramaData }; // Trigger reactivity
-							alert("✅ Organigrama importado exitosamente");
+							await showAlert("✅ Organigrama importado exitosamente", "success", "Éxito");
 						}
 					} else {
-						alert("❌ Formato de archivo inválido");
+						await showAlert("❌ Formato de archivo inválido", "error", "Error");
 					}
 				} catch (error) {
-					alert("❌ Error al importar el archivo: " + error.message);
+					await showAlert("❌ Error al importar el archivo: " + error.message, "error", "Error");
 				}
 			};
 			reader.readAsText(file);
@@ -646,13 +661,6 @@
 			>
 				🔄 Sincronizar con Áreas
 			</button>
-			<button
-				class="btn"
-				style="background: #8b5cf6; color: white;"
-				on:click={loadOrganigrama}
-			>
-				🔄 Recargar
-			</button>
 			<input
 				type="file"
 				accept=".json"
@@ -720,6 +728,20 @@
 	type="nodo"
 	on:cerrar={closeDeleteModal}
 	on:confirmar={handleDelete}
+/>
+
+<!-- Modal de alertas -->
+<ModalAlert
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	showConfirmButton={$modalAlert.showConfirmButton}
+	confirmText={$modalAlert.confirmText}
+	showCancelButton={$modalAlert.showCancelButton}
+	cancelText={$modalAlert.cancelText}
+	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 
 <!-- Modal -->
@@ -984,6 +1006,7 @@
 	.loading {
 		text-align: center;
 		padding: 4rem 2rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.spinner {
@@ -1034,6 +1057,12 @@
 		overflow-y: auto;
 		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-content::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal-header {

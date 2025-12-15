@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'auditoria', 
     'guardias',
     'asistencia',
+    'incidencias',
 ]
 
 MIDDLEWARE = [
@@ -82,7 +83,7 @@ ROOT_URLCONF = 'giga.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -160,6 +161,39 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
+# ============================================================================
+# SESSION CONFIGURATION - Control de Sesiones
+# ============================================================================
+
+# Sesión NO PERSISTENTE: Se cierra al cerrar el navegador
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Tiempo de expiración: 1 hora de inactividad
+SESSION_COOKIE_AGE = 3600  # 1 hora en segundos
+
+# Renovar cookie en cada request para mantener sesión activa
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Nombre de la cookie de sesión
+SESSION_COOKIE_NAME = 'sessionid'
+
+# Cookie solo HTTPS en producción
+SESSION_COOKIE_SECURE = not DEBUG
+
+# Cookie no accesible desde JavaScript (seguridad)
+SESSION_COOKIE_HTTPONLY = True
+
+# SameSite=None para permitir cookies cross-domain en producción (Railway)
+# En desarrollo local (mismo dominio) usa 'Lax'
+SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
+
+# CSRF Trusted Origins - Necesario para POST requests cross-domain
+# Leer de variable de entorno con fallback a localhost
+csrf_origins_env = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:3000,http://127.0.0.1:3000')
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins_env.split(',')]
+
+
 # =============================================================================
 # CONFIGURACIÓN DATABASE FIRST - MODELOS NO GESTIONADOS
 # =============================================================================
@@ -199,15 +233,12 @@ REST_FRAMEWORK = {
 }
 
 # CORS Settings - Para conectar con el frontend Svelte
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Frontend Svelte
-    "http://127.0.0.1:3000",
-    "http://localhost",        # Nginx
-    "http://127.0.0.1",
-]
+# Leer de variable de entorno, con fallback a localhost para desarrollo
+cors_origins_env = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000,http://127.0.0.1:3000,http://localhost,http://127.0.0.1')
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',')]
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default='True', cast=bool)
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default='False', cast=bool)
 
 # Headers adicionales para CORS
 CORS_ALLOW_HEADERS = [
@@ -267,3 +298,20 @@ LOGGING = {
         },
     },
 }
+
+# ============================================================================
+# EMAIL CONFIGURATION - Resend API
+# ============================================================================
+
+# Backend de email usando Resend (Railway bloquea SMTP)
+EMAIL_BACKEND = 'incidencias.resend_backend.ResendEmailBackend'
+
+# API Key de Resend (usar variable de entorno)
+RESEND_API_KEY = config('RESEND_API_KEY', default='')
+
+# Remitente por defecto
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Sistema GIGA <noreply@example.com>')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# URL del frontend para links en emails
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')

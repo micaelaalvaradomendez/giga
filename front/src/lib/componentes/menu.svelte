@@ -6,21 +6,33 @@
         isAuthenticated as authStore,
         user as userStore,
     } from "../../lib/login/authService.js";
-    let isLoading = true;
-    let errorMessage = "";
+
     export let isActive = false;
 
+    // Local reactive aliases
     $: currentUser = $userStore;
     $: isAuth = $authStore;
     $: currentPath = $page.url.pathname;
 
-    // función para obtener el rol principal del usuario
-    function getUserRole(user) {
-        if (!user || !user.roles || user.roles.length === 0) return null;
-        return user.roles[0].nombre;
-    }
+    // Evitar ejecutar checkSession muchas veces: bandera de módulo
+    let _checkSessionCalled = false;
 
-    $: userRole = getUserRole(currentUser);
+    // Calcular role una sola vez por cambio de user (sin función auxiliar)
+    $: userRole = currentUser?.roles?.[0]?.nombre || null;
+
+    // Predefinir mapa de clases fuera de funciones para no recrearlo cada render
+    const ROLE_CLASSES = {
+        Administrador: "role-admin",
+        Director: "role-director",
+        Jefatura: "role-jefatura",
+        "Agente Avanzado": "role-agente-avanzado",
+        Agente: "role-agente",
+    };
+
+    // Computar la clase del badge solo cuando cambie userRole
+    $: roleBadgeClass = ROLE_CLASSES[userRole] || "role-default";
+
+    // Reactive flags para permisos
     $: isAdmin = userRole === "Administrador";
     $: isDirector = userRole === "Director" || isAdmin;
     $: isJefatura = userRole === "Jefatura" || isDirector;
@@ -34,59 +46,37 @@
         isActive = false;
     }
 
-    onMount(async () => {
-        try {
-            const sessionCheck = await AuthService.checkSession();
-            console.log("Session check result:", sessionCheck);
-
-            if (!sessionCheck.authenticated) {
-                console.log("Usuario NO autenticado");
-                const currentPath = window.location.pathname;
-                if (currentPath !== "/" && currentPath !== "/convenio") {
-                    goto("/");
-                    return;
+    onMount(() => {
+        // Solo intentar checkSession si no estamos autenticados y no se intentó antes
+        // Nota: +layout.svelte ya hace checkSession, así que esto es redundante en la mayoría de casos
+        if (!($authStore) && !_checkSessionCalled) {
+            _checkSessionCalled = true;
+            // lanzar sin bloquear render y sin logs pesados
+            AuthService.checkSession().catch((error) => {
+                // El servicio AuthService ya maneja y registra errores críticos
+                // Solo registramos errores de red que puedan requerir atención
+                if (error?.message && !error.message.includes('authenticated')) {
+                    console.error('Error en verificación de sesión del menú:', error.message);
                 }
-            } else {
-                console.log("Usuario autenticado:", sessionCheck.user);
-            }
-        } catch (error) {
-            console.error("Error verificando sesión:", error);
-            errorMessage = "Error verificando la sesión";
-        } finally {
-            isLoading = false;
+            });
         }
     });
-
-    function getRoleBadgeClass(user) {
-        const role = getUserRole(user);
-        const roleClasses = {
-            Administrador: "role-admin",
-            Director: "role-director",
-            Jefatura: "role-jefatura",
-            "Agente Avanzado": "role-agente-avanzado",
-            Agente: "role-agente",
-        };
-        return roleClasses[role] || "role-default";
-    }
 </script>
 
-{#if errorMessage}
-    <div class="error-message">{errorMessage}</div>
-{:else}
-    <div class={"sidebar-container " + (isActive ? "active" : "")}>
-        <button
-            class="sidebar-tab"
-            on:click={toggleMenu}
-            class:active={isActive}
-            type="button"
-            aria-label="Alternar menú"
-            aria-expanded={isActive}
-        >
-            <div class="sidebar-tab-icon">☰</div>
-        </button>
-        {#if currentUser}
-            <div class={getRoleBadgeClass(currentUser)}></div>
-        {/if}
+<div class={"sidebar-container " + (isActive ? "active" : "")}>
+    <button
+        class="sidebar-tab"
+        on:click={toggleMenu}
+        class:active={isActive}
+        type="button"
+        aria-label="Alternar menú"
+        aria-expanded={isActive}
+    >
+        <div class="sidebar-tab-icon">☰</div>
+    </button>
+    {#if currentUser}
+        <div class={roleBadgeClass}></div>
+    {/if}
         <div class="sidebar">
             <div class="sidebar-header">
                 <h2>Menú Principal</h2>
@@ -107,16 +97,14 @@
                         </div>
                     </a>
                     <a
-                        href="/notificar-incidencia"
+                        href="/incidencias"
                         class="menu-item menu-item-highlight"
-                        class:active={currentPath === "/notificar-incidencia"}
+                        class:active={currentPath.startsWith("/incidencias")}
                         on:click={closeMenu}
                     >
                         <span class="menu-item-icon">📧</span>
                         <div class="menu-item-text">
-                            <div class="menu-item-title">
-                                Notificar Incidencia
-                            </div>
+                            <div class="menu-item-title">Incidencias</div>
                         </div>
                     </a>
                     <a
@@ -146,7 +134,7 @@
                         </div>
                     </a>
 
-                    {#if isAgenteAvanzado}
+                    {#if isAuth}
                         <a
                             href="/licencias"
                             class="menu-item"
@@ -204,6 +192,42 @@
                             </div>
                         </a>
 
+                        {#if isJefatura || isAdmin}
+                            <a
+                                href="/paneladmin/licencias"
+                                class="menu-item"
+                                class:active={currentPath ===
+                                    "/paneladmin/licencias"}
+                                on:click={closeMenu}
+                            >
+                                <span class="menu-item-icon">🏷️</span>
+                                <div class="menu-item-text">
+                                    <div class="menu-item-title">
+                                        Gestión de Licencias
+                                    </div>
+                                </div>
+                            </a>
+                        {/if}
+
+                        <a
+                            href="/paneladmin/guardias/compensaciones"
+                            class="menu-item"
+                            class:active={currentPath.includes(
+                                "/compensaciones",
+                            )}
+                            on:click={closeMenu}
+                        >
+                            <span class="menu-item-icon">⏱️</span>
+                            <div class="menu-item-text">
+                                <div class="menu-item-title">
+                                    Compensaciones
+                                </div>
+                                <div class="menu-item-subtitle">
+                                    Horas extra
+                                </div>
+                            </div>
+                        </a>
+
                         {#if isDirector}
                             <a
                                 href="/paneladmin/parametros"
@@ -249,6 +273,7 @@
                                     <div class="menu-item-title">Roles</div>
                                 </div>
                             </a>
+
                             <a
                                 href="/paneladmin"
                                 class="menu-item menu-item-admin"
@@ -317,7 +342,6 @@
             {/if}
         </div>
     </div>
-{/if}
 
 {#if isActive}
     <div
@@ -340,10 +364,10 @@
     }
 
     .sidebar-tab {
-        position: absolute;
+        position: fixed;
         left: 0;
         top: 50%;
-        transform: translateY(600%);
+        transform: translateY(-50%);
         background: linear-gradient(
             135deg,
             rgba(64, 123, 255, 0.95) 0%,
@@ -373,7 +397,7 @@
     }
 
     .sidebar-tab.active {
-        left: 320px;
+        transform: translateX(min(280px, 80vw)) translateY(-50%);
         opacity: 1;
         visibility: visible;
         margin-left: -55px;
@@ -391,6 +415,12 @@
         border-right: none;
     }
 
+    @media (min-width: 768px) {
+        .sidebar-tab.active {
+            transform: translateX(min(320px, 80vw)) translateY(-50%);
+        }
+    }
+
     .sidebar-tab.active:hover {
         background: linear-gradient(
             135deg,
@@ -404,10 +434,10 @@
             inset -1px 0 2px rgba(0, 0, 0, 0.15);
     }
 
-    .sidebar-container.active .sidebar-tab:not(.active) {
+    .sidebar-container.active .sidebar-tab.hide-tab {
         opacity: 0;
-        visibility: hidden;
-        left: 0;
+        pointer-events: none;
+        transform: translateX(0) translateY(600%);
         transition: opacity 0.4s;
     }
 
@@ -445,8 +475,8 @@
 
     .sidebar {
         position: fixed;
-        left: -320px;
-        width: 320px;
+        width: min(280px, 80vw);
+        left: calc(-1 * min(280px, 80vw));
         background: linear-gradient(
             180deg,
             rgba(255, 255, 255, 0.75) 0%,
@@ -461,9 +491,19 @@
             inset 1px 0 2px rgba(64, 123, 255, 0.1);
         transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         overflow-y: auto;
+        overflow-x: hidden;
         top: 0;
+        bottom: 0;
         height: 100vh;
+        height: 100dvh;
         z-index: 9995;
+    }
+
+    @media (min-width: 768px) {
+        .sidebar {
+            width: min(320px, 80vw);
+            left: calc(-1 * min(320px, 80vw));
+        }
     }
 
     .sidebar-container.active .sidebar {
@@ -660,7 +700,7 @@
     .menu-item-highlight {
         background: linear-gradient(
             135deg,
-            rgba(255, 240, 240, 0.95) 0%,
+            rgba(255, 224, 224, 0.815) 0%,
             rgba(254, 234, 234, 0.85) 100%
         );
         border: 1px solid rgba(239, 68, 68, 0.2);
@@ -721,8 +761,8 @@
             rgba(157, 201, 236, 0.85) 100%
         );
         box-shadow:
-            0 6px 16pxrgba (13, 78, 219, 0.12),
-            0 0 12pxrgba (13, 78, 219, 0.12),
+            0 6px 16px rgba(13, 78, 219, 0.12),
+            0 0 12px rgba(13, 78, 219, 0.12),
             inset 0 1px 2px rgba(255, 255, 255, 0.95),
             inset 0 -1px 2px rgba(13, 78, 219, 0.12);
         border-color: rgba(13, 78, 219, 0.12);
@@ -827,28 +867,4 @@
         height: 0;
     }
 
-    .error-message {
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: linear-gradient(
-            135deg,
-            rgba(239, 68, 68, 0.98) 0%,
-            rgba(220, 38, 38, 0.95) 100%
-        );
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        color: white;
-        padding: 16px 32px;
-        border-radius: 16px;
-        font-weight: 600;
-        box-shadow:
-            0 8px 24px rgba(239, 68, 68, 0.3),
-            0 0 16px rgba(239, 68, 68, 0.2),
-            inset 0 1px 2px rgba(255, 255, 255, 0.3),
-            inset 0 -1px 2px rgba(0, 0, 0, 0.2);
-        z-index: 10001;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
 </style>

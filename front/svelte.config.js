@@ -9,7 +9,18 @@ const config = {
 			out: 'build',
 			precompress: false,
 			envPrefix: ''
-		})
+		}),
+		// Proxy configuration for API requests
+		alias: {
+			$lib: 'src/lib'
+		}
+	},
+	vitePlugin: {
+		experimental: {
+			inspector: {
+				holdMode: true
+			}
+		}
 	}
 };
 

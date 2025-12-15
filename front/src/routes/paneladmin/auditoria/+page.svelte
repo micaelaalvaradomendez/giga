@@ -92,22 +92,6 @@
 				>
 					📈 {mostrarEstadisticas ? "Ocultar" : "Ver"} Estadísticas
 				</button>
-
-				<button
-					class="btn-refresh"
-					on:click={async () => {
-						cargandoDatos = true;
-						await auditoriaController.init();
-						cargandoDatos = false;
-					}}
-					disabled={$loading || cargandoDatos}
-				>
-					{#if $loading || cargandoDatos}
-						🔄 Actualizando...
-					{:else}
-						🔄 Actualizar Datos
-					{/if}
-				</button>
 			</div>
 		</div>
 
@@ -267,6 +251,7 @@
 		margin: 0 0 8px 0;
 		background: linear-gradient(45deg, #ffffff, #e2e8f0);
 		-webkit-background-clip: text;
+		background-clip: text;
 		-webkit-text-fill-color: transparent;
 		text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
@@ -282,8 +267,7 @@
 		gap: 12px;
 	}
 
-	.btn-estadisticas,
-	.btn-refresh {
+	.btn-estadisticas {
 		padding: 12px 20px;
 		border: none;
 		border-radius: 8px;
@@ -291,37 +275,6 @@
 		cursor: pointer;
 		transition: all 0.3s ease;
 		font-size: 0.9rem;
-	}
-
-	.btn-estadisticas {
-		background: rgba(255, 255, 255, 0.15);
-		color: white;
-		backdrop-filter: blur(10px);
-		border: 1px solid rgba(255, 255, 255, 0.2);
-	}
-
-	.btn-estadisticas:hover,
-	.btn-estadisticas.activo {
-		background: rgba(255, 255, 255, 0.25);
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	}
-
-	.btn-refresh {
-		background: rgba(255, 255, 255, 0.9);
-		color: #374151;
-	}
-
-	.btn-refresh:hover {
-		background: white;
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	}
-
-	.btn-refresh:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-		transform: none;
 	}
 
 	.stats-rapidas {
@@ -512,8 +465,7 @@
 			font-size: 1.7rem;
 		}
 
-		.btn-estadisticas,
-		.btn-refresh {
+		.btn-estadisticas {
 			padding: 10px 16px;
 			font-size: 0.85rem;
 		}

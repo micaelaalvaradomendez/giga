@@ -11,52 +11,81 @@
 	export let show = false;
 	export let tiposLicencia = [];
 	export let areas = [];
+	export let userRol = null;
+	export let userArea = null;
 
-	// Usuario actual para validaciones
 	let userInfo = null;
 
-	// Events
 	import { createEventDispatcher } from "svelte";
 	const dispatch = createEventDispatcher();
 
-	// Form data
 	let formLicencia = {
-		id_agente: null,
-		id_tipo_licencia: null,
+		id_agente: "",
+		id_tipo_licencia: "",
 		fecha_desde: "",
 		fecha_hasta: "",
 		observaciones: "",
 		justificacion: "",
 	};
 
-	let areaSeleccionada = null;
+	let areaSeleccionada = "";
 	let agentesDelArea = [];
 	let cargandoAgentes = false;
 	let enviando = false;
+	let areasDisponibles = [];
 
-	// Modal de confirmación / alerta
 	let mostrandoConfirmacion = false;
 	let tituloConfirmacion = "";
 	let mensajeConfirmacion = "";
 	let tipoConfirmacion = "success";
 	let resolverConfirmacion = null;
 
-	// Cargar info del usuario al abrir modal
+	// filtra áreas según el rol del usuario
+	$: {
+		if (userRol) {
+			// Si es administrador, puede ver todas las áreas
+			if (userRol.toLowerCase() === "administrador") {
+				areasDisponibles = areas;
+			} else if (
+				userRol.toLowerCase() === "director" ||
+				userRol.toLowerCase() === "jefatura"
+			) {
+				// Director y Jefatura solo ven su área
+				areasDisponibles = areas.filter(
+					(area) => area.id_area === userArea,
+				);
+				console.log(
+					`🏢 Filtrando áreas para ${userRol}: área ${userArea} encontrada:`,
+					areasDisponibles.length > 0,
+				);
+			} else {
+				areasDisponibles = [];
+			}
+			console.log(
+				`📍 Áreas disponibles para ${userRol}:`,
+				areasDisponibles.length,
+				"de",
+				areas.length,
+			);
+		} else {
+			areasDisponibles = areas;
+		}
+	}
+
 	$: if (show && !userInfo) {
 		cargarUsuarioActual();
 	}
 
-	// Limpiar form cuando se cierra el modal
 	$: if (!show) {
 		formLicencia = {
-			id_agente: null,
-			id_tipo_licencia: null,
+			id_agente: "",
+			id_tipo_licencia: "",
 			fecha_desde: "",
 			fecha_hasta: "",
 			observaciones: "",
 			justificacion: "",
 		};
-		areaSeleccionada = null;
+		areaSeleccionada = "";
 		agentesDelArea = [];
 		cargandoAgentes = false;
 		enviando = false;
@@ -82,7 +111,12 @@
 
 	async function cargarAgentesPorArea(areaId) {
 		console.log("🔄 Cargando agentes para área:", areaId);
-		console.log("🔍 Áreas disponibles:", areas);
+		console.log(
+			"🔍 Rol del usuario:",
+			userRol,
+			"Área del usuario:",
+			userArea,
+		);
 		if (!areaId) {
 			agentesDelArea = [];
 			return;
@@ -94,18 +128,15 @@
 			const response = await personasService.getAgentesByArea(areaId);
 			console.log("📋 Respuesta completa agentes por área:", response);
 
-			// Verificar la estructura de respuesta
 			let agentesCompletos = [];
 			if (response?.data) {
 				if (response.data.results) {
-					// Estructura paginada estándar de Django
 					agentesCompletos = response.data.results || [];
 					console.log(
 						"✅ Agentes cargados (formato paginado):",
 						agentesCompletos.length,
 					);
 				} else if (response.data.success && response.data.data) {
-					// Estructura con wrapper de success
 					agentesCompletos = response.data.data || [];
 					console.log(
 						"✅ Agentes cargados (formato success):",
@@ -123,20 +154,15 @@
 				agentesCompletos = [];
 			}
 
-			// Filtrar agentes según permisos del usuario
-			if (userInfo) {
-				const rolUsuario =
-					userInfo.roles?.[0]?.nombre ||
-					userInfo.rol_nombre ||
-					"Agente";
-				console.log("🔍 Filtrando agentes para rol:", rolUsuario);
+			if (userRol) {
+				console.log("🔍 Filtrando agentes para rol:", userRol);
 
 				agentesDelArea = agentesCompletos.filter((agente) => {
 					const puedeAsignar = puedeAsignarAAgente(
 						agente.rol?.nombre || agente.rol_nombre || "Agente",
-						rolUsuario,
+						userRol,
 						agente.id_area || areaId,
-						userInfo.id_area,
+						userArea,
 					);
 					console.log(
 						`🔒 ¿Puede asignar a ${agente.nombre} (${agente.rol?.nombre || agente.rol_nombre})?`,
@@ -159,7 +185,6 @@
 		}
 	}
 
-	// Reactivo: cuando cambia el área seleccionada, cargar agentes
 	$: if (areaSeleccionada && show && areas.length > 0) {
 		console.log(
 			"🔄 Reactivo: área seleccionada cambió a:",
@@ -177,18 +202,15 @@
 			const resultado = await asignarLicencia(formLicencia);
 
 			if (resultado.success) {
-				mostrarConfirmacion("✅ Licencia asignada correctamente");
 				cerrarModal();
 				dispatch("assigned", resultado.data);
 			} else {
-				// Usar el mensaje específico del backend si está disponible
 				const errorMessage =
 					resultado.error || "Error al asignar la licencia";
 				throw new Error(errorMessage);
 			}
 		} catch (err) {
 			console.error("❌ Error asignando licencia:", err);
-			// Mostrar el mensaje específico del backend si está disponible
 			const errorMessage =
 				err?.response?.data?.message ||
 				err.message ||
@@ -257,8 +279,8 @@
 								cargarAgentesPorArea(e.target.value)}
 							required
 						>
-							<option value="">Seleccione un área...</option>
-							{#each areas as area}
+							<option value="">Seleccione área</option>
+							{#each areasDisponibles as area}
 								<option value={area.id_area}
 									>{area.nombre}</option
 								>
@@ -306,7 +328,8 @@
 							bind:value={formLicencia.id_tipo_licencia}
 							required
 						>
-							<option value="">Seleccione un tipo...</option>
+							<option value="">Seleccione tipo de licencia</option
+							>
 							{#each tiposLicencia as tipo}
 								<option value={tipo.id_tipo_licencia}
 									>{tipo.codigo} - {tipo.descripcion}</option
@@ -438,6 +461,12 @@
 		overflow-y: auto;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-contenido::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal-header {

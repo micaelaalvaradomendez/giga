@@ -1,145 +1,34 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GIGA - Defensa del Software (UNTDF)</title>
-    <script src="script.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;600;700;800&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="styles.css">
+    <title>Presentación GIGA - UNTDF</title>
+    <link rel="stylesheet" href="styles.css?v=4">
+    <script src="script.js?v=4" defer></script>
 </head>
+
 <body>
 
-    <nav>
-        <ul>
-            <li><a href="#intro" class="active" data-index="0">Intro</a></li>
-            <li><a href="#requerimientos" data-index="1">Requerimientos</a></li>
-            <li><a href="#metodologia" data-index="2">Metodología</a></li>
-            <li><a href="#diseno" data-index="3">Diseño</a></li>
-            <li><a href="#desarrollo" data-index="4">Desarrollo</a></li>
-            <li><a href="#conclusion" data-index="5">Conclusión</a></li>
-        </ul>
-    </nav>
+    <canvas id="particleCanvas"></canvas>
 
-    <main class="timeline-container">
-        
-        <section id="intro" class="section-item">
-            <div class="section-content">
-                <header class="glass-card card-wrapper" style="width: 60%; text-align: center;">
-                    <h1>GIGA</h1>
-                    <h2>Gestión Integral de Guardias y Asistencia</h2>
-                    <p style="font-size: 1.2em;">Proyecto Final | Laboratorio de Software (IF055) - UNTDF</p>
-                    <p style="margin-top: 30px; font-weight: 300;">Un sistema web moderno y centralizado para transformar el control de personal y reducir errores administrativos.</p>
-                    <button class="btn-action" onclick="openModal('intro')">
-                        Ver Fundamentación
-                    </button>
-                </header>
-            </div>
-        </section>
+    <div class="universe" id="universe">
+        <div class="orbit-ring" id="orbitRing"></div>
 
-        <section id="requerimientos" class="section-item">
-            <div class="section-content">
-                <div class="glass-card card-wrapper">
-                    <h2>1. Especificación de Requerimientos</h2>
-                    <p class="subtitle">Definición del Alcance y Expectativas (Unidad 2)</p>
-                    <ul>
-                        [cite_start]<li>**Objetivo Central:** Reemplazar el procedimiento manual por una plataforma web segura y escalable[cite: 573].</li>
-                        [cite_start]<li>**Alcance:** Abarca todo el personal operativo y administrativo de la Secretaría de Protección Civil[cite: 574].</li>
-                        [cite_start]<li>**Requisito Clave:** Módulo informativo sobre el Convenio Colectivo con IA de corpus cerrado (RF09)[cite: 683, 685, 686].</li>
-                        [cite_start]<li>**Restricción de Integridad:** Trazabilidad obligatoria (RF14) de toda modificación de registros de asistencia y guardias[cite: 704].</li>
-                    </ul>
-                    <button class="btn-action" onclick="openModal('req')">
-                        Ver RF y RNF Detallados
-                    </button>
-                </div>
-                <div class="timeline-indicator"></div>
-            </div>
-        </section>
-
-        <section id="metodologia" class="section-item">
-            <div class="section-content">
-                <div class="glass-card card-wrapper">
-                    <h2>2. Metodología y Herramientas</h2>
-                    <p class="subtitle">Estrategia de Desarrollo y Stack Tecnológico (Unidad 3)</p>
-                    <ul>
-                        [cite_start]<li>**Enfoque:** Combinación entre el modelo en cascada y el enfoque ágil[cite: 781, 787].</li>
-                        [cite_start]<li>**Adaptación:** Sprints semanales, concentrando la mayor carga de trabajo en fines de semana[cite: 782, 788].</li>
-                        [cite_start]<li>**Stack Elegido:** **Django** (Python) y **SQLite**[cite: 797, 798, 800].</li>
-                        [cite_start]<li>**Gestión:** Uso de **Trello** para planificación, asignación y seguimiento de tareas[cite: 784, 801, 802].</li>
-                    </ul>
-                    <button class="btn-action" onclick="openModal('met')">
-                        Analizar Adecuación y Herramientas
-                    </button>
-                </div>
-                <div class="timeline-indicator"></div>
-            </div>
-        </section>
-
-        <section id="diseno" class="section-item">
-            <div class="section-content">
-                <div class="glass-card card-wrapper">
-                    <h2>3. Análisis y Diseño</h2>
-                    <p class="subtitle">Modelado Estructural y Lógico (Unidad 4)</p>
-                    <ul>
-                        [cite_start]<li>**Actores Clave:** 5 perfiles jerárquicos: Agente, Agente Avanzado, Jefatura, Director, Administrador[cite: 809].</li>
-                        [cite_start]<li>**Modelado:** Incluye Diagrama de Casos de Uso, Entidad-Relación y BPMN[cite: 554, 555].</li>
-                        [cite_start]<li>**Decisión Lógica:** Modelado del flujo de cálculo del **Plus 20% / 40%** (RF07)[cite: 673, 674, 857].</li>
-                        <li>**Ver CU:** [Insertar GIF/Video del CU11: Consultar Convenio con IA]</li>
-                    </ul>
-                    <button class="btn-action" onclick="openModal('dis')">
-                        Ver Diagramas y Pantallas
-                    </button>
-                </div>
-                <div class="timeline-indicator"></div>
-            </div>
-        </section>
-
-        <section id="desarrollo" class="section-item">
-            <div class="section-content">
-                <div class="glass-card card-wrapper">
-                    <h2>4. Desarrollo e Implementación</h2>
-                    <p class="subtitle">Avance Funcional y Estado (Unidad 5 y 6)</p>
-                    <ul>
-                        [cite_start]<li>**Regularidad:** Obtenida con el **40% de la funcionalidad** completada y el documento de avance[cite: 40].</li>
-                        [cite_start]<li>**Aprobación Final:** Se requiere al menos el **80% de la funcionalidad** para la calificación final[cite: 42, 61].</li>
-                        [cite_start]<li>**Herramientas:** Uso obligatorio de herramientas colaborativas y de versionado como **GIT**[cite: 86, 344].</li>
-                        [cite_start]<li>**Validación:** Cada avance importante del sistema debe ser validado a nivel de usuario y requerimientos[cite: 88, 89, 346].</li>
-                    </ul>
-                    <button class="btn-action" onclick="openModal('dev')">
-                        Ver Evolución y Sprints
-                    </button>
-                </div>
-                <div class="timeline-indicator"></div>
-            </div>
-        </section>
-        
-        <section id="conclusion" class="section-item">
-            <div class="section-content">
-                <div class="glass-card card-wrapper">
-                    <h2>5. Cierre y Proyección de GIGA</h2>
-                    <p class="subtitle">Defensa Oral y Proyección del Software</p>
-                    [cite_start]<p style="margin-top: 30px; font-weight: 300;">La calificación final será individual en función del esfuerzo y capacidades desarrolladas por cada alumno, y deberá justificar las decisiones técnicas tomadas[cite: 35, 36].</p>
-                    <button class="btn-action" onclick="openModal('conc')">
-                        Acceder a la Documentación
-                    </button>
-                </div>
-                <div class="timeline-indicator"></div>
-            </div>
-        </section>
-
-    </main>
-
-    <div id="intro-overlay" class="modal-overlay">
-        <div id="intro-modal" class="modal-content-window">
-            <span class="modal-close" onclick="closeModal('intro')">✕</span>
-            <h2 style="color: var(--primary-color);">Fundamentación y Equipo</h2>
-            [cite_start]<p>La carga y control de horas guardias del personal de Protección Civil se realiza de manera manual, presentando errores humanos y cálculos incorrectos[cite: 557, 559, 560]. [cite_start]Además, la herramienta interna en Excel tiene limitaciones de sincronización y compatibilidad[cite: 561, 564, 565].</p>
-            <h3>Equipo Docente</h3>
-            [cite_start]<p>Federico Eduardo Gonzalez (Profesor Adjunto) y Lucila Lourdes Chiarvetto Peralta (Asistente)[cite: 20].</p>
-            <h3>Integrantes del Grupo GIGA</h3>
-            [cite_start]<p>Aguila Tayra, Alvarado Micaela, Criniti Teresa, Frers Pamela, García Cristian, Gomez Antonaz Leandro[cite: 547, 548, 549, 550, 551].</p>
+        <div class="center-object" id="centerObject">
+            <div class="sphere-title">GIGA</div>
+            <div class="sphere-subtitle">CORE SYSTEM</div>
         </div>
     </div>
+
+    <div class="overlay-container" id="overlayContainer"></div>
+
+    <div class="footer-nav">
+        Scroll o Arrastrar para Girar • Click en Tarjeta para Detalle • Click en GIGA para Contexto
+    </div>
+
+
 </body>
+
 </html>

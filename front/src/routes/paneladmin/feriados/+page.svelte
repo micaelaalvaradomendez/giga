@@ -5,6 +5,8 @@
     import CalendarioBase from "$lib/componentes/calendarioBase.svelte";
     import ModalGestionFeriado from "$lib/componentes/admin/parametros/ModalGestionFeriado.svelte";
     import { feriadosController } from "$lib/paneladmin/controllers";
+    import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+    import { modalAlert } from "$lib/stores/modalAlertStore.js";
 
     // Stores del controlador
     const { feriados, loading, error, success, modalGestionFeriado } =
@@ -106,6 +108,19 @@
     on:close={closeModal}
 />
 
+<ModalAlert
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	showConfirmButton={$modalAlert.showConfirmButton}
+	confirmText={$modalAlert.confirmText}
+	showCancelButton={$modalAlert.showCancelButton}
+	cancelText={$modalAlert.cancelText}
+	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
+/>
+
 <style>
     .admin-page-container {
         max-width: 1200px;
@@ -175,7 +190,7 @@
     .page-header h1 {
         margin: 10px;
         font-weight: 800;
-        font-size: 30px;
+        font-size: 18px;
         letter-spacing: 0.2px;
         font-family:
             "Segoe UI",
@@ -189,7 +204,28 @@
         position: relative;
         padding-bottom: 12px;
         overflow: hidden;
-        display: inline-block;
+        display: block;
+        max-width: 100%;
+        word-wrap: break-word;
+    }
+
+    @media (min-width: 480px) {
+        .page-header h1 {
+            font-size: 22px;
+        }
+    }
+
+    @media (min-width: 640px) {
+        .page-header h1 {
+            font-size: 26px;
+            display: inline-block;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .page-header h1 {
+            font-size: 30px;
+        }
     }
 
     .page-header h1::after {

@@ -44,7 +44,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 def is_authenticated(request):
     """Verificar si el usuario está autenticado usando sesiones Django."""
-    return hasattr(request, 'session') and 'agente_id' in request.session
+    return hasattr(request, 'session') and 'user_id' in request.session
 
 
 def get_authenticated_agente(request):
@@ -53,7 +53,7 @@ def get_authenticated_agente(request):
         return None
     
     try:
-        agente_id = request.session.get('agente_id')
+        agente_id = request.session.get('user_id')
         return Agente.objects.get(id_agente=agente_id, activo=True)
     except Agente.DoesNotExist:
         return None
@@ -461,6 +461,85 @@ def get_areas(request):
         return Response({
             'success': False,
             'message': f'Error al obtener áreas: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticatedGIGA])
+def get_subareas(request, area_id):
+    """
+    Obtener todas las sub-áreas (recursivamente) de un área dada.
+    
+    Útil para Director que debe ver usuarios de su área + sub-áreas.
+    Retorna un array plano de todas las sub-áreas en cualquier nivel de profundidad.
+    
+    Ejemplo:
+        Área A (nivel 0)
+          └─ Área B (nivel 1)
+              └─ Área C (nivel 2)
+        
+        GET /areas/A/subareas/ → [B, C]
+    """
+    try:
+        # Verificar que el área existe
+        try:
+            area_padre = Area.objects.get(id_area=area_id, activo=True)
+        except Area.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': f'Área con ID {area_id} no encontrada o inactiva'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        def get_all_subareas_recursive(parent_id):
+            """
+            Función recursiva para obtener todas las sub-áreas
+            """
+            # Obtener sub-áreas directas
+            subareas_directas = list(Area.objects.filter(
+                id_area_padre=parent_id,
+                activo=True
+            ))
+            
+            # Inicializar con sub-áreas directas
+            todas_subareas = subareas_directas.copy()
+            
+            # Para cada sub-área, obtener sus sub-áreas recursivamente
+            for subarea in subareas_directas:
+                todas_subareas.extend(get_all_subareas_recursive(subarea.id_area))
+            
+            return todas_subareas
+        
+        # Obtener todas las sub-áreas recursivamente
+        subareas = get_all_subareas_recursive(area_id)
+        
+        # Serializar datos
+        subareas_data = []
+        for subarea in subareas:
+            subareas_data.append({
+                'id_area': subarea.id_area,
+                'nombre': subarea.nombre,
+                'descripcion': subarea.descripcion if subarea.descripcion else None,
+                'nivel': subarea.nivel,
+                'id_area_padre': subarea.id_area_padre.id_area if subarea.id_area_padre else None,
+                'activo': subarea.activo
+            })
+        
+        return Response({
+            'success': True,
+            'data': {
+                'area_padre': {
+                    'id_area': area_padre.id_area,
+                    'nombre': area_padre.nombre
+                },
+                'subareas': subareas_data,
+                'count': len(subareas_data)
+            }
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error al obtener sub-áreas: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -1930,6 +2009,7 @@ def get_organigrama(request):
     """
     Obtener la estructura del organigrama activa.
     """
+    print(f"DEBUG: Petición recibida en get_organigrama. Path: {request.path}")
     try:
         # Obtener el organigrama activo más reciente
         organigrama = Organigrama.objects.filter(activo=True).first()
@@ -2212,3 +2292,23 @@ def sincronizar_organigrama_manual(request):
             'success': False,
             'message': f'Error al sincronizar organigrama: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================================================
+# ENDPOINTS DE DEBUG TEMPORAL - REMOVER DESPUÉS DE RESOLVER 404
+# ============================================================================
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def debug_organigrama_test(request):
+    """
+    Endpoint de prueba SIN autenticación para verificar que el routing funciona.
+    TEMPORAL - Remover después de resolver el problema.
+    """
+    return Response({
+        'success': True,
+        'message': 'Endpoint de organigrama funcionando correctamente',
+        'path': request.path,
+        'method': request.method,
+        'authenticated': hasattr(request, 'session') and 'user_id' in request.session
+    })

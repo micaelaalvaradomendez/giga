@@ -2,6 +2,8 @@
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import { aprobacionesGuardiasController } from "$lib/paneladmin/controllers";
+  import ModalDetalleGuardia from "$lib/componentes/admin/guardias/ModalDetalleGuardia.svelte";
+  import ModalRechazoCronograma from "$lib/componentes/admin/guardias/ModalRechazoCronograma.svelte";
 
   // Obtener stores del controller
   const {
@@ -377,10 +379,12 @@
               >
                 📋 Ver Detalles
               </button>
-              {#if cronograma.estado === "publicada"}
+              {#if cronograma.estado === "publicada" && cronograma.puedeDespublicar}
                 <button
                   class="btn btn-warning"
                   on:click={() => handleDespublicar(cronograma)}
+                  disabled={$loading}
+                  title="Despublicar cronograma"
                 >
                   📤 Despublicar
                 </button>
@@ -403,168 +407,25 @@
 
 <!-- Modal de detalles -->
 {#if $mostrarModal && $cronogramaSeleccionado}
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <div class="modal-overlay" on:click={handleCerrarModal}>
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div class="modal-content" on:click|stopPropagation>
-      <div class="modal-header">
-        <h3>Detalles del Cronograma</h3>
-        <button class="close-button" on:click={handleCerrarModal}
-          >&times;</button
-        >
-      </div>
-
-      <div class="modal-body">
-        <div class="detalle-seccion">
-          <h4>Información General</h4>
-          <div class="info-row">
-            <span class="label">Área:</span>
-            <span class="value">{$cronogramaSeleccionado.area_nombre}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">Tipo:</span>
-            <span class="value">{$cronogramaSeleccionado.tipo}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">Estado:</span>
-            <span class="value">
-              <span class="badge badge-{$cronogramaSeleccionado.estado}">
-                {$cronogramaSeleccionado.estado}
-              </span>
-            </span>
-          </div>
-        </div>
-
-        <div class="detalle-seccion">
-          <h4>Guardias Asignadas ({$guardiasDelCronograma.length})</h4>
-          {#if $guardiasDelCronograma.length > 0}
-            <div class="guardias-tabla">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Agente</th>
-                    <th>Fecha</th>
-                    <th>Horario</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {#each $guardiasDelCronograma as guardia}
-                    <tr>
-                      <td>{guardia.agente_nombre}</td>
-                      <td
-                        >{aprobacionesGuardiasController.formatearFecha(
-                          guardia.fecha,
-                        )}</td
-                      >
-                      <td
-                        >{aprobacionesGuardiasController.formatearHora(
-                          guardia.hora_inicio,
-                        )} - {aprobacionesGuardiasController.formatearHora(
-                          guardia.hora_fin,
-                        )}</td
-                      >
-                      <td>
-                        <span class="badge-mini badge-{guardia.estado}"
-                          >{guardia.estado}</span
-                        >
-                      </td>
-                      <td>
-                        <button
-                          class="btn-icon btn-danger-icon"
-                          on:click={() => handleEliminarGuardia(guardia)}
-                          disabled={$loading}
-                          title="Eliminar guardia"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  {/each}
-                </tbody>
-              </table>
-            </div>
-          {:else}
-            <p class="text-muted">No hay guardias asignadas</p>
-          {/if}
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn btn-secondary" on:click={handleCerrarModal}
-            >Cerrar</button
-          >
-          {#if $cronogramaSeleccionado && ($cronogramaSeleccionado.estado === "pendiente" || $cronogramaSeleccionado.estado === "aprobada")}
-            <button
-              class="btn btn-danger"
-              on:click={() => handleEliminarCronograma($cronogramaSeleccionado)}
-              disabled={$loading}
-            >
-              🗑️ Eliminar Cronograma
-            </button>
-          {/if}
-        </div>
-      </div>
-    </div>
-  </div>
+  <ModalDetalleGuardia
+    cronograma={$cronogramaSeleccionado}
+    guardias={$guardiasDelCronograma}
+    loading={$loading}
+    on:close={handleCerrarModal}
+    on:eliminarGuardia={({ detail }) => handleEliminarGuardia(detail)}
+    on:eliminarCronograma={({ detail }) => handleEliminarCronograma(detail)}
+  />
 {/if}
 
 <!-- Modal de rechazo -->
 {#if $mostrarModalRechazo && $cronogramaARechazar}
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <div
-    class="modal-overlay"
-    on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}
-  >
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div class="modal-content modal-rechazo" on:click|stopPropagation>
-      <div class="modal-header">
-        <h3>Rechazar Cronograma</h3>
-        <button
-          class="close-button"
-          on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}
-          >&times;</button
-        >
-      </div>
-
-      <div class="modal-body">
-        <p>
-          <strong>Cronograma:</strong>
-          {$cronogramaARechazar.area_nombre} - {$cronogramaARechazar.tipo}
-        </p>
-
-        <div class="form-group">
-          <label for="motivo">Motivo del rechazo *</label>
-          <textarea
-            id="motivo"
-            bind:value={$motivoRechazo}
-            placeholder="Ingrese el motivo del rechazo..."
-            rows="4"
-          ></textarea>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button
-          class="btn btn-secondary"
-          on:click={() => aprobacionesGuardiasController.cerrarModalRechazo()}
-        >
-          Cancelar
-        </button>
-        <button
-          class="btn btn-danger"
-          on:click={handleConfirmarRechazo}
-          disabled={$loading || !$motivoRechazo.trim()}
-        >
-          Confirmar Rechazo
-        </button>
-      </div>
-    </div>
-  </div>
+  <ModalRechazoCronograma
+    cronograma={$cronogramaARechazar}
+    loading={$loading}
+    bind:motivoRechazo={$motivoRechazo}
+    on:close={() => aprobacionesGuardiasController.cerrarModalRechazo()}
+    on:confirmar={handleConfirmarRechazo}
+  />
 {/if}
 
 <style>
@@ -581,9 +442,29 @@
   }
 
   .head h1 {
-    font-size: 1.8rem;
+    font-size: 1.2rem;
     margin: 0 0 0.5rem 0;
     color: #1e40af;
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+
+  @media (min-width: 480px) {
+    .head h1 {
+      font-size: 1.4rem;
+    }
+  }
+
+  @media (min-width: 640px) {
+    .head h1 {
+      font-size: 1.6rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .head h1 {
+      font-size: 1.8rem;
+    }
   }
 
   .head p {
@@ -929,199 +810,6 @@
     border: 1px solid #fecaca;
   }
 
-  /* Modal */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-  }
-
-  .modal-content {
-    background: white;
-    border-radius: 16px;
-    max-width: 800px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    border: 2px solid #e5e7eb;
-  }
-
-  .modal-rechazo {
-    max-width: 500px;
-  }
-
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem;
-    border-bottom: 2px solid #e5e7eb;
-  }
-
-  .modal-header h3 {
-    margin: 0;
-    color: #1e40af;
-    font-size: 1.3rem;
-    font-weight: 700;
-  }
-
-  .close-button {
-    background: #f3f4f6;
-    border: none;
-    font-size: 1.5rem;
-    color: #64748b;
-    cursor: pointer;
-    padding: 0;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-  }
-
-  .close-button:hover {
-    background: #e5e7eb;
-    color: #374151;
-    transform: scale(1.05);
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-  }
-
-  .detalle-seccion {
-    margin-bottom: 2rem;
-    padding: 1.25rem;
-    background: #f9fafb;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-  }
-
-  .detalle-seccion:last-child {
-    margin-bottom: 0;
-  }
-
-  .detalle-seccion h4 {
-    margin: 0 0 1rem 0;
-    color: #374151;
-    font-size: 1rem;
-    font-weight: 700;
-    border-bottom: 2px solid #e5e7eb;
-    padding-bottom: 0.5rem;
-  }
-
-  .guardias-tabla {
-    overflow-x: auto;
-    background: white;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  thead {
-    background: linear-gradient(
-      135deg,
-      rgba(142, 182, 228, 0.15) 0%,
-      rgba(61, 151, 255, 0.1) 100%
-    );
-  }
-
-  th,
-  td {
-    padding: 0.75rem;
-    text-align: left;
-    font-size: 0.9rem;
-  }
-
-  th {
-    font-weight: 700;
-    color: #1e40af;
-    border-bottom: 2px solid #3b82f6;
-  }
-
-  td {
-    color: #111827;
-    border-bottom: 1px solid #f3f4f6;
-  }
-
-  tbody tr:hover {
-    background: #f9fafb;
-    transition: background 0.2s ease;
-  }
-
-  .badge-mini {
-    padding: 0.25rem 0.6rem;
-    border-radius: 10px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: capitalize;
-  }
-
-  .badge-mini.badge-planificada {
-    background: #dbeafe;
-    color: #1e40af;
-  }
-
-  .text-muted {
-    color: #9ca3af;
-    font-style: italic;
-    font-size: 0.95rem;
-  }
-
-  .form-group {
-    margin-top: 1rem;
-  }
-
-  .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #374151;
-    font-weight: 600;
-    font-size: 0.9rem;
-  }
-
-  textarea {
-    width: 93%;
-    padding: 1rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    font-family: inherit;
-    font-size: 0.9rem;
-    resize: vertical;
-    transition: all 0.2s ease;
-  }
-
-  textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    padding: 1rem 1.5rem;
-    border-top: 1px solid #e5e7eb;
-  }
-
   /* Estilos para filtros */
   .filtros-section {
     background: #f1f4f8;
@@ -1191,8 +879,13 @@
     border: 1px solid #d97706;
   }
 
-  .btn-warning:hover {
+  .btn-warning:hover:not(:disabled) {
     background: #d97706;
     border-color: #b45309;
+  }
+
+  .btn-warning:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 </style>

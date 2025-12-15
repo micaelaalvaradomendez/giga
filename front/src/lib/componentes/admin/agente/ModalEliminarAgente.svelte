@@ -1,5 +1,5 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from "svelte";
 
 	export let agente = null;
 	export let isOpen = false;
@@ -10,12 +10,12 @@
 	function cerrarModal() {
 		if (!isDeleting) {
 			isOpen = false;
-			dispatch('cerrar');
+			dispatch("cerrar");
 		}
 	}
 
 	function confirmarEliminacion() {
-		dispatch('confirmar', { agente });
+		dispatch("confirmar", { agente });
 	}
 </script>
 
@@ -32,20 +32,27 @@
 					<button class="btn-close" on:click={cerrarModal}>×</button>
 				{/if}
 			</div>
-			
+
 			<div class="modal-body">
 				<div class="warning-message">
 					<div class="warning-icon">⚠️</div>
 					<div class="warning-text">
-						<p><strong>¡Atención!</strong> Estás a punto de eliminar al agente:</p>
+						<p>
+							<strong>¡Atención!</strong> Estás a punto de eliminar
+							al agente:
+						</p>
 						<div class="agente-info">
-							<p><strong>{agente.nombre} {agente.apellido}</strong></p>
+							<p>
+								<strong
+									>{agente.nombre} {agente.apellido}</strong
+								>
+							</p>
 							<p>DNI: {agente.dni}</p>
-							<p>Legajo: {agente.legajo || 'N/A'}</p>
+							<p>Legajo: {agente.legajo || "N/A"}</p>
 							<p>Email: {agente.email}</p>
 						</div>
 						<p class="danger-text">
-							<strong>Esta acción no se puede deshacer.</strong> 
+							<strong>Esta acción no se puede deshacer.</strong>
 							Se eliminará toda la información del agente del sistema.
 						</p>
 					</div>
@@ -53,15 +60,15 @@
 			</div>
 
 			<div class="modal-footer">
-				<button 
-					class="btn btn-secondary" 
+				<button
+					class="btn btn-secondary"
 					on:click={cerrarModal}
 					disabled={isDeleting}
 				>
 					Cancelar
 				</button>
-				<button 
-					class="btn btn-danger" 
+				<button
+					class="btn btn-danger"
 					on:click={confirmarEliminacion}
 					disabled={isDeleting}
 				>
@@ -97,6 +104,12 @@
 		max-width: 500px;
 		width: 90%;
 		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-content::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal-header {

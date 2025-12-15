@@ -1,6 +1,6 @@
 <script>
     import { createEventDispatcher, onMount } from "svelte";
-    import AuthService from "../login/authService.js";
+    import AuthService from "../../login/authService.js";
 
     const dispatch = createEventDispatcher();
 
@@ -278,6 +278,12 @@
         overflow-y: auto;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         border: 3px solid #e74c3c;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .mandatory-modal::-webkit-scrollbar {
+        display: none;
     }
 
     .modal-header {
@@ -440,5 +446,28 @@
 
     .submit-button:disabled:hover {
         background: linear-gradient(135deg, #27ae60, #2ecc71);
+    }
+
+    @media (max-width: 600px) {
+        .mandatory-modal {
+            width: 95%;
+            margin: 1rem;
+        }
+
+        .modal-header {
+            padding: 1.5rem 1rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem 1rem;
+        }
+
+        .form-group input {
+            padding: 10px;
+        }
     }
 </style>

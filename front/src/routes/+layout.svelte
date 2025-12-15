@@ -2,6 +2,7 @@
 	import Navbar from "$lib/componentes/navbar.svelte";
 	import Footer from "$lib/componentes/footer.svelte";
 	import Menu from "$lib/componentes/menu.svelte";
+	import Breadcrumbs from "$lib/componentes/breadcrumbs.svelte";
 	import { onMount } from "svelte";
 	import { AuthService } from "$lib/login/authService.js";
 	let isMenuOpen = false;
@@ -26,7 +27,10 @@
 
 <div class="layout-container" class:menu-open={isMenuOpen}>
 	<main>
-		<slot />
+		<div class="main-content-wrapper">
+			<Breadcrumbs />
+			<slot />
+		</div>
 	</main>
 </div>
 
@@ -39,31 +43,52 @@
 		box-sizing: border-box;
 	}
 
-	:global(html, body) {
+	:global(html) {
 		height: 100%;
 		margin: 0;
 		padding: 0;
+		overflow-x: hidden;
+		color-scheme: light only;
+		-webkit-color-scheme: light;
 	}
 
 	:global(body) {
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		overflow-x: hidden;
+		width: 100%;
+		background-color: #ffffff !important;
+		color: #000000 !important;
+		color-scheme: light only;
+		-webkit-color-scheme: light;
 	}
 
 	.layout-container {
 		display: flex;
+		flex-direction: column;
 		flex: 1;
-		transition: margin-left 0.4s ease;
-		margin-left: 0;
-	}
-
-	.layout-container.menu-open {
-		margin-left: 320px;
+		width: 100%;
+		min-height: 0;
+		position: relative;
 	}
 
 	main {
 		flex: 1;
-		padding: 2rem;
+		padding: 0;
+		width: 100%;
+		max-width: 100%;
+		overflow-x: hidden;
+		box-sizing: border-box;
+	}
+
+	.main-content-wrapper {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		height: 100%;
 	}
 </style>

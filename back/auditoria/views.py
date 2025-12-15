@@ -118,3 +118,85 @@ def registros_auditoria(request):
             'count': 0,
             'results': []
         }, status=500)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])  # Permitir sin autenticación para registrar intentos fallidos
+def log_unauthorized_access(request):
+    """
+    Registra intentos de acceso no autorizados en auditoría
+    """
+    try:
+        from django.utils import timezone
+        
+        # Obtener datos del request
+        nombre_tabla = request.data.get('nombre_tabla', 'sistema_acceso')
+        accion = request.data.get('accion', 'ACCESO_DENEGADO')
+        pk_afectada = request.data.get('pk_afectada', 0)
+        valor_nuevo = request.data.get('valor_nuevo', {})
+        
+        # Crear registro de auditoría
+        auditoria = Auditoria.objects.create(
+            nombre_tabla=nombre_tabla,
+            accion=accion,
+            pk_afectada=pk_afectada,
+            valor_nuevo=valor_nuevo,
+            id_agente_id=pk_afectada if pk_afectada > 0 else None,
+            creado_en=timezone.now()
+        )
+        
+        return Response({
+            'success': True,
+            'message': 'Evento de acceso no autorizado registrado',
+            'audit_id': auditoria.id_auditoria
+        }, status=201)
+        
+    except Exception as e:
+        # No fallar si hay error en auditoría, solo loguear
+        print(f"Error al registrar auditoría: {str(e)}")
+        return Response({
+            'success': False,
+            'message': f'Error al registrar auditoría: {str(e)}'
+        }, status=500)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticatedGIGA])  # Requiere autenticación para accesos exitosos
+def log_successful_access(request):
+    """
+    Registra accesos exitosos al sistema en auditoría
+    """
+    try:
+        from django.utils import timezone
+        
+        # Obtener datos del request
+        nombre_tabla = request.data.get('nombre_tabla', 'sistema_acceso')
+        accion = request.data.get('accion', 'ACCESO_EXITOSO')
+        pk_afectada = request.data.get('pk_afectada')
+        valor_nuevo = request.data.get('valor_nuevo', {})
+        
+        # Crear registro de auditoría
+        auditoria = Auditoria.objects.create(
+            nombre_tabla=nombre_tabla,
+            accion=accion,
+            pk_afectada=pk_afectada,
+            valor_nuevo=valor_nuevo,
+            id_agente_id=pk_afectada if pk_afectada else None,
+            creado_en=timezone.now()
+        )
+        
+        return Response({
+            'success': True,
+            'message': 'Acceso exitoso registrado',
+            'audit_id': auditoria.id_auditoria
+        }, status=201)
+        
+    except Exception as e:
+        # No fallar si hay error en auditoría, solo loguear
+        print(f"Error al registrar auditoría: {str(e)}")
+        return Response({
+            'success': False,
+            'message': f'Error al registrar auditoría: {str(e)}'
+        }, status=500)

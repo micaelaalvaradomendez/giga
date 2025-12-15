@@ -147,6 +147,22 @@ class FeriadoViewSet(viewsets.ModelViewSet):
         repetir_anualmente = request.data.get('repetir_anualmente', False)
 
         if not repetir_anualmente:
+            # Verificar si ya existe
+            nombre = request.data.get('nombre')
+            fecha_inicio = request.data.get('fecha_inicio')
+            fecha_fin = request.data.get('fecha_fin', fecha_inicio)
+            
+            if Feriado.objects.filter(
+                nombre=nombre, 
+                fecha_inicio=fecha_inicio, 
+                fecha_fin=fecha_fin,
+                activo=True
+            ).exists():
+                return Response(
+                    {'error': f'Ya existe el feriado "{nombre}" en esas fechas'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
             # Comportamiento normal
             return super().create(request, *args, **kwargs)
 

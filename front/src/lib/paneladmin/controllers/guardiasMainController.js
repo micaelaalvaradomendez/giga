@@ -13,12 +13,12 @@ class GuardiasMainController {
 		this.guardias = writable([]);
 		this.guardiasParaCalendario = writable([]);
 		this.feriados = writable([]);
-		
+
 		// Modal de detalle de día
 		this.fechaSeleccionada = writable(null);
 		this.guardiasDeFecha = writable([]);
 		this.mostrarModal = writable(false);
-		
+
 		// Derived store para estadísticas
 		this.estadisticas = derived(
 			this.guardias,
@@ -56,15 +56,15 @@ class GuardiasMainController {
 		try {
 			this.loading.set(true);
 			this.error.set('');
-			
+
 			const response = await guardiasService.getResumenGuardias('');
 			const guardiasData = response.data?.guardias || [];
-			
+
 			this.guardias.set(guardiasData);
-			
+
 			// Agrupar guardias para el calendario
 			this.agruparGuardias(guardiasData);
-			
+
 			console.log('✅ Guardias cargadas:', guardiasData.length);
 		} catch (e) {
 			this.error.set('Error al cargar las guardias');
@@ -101,14 +101,14 @@ class GuardiasMainController {
 	calcularFechasGuardia(fechaInicio, horaInicio, horaFin) {
 		const fechas = [];
 		const fechaInicioDate = new Date(fechaInicio + 'T00:00:00');
-		
+
 		// Extraer horas (formato HH:MM:SS o HH:MM)
 		const horaInicioNum = parseInt(horaInicio.split(':')[0]);
 		const horaFinNum = parseInt(horaFin.split(':')[0]);
-		
+
 		// Agregar fecha de inicio
 		fechas.push(fechaInicio);
-		
+
 		// Si la hora de fin es menor o igual que la hora de inicio, cruza medianoche
 		if (horaFinNum <= horaInicioNum) {
 			// Agregar día siguiente
@@ -117,7 +117,7 @@ class GuardiasMainController {
 			const fechaSiguienteStr = fechaSiguiente.toISOString().split('T')[0];
 			fechas.push(fechaSiguienteStr);
 		}
-		
+
 		return fechas;
 	}
 
@@ -130,7 +130,7 @@ class GuardiasMainController {
 	agruparGuardias(guardiasData) {
 		// Estructura: { fecha: { 'area-hora': [guardias] } }
 		const agrupadas = {};
-		
+
 		guardiasData.forEach(guardia => {
 			// Calcular todas las fechas que abarca esta guardia
 			const fechasGuardia = this.calcularFechasGuardia(
@@ -138,16 +138,16 @@ class GuardiasMainController {
 				guardia.hora_inicio,
 				guardia.hora_fin
 			);
-			
+
 			// Agregar la guardia a todas las fechas que abarca
 			fechasGuardia.forEach(fecha => {
 				if (!agrupadas[fecha]) {
 					agrupadas[fecha] = {};
 				}
-				
+
 				// Agrupar por área y hora para separar guardias de diferentes áreas/horarios
 				const clave = `${guardia.area_nombre || 'sin-area'}-${guardia.hora_inicio}-${guardia.hora_fin}`;
-				
+
 				if (!agrupadas[fecha][clave]) {
 					agrupadas[fecha][clave] = {
 						area_nombre: guardia.area_nombre || 'Sin área',
@@ -157,7 +157,7 @@ class GuardiasMainController {
 						agentes: []
 					};
 				}
-				
+
 				// Solo agregar el agente si no está ya en el grupo (evitar duplicados)
 				const yaExiste = agrupadas[fecha][clave].agentes.some(
 					a => a.id_guardia === guardia.id_guardia
@@ -167,7 +167,7 @@ class GuardiasMainController {
 				}
 			});
 		});
-		
+
 		// Convertir a formato para el calendario
 		const guardiasParaCalendarioArray = [];
 		Object.keys(agrupadas).forEach(fecha => {
@@ -185,7 +185,7 @@ class GuardiasMainController {
 				});
 			});
 		});
-		
+
 		this.guardiasParaCalendario.set(guardiasParaCalendarioArray);
 		console.log('✅ Guardias agrupadas para calendario:', guardiasParaCalendarioArray.length);
 	}
@@ -199,19 +199,19 @@ class GuardiasMainController {
 		if (guardiasDelDia && guardiasDelDia.length > 0) {
 			const fechaStr = date.toISOString().split('T')[0];
 			this.fechaSeleccionada.set(fechaStr);
-			
+
 			// Buscar todas las guardias de esa fecha (incluyendo las que cruzan medianoche)
 			let guardiasData;
 			this.guardias.subscribe(g => guardiasData = g)();
-			
+
 			const guardiasFiltradas = guardiasData.filter(g => {
 				const fechasGuardia = this.calcularFechasGuardia(g.fecha, g.hora_inicio, g.hora_fin);
 				return fechasGuardia.includes(fechaStr);
 			});
-			
+
 			this.guardiasDeFecha.set(guardiasFiltradas);
 			this.mostrarModal.set(true);
-			
+
 			console.log('📅 Guardias del día seleccionado:', guardiasFiltradas.length);
 		}
 	}

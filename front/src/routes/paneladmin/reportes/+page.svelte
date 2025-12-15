@@ -93,6 +93,42 @@
 	function resetearFiltros() {
 		reporteController.resetearFiltros();
 	}
+
+	// Precompute Maps for O(1) lookups in table rendering
+	// This converts agente.dias arrays to Maps indexed by fecha for fast access
+	$: agenteDiasMap = $datosReporte?.agentes?.reduce((map, agente) => {
+		const diasByFecha = new Map();
+		agente.dias?.forEach(d => diasByFecha.set(d.fecha, d));
+		map.set(agente, diasByFecha);
+		return map;
+	}, new Map()) || new Map();
+
+	// Precompute totals per day to avoid reduce+find in template
+	// Note: This depends on agenteDiasMap being computed first (Svelte handles this via reactive statement ordering)
+	$: totalesPorDia = (() => {
+		// Ensure agenteDiasMap is ready before computing totals
+		if (!agenteDiasMap.size || !$datosReporte?.dias_columnas) {
+			return new Map();
+		}
+		return $datosReporte.dias_columnas.reduce((map, dia) => {
+			const total = $datosReporte.agentes?.reduce((sum, agente) => {
+				const diaData = agenteDiasMap.get(agente)?.get(dia.fecha);
+				return sum + (diaData?.horas || 0);
+			}, 0) || 0;
+			map.set(dia.fecha, total);
+			return map;
+		}, new Map());
+	})();
+
+	// Helper function to get day data for an agent (uses precomputed map)
+	function getDiaData(agente, fecha) {
+		return agenteDiasMap.get(agente)?.get(fecha);
+	}
+
+	// Helper function to get total for a day (uses precomputed map)
+	function getTotalDia(fecha) {
+		return totalesPorDia.get(fecha) || 0;
+	}
 </script>
 
 <svelte:head>
@@ -808,8 +844,28 @@
 	.titulo-section h1 {
 		margin: 0 0 0.5rem 0;
 		color: #2c3e50;
-		font-size: 2rem;
+		font-size: 1.3rem;
 		font-weight: 700;
+		max-width: 100%;
+		word-wrap: break-word;
+	}
+
+	@media (min-width: 480px) {
+		.titulo-section h1 {
+			font-size: 1.5rem;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.titulo-section h1 {
+			font-size: 1.7rem;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.titulo-section h1 {
+			font-size: 2rem;
+		}
 	}
 
 	.titulo-section p {

@@ -1,6 +1,18 @@
 <script>
-	import { onMount } from "svelte";
-	const modules = [
+	import { onMount, onDestroy, tick } from "svelte";
+	import { goto } from "$app/navigation";
+	import AuthService from "$lib/login/authService.js";
+	import AuditService from "$lib/services/auditService.js";
+	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+	import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
+
+	// Cleanup references for event listeners
+	let containerRef = null;
+	let initTimeoutId = null;
+	// Store card references and their event handlers for cleanup
+	let cardHandlers = [];
+
+	const allModules = [
 		{
 			name: "Usuarios",
 			path: "/paneladmin/usuarios",
@@ -54,20 +66,163 @@
 		},
 	];
 
-	onMount(() => {
-		const cards = document.querySelectorAll(".module-card");
-		const container = document.querySelector(".modules-space");
+	// Modulos visibles segun rol
+	let modules = [];
 
-		// Mueve las variables en cada card según la posición del mouse
-		container.addEventListener("mousemove", (e) => {
-			for (const card of cards) {
-				const rect = card.getBoundingClientRect();
-				const x = e.clientX - rect.left;
-				const y = e.clientY - rect.top;
-				card.style.setProperty("--mouse-x", `${x}px`);
-				card.style.setProperty("--mouse-y", `${y}px`);
+	onMount(async () => {
+		try {
+			const userResponse = await AuthService.getCurrentUserData();
+
+			// No autenticado -> mostrar mensaje y redirigir a /
+			if (!userResponse?.success || !userResponse.data?.success) {
+				// Registrar intento sin autenticación
+				await AuditService.logUnauthorizedAccess({
+					ruta: "/paneladmin",
+					accion: "acceso_sin_autenticacion",
+					rol: "desconocido",
+					userId: 0,
+				});
+				await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
+				goto("/");
+				return;
 			}
+
+			const userInfo = userResponse.data.data;
+
+			// Determinar roles
+			const userRoles = Array.isArray(userInfo.roles)
+				? userInfo.roles
+						.map((rol) =>
+							typeof rol === "string" ? rol : rol.nombre,
+						)
+						.filter(Boolean)
+						.map((r) => r.toLowerCase())
+				: [];
+
+			const isAdmin = userRoles.includes("administrador");
+			const isJefatura =
+				userRoles.includes("jefatura") ||
+				userRoles.includes("director");
+			const isAgenteAvanzado = userRoles.includes("agente avanzado");
+
+			if (isAdmin) {
+				// Administrador: TODO
+				modules = allModules;
+			} else if (isJefatura) {
+				// Director/Jefatura: TODO menos Auditoría, Roles, Feriados, Parámetros y Reportes
+				const allowedPaths = [
+					"/paneladmin/usuarios",
+					"/paneladmin/organigrama",
+					"/paneladmin/asistencias",
+					"/paneladmin/licencias",
+					"/paneladmin/guardias",
+					// Excluidos: auditoria, roles, feriados, parametros, reportes
+				];
+				modules = allModules.filter((m) =>
+					allowedPaths.includes(m.path),
+				);
+			} else if (isAgenteAvanzado) {
+				// Agente Avanzado: solo Usuarios, Licencias y Asistencias
+				const allowedPaths = [
+					"/paneladmin/usuarios",
+					"/paneladmin/licencias",
+					"/paneladmin/asistencias",
+				];
+				modules = allModules.filter((m) =>
+					allowedPaths.includes(m.path),
+				);
+			} else {
+				// Agente: sin acceso - registrar en auditoría
+				await AuditService.logUnauthorizedAccess({
+					ruta: "/paneladmin",
+					accion: "acceso_denegado_rol_insuficiente",
+					rol: userRoles[0] || "agente",
+					userId: userInfo.id,
+				});
+				await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
+				goto("/inicio");
+				return;
+			}
+
+			// Registrar acceso exitoso
+			await AuditService.logSuccessfulAccess({
+				ruta: "/paneladmin",
+				rol: userRoles[0] || "desconocido",
+				userId: userInfo.id,
+			});
+
+			// Esperar a que Svelte actualice el DOM con los módulos
+			await tick();
+
+			// Usar setTimeout para asegurar que el DOM esté completamente renderizado
+			initTimeoutId = setTimeout(() => {
+				// Inicializar animaciones si hay módulos visibles
+				const cards = document.querySelectorAll(".module-card");
+				const container = document.querySelector(".modules-space");
+
+				if (container && cards.length) {
+					// Store reference for cleanup
+					containerRef = container;
+					
+					// Optimized approach: attach handlers per card with cached rect
+					cards.forEach((card) => {
+						let rect = null;
+						
+						const enterHandler = () => {
+							// Cache bounding rect on pointer enter (only recalculate when entering)
+							rect = card.getBoundingClientRect();
+						};
+						
+						const leaveHandler = () => {
+							rect = null;
+							card.style.removeProperty("--mouse-x");
+							card.style.removeProperty("--mouse-y");
+						};
+						
+						const moveHandler = (e) => {
+							if (!rect) rect = card.getBoundingClientRect(); // Fallback
+							const x = e.clientX - rect.left;
+							const y = e.clientY - rect.top;
+							// Use requestAnimationFrame to batch style updates
+							requestAnimationFrame(() => {
+								card.style.setProperty("--mouse-x", `${x}px`);
+								card.style.setProperty("--mouse-y", `${y}px`);
+							});
+						};
+						
+						card.addEventListener("pointerenter", enterHandler);
+						card.addEventListener("pointerleave", leaveHandler);
+						card.addEventListener("pointermove", moveHandler);
+						
+						// Store handlers for cleanup
+						cardHandlers.push({
+							card,
+							enterHandler,
+							leaveHandler,
+							moveHandler
+						});
+					});
+				}
+			}, 100);
+		} catch (error) {
+			console.error("Error de autenticación:", error);
+			await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
+			goto("/");
+		}
+	});
+
+	// Cleanup event listeners and timers on component destroy
+	onDestroy(() => {
+		if (initTimeoutId) {
+			clearTimeout(initTimeoutId);
+		}
+		// Clean up all card event handlers
+		cardHandlers.forEach(({ card, enterHandler, leaveHandler, moveHandler }) => {
+			card.removeEventListener("pointerenter", enterHandler);
+			card.removeEventListener("pointerleave", leaveHandler);
+			card.removeEventListener("pointermove", moveHandler);
 		});
+		cardHandlers = [];
 	});
 </script>
 
@@ -115,6 +270,19 @@
 	{/each}
 </div>
 
+<ModalAlert
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	showConfirmButton={$modalAlert.showConfirmButton}
+	confirmText={$modalAlert.confirmText}
+	showCancelButton={$modalAlert.showCancelButton}
+	cancelText={$modalAlert.cancelText}
+	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
+/>
+
 <style>
 	.dashboard-welcome {
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -124,8 +292,9 @@
 		padding: 30px 20px;
 		margin: 5px auto 25px auto;
 		max-width: 1200px;
+		min-height: 80px;
 		border-radius: 28px;
-		overflow: hidden;
+		overflow: visible;
 		text-align: center;
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
@@ -147,12 +316,14 @@
 			linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 		background-size: 50px 50px;
 		animation: moveLines 20s linear infinite;
+		z-index: 0;
+		pointer-events: none;
 	}
 
 	.dashboard-welcome h1 {
 		margin: 10px;
 		font-weight: 800;
-		font-size: 30px;
+		font-size: 20px;
 		letter-spacing: 0.2px;
 		font-family:
 			"Segoe UI",
@@ -164,9 +335,32 @@
 			Arial,
 			sans-serif;
 		position: relative;
+		z-index: 1;
 		padding-bottom: 12px;
-		overflow: hidden;
-		display: inline-block;
+		display: block;
+		max-width: 100%;
+		word-wrap: break-word;
+		white-space: normal;
+		line-height: 1.4;
+	}
+
+	@media (min-width: 480px) {
+		.dashboard-welcome h1 {
+			font-size: 24px;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.dashboard-welcome h1 {
+			font-size: 28px;
+			display: inline-block;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.dashboard-welcome h1 {
+			font-size: 30px;
+		}
 	}
 
 	.dashboard-welcome h1::after {
@@ -189,7 +383,7 @@
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		width: 90%;
 		display: grid;
-		margin-top: 50px;
+		margin-top: 20px;
 		margin-right: auto;
 		margin-left: auto;
 		grid-template-rows: repeat(3, 1fr);

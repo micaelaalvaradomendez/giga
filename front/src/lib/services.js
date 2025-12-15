@@ -17,23 +17,23 @@ export const personasService = {
   updateAgente: (id, data, token = null) => createApiClient(token).patch(`/personas/agentes/${id}/update/`, data),
   deleteAgente: (id, token = null) => createApiClient(token).delete(`/personas/agentes/${id}/delete/`),
 
-  	// Crear agente con rol asignado
-	async createAgenteConRol(agenteData) {
-		try {
-			console.log('Datos enviados a createAgente:', agenteData);
-			// El backend AgenteCreateUpdateSerializer ya maneja la asignación de rol
-			// cuando se envía rol_id, por lo que no necesitamos crear asignación separada
-			const response = await this.createAgente(agenteData);
-			console.log('Respuesta del agente creado:', response);
-			
-			// Devolver la respuesta directamente - el rol ya está asignado automáticamente
-			const agenteData_response = response.data?.data || response.data;
-			return agenteData_response || response;
-		} catch (error) {
-			console.error('Error creando agente con rol:', error);
-			throw error;
-		}
-	},
+  // Crear agente con rol asignado
+  async createAgenteConRol(agenteData) {
+    try {
+      console.log('Datos enviados a createAgente:', agenteData);
+      // El backend AgenteCreateUpdateSerializer ya maneja la asignación de rol
+      // cuando se envía rol_id, por lo que no necesitamos crear asignación separada
+      const response = await this.createAgente(agenteData);
+      console.log('Respuesta del agente creado:', response);
+
+      // Devolver la respuesta directamente - el rol ya está asignado automáticamente
+      const agenteData_response = response.data?.data || response.data;
+      return agenteData_response || response;
+    } catch (error) {
+      console.error('Error creando agente con rol:', error);
+      throw error;
+    }
+  },
 
   // Áreas
   getAreas: (token = null) => createApiClient(token).get('/personas/catalogs/areas/'),
@@ -54,10 +54,10 @@ export const personasService = {
   getAsignaciones: (token = null) => createApiClient(token).get('/personas/asignaciones/'),
   createAsignacion: (data, token = null) => createApiClient(token).post('/personas/asignaciones/create/', data),
   deleteAsignacion: (id, token = null) => createApiClient(token).delete(`/personas/asignaciones/${id}/delete/`),
-  
+
   // Cambio de roles atómico
   cambiarRolAgente: (data, token = null) => createApiClient(token).post('/personas/asignaciones/cambiar-rol/', data),
-  
+
   // Limpieza de datos
   limpiarRolesDuplicados: (token = null) => createApiClient(token).post('/personas/asignaciones/limpiar-duplicados/'),
 
@@ -68,6 +68,13 @@ export const personasService = {
   deleteAgrupacion: (id, data = null, token = null) => createApiClient(token).delete(`/personas/parametros/agrupaciones/${id}/delete/`, { data }),
   updateAgrupacionSchedule: (data, token = null) => createApiClient(token).post('/personas/parametros/agrupaciones/schedule/', data),
   renameAgrupacion: (data, token = null) => createApiClient(token).post('/personas/parametros/agrupaciones/rename/', data),
+};
+
+// En tu archivo de servicios
+export const organigramaService = {
+  getOrganigrama: (token = null) => createApiClient(token).get('/personas/organigrama/'),
+  saveOrganigrama: (data, token = null) => createApiClient(token).post('/personas/organigrama/save/', data),
+  sincronizarOrganigrama: (token = null) => createApiClient(token).post('/personas/organigrama/sincronizar/'),
 };
 
 // SERVICIOS PARA ASISTENCIA
@@ -86,7 +93,7 @@ export const asistenciaService = {
   getLicencias: (params = {}) => {
     // Filter out null, undefined, and empty string values
     const cleanParams = Object.fromEntries(
-      Object.entries(params).filter(([key, value]) => 
+      Object.entries(params).filter(([key, value]) =>
         value !== null && value !== undefined && value !== ''
       )
     );
@@ -114,6 +121,14 @@ export const asistenciaService = {
   updateTipoLicencia: (id, data, token = null) => createApiClient(token).put(`/asistencia/admin/tipos-licencia/actualizar/${id}/`, data),
   deleteTipoLicencia: (id, token = null) => createApiClient(token).delete(`/asistencia/admin/tipos-licencia/eliminar/${id}/`),
 
+  // Admin - Asistencias
+  getAsistenciasAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/listar/?${params}`),
+  getResumenAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/resumen/?${params}`),
+  getLicenciasAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/licencias/?${params}`),
+  corregirAsistencia: (id, data, token = null) => createApiClient(token).patch(`/asistencia/admin/corregir/${id}/`, data),
+  marcarAusente: (id, data, token = null) => createApiClient(token).patch(`/asistencia/admin/marcar-ausente/${id}/`, data),
+  marcarAsistencia: (data, token = null) => createApiClient(token).post('/asistencia/marcar/', data),
+
   // Novedades
   getNovedades: () => api.get('/asistencia/novedades/'),
   getNovedad: (id) => api.get(`/asistencia/novedades/${id}/`),
@@ -135,7 +150,7 @@ export const guardiasService = {
   publicarCronograma: (id, token = null) => createApiClient(token).patch(`/guardias/cronogramas/${id}/publicar/`),
   crearGuardia: (data, token = null) => createApiClient(token).post('/guardias/cronogramas/crear_con_guardias/', data),
   actualizarConGuardias: (id, data, token = null) => createApiClient(token).put(`/guardias/cronogramas/${id}/actualizar_con_guardias/`, data),
-  
+
   // Aprobaciones jerárquicas
   getPendientesAprobacion: (agenteId, token = null) => createApiClient(token).get(`/guardias/cronogramas/pendientes/?agente_id=${agenteId}`),
   rechazarCronograma: (id, data, token = null) => createApiClient(token).post(`/guardias/cronogramas/${id}/rechazar/`, data),
@@ -152,24 +167,32 @@ export const guardiasService = {
   getResumenGuardias: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?${params}`),
   getGuardiasAgente: (agenteId, token = null) => createApiClient(token).get(`/guardias/guardias/resumen/?agente=${agenteId}`),
   getGuardiasPorCronograma: (cronogramaId, token = null) => createApiClient(token).get(`/guardias/guardias/guardias_por_cronograma/?id_cronograma=${cronogramaId}`),
-  
+
   // Notas de guardias
   getNotasGuardia: (guardiaId, token = null) => createApiClient(token).get(`/guardias/guardias/${guardiaId}/notas/`),
   createNotaGuardia: (guardiaId, data, token = null) => createApiClient(token).post(`/guardias/guardias/${guardiaId}/notas/`, data),
   updateNotaGuardia: (notaId, data, token = null) => createApiClient(token).put(`/guardias/guardias/notas/${notaId}/`, data),
   deleteNotaGuardia: (notaId, agenteId, token = null) => createApiClient(token).delete(`/guardias/guardias/notas/${notaId}/?agente_id=${agenteId}`),
-  
+
   // Verificaciones de disponibilidad
   verificarDisponibilidad: (agenteId, fecha, token = null) => createApiClient(token).get(`/guardias/guardias/verificar_disponibilidad/?agente=${agenteId}&fecha=${fecha}`),
 
   // Feriados
-  getFeriados: (token = null) => createApiClient(token).get('/guardias/feriados/'),
+  getFeriados: (params = {}, token = null) => {
+    // Manejar caso donde el primer argumento es el token (compatibilidad)
+    if (typeof params === 'string' || params === null) {
+      token = params;
+      params = {};
+    }
+    const queryString = new URLSearchParams(params).toString();
+    return createApiClient(token).get(`/guardias/feriados/${queryString ? '?' + queryString : ''}`);
+  },
   getFeriado: (id, token = null) => createApiClient(token).get(`/guardias/feriados/${id}/`),
   createFeriado: (data, token = null) => createApiClient(token).post('/guardias/feriados/', data),
   updateFeriado: (id, data, token = null) => createApiClient(token).put(`/guardias/feriados/${id}/`, data),
   deleteFeriado: (id, token = null) => createApiClient(token).delete(`/guardias/feriados/${id}/`),
   verificarFeriado: (data, token = null) => createApiClient(token).post('/guardias/feriados/verificar_fecha/', data),
-  
+
   // Reglas de Plus
   getReglasPlus: (token = null) => createApiClient(token).get('/guardias/reglas-plus/'),
   getReglaPlus: (id, token = null) => createApiClient(token).get(`/guardias/reglas-plus/${id}/`),
@@ -177,13 +200,13 @@ export const guardiasService = {
   updateReglaPlus: (id, data, token = null) => createApiClient(token).put(`/guardias/reglas-plus/${id}/`, data),
   deleteReglaPlus: (id, token = null) => createApiClient(token).delete(`/guardias/reglas-plus/${id}/`),
   simularReglaPlus: (id, data, token = null) => createApiClient(token).post(`/guardias/reglas-plus/${id}/simular/`, data),
-  
+
   // Parámetros de Área
   getParametrosArea: (params = '', token = null) => createApiClient(token).get(`/guardias/parametros-area/?${params}`),
   getParametroArea: (id, token = null) => createApiClient(token).get(`/guardias/parametros-area/${id}/`),
   createParametroArea: (data, token = null) => createApiClient(token).post('/guardias/parametros-area/', data),
   updateParametroArea: (id, data, token = null) => createApiClient(token).put(`/guardias/parametros-area/${id}/`, data),
-  
+
   // Resúmenes Mensuales
   getResumenesMensuales: (params = '', token = null) => createApiClient(token).get(`/guardias/resumen-mes/?${params}`),
   getResumenMensual: (id, token = null) => createApiClient(token).get(`/guardias/resumen-mes/${id}/`),
@@ -219,9 +242,9 @@ export const guardiasService = {
 
 // SERVICIOS PARA CONVENIO IA - Conectado a N8N
 export const convenioIaService = {
-  // URL del webhook de N8N en modo producción
-  N8N_WEBHOOK_URL: 'http://localhost:5678/webhook/3ebdf75e-f0e2-4d18-b070-498f1486d845',
-  
+  // URL del webhook de N8N - Se configura desde variable de entorno
+  N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/3ebdf75e-f0e2-4d18-b070-498f1486d845',
+
   /**
    * Consulta al convenio usando N8N + IA
    * @param {string} pregunta - La pregunta del usuario
@@ -231,7 +254,7 @@ export const convenioIaService = {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 70000);
-      
+
       const response = await fetch(this.N8N_WEBHOOK_URL, {
         method: 'POST',
         headers: {
@@ -242,9 +265,9 @@ export const convenioIaService = {
         }),
         signal: controller.signal
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -252,30 +275,30 @@ export const convenioIaService = {
 
       // N8N puede devolver texto plano o JSON de la IA
       const textoRespuesta = await response.text();
-      
+
       // Intentar parsear como JSON
       try {
         const jsonResponse = JSON.parse(textoRespuesta);
-        
+
         // Verificar que sea un objeto real (no un string, array vacío, etc.)
         if (typeof jsonResponse === 'object' && jsonResponse !== null && !Array.isArray(jsonResponse) && Object.keys(jsonResponse).length > 0) {
-          
+
           // Si es un objeto con una sola propiedad string, extraer su valor
           const keys = Object.keys(jsonResponse);
           if (keys.length === 1 && typeof jsonResponse[keys[0]] === 'string') {
             return { respuesta: jsonResponse[keys[0]] };
           }
-          
+
           // Para JSONs estructurados complejos, convertir a texto legible
           const formatearJson = (obj, nivel = 0) => {
             let resultado = '';
             const espacios = '  '.repeat(nivel);
-            
+
             for (const [clave, valor] of Object.entries(obj)) {
               // Convertir claves snake_case a formato legible
               const claveFormateada = clave.replace(/_/g, ' ')
                 .replace(/\b\w/g, l => l.toUpperCase());
-              
+
               if (typeof valor === 'string') {
                 const valorFormateado = valor.replace(/_/g, ' ');
                 if (nivel === 0) {
@@ -311,16 +334,16 @@ export const convenioIaService = {
             }
             return resultado;
           };
-          
+
           return { respuesta: formatearJson(jsonResponse).trim() };
         }
       } catch (e) {
         // No es JSON válido, continuar con texto plano
       }
-      
+
       // Es texto plano, devolver tal como viene
       return { respuesta: textoRespuesta };
-      
+
     } catch (error) {
       console.error('Error consultando convenio:', error);
       if (error.name === 'AbortError') {

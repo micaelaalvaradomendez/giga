@@ -24,32 +24,6 @@
 		return AuthService.formatCuil(cuil);
 	}
 
-	function formatearHoraLogin(fechaHora) {
-		if (!fechaHora) return "N/A";
-		try {
-			const fecha = new Date(fechaHora);
-			const horas = fecha.getHours().toString().padStart(2, "0");
-			const minutos = fecha.getMinutes().toString().padStart(2, "0");
-			return `${horas}:${minutos}`;
-		} catch (e) {
-			return "N/A";
-		}
-	}
-
-	function formatearFechaLogin(fechaHora) {
-		if (!fechaHora) return "N/A";
-		try {
-			const fecha = new Date(fechaHora);
-			return fecha.toLocaleDateString("es-AR", {
-				day: "2-digit",
-				month: "2-digit",
-				year: "numeric",
-			});
-		} catch (e) {
-			return "N/A";
-		}
-	}
-
 	function getRoleBadgeClass(rol) {
 		const roleClasses = {
 			Administrador: "role-admin",
@@ -137,20 +111,6 @@
 							</div>
 						</div>
 					{/if}
-
-					{#if user.last_login}
-						<div class="info-item">
-							<span class="icon">🕐</span>
-							<div class="info-content">
-								<span class="info-label">Última sesión</span>
-								<span class="info-value">
-									{formatearFechaLogin(user.last_login)} - {formatearHoraLogin(
-										user.last_login,
-									)}
-								</span>
-							</div>
-						</div>
-					{/if}
 				</div>
 			</div>
 
@@ -191,6 +151,12 @@
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		animation: slideUp 0.3s ease-out;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-content::-webkit-scrollbar {
+		display: none;
 	}
 
 	@keyframes slideUp {
@@ -329,9 +295,11 @@
 	}
 
 	.info-value {
-		font-size: 18px;
+		font-size: 1rem;
 		color: #1a1a1a;
 		font-weight: 500;
+		word-break: break-word;
+		overflow-wrap: break-word;
 	}
 
 	.roles-item {
@@ -452,8 +420,17 @@
 			margin: 1rem;
 		}
 
+		.modal-header {
+			padding: 1.5rem 1.5rem 1rem;
+		}
+
+		.modal-body {
+			padding: 1.5rem;
+		}
+
 		.modal-footer {
 			flex-direction: column;
+			padding: 1rem 1.5rem;
 		}
 	}
 </style>

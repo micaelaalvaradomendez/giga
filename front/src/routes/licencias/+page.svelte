@@ -32,6 +32,7 @@
 	import ModalAsignar from "$lib/componentes/admin/licencias/ModalAsignar.svelte";
 	import ModalAprobar from "$lib/componentes/admin/licencias/ModalAprobar.svelte";
 	import ModalRechazar from "$lib/componentes/admin/licencias/ModalRechazar.svelte";
+	import ModalSolicitar from "$lib/componentes/licencias/ModalSolicitar.svelte";
 	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
 
 	let vistaActual = "licencias"; // 'licencias' o 'tipos'
@@ -48,21 +49,6 @@
 	let showModalAprobar = false;
 	let showModalRechazar = false;
 	let licenciaSeleccionada = null;
-
-	// Form data
-	let formLicencia = {
-		id_agente: null,
-		id_tipo_licencia: null,
-		fecha_desde: "",
-		fecha_hasta: "",
-		observaciones: "",
-		justificacion: "",
-	};
-
-	// Variables para asignación de licencias
-	let areaSeleccionada = null;
-	let agentesDelArea = [];
-	let cargandoAgentes = false;
 
 	let formAprobacion = {
 		observaciones: "",
@@ -274,57 +260,11 @@
 		}
 	}
 
-	async function cargarAgentesPorArea(areaId) {
-		try {
-			if (!areaId) {
-				agentesDelArea = [];
-				cargandoAgentes = false;
-				return;
-			}
-
-			cargandoAgentes = true;
-			const response = await personasService.getAgentesByArea(areaId);
-			if (response?.data) {
-				// La API devuelve estructura paginada: { count, results: [...] }
-				agentesDelArea = response.data.results || [];
-			} else {
-				agentesDelArea = [];
-			}
-
-			// Reset agente seleccionado cuando cambia el área
-			formLicencia.id_agente = null;
-		} catch (err) {
-			console.error("Error cargando agentes del área:", err);
-			agentesDelArea = [];
-		} finally {
-			cargandoAgentes = false;
-		}
-	}
-
 	function abrirModalCrear() {
-		formLicencia = {
-			id_agente: userInfo.id_agente, // Por defecto, el usuario actual
-			id_tipo_licencia: null,
-			fecha_desde: "",
-			fecha_hasta: "",
-			observaciones: "",
-			justificacion: "",
-		};
 		showModalCrear = true;
 	}
 
 	function abrirModalAsignar() {
-		formLicencia = {
-			id_agente: null,
-			id_tipo_licencia: null,
-			fecha_desde: "",
-			fecha_hasta: "",
-			observaciones: "",
-			justificacion: "Asignada por jefatura",
-		};
-		areaSeleccionada = null;
-		agentesDelArea = [];
-		cargandoAgentes = false;
 		showModalAsignar = true;
 	}
 
@@ -365,41 +305,10 @@
 		};
 	}
 
-	async function handleCrearLicencia() {
-		if (
-			!formLicencia.id_tipo_licencia ||
-			!formLicencia.fecha_desde ||
-			!formLicencia.fecha_hasta
-		) {
-			mostrarError("Por favor complete todos los campos obligatorios");
-			return;
-		}
-
-		if (
-			new Date(formLicencia.fecha_desde) >
-			new Date(formLicencia.fecha_hasta)
-		) {
-			mostrarError(
-				"La fecha de inicio no puede ser posterior a la fecha de fin",
-			);
-			return;
-		}
-
-		saving = true;
-		const resultado = await crearLicencia({
-			...formLicencia,
-			estado: "pendiente",
-		});
-
-		if (resultado.success) {
-			cerrarModales();
-			mostrarExito(
-				"Licencia solicitada correctamente. Aguarde aprobación.",
-			);
-		} else {
-			mostrarError(resultado.error);
-		}
-		saving = false;
+	function handleLicenciaCreada(event) {
+		showModalCrear = false;
+		mostrarExito("Licencia solicitada correctamente. Aguarde aprobación.");
+		cargarLicencias(); // Recargar la lista
 	}
 
 	function handleAsignarEvent(event) {
@@ -525,52 +434,6 @@
 		);
 	});
 
-	async function handleAsignarLicencia() {
-		if (
-			!areaSeleccionada ||
-			!formLicencia.id_agente ||
-			!formLicencia.id_tipo_licencia ||
-			!formLicencia.fecha_desde ||
-			!formLicencia.fecha_hasta
-		) {
-			mostrarError("Por favor complete todos los campos obligatorios");
-			return;
-		}
-
-		const rol =
-			userInfo?.roles?.[0]?.nombre || userInfo?.rol_nombre || "Agente";
-		saving = true;
-
-		// Determinar el estado según el rol del usuario
-		let estadoLicencia = "pendiente";
-		let aprobadaPor = null;
-
-		if (rol === "Director" || rol === "Jefatura") {
-			// Director y Jefatura aprueban automáticamente sus asignaciones
-			estadoLicencia = "aprobada";
-			aprobadaPor = userInfo.id_agente;
-		}
-		// Agente Avanzado asigna pero la licencia queda pendiente de aprobación
-
-		const resultado = await crearLicencia({
-			...formLicencia,
-			estado: estadoLicencia,
-			aprobada_por: aprobadaPor,
-		});
-
-		if (resultado.success) {
-			cerrarModales();
-			const mensaje =
-				estadoLicencia === "aprobada"
-					? "Licencia asignada y aprobada correctamente."
-					: "Licencia asignada correctamente. Queda pendiente de aprobación.";
-			mostrarExito(mensaje);
-		} else {
-			mostrarError(resultado.error);
-		}
-		saving = false;
-	}
-
 	async function handleAprobarLicencia() {
 		if (!licenciaSeleccionada) return;
 
@@ -628,11 +491,6 @@
 			userInfo?.roles?.[0]?.nombre || userInfo?.rol_nombre || "Agente";
 		return puedeAprobarLicencia(licencia, rol, userInfo?.id_area);
 	}
-
-	$: diasLicencia = calcularDiasLicencia(
-		formLicencia.fecha_desde,
-		formLicencia.fecha_hasta,
-	);
 </script>
 
 <svelte:head>
@@ -655,9 +513,6 @@
 					📝 Asignar Licencia
 				</button>
 			{/if}
-			<button class="btn-refresh" on:click={() => cargarLicencias()}>
-				🔄 Actualizar
-			</button>
 		</div>
 	</div>
 
@@ -899,101 +754,21 @@
 </div>
 
 <!-- Modal Crear/Solicitar Licencia -->
-{#if showModalCrear}
-	<div class="modal-overlay">
-		<div class="modal">
-			<div class="modal-header">
-				<h3>📋 Solicitar Licencia</h3>
-				<button class="modal-close" on:click={cerrarModales}>✕</button>
-			</div>
-			<form on:submit|preventDefault={handleCrearLicencia}>
-				<div class="modal-body">
-					<div class="form-group">
-						<label for="tipo">Tipo de Licencia *</label>
-						<select
-							bind:value={formLicencia.id_tipo_licencia}
-							required
-						>
-							<option value={null}>Seleccione un tipo...</option>
-							{#each $tiposLicencia as tipo}
-								<option value={tipo.id_tipo_licencia}
-									>{tipo.codigo} - {tipo.descripcion}</option
-								>
-							{/each}
-						</select>
-					</div>
-
-					<div class="form-row">
-						<div class="form-group">
-							<label for="fecha">Fecha Desde *</label>
-							<input
-								type="date"
-								bind:value={formLicencia.fecha_desde}
-								required
-							/>
-						</div>
-						<div class="form-group">
-							<label for="fecha">Fecha Hasta *</label>
-							<input
-								type="date"
-								bind:value={formLicencia.fecha_hasta}
-								required
-							/>
-						</div>
-					</div>
-
-					{#if diasLicencia > 0}
-						<div class="info-days">
-							📅 Duración: <strong>{diasLicencia} días</strong>
-						</div>
-					{/if}
-
-					<div class="form-group">
-						<label for="justificacion">Justificación *</label>
-						<textarea
-							bind:value={formLicencia.justificacion}
-							placeholder="Indique el motivo de la licencia..."
-							rows="3"
-							required
-						></textarea>
-					</div>
-
-					<div class="form-group">
-						<label for="observaciones"
-							>Observaciones adicionales</label
-						>
-						<textarea
-							bind:value={formLicencia.observaciones}
-							placeholder="Observaciones opcionales..."
-							rows="2"
-						></textarea>
-					</div>
-				</div>
-				<div class="modal-footer">
-					<button
-						type="button"
-						class="btn-cancel"
-						on:click={cerrarModales}
-						disabled={saving}
-					>
-						Cancelar
-					</button>
-					<button type="submit" class="btn-primary" disabled={saving}>
-						{saving ? "Enviando..." : "📤 Enviar Solicitud"}
-					</button>
-				</div>
-			</form>
-		</div>
-	</div>
-{/if}
+<ModalSolicitar
+	bind:show={showModalCrear}
+	tiposLicencia={$tiposLicencia}
+	{userInfo}
+	on:created={handleLicenciaCreada}
+	on:close={() => (showModalCrear = false)}
+/>
 
 <!-- Modal de Asignar Licencia -->
 <ModalAsignar
 	bind:show={showModalAsignar}
 	{areas}
 	tiposLicencia={$tiposLicencia}
-	on:asignar={handleAsignarEvent}
-	on:cancelar={() => (showModalAsignar = false)}
+	on:assigned={handleAsignarEvent}
+	on:close={() => (showModalAsignar = false)}
 />
 
 <!-- Modal de Aprobar Licencia -->
@@ -1078,12 +853,33 @@
 	.header-title h1 {
 		margin: 10px;
 		font-weight: 800;
-		font-size: 30px;
+		font-size: 18px;
 		letter-spacing: 0.2px;
 		position: relative;
 		padding-bottom: 12px;
 		overflow: hidden;
-		display: inline-block;
+		display: block;
+		max-width: 100%;
+		word-wrap: break-word;
+	}
+
+	@media (min-width: 480px) {
+		.header-title h1 {
+			font-size: 22px;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.header-title h1 {
+			font-size: 26px;
+			display: inline-block;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.header-title h1 {
+			font-size: 30px;
+		}
 	}
 
 	.header-title h1::after {
@@ -1117,8 +913,7 @@
 	}
 
 	.btn-primary,
-	.btn-secondary,
-	.btn-refresh {
+	.btn-secondary {
 		padding: 16px 32px;
 		border: none;
 		border-radius: 10px;
@@ -1154,16 +949,6 @@
 	.btn-secondary:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 6px 20px rgba(215, 111, 241, 0.5);
-	}
-
-	.btn-refresh {
-		background: linear-gradient(135deg, #ff9939 0%, #ffa358 100%);
-		color: white;
-	}
-
-	.btn-refresh:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 5px 15px rgba(226, 148, 59, 0.4);
 	}
 
 	/* Estadísticas */
@@ -1297,25 +1082,12 @@
 		background: white;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 		max-height: 600px;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
 	}
 
 	.table-container::-webkit-scrollbar {
-		height: 8px;
-		width: 8px;
-	}
-
-	.table-container::-webkit-scrollbar-track {
-		background: #f1f5f9;
-		border-radius: 10px;
-	}
-
-	.table-container::-webkit-scrollbar-thumb {
-		background: #cbd5e1;
-		border-radius: 10px;
-	}
-
-	.table-container::-webkit-scrollbar-thumb:hover {
-		background: #94a3b8;
+		display: none;
 	}
 
 	.licencias-table {
@@ -1340,7 +1112,6 @@
 		font-size: 13px;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
-		border-bottom: 3px solid #3b82f6;
 		background: transparent;
 	}
 
@@ -1537,153 +1308,6 @@
 		box-shadow: 0 4px 8px rgba(76, 81, 191, 0.4);
 	}
 
-	/* Modales - Estilo unificado */
-	.modal-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0.5);
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		z-index: 1000;
-		backdrop-filter: blur(4px);
-	}
-
-	.modal {
-		background: white;
-		border-radius: 16px;
-		max-width: 600px;
-		width: 90%;
-		max-height: 90vh;
-		overflow-y: auto;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
-
-	.modal-header {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		padding: 1.5rem 2rem;
-		border-radius: 16px 16px 0 0;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.modal-header h3 {
-		margin: 0;
-		font-size: 1.5rem;
-		font-weight: 600;
-	}
-
-	.modal-close {
-		background: none;
-		border: none;
-		color: white;
-		font-size: 25px;
-		cursor: pointer;
-		padding: 0;
-		width: 30px;
-		height: 30px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		transition: all 0.3s ease;
-	}
-
-	.modal-close:hover {
-		background: rgba(255, 255, 255, 0.2);
-	}
-
-	.modal-body {
-		padding: 2rem;
-	}
-
-	.modal-footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.5rem;
-		margin-top: 1.5rem;
-		padding: 1.5rem 2rem;
-		border-top: 1px solid #e5e7eb;
-	}
-
-	.form-group {
-		margin-bottom: 1rem;
-	}
-
-	.form-group label {
-		display: block;
-		margin-bottom: 5px;
-		font-weight: 600;
-		color: #313131;
-	}
-
-	.form-group input,
-	.form-group select,
-	.form-group textarea {
-		padding: 12px 15px;
-		border: 2px solid #e1e5e9;
-		border-radius: 8px;
-		font-size: 16px;
-		transition: all 0.3s ease;
-		font-family: inherit;
-		resize: vertical;
-		width: 100%;
-		box-sizing: border-box;
-	}
-
-	.form-group input:focus,
-	.form-group select:focus,
-	.form-group textarea:focus {
-		outline: none;
-		border-color: #667eea;
-		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-	}
-
-	.form-group textarea {
-		resize: vertical;
-		min-height: 80px;
-	}
-
-	.form-row {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1rem;
-		margin-bottom: 1.25rem;
-	}
-
-	.info-days {
-		background: #dbeafe;
-		color: #1e40af;
-		padding: 0.75rem;
-		border-radius: 6px;
-		margin-bottom: 1rem;
-		text-align: center;
-		font-weight: 600;
-	}
-
-	.btn-cancel {
-		background: #6c757d;
-		color: white;
-		padding: 12px 24px;
-		border: none;
-		border-radius: 8px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		font-size: 16px;
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
-
-	.btn-cancel:hover:not(:disabled) {
-		background: #5a6268;
-		transform: translateY(-2px);
-	}
 	/* Responsive */
 	@media (max-width: 1200px) {
 		.page-container {
@@ -1742,8 +1366,7 @@
 		}
 
 		.btn-primary,
-		.btn-secondary,
-		.btn-refresh {
+		.btn-secondary {
 			width: 100%;
 			justify-content: center;
 			margin-left: 0;
@@ -1821,45 +1444,6 @@
 		.acciones {
 			flex-direction: column;
 			gap: 6px;
-		}
-
-		/* Modales responsive */
-		.modal {
-			margin: 0.5rem;
-			max-width: calc(100vw - 1rem);
-			max-height: calc(100vh - 1rem);
-		}
-
-		.modal-header {
-			padding: 1rem;
-		}
-
-		.modal-header h3 {
-			font-size: 18px;
-		}
-
-		.modal-body {
-			padding: 0 1rem 1rem;
-		}
-
-		.form-group label {
-			font-size: 14px;
-		}
-
-		.form-group input,
-		.form-group select,
-		.form-group textarea {
-			padding: 0.6rem;
-			font-size: 14px;
-		}
-
-		.form-row {
-			grid-template-columns: 1fr;
-		}
-
-		.modal-footer {
-			flex-direction: column;
-			gap: 0.5rem;
 		}
 	}
 

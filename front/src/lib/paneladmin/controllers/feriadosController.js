@@ -15,9 +15,9 @@ class FeriadosController {
 		this.success = writable(null);
 
 		// Stores para modales
-		this.modalGestionFeriado = writable({ 
-			isOpen: false, 
-			feriado: null, 
+		this.modalGestionFeriado = writable({
+			isOpen: false,
+			feriado: null,
 			selectedDate: null,
 			isSaving: false,
 			isDeleting: false
@@ -76,11 +76,12 @@ class FeriadosController {
 			this.loading.set(true);
 			this.error.set(null);
 
+
 			const response = await guardiasService.getFeriados();
-			
+
 			const feriadosData = response.data?.results || response.data || [];
 			this.feriados.set(feriadosData);
-			
+
 		} catch (error) {
 			console.error('Error cargando feriados:', error);
 			this.error.set('Error al cargar los feriados');
@@ -118,7 +119,7 @@ class FeriadosController {
 
 			// Actualizar la lista de feriados
 			await this.loadFeriados();
-			
+
 			// Mensaje personalizado
 			if (feriadoData.repetir_anualmente && response.data?.feriados_creados) {
 				this.success.set(`Feriado creado para ${response.data.feriados_creados} años: ${response.data.años.join(', ')}`);
@@ -128,7 +129,7 @@ class FeriadosController {
 				const duracion = this.calculateDaysDifference(feriadoData.fecha_inicio, feriadoData.fecha_fin) + 1;
 				this.success.set(`Feriado de ${duracion} días creado exitosamente`);
 			}
-			
+
 			return response.data;
 
 		} catch (error) {
@@ -164,7 +165,7 @@ class FeriadosController {
 
 			// Actualizar la lista de feriados
 			await this.loadFeriados();
-			
+
 			this.success.set('Feriado actualizado exitosamente');
 			return response.data;
 
@@ -191,7 +192,7 @@ class FeriadosController {
 
 			// Actualizar la lista de feriados
 			await this.loadFeriados();
-			
+
 			this.success.set('Feriado eliminado exitosamente');
 
 		} catch (error) {
@@ -209,14 +210,14 @@ class FeriadosController {
 	 */
 	getFeriadosByDate(fecha) {
 		let feriadosEnFecha = [];
-		
+
 		const unsubscribe = this.feriados.subscribe(feriados => {
 			feriadosEnFecha = feriados.filter(feriado => {
 				return fecha >= feriado.fecha_inicio && fecha <= feriado.fecha_fin;
 			});
 		});
 		unsubscribe();
-		
+
 		return feriadosEnFecha;
 	}
 
@@ -253,14 +254,14 @@ class FeriadosController {
 	}
 
 	// Métodos para manejo de modales
-	
+
 	/**
 	 * Abre el modal de gestión de feriados
 	 */
 	openModal(selectedDate, feriado = null) {
 		// Si se especifica un feriado, es modo edición; si no, buscar feriados existentes
 		const feriadosExistentes = feriado ? [] : this.getFeriadosByDate(selectedDate);
-		
+
 		this.modalGestionFeriado.set({
 			isOpen: true,
 			feriado: feriado, // null para crear, objeto para editar
@@ -354,7 +355,7 @@ class FeriadosController {
 			}));
 
 			await this.deleteFeriado(id);
-			
+
 			// Cerrar modal en caso de éxito
 			this.closeModal();
 

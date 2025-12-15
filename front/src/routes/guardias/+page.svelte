@@ -3,7 +3,9 @@
   import { goto } from "$app/navigation";
   import { guardiasService } from "$lib/services";
   import AuthService from "$lib/login/authService.js";
-  import ModalNotaGuardia from "$lib/componentes/admin/guardias/ModalNotaGuardia.svelte";
+  import ModalNotaGuardia from "$lib/componentes/usuario/ModalNotaGuardia.svelte";
+  import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+  import { modalAlert, showAlert, showConfirm } from "$lib/stores/modalAlertStore.js";
 
   let user = null;
   let token = null;
@@ -38,14 +40,14 @@
 
   onMount(async () => {
     try {
-      const sessionCheck = await AuthService.checkSession();
+      // Use getCurrentUser from localStorage (checkSession already called in +layout.svelte)
+      user = AuthService.getCurrentUser();
 
-      if (!sessionCheck.authenticated) {
+      if (!user) {
         goto("/");
         return;
       }
 
-      user = sessionCheck.user;
       token = localStorage.getItem("token");
 
       await cargarGuardias();
@@ -155,7 +157,7 @@
 
   async function guardarNota() {
     if (!guardiaSeleccionada || !notaTexto.trim()) {
-      alert("Debe escribir una nota");
+      await showAlert("Debe escribir una nota", "warning", "Advertencia");
       return;
     }
 
@@ -185,8 +187,10 @@
       cerrarModalNota();
     } catch (err) {
       console.error("Error guardando nota:", err);
-      alert(
+      await showAlert(
         "Error al guardar la nota: " + (err.message || "Error desconocido"),
+        "error",
+        "Error"
       );
     } finally {
       guardandoNota = false;
@@ -194,7 +198,18 @@
   }
 
   async function eliminarNota() {
-    if (!notaId || !confirm("¿Está seguro de eliminar esta nota?")) {
+    if (!notaId) {
+      return;
+    }
+    
+    const confirmado = await showConfirm(
+      "¿Está seguro de eliminar esta nota?",
+      "Eliminar Nota",
+      "Eliminar",
+      "Cancelar"
+    );
+    
+    if (!confirmado) {
       return;
     }
 
@@ -209,8 +224,10 @@
       cerrarModalNota();
     } catch (err) {
       console.error("Error eliminando nota:", err);
-      alert(
+      await showAlert(
         "Error al eliminar la nota: " + (err.message || "Error desconocido"),
+        "error",
+        "Error"
       );
     } finally {
       guardandoNota = false;
@@ -569,6 +586,19 @@
   on:eliminar={eliminarNota}
 />
 
+<ModalAlert
+  bind:show={$modalAlert.show}
+  type={$modalAlert.type}
+  title={$modalAlert.title}
+  message={$modalAlert.message}
+  showConfirmButton={$modalAlert.showConfirmButton}
+  confirmText={$modalAlert.confirmText}
+  showCancelButton={$modalAlert.showCancelButton}
+  cancelText={$modalAlert.cancelText}
+  on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+  on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
+/>
+
 <style>
   .container {
     max-width: 1600px;
@@ -581,23 +611,59 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  @media (min-width: 768px) {
+    .header {
+      margin-bottom: 2rem;
+      flex-wrap: nowrap;
+    }
   }
 
   .header-glass {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     position: relative;
-    min-width: fit-content;
+    width: 100%;
+    max-width: 100%;
     background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
     color: white;
-    padding: 25px 140px;
+    padding: 16px 12px;
     margin: 0;
-    border-radius: 28px;
+    border-radius: 16px;
     overflow: hidden;
     text-align: center;
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.1) inset,
       0 20px 60px rgba(30, 64, 175, 0.4);
+    box-sizing: border-box;
+  }
+
+  @media (min-width: 640px) {
+    .header-glass {
+      padding: 20px 30px;
+      border-radius: 20px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .header-glass {
+      padding: 25px 60px;
+      border-radius: 28px;
+      min-width: fit-content;
+      width: auto;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .header-glass {
+      padding: 25px 140px;
+    }
   }
 
   .header-glass::before {
@@ -619,14 +685,35 @@
 
   .header-glass h1 {
     font-weight: 800;
-    font-size: 28px;
+    font-size: 18px;
     letter-spacing: 0.2px;
     position: relative;
     padding-bottom: 12px;
     overflow: hidden;
     text-align: left;
-    display: inline-block;
-    white-space: nowrap;
+    display: block;
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+
+  @media (min-width: 480px) {
+    .header-glass h1 {
+      font-size: 20px;
+    }
+  }
+
+  @media (min-width: 640px) {
+    .header-glass h1 {
+      font-size: 24px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .header-glass h1 {
+      font-size: 28px;
+      white-space: nowrap;
+      display: inline-block;
+    }
   }
 
   .header-glass h1::after {
@@ -692,7 +779,7 @@
 
   .guardias-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(350px, 100%), 1fr));
     gap: 1.5rem;
   }
 

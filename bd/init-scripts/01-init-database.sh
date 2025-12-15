@@ -50,6 +50,15 @@ run_sql "$SCRIPT_DIR/03-seed-data.sql" \
 run_sql "$SCRIPT_DIR/04-historical-data.sql" \
     "Datos históricos para testing"
 
+run_sql "$SCRIPT_DIR/05-incidencias.sql" \
+    "Tablas incidencias"
+
+run_sql "$SCRIPT_DIR/fix-plus.sql" \
+    "Arreglo logica plus"
+
+run_sql "$SCRIPT_DIR/sesion-activa.sql" \
+    "Tabla para sesiones concurrentes"
+
 # ========================================================================
 # Finalización
 # ========================================================================
@@ -64,6 +73,9 @@ echo "  1. Tablas finales (29 tablas)"
 echo "  2. Funciones y triggers (completo)"
 echo "  3. Datos organizacionales (roles, áreas, agentes)"
 echo "  4. Datos históricos (cronogramas, guardias, asistencias)"
+echo "  5. Tablas incidencias"
+echo "  6. Arreglo logica plus"
+echo "  7. Tabla para sesiones concurrentes"
 echo ""
 echo "IMPORTANTE: Después de iniciar Django, ejecutar:"
 echo "  docker exec giga-django python manage.py migrate"

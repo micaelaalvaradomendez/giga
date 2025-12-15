@@ -25,30 +25,71 @@ class UsuariosController {
 		this.modalEliminarAgente = writable({ isOpen: false, agente: null, isDeleting: false });
 		this.modalAgregarAgente = writable({ isOpen: false, isSaving: false });
 
-		// Store derivado para agentes filtrados
+		// Store para usuario actual
+		this.usuarioActual = writable(null);
+
+		// Store para sub-áreas (usado por Director)
+		this.subAreas = [];
+
+		// Store derivado para agentes filtrados CON jerarquía de roles y áreas
 		this.agentesFiltrados = derived(
-			[this.agentes, this.busqueda, this.filtroArea],
-			([$agentes, $busqueda, $filtroArea]) => {
+			[this.agentes, this.busqueda, this.filtroArea, this.usuarioActual],
+			([$agentes, $busqueda, $filtroArea, $usuarioActual]) => {
 				if (!$agentes || !Array.isArray($agentes)) {
 					return [];
 				}
 
-				return $agentes.filter(agente => {
+				// Aplicar filtros jerárquicos automáticamente
+				let resultado = $agentes.filter(agente => {
 					// Filtro por búsqueda (nombre, apellido, dni, email, legajo)
 					const textoBusqueda = $busqueda.toLowerCase().trim();
-					const coincideBusqueda = !textoBusqueda || 
+					const coincideBusqueda = !textoBusqueda ||
 						(agente.nombre && agente.nombre.toLowerCase().includes(textoBusqueda)) ||
 						(agente.apellido && agente.apellido.toLowerCase().includes(textoBusqueda)) ||
 						(agente.dni && agente.dni.includes(textoBusqueda)) ||
 						(agente.email && agente.email.toLowerCase().includes(textoBusqueda)) ||
 						(agente.legajo && agente.legajo.toLowerCase().includes(textoBusqueda));
 
-					// Filtro por área - comparar con area_id
-					const coincideArea = !$filtroArea || 
+					if (!coincideBusqueda) return false;
+
+					// Filtro por área MANUAL (si selecciona un área específica)
+					const coincideArea = !$filtroArea ||
 						(agente.area_id && agente.area_id.toString() === $filtroArea.toString());
 
-					return coincideBusqueda && coincideArea;
+					return coincideArea;
 				});
+
+				// 🔒 FILTRO JERÁRQUICO AUTOMÁTICO POR ROL
+				if ($usuarioActual && $usuarioActual.rol) {
+					const usuarioRol = $usuarioActual.rol.toLowerCase();
+					const usuarioArea = $usuarioActual.id_area;
+
+					if (usuarioRol !== 'administrador') {
+						resultado = resultado.filter(agente => {
+							// Rol del agente
+							const agenteRol = (agente.roles && agente.roles[0]?.nombre || 'agente').toLowerCase();
+							const agenteArea = agente.area_id;
+
+							// Verificar jerarquía de roles
+							const puedeVerRol = this._puedeVerRol(usuarioRol, agenteRol);
+							if (!puedeVerRol) return false;
+
+							// Verificar área según rol
+							if (usuarioRol === 'director') {
+								// Director: su área + sub-áreas
+								const areasPermitidas = [usuarioArea, ...this.subAreas];
+								return areasPermitidas.includes(agenteArea);
+							} else if (usuarioRol === 'jefatura' || usuarioRol === 'agente avanzado') {
+								// Jefatura y Agente Avanzado: solo su área
+								return agenteArea === usuarioArea;
+							}
+
+							return true;
+						});
+					}
+				}
+
+				return resultado;
 			}
 		);
 
@@ -80,6 +121,49 @@ class UsuariosController {
 	}
 
 	/**
+	 * Determinar si un usuario puede ver datos de un agente según jerarquía de roles
+	 * @private
+	 */
+	_puedeVerRol(usuarioRol, agenteRol) {
+		const jerarquia = {
+			'administrador': ['administrador', 'director', 'jefatura', 'agente avanzado', 'agente'],
+			'director': ['director', 'jefatura', 'agente avanzado', 'agente'],
+			'jefatura': ['jefatura', 'agente avanzado', 'agente'],
+			'agente avanzado': ['agente avanzado', 'agente'],
+			'agente': ['agente']
+		};
+
+		const rolesVisibles = jerarquia[usuarioRol] || [];
+		return rolesVisibles.includes(agenteRol);
+	}
+
+	/**
+	 * Cargar sub-áreas de un área dada (para Director)
+	 * @private
+	 */
+	async _cargarSubAreas(areaId) {
+		try {
+			const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+			const response = await fetch(`${apiUrl}/api/personas/catalogs/areas/${areaId}/subareas/`, {
+				credentials: 'include'
+			});
+			const data = await response.json();
+
+			if (data.success && data.data && data.data.subareas) {
+				// Guardar IDs de sub-áreas
+				this.subAreas = data.data.subareas.map(sa => sa.id_area);
+				console.log(`📂 Sub-áreas cargadas para área ${areaId}:`, this.subAreas);
+			} else {
+				this.subAreas = [];
+				console.log(`📂 No hay sub-áreas para área ${areaId}`);
+			}
+		} catch (error) {
+			console.error('Error cargando sub-áreas:', error);
+			this.subAreas = [];
+		}
+	}
+
+	/**
 	 * Inicializar el controlador - cargar datos iniciales
 	 */
 	async init() {
@@ -90,6 +174,24 @@ class UsuariosController {
 		console.log('🚀 Iniciando carga de datos de usuarios...');
 
 		try {
+			// Obtener información del usuario actual
+			const currentUserData = await AuthService.getCurrentUserData();
+			if (currentUserData?.success && currentUserData.data?.success) {
+				const userInfo = currentUserData.data.data;
+				const rolNombre = userInfo.roles?.[0]?.nombre || 'Agente';
+				this.usuarioActual.set({
+					rol: rolNombre,
+					id: userInfo.id,
+					id_area: userInfo.id_area
+				});
+				console.log('👤 Usuario actual:', userInfo.nombre, '- Rol:', rolNombre, '- Área:', userInfo.id_area);
+
+				// Si es Director, cargar sus sub-áreas
+				if (rolNombre.toLowerCase() === 'director' && userInfo.id_area) {
+					await this._cargarSubAreas(userInfo.id_area);
+				}
+			}
+
 			// Cargar catálogos (áreas y roles) primero
 			await this.cargarAreas();
 			await this.cargarRoles();
@@ -112,9 +214,9 @@ class UsuariosController {
 		try {
 			this.loading.set(true);
 			this.error.set(null);
-			
+
 			const response = await personasService.getAgentes();
-			
+
 			// Axios pone la respuesta del servidor en response.data
 			// La API devuelve: {count, next, previous, results}
 			if (response && response.data) {
@@ -143,17 +245,17 @@ class UsuariosController {
 		try {
 			const response = await personasService.getAreas();
 			console.log('🏢 Respuesta de áreas:', response);
-			
+
 			// Axios response: response.data.data.results (doble data)
 			const areas = response.data?.data?.results || response.data?.results || [];
-			
+
 			// Asegurar que sea array
 			if (!Array.isArray(areas)) {
 				console.warn('⚠️ areasDisponibles no es array:', areas);
 				this.areasDisponibles.set([]);
 				return;
 			}
-			
+
 			this.areasDisponibles.set(areas);
 			console.log('✅ Áreas cargadas:', areas.length, areas);
 		} catch (error) {
@@ -169,17 +271,17 @@ class UsuariosController {
 		try {
 			const response = await personasService.getRoles();
 			console.log('👥 Respuesta de roles:', response);
-			
+
 			// Axios response: response.data.data.results (doble data)
 			const roles = response.data?.data?.results || response.data?.results || [];
-			
+
 			// Asegurar que sea array
 			if (!Array.isArray(roles)) {
 				console.warn('⚠️ rolesDisponibles no es array:', roles);
 				this.rolesDisponibles.set([]);
 				return;
 			}
-			
+
 			this.rolesDisponibles.set(roles);
 			console.log('✅ Roles cargados:', roles.length, roles);
 		} catch (error) {
@@ -240,7 +342,7 @@ class UsuariosController {
 	 */
 	async guardarCambiosAgente(agente, formData) {
 		this.modalEditarAgente.update(modal => ({ ...modal, isSaving: true }));
-		
+
 		try {
 			// Filtrar datos para excluir campos que no deben actualizarse
 			const datosActualizacion = {
@@ -262,28 +364,28 @@ class UsuariosController {
 			};
 
 			console.log('📝 Datos filtrados para actualización:', datosActualizacion);
-			
+
 			await personasService.updateAgente(agente.id_agente, datosActualizacion);
-			
+
 			// Si se cambió el rol, actualizar la asignación
 			if (formData.rol_id) {
 				try {
 					console.log('🔄 Actualizando rol del agente:', agente.id_agente, 'al rol:', formData.rol_id);
-					
+
 					// Obtener asignaciones actuales del agente
 					const asignacionesResponse = await personasService.getAsignaciones();
 					const asignaciones = asignacionesResponse.data?.data?.results || asignacionesResponse.data?.results || [];
-					
+
 					// Buscar asignación por id_agente (no por usuario)
 					const asignacionActual = asignaciones.find(a => a.usuario === agente.id_agente);
-					
+
 					console.log('🔍 Asignación actual encontrada:', asignacionActual);
-					
+
 					if (asignacionActual && String(asignacionActual.rol) !== String(formData.rol_id)) {
 						// Eliminar asignación actual
 						console.log('🗑️ Eliminando asignación actual:', asignacionActual.id);
 						await personasService.deleteAsignacion(asignacionActual.id);
-						
+
 						// Crear nueva asignación con el nuevo rol
 						const nuevaAsignacion = {
 							usuario: agente.id_agente,  // Usar id_agente correctamente
@@ -292,7 +394,7 @@ class UsuariosController {
 						};
 						console.log('➕ Creando nueva asignación:', nuevaAsignacion);
 						await personasService.createAsignacion(nuevaAsignacion);
-						
+
 					} else if (!asignacionActual && formData.rol_id) {
 						// Crear asignación si no existe
 						const nuevaAsignacion = {
@@ -303,7 +405,7 @@ class UsuariosController {
 						console.log('➕ Creando asignación nueva (no existía):', nuevaAsignacion);
 						await personasService.createAsignacion(nuevaAsignacion);
 					}
-					
+
 					console.log('✅ Rol actualizado correctamente');
 				} catch (rolError) {
 					console.error('❌ Error actualizando rol:', rolError);
@@ -314,14 +416,14 @@ class UsuariosController {
 
 			// Actualizar la lista de agentes
 			await this.actualizarAgenteEnLista(agente.id_agente);
-			
+
 			this.cerrarModales();
 			return { success: true, message: 'Agente actualizado correctamente' };
 		} catch (error) {
 			console.error('Error al actualizar agente:', error);
-			
+
 			let errorMessage = 'Error al actualizar el agente: ';
-			
+
 			if (error.response?.status === 400) {
 				const errorData = error.response.data;
 				if (errorData.dni) {
@@ -340,7 +442,7 @@ class UsuariosController {
 			} else {
 				errorMessage += (error.response?.data?.message || error.message || 'Error desconocido.');
 			}
-			
+
 			throw new Error(errorMessage);
 		} finally {
 			this.modalEditarAgente.update(modal => ({ ...modal, isSaving: false }));
@@ -356,22 +458,22 @@ class UsuariosController {
 		if (currentUser && (agente.email === currentUser.email || agente.usuario_email === currentUser.email || agente.id_agente === currentUser.id)) {
 			throw new Error('No puedes eliminarte a ti mismo. Solicita a otro administrador que realice esta acción.');
 		}
-		
+
 		this.modalEliminarAgente.update(modal => ({ ...modal, isDeleting: true }));
-		
+
 		try {
 			await personasService.deleteAgente(agente.id_agente);
-			
+
 			// Remover el agente de la lista
 			this.agentes.update(agentes => agentes.filter(a => a.id_agente !== agente.id_agente));
-			
+
 			this.cerrarModales();
 			return { success: true, message: 'Agente eliminado correctamente' };
 		} catch (error) {
 			console.error('Error al eliminar agente:', error);
-			
+
 			let errorMessage = 'Error al eliminar el agente: ';
-			
+
 			if (error.response?.status === 404) {
 				errorMessage += 'El agente no fue encontrado en el sistema.';
 			} else if (error.response?.status === 403) {
@@ -383,7 +485,7 @@ class UsuariosController {
 			} else {
 				errorMessage += (error.response?.data?.message || error.message || 'Error desconocido.');
 			}
-			
+
 			throw new Error(errorMessage);
 		} finally {
 			this.modalEliminarAgente.update(modal => ({ ...modal, isDeleting: false }));
@@ -395,16 +497,16 @@ class UsuariosController {
 	 */
 	async crearNuevoAgente(formData) {
 		this.modalAgregarAgente.update(modal => ({ ...modal, isSaving: true }));
-		
+
 		console.log('Datos del formulario para crear agente:', formData);
-		
+
 		try {
 			const response = await personasService.createAgenteConRol(formData);
 			console.log('✅ Respuesta de creación:', response);
-			
+
 			// El agente creado podría estar en response.data o directamente en response
 			const nuevoAgente = response.data || response;
-			
+
 			if (nuevoAgente) {
 				// Recargar la lista completa para asegurar consistencia
 				await this.cargarAgentes();
@@ -415,12 +517,12 @@ class UsuariosController {
 			}
 		} catch (error) {
 			console.error('Error al crear agente:', error);
-			
+
 			let errorMessage = 'Error al crear el agente: ';
-			
+
 			if (error.response?.status === 400) {
 				const errorData = error.response.data;
-				
+
 				// Mostrar el error específico del backend si está disponible
 				if (errorData.error) {
 					errorMessage += errorData.error;
@@ -441,7 +543,7 @@ class UsuariosController {
 			} else {
 				errorMessage += (error.response?.data?.message || error.message || 'Error desconocido.');
 			}
-			
+
 			throw new Error(errorMessage);
 		} finally {
 			this.modalAgregarAgente.update(modal => ({ ...modal, isSaving: false }));
@@ -453,19 +555,12 @@ class UsuariosController {
 	 */
 	async actualizarAgenteEnLista(idAgente) {
 		try {
-			const response = await personasService.getAgente(idAgente);
-			const agenteActualizado = response.data;
-			
-			this.agentes.update(agentes => {
-				const index = agentes.findIndex(a => a.id_agente === idAgente);
-				if (index !== -1) {
-					agentes[index] = agenteActualizado;
-				}
-				return [...agentes]; // Trigger reactivity
-			});
+			console.log('🔄 Recargando lista completa de agentes...');
+			// Recargar toda la lista para asegurar datos completos (area_nombre, roles, etc.)
+			await this.cargarAgentes();
+			console.log('✅ Lista de agentes recargada correctamente');
 		} catch (error) {
-			console.error('Error actualizando agente en lista:', error);
-			// Recargar toda la lista como fallback
+			console.error('❌ Error recargando lista de agentes:', error);
 			await this.cargarAgentes();
 		}
 	}
@@ -483,8 +578,8 @@ class UsuariosController {
 	isCurrentUser(agente) {
 		const currentUser = this.getCurrentUser();
 		return currentUser && (
-			agente.email === currentUser.email || 
-			agente.usuario_email === currentUser.email || 
+			agente.email === currentUser.email ||
+			agente.usuario_email === currentUser.email ||
 			agente.id_agente === currentUser.id
 		);
 	}

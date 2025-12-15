@@ -77,6 +77,7 @@ class Asistencia(models.Model):
     fecha = models.DateField()
     hora_entrada = models.TimeField(blank=True, null=True)
     hora_salida = models.TimeField(blank=True, null=True)
+    horas_efectivas = models.DecimalField(max_digits=4, decimal_places=2, blank=True, null=True, help_text="Horas trabajadas (diferencia entre entrada y salida)")
     marcacion_entrada_automatica = models.BooleanField(default=False)
     marcacion_salida_automatica = models.BooleanField(default=False)
     es_correccion = models.BooleanField(default=False)

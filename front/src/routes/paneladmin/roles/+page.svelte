@@ -87,24 +87,7 @@
 
 <div class="page-container">
 	<div class="page-header">
-		<div class="header-title">
-			<h1>Gestión de Roles y Permisos</h1>
-		</div>
-		<div class="header-actions">
-			<button
-				class="btn-header"
-				style="background: #8b5cf6; color: white"
-				on:click={() => rolesController.cargarDatos()}
-				disabled={$loading}
-			>
-				{#if $loading}
-					<span class="spinner"></span>
-				{:else}
-					🔄
-				{/if}
-				Actualizar
-			</button>
-		</div>
+		<h1>Gestión de Roles y Permisos</h1>
 	</div>
 
 	<div class="page-content">
@@ -247,7 +230,7 @@
 											"Sin área"}
 									</span>
 								</td>
-									<td class="rol">
+								<td class="rol">
 									{#if $editingRoleId === agente.id_agente}
 										<div class="rol-editor">
 											<select
@@ -280,7 +263,10 @@
 											<div class="rol-actions">
 												<button
 													class="btn-success"
-													on:click={() => rolesController.guardarCambioRol(agente)}
+													on:click={() =>
+														rolesController.guardarCambioRol(
+															agente,
+														)}
 													disabled={$savingRoleId ===
 														agente.id_agente}
 												>
@@ -293,7 +279,9 @@
 												</button>
 												<button
 													class="btn-secondary"
-													on:click={rolesController.cancelarEdicionRol}
+													type="button"
+													on:click={() =>
+														rolesController.cancelarEdicionRol()}
 													disabled={$savingRoleId ===
 														agente.id_agente}
 												>
@@ -323,7 +311,8 @@
 												on:click={() =>
 													rolesController.iniciarEdicionRol(
 														agente.id_agente,
-														rolActual?.id || rolActual?.id_rol
+														rolActual?.id ||
+															rolActual?.id_rol,
 													)}
 												disabled={$savingRoleId !==
 													null}
@@ -347,31 +336,29 @@
 </div>
 
 <style>
-	.page-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1rem;
-		padding-bottom: 1rem;
+	.page-container {
+		width: 1600px;
+		margin: 0 auto;
+		padding: 2rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
-	.header-title {
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	.page-header {
 		position: relative;
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
 		padding: 30px 40px;
-		margin: 0;
-		max-width: 1000px;
+		max-width: 1600px;
 		border-radius: 28px;
 		overflow: hidden;
 		text-align: center;
+		margin-bottom: 30px;
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-			0 20px 60px rgba(30, 64, 175, 0.4);
+			0 10px 30px rgba(30, 64, 175, 0.4);
 	}
 
-	.header-title::before {
+	.page-header::before {
 		content: "";
 		position: absolute;
 		top: 0;
@@ -388,18 +375,39 @@
 		animation: moveLines 20s linear infinite;
 	}
 
-	.header-title h1 {
+	.page-header h1 {
 		margin: 10px;
 		font-weight: 800;
-		font-size: 30px;
+		font-size: 18px;
 		letter-spacing: 0.2px;
 		position: relative;
 		padding-bottom: 12px;
 		overflow: hidden;
-		display: inline-block;
+		display: block;
+		max-width: 100%;
+		word-wrap: break-word;
 	}
 
-	.header-title h1::after {
+	@media (min-width: 480px) {
+		.page-header h1 {
+			font-size: 22px;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.page-header h1 {
+			font-size: 26px;
+			display: inline-block;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.page-header h1 {
+			font-size: 30px;
+		}
+	}
+
+	.page-header h1::after {
 		content: "";
 		position: absolute;
 		width: 40%;
@@ -422,11 +430,6 @@
 		100% {
 			left: 100%;
 		}
-	}
-
-	.header-actions {
-		display: flex;
-		gap: 1rem;
 	}
 
 	.alert {
@@ -501,6 +504,7 @@
 	.loading-container {
 		text-align: center;
 		padding: 4rem 2rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
 
 	.spinner-large {
@@ -544,6 +548,12 @@
 		border-radius: 24px;
 		box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
 		background: white;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.table-container::-webkit-scrollbar {
+		display: none;
 	}
 
 	.table-container::-webkit-scrollbar {
@@ -712,27 +722,6 @@
 		font-style: italic;
 	}
 
-	.btn-header {
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-		padding: 16px 32px;
-		border-radius: 10px;
-		border: none;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		text-decoration: none;
-		display: inline-flex;
-		align-items: center;
-		gap: 10px;
-		font-size: 18px;
-		color: white;
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.219);
-	}
-
-	.btn-header:hover {
-		transform: translateY(-3px);
-	}
-
 	.btn-primary {
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		padding: 8px 12px;
@@ -784,17 +773,8 @@
 		padding: 5px 5px 5px 5px;
 	}
 
-	.spinner,
-	.spinner-sm {
-		border: 2px solid transparent;
-		border-top: 2px solid currentColor;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	.spinner {
-		width: 1rem;
-		height: 1rem;
+	.btn-secondary:hover:not(:disabled) {
+		background: #3d3c3cc2;
 	}
 
 	.spinner-sm {
@@ -842,11 +822,6 @@
 		.page-container {
 			padding: 0.5rem;
 		}
-
-		.header-title h1 {
-			font-size: 1.5rem;
-		}
-
 		.roles-table {
 			min-width: 1000px;
 		}

@@ -7,7 +7,6 @@
 # ============================================================================
 # DOCUMENTACIÓN Y ARCHIVOS TEMPORALES
 # ============================================================================
-/documentacion/mio/  
 *.tmp
 *.temp
 *.swp
@@ -379,6 +378,8 @@ dump_*.sql
 .env.production
 .env.development
 minio.env
+# EXCEPCIÓN: Permitir front/.env.production para Railway (solo contiene URL pública del backend)
+!front/.env.production
 *.key
 *.pem
 *.p12
@@ -485,3 +486,4 @@ common/autoinstallers/*/.npmrc
 # ============================================================================
 # FIN DEL GITIGNORE
 # ============================================================================
+front/package-lock.json

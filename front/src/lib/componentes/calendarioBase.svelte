@@ -298,111 +298,117 @@
             <button on:click={() => year++}>&gt;&gt;</button>
         </h1>
     </div>
-    <div class="calendar-grid">
-        <div class="calendar-header-row">
-            {#each headers as header}
-                <div class="calendar-header-cell">{header}</div>
-            {/each}
-        </div>
-        <div class="calendar-body">
-            {#each days as day}
-                <div
-                    class="calendar-day"
-                    class:disabled={!day.enabled}
-                    class:today={day.isToday}
-                    class:feriado={day.isFeriado}
-                    class:guardia={day.tieneGuardia}
-                    on:click={() => dayClick(day)}
-                    on:keydown={(e) => e.key === "Enter" && dayClick(day)}
-                    role="button"
-                    tabindex="0"
-                >
-                    <div class="day-number">{day.name}</div>
-                    {#if day.isFeriado}
-                        <div class="feriado-info">
-                            {#if day.feriados && day.feriados.length > 0}
-                                <!-- Mostrar todos los feriados -->
-                                {#each day.feriados as feriado}
+    <div class="calendar-grid-wrapper">
+        <div class="calendar-grid">
+            <div class="calendar-header-row">
+                {#each headers as header}
+                    <div class="calendar-header-cell">{header}</div>
+                {/each}
+            </div>
+            <div class="calendar-body">
+                {#each days as day}
+                    <div
+                        class="calendar-day"
+                        class:disabled={!day.enabled}
+                        class:today={day.isToday}
+                        class:feriado={day.isFeriado}
+                        class:guardia={day.tieneGuardia}
+                        on:click={() => dayClick(day)}
+                        on:keydown={(e) => e.key === "Enter" && dayClick(day)}
+                        role="button"
+                        tabindex="0"
+                    >
+                        <div class="day-number">{day.name}</div>
+                        {#if day.isFeriado}
+                            <div class="feriado-info">
+                                {#if day.feriados && day.feriados.length > 0}
+                                    <!-- Mostrar todos los feriados -->
+                                    {#each day.feriados as feriado}
+                                        <div class="feriado-item">
+                                            <div class="feriado-nombre">
+                                                {feriado.nombre}
+                                            </div>
+                                            {#if feriado.es_multiples_dias}
+                                                <div class="feriado-duracion">
+                                                    {feriado.duracion_dias} días
+                                                </div>
+                                            {/if}
+                                            <div class="feriado-tipo">
+                                                {feriado.tipo_feriado}
+                                            </div>
+                                        </div>
+                                    {/each}
+                                {:else if day.feriado}
+                                    <!-- Compatibilidad con formato anterior -->
                                     <div class="feriado-item">
                                         <div class="feriado-nombre">
-                                            {feriado.nombre}
+                                            {day.feriado.nombre}
                                         </div>
-                                        {#if feriado.es_multiples_dias}
+                                        {#if day.feriado.es_multiples_dias}
                                             <div class="feriado-duracion">
-                                                {feriado.duracion_dias} días
+                                                {day.feriado.duracion_dias} días
                                             </div>
                                         {/if}
                                         <div class="feriado-tipo">
-                                            {feriado.tipo_feriado}
+                                            {day.feriado.tipo_feriado}
                                         </div>
+                                    </div>
+                                {/if}
+                            </div>
+                        {/if}
+                        {#if day.tieneGuardia && day.guardias.length > 0}
+                            <div class="guardias-info">
+                                {#each day.guardias.slice(0, 1) as guardia}
+                                    <div class="guardia-item">
+                                        <div class="guardia-tipo">
+                                            🚨 {guardia.tipo || "Guardia"}
+                                        </div>
+                                        <div class="guardia-horario">
+                                            {guardia.hora_inicio?.slice(0, 5)} -
+                                            {guardia.hora_fin?.slice(0, 5)}
+                                        </div>
+                                        {#if guardia.es_multiples_dias || guardia.hora_inicio > guardia.hora_fin}
+                                            <div class="guardia-duracion">
+                                                2 días
+                                            </div>
+                                        {/if}
+                                        {#if guardia.agente_nombre}
+                                            <div class="guardia-agente">
+                                                {guardia.agente_nombre}
+                                            </div>
+                                        {/if}
+                                        {#if guardia.cantidad && guardia.cantidad > 1}
+                                            <div class="guardia-cantidad">
+                                                ({guardia.cantidad} agentes)
+                                            </div>
+                                        {/if}
                                     </div>
                                 {/each}
-                            {:else if day.feriado}
-                                <!-- Compatibilidad con formato anterior -->
-                                <div class="feriado-item">
-                                    <div class="feriado-nombre">
-                                        {day.feriado.nombre}
+                                {#if day.guardias.length > 1}
+                                    <div
+                                        class="guardias-more"
+                                        on:click={() =>
+                                            showAllGuardias(
+                                                day.date,
+                                                day.guardias,
+                                            )}
+                                        on:keydown={(e) =>
+                                            e.key === "Enter" &&
+                                            showAllGuardias(
+                                                day.date,
+                                                day.guardias,
+                                            )}
+                                        role="button"
+                                        tabindex="0"
+                                    >
+                                        +{day.guardias.length - 1} más
                                     </div>
-                                    {#if day.feriado.es_multiples_dias}
-                                        <div class="feriado-duracion">
-                                            {day.feriado.duracion_dias} días
-                                        </div>
-                                    {/if}
-                                    <div class="feriado-tipo">
-                                        {day.feriado.tipo_feriado}
-                                    </div>
-                                </div>
-                            {/if}
-                        </div>
-                    {/if}
-                    {#if day.tieneGuardia && day.guardias.length > 0}
-                        <div class="guardias-info">
-                            {#each day.guardias.slice(0, 1) as guardia}
-                                <div class="guardia-item">
-                                    <div class="guardia-tipo">
-                                        🚨 {guardia.tipo || "Guardia"}
-                                    </div>
-                                    <div class="guardia-horario">
-                                        {guardia.hora_inicio?.slice(0, 5)} - {guardia.hora_fin?.slice(
-                                            0,
-                                            5,
-                                        )}
-                                    </div>
-                                    {#if guardia.es_multiples_dias || guardia.hora_inicio > guardia.hora_fin}
-                                        <div class="guardia-duracion">
-                                            2 días
-                                        </div>
-                                    {/if}
-                                    {#if guardia.agente_nombre}
-                                        <div class="guardia-agente">
-                                            {guardia.agente_nombre}
-                                        </div>
-                                    {/if}
-                                    {#if guardia.cantidad && guardia.cantidad > 1}
-                                        <div class="guardia-cantidad">
-                                            ({guardia.cantidad} agentes)
-                                        </div>
-                                    {/if}
-                                </div>
-                            {/each}
-                            {#if day.guardias.length > 1}
-                                <div
-                                    class="guardias-more"
-                                    on:click={() =>
-                                        showAllGuardias(day.date, day.guardias)}
-                                    on:keydown={(e) =>
-                                        e.key === "Enter" &&
-                                        showAllGuardias(day.date, day.guardias)}
-                                    role="button"
-                                    tabindex="0"
-                                >
-                                    +{day.guardias.length - 1} más
-                                </div>
-                            {/if}
-                        </div>
-                    {/if}
-                </div>
-            {/each}
+                                {/if}
+                            </div>
+                        {/if}
+                    </div>
+                {/each}
+            </div>
         </div>
     </div>
 </div>
@@ -492,58 +498,130 @@
 {/if}
 
 <style>
+    :global(*) {
+        color-scheme: light only !important;
+        -webkit-color-scheme: light !important;
+    }
+
     .calendar-container {
         width: 100%;
         margin: auto;
         overflow: hidden;
         box-shadow: none;
-        border-radius: 16px;
+        border-radius: 12px;
         background: transparent;
         border: none;
-        max-width: 1200px;
+        max-width: 100%;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        box-sizing: border-box;
+        min-width: 0;
+    }
+
+    @media (min-width: 768px) {
+        .calendar-container {
+            border-radius: 16px;
+        }
+    }
+
+    @media (min-width: 1200px) {
+        .calendar-container {
+            max-width: 1200px;
+        }
     }
     .calendar-header {
         text-align: center;
-        padding: 20px 0;
+        padding: 12px 8px;
         background: linear-gradient(
             135deg,
             rgba(231, 144, 67, 0.85) 0%,
             rgba(255, 139, 50, 0.85) 100%
-        );
+        ) !important;
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
-        color: white;
+        color: white !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
+        border-radius: 12px;
         box-shadow:
             inset 0 1px 2px rgba(255, 255, 255, 0.3),
             0 2px 10px rgba(231, 144, 67, 0.2);
     }
+
+    @media (min-width: 640px) {
+        .calendar-header {
+            padding: 16px 0;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .calendar-header {
+            padding: 20px 0;
+            border-radius: 16px;
+        }
+    }
+
     .calendar-header h1 {
         margin: 0;
-        font-size: 22px;
+        font-size: 16px;
+        color: white !important;
+    }
+
+    @media (min-width: 640px) {
+        .calendar-header h1 {
+            font-size: 20px;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .calendar-header h1 {
+            font-size: 22px;
+        }
     }
     .calendar-header button {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.2) !important;
         border: 1px solid rgba(255, 255, 255, 0.4);
-        padding: 8px 12px;
-        color: white;
+        padding: 6px 10px;
+        color: white !important;
         cursor: pointer;
         outline: 0;
-        border-radius: 8px;
-        margin: 0 5px;
+        border-radius: 6px;
+        margin: 0 3px;
         transition: all 0.2s ease;
+        font-size: 14px;
+    }
+
+    @media (min-width: 640px) {
+        .calendar-header button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 0 5px;
+            font-size: 16px;
+        }
     }
     .calendar-header button:hover {
         background: rgba(255, 255, 255, 0.3);
     }
+
+    .calendar-grid-wrapper {
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        width: 100%;
+    }
+
+    .calendar-grid-wrapper::-webkit-scrollbar {
+        display: none;
+    }
+
     .calendar-grid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         gap: 0;
         background: transparent;
         padding: 0;
+        min-width: 280px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     .calendar-header-row {
         display: contents;
@@ -551,35 +629,83 @@
     .calendar-header-cell {
         text-align: center;
         font-weight: bold;
-        padding: 15px;
-        margin: 4px;
+        padding: 8px 4px;
+        margin: 2px;
         background: linear-gradient(
             135deg,
             rgba(142, 182, 228, 0.5) 0%,
             rgba(61, 151, 255, 0.45) 100%
-        );
+        ) !important;
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
-        color: rgba(0, 0, 0, 0.63);
+        color: rgba(0, 0, 0, 0.63) !important;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.062);
-        border-radius: 12px;
+        border-radius: 8px;
         box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3);
+        font-size: 11px;
+    }
+
+    @media (min-width: 640px) {
+        .calendar-header-cell {
+            padding: 12px 8px;
+            margin: 3px;
+            border-radius: 10px;
+            font-size: 13px;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .calendar-header-cell {
+            padding: 15px;
+            margin: 4px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
     }
     .calendar-body {
         display: contents;
     }
     .calendar-day {
         text-align: left;
-        padding: 8px;
-        background: white;
-        min-height: 120px;
+        padding: 4px;
+        background: white !important;
+        background-color: #ffffff !important;
+        min-height: 60px;
         transition: all 0.2s ease;
         border: 1px solid #f0f0f0;
-        border-radius: 12px;
-        margin: 4px;
+        border-radius: 8px;
+        margin: 2px;
         display: flex;
         flex-direction: column;
         position: relative;
+        box-sizing: border-box;
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    @media (min-width: 480px) {
+        .calendar-day {
+            min-height: 80px;
+            padding: 6px;
+            margin: 3px;
+        }
+    }
+
+    @media (min-width: 640px) {
+        .calendar-day {
+            min-height: 100px;
+            padding: 8px;
+            margin: 4px;
+            border-radius: 10px;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .calendar-day {
+            min-height: 120px;
+            border-radius: 12px;
+        }
     }
 
     .calendar-day:not(.disabled):hover {
@@ -590,19 +716,31 @@
     }
 
     .calendar-day.disabled {
-        background: rgba(250, 250, 250, 0.5);
-        color: rgba(204, 204, 204, 0.6);
-        border-radius: 12px;
+        background: rgba(250, 250, 250, 0.5) !important;
+        color: rgba(204, 204, 204, 0.6) !important;
+        border-radius: 8px;
         border-color: rgba(240, 240, 240, 0.5);
         opacity: 0.6;
     }
 
+    @media (min-width: 640px) {
+        .calendar-day.disabled {
+            border-radius: 12px;
+        }
+    }
+
     .calendar-day.today {
-        background: #e7904396;
-        color: white;
+        background: #e7904396 !important;
+        color: white !important;
         font-weight: bold;
         border: none;
-        border-radius: 12px;
+        border-radius: 8px;
+    }
+
+    @media (min-width: 640px) {
+        .calendar-day.today {
+            border-radius: 12px;
+        }
     }
 
     .calendar-day.today:hover {
@@ -611,37 +749,67 @@
     }
 
     .calendar-day.feriado {
-        background: #ffe6e6;
-        border-color: #ff9999;
-        border-radius: 12px;
+        background: #ffe6e6 !important;
+        border-color: #ff9999 !important;
+        border-radius: 8px;
+    }
+
+    @media (min-width: 640px) {
+        .calendar-day.feriado {
+            border-radius: 12px;
+        }
     }
 
     .calendar-day.feriado:hover {
-        background: #ffcccc;
+        background: #ffcccc !important;
         transform: scale(1.02);
     }
 
     .calendar-day.today.feriado {
-        background: linear-gradient(135deg, #e65c5c 0%, #cc0000 100%);
+        background: linear-gradient(
+            135deg,
+            #e65c5c 0%,
+            #cc0000 100%
+        ) !important;
         border: none;
-        border-radius: 12px;
+        border-radius: 8px;
+    }
+
+    @media (min-width: 640px) {
+        .calendar-day.today.feriado {
+            border-radius: 12px;
+        }
     }
 
     .day-number {
         font-weight: 600;
-        margin-bottom: 4px;
-        color: rgba(0, 0, 0, 0.63);
+        margin-bottom: 2px;
+        color: rgba(0, 0, 0, 0.63) !important;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.062);
+        font-size: 12px;
+    }
+
+    @media (min-width: 640px) {
+        .day-number {
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
     }
 
     .feriado-info {
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         line-height: 1.2;
         flex-grow: 1;
     }
 
+    @media (min-width: 640px) {
+        .feriado-info {
+            font-size: 0.75rem;
+        }
+    }
+
     .feriado-item {
-        margin-bottom: 4px;
+        margin-bottom: 3px;
         padding: 2px;
         border-left: 2px solid #d63384;
         padding-left: 4px;
@@ -653,47 +821,71 @@
 
     .feriado-nombre {
         font-weight: 500;
-        color: #d63384;
+        color: #d63384 !important;
         margin-bottom: 2px;
         word-wrap: break-word;
         hyphens: auto;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
+    }
+
+    @media (min-width: 640px) {
+        .feriado-nombre {
+            font-size: 0.7rem;
+        }
     }
 
     .feriado-duracion {
         font-size: 0.6rem;
-        color: #28a745;
+        color: #28a745 !important;
         font-weight: 600;
         margin-bottom: 1px;
     }
 
+    @media (min-width: 640px) {
+        .feriado-duracion {
+            font-size: 0.65rem;
+        }
+    }
+
     .feriado-tipo {
-        font-size: 0.65rem;
-        color: #6c757d;
+        font-size: 0.6rem;
+        color: #6c757d !important;
         font-style: italic;
     }
 
+    @media (min-width: 640px) {
+        .feriado-tipo {
+            font-size: 0.65rem;
+        }
+    }
+
     .calendar-day.today .feriado-nombre {
-        color: white;
+        color: white !important;
     }
 
     .calendar-day.today .feriado-duracion {
-        color: #90ee90;
+        color: #90ee90 !important;
     }
 
     .calendar-day.today .feriado-tipo {
-        color: rgba(255, 255, 255, 0.8);
+        color: rgba(255, 255, 255, 0.8) !important;
     }
 
     /* Estilos para guardias */
     .calendar-day.guardia {
-        background: #e6f3ff;
-        border-color: #4a90e2;
-        border-radius: 12px;
+        background: #e6f3ff !important;
+        border-color: #4a90e2 !important;
+        border-radius: 8px;
+    }
+
+    @media (min-width: 640px) {
+        .calendar-day.guardia {
+            border-radius: 12px;
+        }
     }
 
     .calendar-day.guardia:hover {
-        background: #cce7ff;
+        background: #cce7ff !important;
         transform: scale(1.02);
     }
 
@@ -856,6 +1048,12 @@
         padding: 1.5rem;
         overflow-y: auto;
         flex: 1;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .modal-body::-webkit-scrollbar {
+        display: none;
     }
 
     .modal-fecha {
@@ -937,6 +1135,16 @@
     }
 
     /* Responsive */
+    @media (max-width: 480px) {
+        .calendar-grid {
+            gap: 0;
+        }
+
+        .calendar-day:not(.disabled):hover {
+            transform: scale(1);
+        }
+    }
+
     @media (max-width: 640px) {
         .modal-content {
             width: 95%;

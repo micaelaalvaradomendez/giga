@@ -147,22 +147,30 @@ class OrganigramaController {
 				personasService.getRoles()
 			]);
 
-			// Procesar agentes
-			const agentesData = agentesResponse.data?.results || agentesResponse.results || [];
+			// Normalizador universal
+			const normalize = r =>
+				r?.data?.data?.results ||
+				r?.data?.results ||
+				r?.results ||
+				r?.data ||
+				[];
+
+			// Agentes
+			const agentesData = normalize(agentesResponse);
 			this.agentes.set(Array.isArray(agentesData) ? agentesData : []);
 
-			// Procesar áreas
-			const areasData = areasResponse.data?.data?.results || areasResponse.data?.results || [];
+			// Áreas
+			const areasData = normalize(areasResponse);
 			this.areas.set(Array.isArray(areasData) ? areasData : []);
 
-			// Procesar roles
-			const rolesData = rolesResponse.data?.data?.results || rolesResponse.data?.results || [];
+			// Roles
+			const rolesData = normalize(rolesResponse);
 			this.roles.set(Array.isArray(rolesData) ? rolesData : []);
 
 			console.log('✅ Datos del organigrama cargados correctamente');
 		} catch (error) {
 			console.error('❌ Error cargando datos del organigrama:', error);
-			
+
 			let errorMessage = 'Error al cargar datos del organigrama: ';
 			if (error.response?.status === 401) {
 				throw new Error('Sesión expirada');
@@ -171,7 +179,7 @@ class OrganigramaController {
 			} else {
 				errorMessage += (error.response?.data?.message || error.message);
 			}
-			
+
 			this.error.set(errorMessage);
 			throw error;
 		} finally {
@@ -190,15 +198,15 @@ class OrganigramaController {
 		};
 
 		// Separar por roles jerárquicos
-		const administradores = agentes.filter(a => 
+		const administradores = agentes.filter(a =>
 			a.roles && a.roles.some(r => r.nombre.toLowerCase().includes('administrador'))
 		);
-		const jefes = agentes.filter(a => 
+		const jefes = agentes.filter(a =>
 			a.roles && a.roles.some(r => r.nombre.toLowerCase().includes('jefe'))
 		);
-		const agentesComunes = agentes.filter(a => 
-			!a.roles || !a.roles.some(r => 
-				r.nombre.toLowerCase().includes('administrador') || 
+		const agentesComunes = agentes.filter(a =>
+			!a.roles || !a.roles.some(r =>
+				r.nombre.toLowerCase().includes('administrador') ||
 				r.nombre.toLowerCase().includes('jefe')
 			)
 		);
@@ -273,7 +281,7 @@ class OrganigramaController {
 		estructura.sinAsignar = sinRol;
 
 		roles.forEach(rol => {
-			const agentesDelRol = agentes.filter(a => 
+			const agentesDelRol = agentes.filter(a =>
 				a.roles && a.roles.some(r => r.id === rol.id_rol || r.id === rol.id)
 			);
 			if (agentesDelRol.length > 0) {

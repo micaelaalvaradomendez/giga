@@ -1,6 +1,6 @@
 <script>
-	import { aprobarLicencia } from "$lib/paneladmin/controllers/licenciasController.js";
 	import { createEventDispatcher } from "svelte";
+	import { showAlert } from "$lib/stores/modalAlertStore.js";
 
 	// Props
 	export let show = false;
@@ -9,19 +9,10 @@
 	const dispatch = createEventDispatcher();
 
 	let formAprobacion = { observaciones: "" };
-	let enviando = false;
-
-	// Modal confirmación/alerta
-	let mostrandoConfirmacion = false;
-	let tituloConfirmacion = "";
-	let mensajeConfirmacion = "";
-	let tipoConfirmacion = "success";
-	let resolverConfirmacion = null;
 
 	// Reset al cerrar modal principal
 	$: if (!show) {
 		formAprobacion = { observaciones: "" };
-		enviando = false;
 	}
 
 	function cerrarModal() {
@@ -29,76 +20,13 @@
 		dispatch("close");
 	}
 
-	async function handleAprobar() {
+	function handleAprobar() {
 		if (!licencia?.id_licencia) {
-			mostrarConfirmacion(
-				"Error: No se ha seleccionado una licencia válida",
-				"Debe seleccionar una licencia antes de aprobar.",
-				"error",
-			);
+			showAlert("Error: No se ha seleccionado una licencia válida", "error", "Error");
 			return;
 		}
 
-		try {
-			enviando = true;
-
-			const resultado = await aprobarLicencia(
-				licencia.id_licencia,
-				formAprobacion,
-			);
-
-			if (resultado.success) {
-				mostrarConfirmacion(
-					"Licencia aprobada",
-					"Operación exitosa",
-					"success",
-				);
-				cerrarModal();
-				dispatch("approved", resultado.data);
-			} else {
-				throw new Error(
-					resultado.message || "Error al aprobar la licencia",
-				);
-			}
-		} catch (err) {
-			mostrarConfirmacion("Error al aprobar", err.message, "error");
-		} finally {
-			enviando = false;
-		}
-	}
-
-	function mostrarConfirmacion(titulo, mensaje = "", tipo = "success") {
-		tituloConfirmacion = titulo;
-		mensajeConfirmacion = mensaje;
-		const valid = ["success", "error", "warning"];
-		tipoConfirmacion = valid.includes(tipo) ? tipo : "success";
-
-		mostrandoConfirmacion = true;
-		resolverConfirmacion = null; // Limpio por si quedó uno viejo
-	}
-
-	// Si quisieras usar confirmación "con aceptar/cancelar" usando Promise
-	// ya queda listo
-	function confirmar(titulo, mensaje = "", tipo = "warning") {
-		tituloConfirmacion = titulo;
-		mensajeConfirmacion = mensaje;
-		const valid = ["success", "error", "warning"];
-		tipoConfirmacion = valid.includes(tipo) ? tipo : "warning";
-
-		mostrandoConfirmacion = true;
-
-		return new Promise((resolve) => {
-			resolverConfirmacion = resolve;
-		});
-	}
-
-	function aceptarConfirmacion() {
-		mostrandoConfirmacion = false;
-
-		if (resolverConfirmacion) {
-			resolverConfirmacion(true);
-			resolverConfirmacion = null;
-		}
+		dispatch("aprobar", { observaciones: formAprobacion.observaciones });
 	}
 </script>
 
@@ -116,12 +44,11 @@
 					<h6>Información de la Licencia</h6>
 					<div class="info-row">
 						<strong>Agente:</strong>
-						{licencia.agente?.nombre}
-						{licencia.agente?.apellido}
+						{licencia.agente_nombre || "SIN AGENTE"}
 					</div>
 					<div class="info-row">
 						<strong>Tipo:</strong>
-						{licencia.tipo_licencia?.nombre || "N/A"}
+						{licencia.tipo_licencia_descripcion || "N/A"}
 					</div>
 					<div class="info-row">
 						<strong>Período:</strong>
@@ -129,7 +56,7 @@
 					</div>
 					<div class="info-row">
 						<strong>Días:</strong>
-						{licencia.dias_solicitados}
+						{licencia.dias_licencia}
 					</div>
 					{#if licencia.justificacion}
 						<div class="info-row">
@@ -157,50 +84,14 @@
 							type="button"
 							class="btn-secondary"
 							on:click={cerrarModal}
-							disabled={enviando}
 						>
 							Cancelar
 						</button>
-						<button
-							type="submit"
-							class="btn-success"
-							disabled={enviando}
-						>
-							{enviando
-								? "⏳ Aprobando..."
-								: "✅ Aprobar Licencia"}
+						<button type="submit" class="btn-success">
+							✅ Aprobar Licencia
 						</button>
 					</div>
 				</form>
-			</div>
-		</div>
-	</div>
-{/if}
-
-{#if mostrandoConfirmacion}
-	<div class="modal-confirmacion">
-		<div class="modal-confirmacion-contenido {tipoConfirmacion}">
-			<div class="modal-confirmacion-icono">
-				{#if tipoConfirmacion === "success"}
-					✓
-				{:else if tipoConfirmacion === "error"}
-					✕
-				{:else if tipoConfirmacion === "warning"}
-					⚠
-				{:else}
-					✓
-				{/if}
-			</div>
-			<h3 class="modal-confirmacion-titulo">{tituloConfirmacion}</h3>
-			<p class="modal-confirmacion-mensaje">{mensajeConfirmacion}</p>
-
-			<div class="modal-confirmacion-botones">
-				<button
-					class="modal-confirmacion-boton"
-					on:click={aceptarConfirmacion}
-				>
-					Aceptar
-				</button>
 			</div>
 		</div>
 	</div>
@@ -230,6 +121,12 @@
 		overflow-y: auto;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.modal-contenido::-webkit-scrollbar {
+		display: none;
 	}
 
 	.modal-header {
@@ -353,90 +250,5 @@
 		opacity: 0.6;
 		cursor: not-allowed;
 		transform: none;
-	}
-
-	/* Modal de confirmación/alerta */
-	.modal-confirmacion {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: rgba(0, 0, 0, 0.55);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 99999;
-		backdrop-filter: blur(4px);
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
-
-	.modal-confirmacion-contenido {
-		background: #ffffff;
-		padding: 32px;
-		width: 380px;
-		border-radius: 16px;
-		text-align: center;
-		box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-	}
-
-	.modal-confirmacion-contenido.success {
-		background: #d4edda;
-		border: 4px solid #28a745;
-	}
-
-	.modal-confirmacion-contenido.error {
-		background: #f8d7da;
-		border: 4px solid #dc3545;
-	}
-
-	.modal-confirmacion-contenido.warning {
-		background: #fff3cd;
-		border: 4px solid #ffc107;
-	}
-
-	.modal-confirmacion-icono {
-		font-size: 3rem;
-		font-weight: bold;
-		color: inherit;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.modal-confirmacion-titulo {
-		font-size: 20px;
-		font-weight: 700;
-		color: #1e293b;
-		margin-bottom: 8px;
-	}
-
-	.modal-confirmacion-mensaje {
-		font-size: 15px;
-		color: #475569;
-		margin-bottom: 20px;
-	}
-
-	.modal-confirmacion-botones {
-		display: flex;
-		justify-content: center;
-		gap: 10px;
-	}
-
-	.modal-confirmacion-boton {
-		padding: 10px 28px;
-		background: #3b82f6;
-		color: white;
-		border: none;
-		border-radius: 8px;
-		font-size: 14px;
-		cursor: pointer;
-		transition: all 0.2s;
-		box-shadow: 0 3px 6px rgba(59, 130, 246, 0.3);
-	}
-
-	.modal-confirmacion-boton:hover {
-		background: #2563eb;
-		transform: translateY(-2px);
 	}
 </style>

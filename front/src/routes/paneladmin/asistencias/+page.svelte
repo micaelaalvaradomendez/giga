@@ -2,6 +2,9 @@
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
     import { asistenciasController } from "$lib/paneladmin/controllers";
+    import ModalCorreccionAsistencia from "$lib/componentes/admin/asistencias/ModalCorreccionAsistencia.svelte";
+    import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+    import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
 
     // Obtener stores del controlador
     const {
@@ -72,28 +75,36 @@
     async function handleMarcarEntrada() {
         const result = await asistenciasController.marcarEntrada();
         if (result.message) {
-            alert(result.message);
+            const tipo = result.success ? "success" : "error";
+            const titulo = result.success ? "Éxito" : "Error";
+            await showAlert(result.message, tipo, titulo);
         }
     }
 
     async function handleMarcarSalida() {
         const result = await asistenciasController.marcarSalida();
         if (result.message) {
-            alert(result.message);
+            const tipo = result.success ? "success" : "error";
+            const titulo = result.success ? "Éxito" : "Error";
+            await showAlert(result.message, tipo, titulo);
         }
     }
 
     async function handleCorregirAsistencia() {
         const result = await asistenciasController.corregirAsistencia();
         if (result.message) {
-            alert(result.message);
+            const tipo = result.success ? "success" : "error";
+            const titulo = result.success ? "Éxito" : "Error";
+            await showAlert(result.message, tipo, titulo);
         }
     }
 
     async function handleMarcarAusente() {
         const result = await asistenciasController.marcarComoAusente();
         if (result.message) {
-            alert(result.message);
+            const tipo = result.success ? "success" : "error";
+            const titulo = result.success ? "Éxito" : "Error";
+            await showAlert(result.message, tipo, titulo);
         }
     }
 
@@ -343,8 +354,10 @@
                                                     asistencia,
                                                 );
                                             } else {
-                                                alert(
+                                                showAlert(
                                                     "Error: Datos de asistencia no disponibles",
+                                                    "error",
+                                                    "Error",
                                                 );
                                                 console.error(
                                                     "❌ Asistencia es null:",
@@ -366,328 +379,41 @@
 </div>
 
 <!-- Modal de Corrección -->
-{#if $modalCorreccion && $asistenciaEditando}
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div
-        class="modal-overlay"
-        on:click={() => asistenciasController.cerrarModal()}
-    >
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <!-- svelte-ignore a11y-no-static-element-interactions -->
-        <div class="modal-content" on:click|stopPropagation>
-            <div class="modal-header">
-                <h2>
-                    {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
-                        ✏️ Corregir Asistencia
-                    {:else}
-                        ➕ Marcar Asistencia
-                    {/if}
-                </h2>
-                <button
-                    class="btn-close"
-                    on:click={() => asistenciasController.cerrarModal()}
-                    >×</button
-                >
-            </div>
+<ModalCorreccionAsistencia
+    show={$modalCorreccion}
+    asistencia={$asistenciaEditando}
+    bind:observacion={$observacionEdit}
+    bind:horaEntrada={$horaEntrada}
+    bind:horaSalida={$horaSalida}
+    bind:usarHoraEspecifica={$usarHoraEspecifica}
+    on:cerrar={() => asistenciasController.cerrarModal()}
+    on:marcarEntrada={handleMarcarEntrada}
+    on:marcarSalida={handleMarcarSalida}
+    on:corregir={handleCorregirAsistencia}
+    on:marcarAusente={handleMarcarAusente}
+    on:toggleHoraEspecifica={handleCheckboxChange}
+/>
 
-            <div class="modal-body">
-                <p class="agente-info">
-                    <strong>{$asistenciaEditando.agente_nombre}</strong><br />
-                    <span class="dni-info"
-                        >DNI: {$asistenciaEditando.agente_dni}</span
-                    ><br />
-                    <span class="fecha-info"
-                        >{asistenciasController.formatDate(
-                            $asistenciaEditando.fecha,
-                        )}</span
-                    >
-                </p>
-
-                {#if $asistenciaEditando.horario_esperado_entrada || $asistenciaEditando.horario_esperado_salida}
-                    <div class="horario-esperado">
-                        <h3>📅 Horario Esperado</h3>
-                        <div class="horario-grid">
-                            <div class="horario-item">
-                                <span class="horario-label">Entrada:</span>
-                                <span class="horario-valor esperado">
-                                    {$asistenciaEditando.horario_esperado_entrada
-                                        ? asistenciasController.formatTime(
-                                              $asistenciaEditando.horario_esperado_entrada,
-                                          )
-                                        : "--:--"}
-                                </span>
-                            </div>
-                            <div class="horario-item">
-                                <span class="horario-label">Salida:</span>
-                                <span class="horario-valor esperado">
-                                    {$asistenciaEditando.horario_esperado_salida
-                                        ? asistenciasController.formatTime(
-                                              $asistenciaEditando.horario_esperado_salida,
-                                          )
-                                        : "--:--"}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                {/if}
-
-                <div class="estado-actual">
-                    <h3>✅ Estado Actual</h3>
-                    <div class="estado-grid">
-                        <div class="estado-item">
-                            <span class="estado-label">Entrada:</span>
-                            <span
-                                class="estado-valor {$asistenciaEditando.hora_entrada
-                                    ? 'marcado'
-                                    : 'sin-marcar'}"
-                            >
-                                {$asistenciaEditando.hora_entrada
-                                    ? asistenciasController.formatTime(
-                                          $asistenciaEditando.hora_entrada,
-                                      )
-                                    : "Sin marcar"}
-                            </span>
-                        </div>
-                        <div class="estado-item">
-                            <span class="estado-label">Salida:</span>
-                            <span
-                                class="estado-valor {$asistenciaEditando.hora_salida
-                                    ? 'marcado'
-                                    : 'sin-marcar'}"
-                            >
-                                {$asistenciaEditando.hora_salida
-                                    ? asistenciasController.formatTime(
-                                          $asistenciaEditando.hora_salida,
-                                      )
-                                    : "Sin marcar"}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
-                    <div class="info-correccion">
-                        <div class="info-header">
-                            <span class="info-icon">ℹ️</span>
-                            <strong>Corrección de Asistencia</strong>
-                        </div>
-                        <p>
-                            Esta asistencia ya tiene marcaciones registradas.
-                            Puede corregir las horas especificando los nuevos
-                            valores.
-                        </p>
-                        <p>
-                            <strong>Importante:</strong> La corrección quedará registrada
-                            en el historial de auditoría.
-                        </p>
-                    </div>
-                {/if}
-
-                <div class="form-group">
-                    <label for="observacion_edit">
-                        Observación
-                        {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
-                            <span class="requerido"
-                                >*REQUERIDA para corrección</span
-                            >
-                        {:else}
-                            (opcional)
-                        {/if}
-                    </label>
-                    <textarea
-                        id="observacion_edit"
-                        bind:value={$observacionEdit}
-                        placeholder={$asistenciaEditando.hora_entrada ||
-                        $asistenciaEditando.hora_salida
-                            ? "REQUERIDO: Explique el motivo de la corrección (ej: 'Error en marcación original', 'Horario corregido por supervisor')"
-                            : "Motivo de la corrección (ej: 'Agente olvidó marcar')"}
-                        rows="3"
-                        class={($asistenciaEditando.hora_entrada ||
-                            $asistenciaEditando.hora_salida) &&
-                        !$observacionEdit.trim()
-                            ? "campo-requerido"
-                            : ""}
-                    ></textarea>
-                    {#if ($asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida) && !$observacionEdit.trim()}
-                        <small class="error-text"
-                            >⚠️ La observación es obligatoria cuando se corrigen
-                            marcaciones existentes</small
-                        >
-                    {/if}
-                </div>
-
-                <!-- Sección para especificar hora -->
-                <div class="hora-especifica-section">
-                    <div class="checkbox-group">
-                        <input
-                            type="checkbox"
-                            id="usar_hora_especifica"
-                            bind:checked={$usarHoraEspecifica}
-                            on:change={handleCheckboxChange}
-                        />
-                        <label for="usar_hora_especifica">
-                            ⏰ Especificar horas manualmente
-                            <small class="checkbox-help">
-                                {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
-                                    Permite corregir las horas existentes
-                                {:else}
-                                    Permite marcar con hora específica en lugar
-                                    de la hora actual
-                                {/if}
-                            </small>
-                        </label>
-                    </div>
-
-                    {#if $usarHoraEspecifica}
-                        <div class="horas-grid">
-                            <div class="form-group">
-                                <label for="hora_entrada_input">
-                                    🕐 Hora de entrada
-                                    {#if $asistenciaEditando.hora_entrada}
-                                        <span class="actual-time"
-                                            >(Actual: {asistenciasController.formatTime(
-                                                $asistenciaEditando.hora_entrada,
-                                            )})</span
-                                        >
-                                    {/if}
-                                </label>
-                                <input
-                                    type="time"
-                                    id="hora_entrada_input"
-                                    bind:value={$horaEntrada}
-                                    placeholder="HH:MM"
-                                />
-                                <small class="help-text">
-                                    {#if $asistenciaEditando.hora_entrada}
-                                        Nueva hora de entrada a registrar
-                                    {:else}
-                                        Solo se usará si marcas entrada
-                                    {/if}
-                                </small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="hora_salida_input">
-                                    🕔 Hora de salida
-                                    {#if $asistenciaEditando.hora_salida}
-                                        <span class="actual-time"
-                                            >(Actual: {asistenciasController.formatTime(
-                                                $asistenciaEditando.hora_salida,
-                                            )})</span
-                                        >
-                                    {/if}
-                                </label>
-                                <input
-                                    type="time"
-                                    id="hora_salida_input"
-                                    bind:value={$horaSalida}
-                                    placeholder="HH:MM"
-                                />
-                                <small class="help-text">
-                                    {#if $asistenciaEditando.hora_salida}
-                                        Nueva hora de salida a registrar
-                                    {:else}
-                                        Solo se usará si marcas salida
-                                    {/if}
-                                </small>
-                            </div>
-                        </div>
-                    {/if}
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button
-                    class="btn-cancelar"
-                    on:click={() => asistenciasController.cerrarModal()}
-                >
-                    Cancelar
-                </button>
-
-                {#if $usarHoraEspecifica}
-                    <!-- Modo corrección con horas específicas -->
-                    <button
-                        class="btn-corregir"
-                        on:click={handleCorregirAsistencia}
-                        disabled={(!$horaEntrada && !$horaSalida) ||
-                            (($asistenciaEditando.hora_entrada ||
-                                $asistenciaEditando.hora_salida) &&
-                                !$observacionEdit.trim())}
-                        title={!$horaEntrada && !$horaSalida
-                            ? "Debe especificar al menos una hora"
-                            : ($asistenciaEditando.hora_entrada ||
-                                    $asistenciaEditando.hora_salida) &&
-                                !$observacionEdit.trim()
-                              ? "Debe agregar una observación para corregir marcaciones existentes"
-                              : "Aplicar corrección"}
-                    >
-                        ✏️ Aplicar Corrección
-                    </button>
-                {:else}
-                    <!-- Botones para marcación normal -->
-                    {#if !$asistenciaEditando.hora_entrada}
-                        <button
-                            class="btn-marcar-entrada"
-                            on:click={handleMarcarEntrada}
-                        >
-                            🕐 Marcar Entrada
-                        </button>
-                    {/if}
-
-                    {#if !$asistenciaEditando.hora_salida}
-                        <button
-                            class="btn-marcar-salida"
-                            on:click={handleMarcarSalida}
-                            disabled={!$asistenciaEditando.hora_entrada}
-                        >
-                            🕐 Marcar Salida
-                        </button>
-                    {/if}
-
-                    <!-- Botón para re-marcar si ya existe -->
-                    {#if $asistenciaEditando.hora_entrada}
-                        <button
-                            class="btn-remarcar-entrada"
-                            on:click={handleMarcarEntrada}
-                            title="Volver a marcar entrada"
-                        >
-                            🔄 Re-marcar Entrada
-                        </button>
-                    {/if}
-
-                    {#if $asistenciaEditando.hora_salida}
-                        <button
-                            class="btn-remarcar-salida"
-                            on:click={handleMarcarSalida}
-                            title="Volver a marcar salida"
-                        >
-                            🔄 Re-marcar Salida
-                        </button>
-                    {/if}
-
-                    <!-- Botón para marcar como ausente -->
-                    {#if $asistenciaEditando.hora_entrada || $asistenciaEditando.hora_salida}
-                        <button
-                            class="btn-marcar-ausente"
-                            on:click={handleMarcarAusente}
-                            title="Marcar como ausente (elimina presentismo)"
-                        >
-                            ❌ Marcar Ausente
-                        </button>
-                    {/if}
-                {/if}
-            </div>
-        </div>
-    </div>
-{/if}
+<!-- Modal de alertas -->
+<ModalAlert
+    bind:show={$modalAlert.show}
+    type={$modalAlert.type}
+    title={$modalAlert.title}
+    message={$modalAlert.message}
+    showConfirmButton={$modalAlert.showConfirmButton}
+    confirmText={$modalAlert.confirmText}
+    showCancelButton={$modalAlert.showCancelButton}
+    cancelText={$modalAlert.cancelText}
+    on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+    on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
+/>
 
 <style>
     .admin-container {
         width: 100%;
         max-width: 1600px;
         margin: 0 auto;
-        padding: 1rewm 0;
+        padding: 1rem;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
 
@@ -695,7 +421,7 @@
         position: relative;
         background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
         color: white;
-        padding: 30px 40px;
+        padding: 20px;
         margin-bottom: 30px;
         border-radius: 28px;
         overflow: hidden;
@@ -703,6 +429,12 @@
         box-shadow:
             0 0 0 1px rgba(255, 255, 255, 0.1) inset,
             0 10px 30px rgba(30, 64, 175, 0.4);
+    }
+
+    @media (min-width: 768px) {
+        .header {
+            padding: 30px 40px;
+        }
     }
 
     .header::before {
@@ -725,12 +457,33 @@
     .header h1 {
         margin: 10px;
         font-weight: 800;
-        font-size: 30px;
+        font-size: 18px;
         letter-spacing: 0.2px;
         position: relative;
         padding-bottom: 12px;
         overflow: hidden;
-        display: inline-block;
+        display: block;
+        max-width: 100%;
+        word-wrap: break-word;
+    }
+
+    @media (min-width: 480px) {
+        .header h1 {
+            font-size: 22px;
+        }
+    }
+
+    @media (min-width: 640px) {
+        .header h1 {
+            font-size: 26px;
+            display: inline-block;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .header h1 {
+            font-size: 30px;
+        }
     }
 
     .header h1::after {
@@ -770,10 +523,17 @@
 
     .filtros-grid {
         display: grid;
-        grid-template-columns: 1fr auto auto;
+        grid-template-columns: 1fr;
         gap: 1rem;
-        align-items: end;
+        align-items: stretch;
         margin-bottom: 1rem;
+    }
+
+    @media (min-width: 768px) {
+        .filtros-grid {
+            grid-template-columns: 1fr auto auto;
+            align-items: end;
+        }
     }
 
     .form-group {
@@ -788,8 +548,7 @@
     }
 
     .form-group input,
-    .form-group select,
-    .form-group textarea {
+    .form-group select {
         padding: 0.75rem;
         border: 1px solid #ddd;
         border-radius: 8px;
@@ -803,8 +562,7 @@
     }
 
     .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
+    .form-group select:focus {
         outline: none;
         border-color: #667eea;
     }
@@ -970,8 +728,13 @@
         border-radius: 24px;
         box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
         background: white;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }
 
+    .table-container::-webkit-scrollbar {
+        display: none;
+    }
     .table-container::-webkit-scrollbar {
         width: 8px;
         height: 8px;
@@ -1109,308 +872,6 @@
         font-size: 1.2rem;
     }
 
-    /* Modal */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        backdrop-filter: blur(4px);
-    }
-
-    .modal-content {
-        background: white;
-        border-radius: 16px;
-        max-width: 600px;
-        width: 90%;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    .modal-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1.5rem 2rem;
-        border-radius: 16px 16px 0 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .modal-header h2 {
-        margin: 0;
-        font-size: 1.5rem;
-    }
-
-    .btn-close {
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
-        color: white;
-        font-size: 2rem;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-    }
-
-    .btn-close:hover {
-        background: rgba(255, 255, 255, 0.3);
-    }
-
-    .modal-body {
-        padding: 2rem;
-    }
-
-    .agente-info {
-        margin-bottom: 1.5rem;
-        padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 8px;
-    }
-
-    .agente-info strong {
-        font-size: 1.2rem;
-        color: #333;
-    }
-
-    .dni-info,
-    .fecha-info {
-        color: #666;
-        font-size: 0.9rem;
-    }
-
-    .horario-esperado {
-        background: linear-gradient(135deg, #fff7e6 0%, #fff3dc 100%);
-        border-left: 4px solid #ffc107;
-        padding: 1rem;
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
-    }
-
-    .horario-esperado h3 {
-        margin: 0 0 1rem 0;
-        color: #856404;
-        font-size: 1.1rem;
-    }
-
-    .horario-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-    }
-
-    .horario-item {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .horario-label {
-        font-weight: 600;
-        color: #666;
-        font-size: 0.9rem;
-        margin-bottom: 0.25rem;
-    }
-
-    .horario-valor {
-        font-family: "Courier New", monospace;
-        font-size: 1.2rem;
-        font-weight: 700;
-    }
-
-    .horario-valor.esperado {
-        color: #ff6f00;
-    }
-
-    .estado-actual {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
-    }
-
-    .estado-actual h3 {
-        margin: 0 0 1rem 0;
-        color: #333;
-        font-size: 1.1rem;
-    }
-
-    .estado-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-    }
-
-    .estado-item {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .estado-label {
-        font-weight: 600;
-        color: #666;
-        font-size: 0.9rem;
-        margin-bottom: 0.25rem;
-    }
-
-    .estado-valor {
-        font-family: "Courier New", monospace;
-        font-size: 1.2rem;
-        font-weight: 700;
-    }
-
-    .estado-valor.marcado {
-        color: #28a745;
-    }
-
-    .estado-valor.sin-marcar {
-        color: #dc3545;
-    }
-
-    .observaciones-previas {
-        background: #fff3cd;
-        padding: 1rem;
-        border-radius: 8px;
-        margin-top: 1rem;
-    }
-
-    .info-correccion {
-        background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-        border: 1px solid #90caf9;
-        border-radius: 8px;
-        padding: 1rem;
-        margin: 1rem 0;
-    }
-
-    .info-header {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
-        color: #1565c0;
-    }
-
-    .info-icon {
-        font-size: 1.2rem;
-    }
-
-    .info-correccion p {
-        margin: 0.5rem 0;
-        color: #333;
-        line-height: 1.4;
-    }
-
-    .info-correccion p:first-of-type {
-        margin-top: 0;
-    }
-
-    .info-correccion p:last-of-type {
-        margin-bottom: 0;
-        font-weight: 600;
-        color: #d32f2f;
-    }
-
-    .modal-footer {
-        padding: 1.5rem 2rem;
-        border-top: 1px solid #e0e0e0;
-        display: flex;
-        gap: 1rem;
-        justify-content: flex-end;
-    }
-
-    .modal-footer button {
-        padding: 0.75rem 1.5rem;
-        border: none;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .btn-cancelar {
-        background: #e0e0e0;
-        color: #333;
-    }
-
-    .btn-cancelar:hover {
-        background: #d0d0d0;
-    }
-
-    .btn-marcar-entrada {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        color: white;
-    }
-
-    .btn-marcar-entrada:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-    }
-
-    .btn-marcar-salida {
-        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-        color: white;
-    }
-
-    .btn-marcar-salida:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
-    }
-
-    .btn-corregir {
-        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-        color: white;
-    }
-
-    .btn-corregir:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
-    }
-
-    .btn-remarcar-entrada,
-    .btn-remarcar-salida {
-        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-        color: white;
-    }
-
-    .btn-remarcar-entrada:hover:not(:disabled),
-    .btn-remarcar-salida:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
-    }
-
-    .btn-marcar-ausente {
-        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        color: white;
-    }
-
-    .btn-marcar-ausente:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
-    }
-
-    .actual-time {
-        font-weight: 400;
-        color: #666;
-        font-size: 0.85rem;
-        margin-left: 0.5rem;
-    }
-
-    .modal-footer button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
     @media (max-width: 768px) {
         .admin-container {
             padding: 1rem;
@@ -1438,101 +899,6 @@
 
         table {
             min-width: 800px;
-        }
-
-        .horario-grid,
-        .estado-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .modal-footer {
-            flex-direction: column;
-        }
-
-        .modal-footer button {
-            width: 100%;
-        }
-    }
-
-    /* Estilos para hora específica */
-    .hora-especifica-section {
-        background: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 8px;
-        margin: 1.5rem 0;
-        border-left: 4px solid #17a2b8;
-    }
-
-    .checkbox-group {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-    }
-
-    .checkbox-group input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        accent-color: #17a2b8;
-    }
-
-    .checkbox-group label {
-        font-weight: 600;
-        color: #333;
-        cursor: pointer;
-        margin-bottom: 0;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .checkbox-help {
-        font-weight: 400;
-        color: #666;
-        font-size: 0.85rem;
-        margin-top: 0.25rem;
-        font-style: italic;
-    }
-
-    .horas-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin-top: 1rem;
-    }
-
-    .help-text {
-        color: #666;
-        font-size: 0.8rem;
-        margin-top: 0.25rem;
-        font-style: italic;
-    }
-
-    .requerido {
-        color: #dc3545;
-        font-weight: 700;
-        font-size: 0.85rem;
-        background: rgba(220, 53, 69, 0.1);
-        padding: 0.15rem 0.5rem;
-        border-radius: 4px;
-        margin-left: 0.5rem;
-    }
-
-    .campo-requerido {
-        border: 2px solid #dc3545 !important;
-        background-color: rgba(220, 53, 69, 0.05);
-    }
-
-    .error-text {
-        color: #dc3545;
-        font-size: 0.8rem;
-        margin-top: 0.25rem;
-        font-weight: 600;
-        display: block;
-    }
-
-    @media (max-width: 768px) {
-        .horas-grid {
-            grid-template-columns: 1fr;
         }
     }
 </style>

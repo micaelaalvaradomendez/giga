@@ -257,3 +257,15 @@ class AgenteCreateUpdateSerializer(serializers.ModelSerializer):
                     pass
         
         return instance
+
+
+class AgenteBasicoSerializer(serializers.ModelSerializer):
+    """Serializador básico para referencias simples de agente."""
+    nombre_completo = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Agente
+        fields = ['id_agente', 'nombre', 'apellido', 'nombre_completo']
+    
+    def get_nombre_completo(self, obj):
+        return f"{obj.nombre} {obj.apellido}"

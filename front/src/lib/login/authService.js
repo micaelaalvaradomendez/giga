@@ -1,11 +1,9 @@
 import { writable } from 'svelte/store';
+import { API_BASE_URL } from '../api.js';
 
 const isBrowser = typeof window !== 'undefined';
 export const isAuthenticated = writable(false);
 export const user = writable(null);
-
-// Usar la URL a través de nginx (puerto 80) en lugar de directo al backend
-const API_BASE_URL = '/api';
 
 export class AuthService {
     // Obtener token CSRF desde cookie (si existe)
@@ -42,9 +40,9 @@ export class AuthService {
                 }
                 isAuthenticated.set(true);
                 user.set(data.user);
-                return { 
-                    success: true, 
-                    user: data.user, 
+                return {
+                    success: true,
+                    user: data.user,
                     message: data.message,
                     requires_password_change: data.requires_password_change || false,
                     password_reset_reason: data.password_reset_reason
@@ -98,8 +96,8 @@ export class AuthService {
                 localStorage.setItem('requires_password_change', data.requires_password_change || false);
                 isAuthenticated.set(true);
                 user.set(data.user);
-                return { 
-                    authenticated: true, 
+                return {
+                    authenticated: true,
                     user: data.user,
                     requires_password_change: data.requires_password_change || false
                 };
@@ -141,7 +139,7 @@ export class AuthService {
     // Nuevo método para compatibilidad con el controlador de licencias
     static async getCurrentUserData() {
         if (!isBrowser) return { success: false, data: null };
-        
+
         try {
             // Intentar obtener de localStorage primero
             const user = this.getCurrentUser();
@@ -159,7 +157,7 @@ export class AuthService {
                     }
                 };
             }
-            
+
             // Si no hay usuario en localStorage, verificar sesión
             const sessionCheck = await this.checkSession();
             if (sessionCheck.authenticated && sessionCheck.user) {
@@ -176,7 +174,7 @@ export class AuthService {
                     }
                 };
             }
-            
+
             return { success: false, data: null };
         } catch (error) {
             console.error('Error obteniendo datos del usuario:', error);
@@ -199,7 +197,7 @@ export class AuthService {
     static hasRole(role) {
         if (!isBrowser) return false;
         const roles = this.getUserRoles();
-        
+
         // Manejar tanto roles como strings ["Administrador"] como objetos [{nombre: "Administrador"}]
         if (roles && roles.length > 0) {
             if (typeof roles[0] === 'string') {
@@ -255,12 +253,12 @@ export class AuthService {
             });
 
             const data = await response.json();
-            
+
             if (data.success && isBrowser) {
                 localStorage.setItem('user', JSON.stringify(data.user));
                 user.set(data.user);
             }
-            
+
             return data;
         } catch (error) {
             return { success: false, message: 'Error de conexión.' };

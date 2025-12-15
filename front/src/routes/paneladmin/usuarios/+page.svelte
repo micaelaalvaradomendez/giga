@@ -6,6 +6,8 @@
 	import ModalEditarAgente from "$lib/componentes/admin/agente/ModalEditarAgente.svelte";
 	import ModalEliminarAgente from "$lib/componentes/admin/agente/ModalEliminarAgente.svelte";
 	import ModalAgregarAgente from "$lib/componentes/admin/agente/ModalAgregarAgente.svelte";
+	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
+	import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
 
 	/** @type {import('./$types').PageData} */
 
@@ -24,6 +26,7 @@
 		modalEditarAgente,
 		modalEliminarAgente,
 		modalAgregarAgente,
+		usuarioActual,
 	} = usuariosController;
 
 	// Funciones para abrir modales (delegadas al controlador)
@@ -107,10 +110,10 @@
 				formData,
 			);
 			if (result.success) {
-				alert(result.message);
+				await showAlert(result.message, "success", "Éxito");
 			}
 		} catch (error) {
-			alert(error.message);
+			await showAlert(error.message, "error", "Error");
 		}
 	}
 
@@ -122,10 +125,10 @@
 			const result =
 				await usuariosController.confirmarEliminacionAgente(agente);
 			if (result.success) {
-				alert(result.message);
+				await showAlert(result.message, "success", "Éxito");
 			}
 		} catch (error) {
-			alert(error.message);
+			await showAlert(error.message, "error", "Error");
 		}
 	}
 
@@ -136,10 +139,10 @@
 		try {
 			const result = await usuariosController.crearNuevoAgente(formData);
 			if (result.success) {
-				alert(result.message);
+				await showAlert(result.message, "success", "Éxito");
 			}
 		} catch (error) {
-			alert(error.message);
+			await showAlert(error.message, "error", "Error");
 		}
 	}
 </script>
@@ -156,9 +159,16 @@
 	<div class="page-header-title">
 		<h1>Gestión de Agentes</h1>
 	</div>
-	<button class="btn-primary" on:click={agregarAgente}>
-		+ Añadir Agente
-	</button>
+	{#if $usuarioActual && $usuarioActual.rol && $usuarioActual.rol.toLowerCase() === "administrador"}
+		<button class="btn-primary" on:click={agregarAgente}>
+			+ Añadir Agente
+		</button>
+	{:else}
+		<!-- Director/Jefatura NO pueden agregar usuarios -->
+		<div class="info-message">
+			📝 Solo puedes editar agentes que estén bajo tu jerarquía
+		</div>
+	{/if}
 </div>
 
 <!-- Controles de filtrado -->
@@ -282,12 +292,18 @@
 									title="No puedes eliminarte a ti mismo"
 									disabled>🔒</button
 								>
-							{:else}
+							{:else if $usuarioActual && $usuarioActual.rol && $usuarioActual.rol.toLowerCase() === "administrador"}
 								<button
 									class="btn-icon-danger"
-									title="Eliminar"
+									title="Eliminar usuario"
 									on:click={() => eliminarAgente(agente)}
 									>🗑️</button
+								>
+							{:else}
+								<button
+									class="btn-icon-disabled"
+									title="Solo administradores pueden eliminar usuarios"
+									disabled>🔒</button
 								>
 							{/if}
 						</td>
@@ -348,6 +364,20 @@
 	rolesDisponibles={$rolesDisponibles}
 	on:cerrar={cerrarModales}
 	on:guardar={crearNuevoAgente}
+/>
+
+<!-- Modal de alertas -->
+<ModalAlert
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	showConfirmButton={$modalAlert.showConfirmButton}
+	confirmText={$modalAlert.confirmText}
+	showCancelButton={$modalAlert.showCancelButton}
+	cancelText={$modalAlert.cancelText}
+	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
+	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 
 <style>
@@ -421,15 +451,22 @@
 		position: relative;
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
-		padding: 30px 40px;
+		padding: 20px;
 		margin: 0;
-		max-width: 1000px;
+		max-width: 100%;
 		border-radius: 28px;
 		overflow: hidden;
 		text-align: center;
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
 			0 20px 60px rgba(30, 64, 175, 0.4);
+	}
+
+	@media (min-width: 768px) {
+		.page-header-title {
+			padding: 30px 40px;
+			max-width: 1000px;
+		}
 	}
 
 	.page-header-title::before {
@@ -452,7 +489,7 @@
 	.page-header h1 {
 		margin: 10px;
 		font-weight: 800;
-		font-size: 30px;
+		font-size: 18px;
 		letter-spacing: 0.2px;
 		font-family:
 			"Segoe UI",
@@ -466,7 +503,28 @@
 		position: relative;
 		padding-bottom: 12px;
 		overflow: hidden;
-		display: inline-block;
+		display: block;
+		max-width: 100%;
+		word-wrap: break-word;
+	}
+
+	@media (min-width: 480px) {
+		.page-header h1 {
+			font-size: 22px;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.page-header h1 {
+			font-size: 26px;
+			display: inline-block;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.page-header h1 {
+			font-size: 30px;
+		}
 	}
 
 	.page-header-title h1::after {
@@ -506,10 +564,17 @@
 
 	.filtros-row {
 		display: grid;
-		grid-template-columns: 1fr auto auto;
+		grid-template-columns: 1fr;
 		gap: 1rem;
-		align-items: end;
+		align-items: stretch;
 		margin-bottom: 1rem;
+	}
+
+	@media (min-width: 768px) {
+		.filtros-row {
+			grid-template-columns: 1fr auto auto;
+			align-items: end;
+		}
 	}
 
 	.filtro-group {
@@ -533,7 +598,16 @@
 		transition:
 			border-color 0.2s,
 			box-shadow 0.2s;
-		min-width: 250px;
+		min-width: 0;
+		width: 100%;
+	}
+
+	@media (min-width: 768px) {
+		.input-busqueda,
+		.select-area {
+			min-width: 250px;
+			width: auto;
+		}
 	}
 
 	.input-busqueda:focus,
@@ -631,6 +705,12 @@
 		border-radius: 24px;
 		box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
 		background: white;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.table-container::-webkit-scrollbar {
+		display: none;
 	}
 
 	.table-container::-webkit-scrollbar {
@@ -655,6 +735,7 @@
 
 	table {
 		width: 100%;
+		min-width: 800px;
 		border-collapse: collapse;
 		background: white;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -889,6 +970,17 @@
 
 		.table-container {
 			overflow-x: auto;
+		}
+
+		.info-message {
+			padding: 12px 20px;
+			background: linear-gradient(135deg, #fff8e1, #fff3cd);
+			border: 2px solid #ffc107;
+			border-radius: 10px;
+			color: #856404;
+			font-weight: 500;
+			font-size: 14px;
+			box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
 		}
 
 		table {

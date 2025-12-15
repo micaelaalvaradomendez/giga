@@ -1,0 +1,97 @@
+# Django Backend - GIGA Project - PRODUCTION
+# Dockerfile optimizado para Django con PostgreSQL en producción
+
+FROM python:3.11-slim
+
+# Variables de entorno
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Directorio de trabajo
+WORKDIR /app
+
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    gcc \
+    curl \
+    postgresql-client \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar y instalar dependencias Python
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copiar código del proyecto
+COPY . /app/
+
+# Crear directorio para archivos estáticos y media
+RUN mkdir -p /app/staticfiles /app/media
+
+# Crear script wait-for-postgres
+RUN echo '#!/bin/sh\n\
+    set -e\n\
+    \n\
+    host="$1"\n\
+    shift\n\
+    \n\
+    until PGPASSWORD=$DB_PASSWORD psql -h "$host" -U "$DB_USER" -d "$DB_NAME" -c "\\q" 2>/dev/null; do\n\
+    >&2 echo "Postgres no está listo - esperando..."\n\
+    sleep 2\n\
+    done\n\
+    \n\
+    >&2 echo "Postgres está listo - ejecutando comando"\n\
+    exec "$@"' > /usr/local/bin/wait-for-postgres.sh && \
+    chmod +x /usr/local/bin/wait-for-postgres.sh
+
+# Crear script de entrada
+RUN echo '#!/bin/sh\n\
+    set -e\n\
+    \n\
+    echo "🔍 Esperando a que PostgreSQL esté disponible..."\n\
+    /usr/local/bin/wait-for-postgres.sh ${DB_HOST:-postgres}\n\
+    \n\
+    echo "✅ PostgreSQL conectado!"\n\
+    \n\
+    echo "📊 Verificando estado de la base de datos..."\n\
+    python manage.py check --database default\n\
+    \n\
+    echo "🔄 Aplicando migraciones de Django (si las hay)..."\n\
+    python manage.py migrate --noinput || echo "⚠️  No hay migraciones de Django que aplicar"\n\
+    \n\
+    echo "📦 Recolectando archivos estáticos..."\n\
+    python manage.py collectstatic --noinput --clear\n\
+    \n\
+    echo "🚀 Iniciando servidor Gunicorn..."\n\
+    exec gunicorn giga.wsgi:application \\\n\
+    --bind 0.0.0.0:8000 \\\n\
+    --workers 4 \\\n\
+    --threads 2 \\\n\
+    --timeout 120 \\\n\
+    --access-logfile - \\\n\
+    --error-logfile - \\\n\
+    --log-level info \\\n\
+    --capture-output' > /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+# Asegurar permisos correctos
+RUN chmod -R 755 /app
+
+# Crear usuario no-root para seguridad
+RUN groupadd -r django && useradd -r -g django django && \
+    chown -R django:django /app
+
+USER django
+
+# Exponer puerto
+EXPOSE 8000
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
+    CMD curl -f http://localhost:8000/health || curl -f http://localhost:8000/api/ || exit 1
+
+# Usar entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]

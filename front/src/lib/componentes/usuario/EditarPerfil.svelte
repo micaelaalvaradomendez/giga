@@ -1,6 +1,6 @@
 <script>
     import { createEventDispatcher } from "svelte";
-    import AuthService from "../login/authService.js";
+    import AuthService from "../../login/authService.js";
 
     const dispatch = createEventDispatcher();
 
@@ -419,6 +419,7 @@
         align-items: center;
         z-index: 1000;
         backdrop-filter: blur(4px);
+        scrollbar-width: none;
     }
 
     .modal-container {
@@ -431,6 +432,12 @@
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         animation: slideUp 0.3s ease-out;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        scrollbar-width: none; 
+        -ms-overflow-style: none; 
+    }
+
+    .modal-container::-webkit-scrollbar {
+        display: none;
     }
 
     @keyframes slideUp {
