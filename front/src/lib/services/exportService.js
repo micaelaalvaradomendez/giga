@@ -212,17 +212,20 @@ const PDF_REPORTES_CONFIG = {
  */
 export async function exportarPDF(tipoReporte, datosReporte, filtros) {
     try {
-        console.log('🔄 Iniciando exportación PDF...', { tipoReporte, filtros });
-        
         if (!browser) {
             throw new Error('La exportación PDF solo está disponible en el navegador');
         }
         
-        // Preparar datos para envío al backend
+        // Preparar datos para envío al backend (flatten, sin anidar filtros)
         const payload = {
             tipo_reporte: tipoReporte,
-            datos: datosReporte,
-            filtros: filtros,
+            fecha_desde: filtros?.fecha_desde,
+            fecha_hasta: filtros?.fecha_hasta,
+            area: filtros?.area_id ?? filtros?.area,
+            agente: filtros?.agente_id ?? filtros?.agente,
+            tipo_guardia: filtros?.tipo_guardia,
+            incluir_licencias: filtros?.incluir_licencias,
+            incluir_feriados: filtros?.incluir_feriados,
             configuracion: {
                 ...PDF_CONFIG,
                 reporte_especifico: PDF_REPORTES_CONFIG[tipoReporte]
@@ -262,7 +265,6 @@ export async function exportarPDF(tipoReporte, datosReporte, filtros) {
         };
         
     } catch (error) {
-        console.error('❌ Error al exportar PDF:', error);
         throw new Error(`Error al generar PDF: ${error.message}`);
     }
 }
@@ -278,12 +280,10 @@ export async function exportarCSV(tipoReporte, datosReporte, filtros, formato = 
             throw new Error('La exportación CSV/Excel solo está disponible en el navegador');
         }
         
-        // Preparar datos para envío al backend
         const payload = {
             tipo_reporte: tipoReporte,
-            datos: datosReporte,
             filtros: filtros,
-            formato: formato, // 'csv' o 'xlsx'
+            formato: formato,
             configuracion: {
                 incluir_cabeceras: true,
                 incluir_totales: true,

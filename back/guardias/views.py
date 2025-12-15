@@ -1,7 +1,8 @@
-"""
-Views para la app guardias - Implementación de Fase 1 con lógica existente.
+﻿"""
+Views para la app guardias - Implementacion de Fase 1 con logica existente.
 """
 
+from rest_framework import status
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -10,20 +11,23 @@ from django.utils import timezone
 from django.db.models import Q, Sum, Count, F
 from django.db import transaction
 from datetime import datetime, date
+from django.contrib.staticfiles import finders
 import logging
 
 from .models import Cronograma, Guardia, ResumenGuardiaMes, ReglaPlus, ParametrosArea, Feriado, HoraCompensacion
-# Importar funciones de validación de días laborables
+# Importar funciones de validacion de Dias laborables
 from asistencia.views import es_dia_laborable, get_motivo_no_laborable
 from auditoria.models import Auditoria
 from .serializers import (
-    CronogramaExtendidoSerializer, GuardiaResumenSerializer, 
+    CronogramaExtendidoSerializer, GuardiaResumenSerializer,
     ResumenGuardiaMesExtendidoSerializer, ReglaPlusSerializer,
     ParametrosAreaSerializer, FeriadoSerializer,
     PlanificacionCronogramaSerializer, CalculoPlusSerializer, AprobacionPlusSerializer,
     HoraCompensacionSerializer, CrearCompensacionSerializer, AprobacionCompensacionSerializer, ResumenCompensacionSerializer
 )
 from .utils import CalculadoraPlus, PlanificadorCronograma, ValidadorHorarios
+from .services.reportes import obtener_datos_reporte, ReporteError
+from .services.reportes import obtener_datos_reporte, ReporteError
 
 # RBAC Permissions
 from common.permissions import (
@@ -35,22 +39,22 @@ logger = logging.getLogger(__name__)
 
 
 class ReglaPlusViewSet(viewsets.ModelViewSet):
-    """ViewSet para gestión de reglas de plus salarial"""
-    
+    """ViewSet para gestiÃ³n de reglas de plus salarial"""
+
     queryset = ReglaPlus.objects.all()
     serializer_class = ReglaPlusSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
-        
+
         # Filtros opcionales
         activa = self.request.query_params.get('activa')
         vigente = self.request.query_params.get('vigente')
-        
+
         if activa is not None:
             queryset = queryset.filter(activa=activa.lower() == 'true')
-        
+
         if vigente is not None and vigente.lower() == 'true':
             hoy = date.today()
             queryset = queryset.filter(
@@ -59,16 +63,16 @@ class ReglaPlusViewSet(viewsets.ModelViewSet):
             ).filter(
                 Q(vigente_hasta__isnull=True) | Q(vigente_hasta__gte=hoy)
             )
-        
+
         return queryset.order_by('-porcentaje_plus', 'nombre')
-    
+
     @action(detail=True, methods=['post'])
     def simular(self, request, pk=None):
-        """Simula la aplicación de una regla de plus"""
+        """Simula la aplicaciÃ³n de una regla de plus"""
         regla = self.get_object()
-        
+
         horas_test = request.data.get('horas_efectivas', 160)
-        
+
         resultado = {
             'regla': regla.nombre,
             'horas_minimas_requeridas': regla.horas_minimas_mensuales,
@@ -76,25 +80,25 @@ class ReglaPlusViewSet(viewsets.ModelViewSet):
             'plus_aplicable': float(regla.porcentaje_plus) if horas_test >= regla.horas_minimas_mensuales else 0,
             'aplica': horas_test >= regla.horas_minimas_mensuales
         }
-        
+
         return Response(resultado)
 
 
 class ParametrosAreaViewSet(viewsets.ModelViewSet):
-    """ViewSet para parámetros de control horario por área"""
-    
+    """ViewSet para parÃ¡metros de control horario por Ã¡rea"""
+
     queryset = ParametrosArea.objects.all()
     serializer_class = ParametrosAreaSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
-        
-        # Filtrar por área
-        area_id = self.request.query_params.get('area')
+
+        # Filtrar por Ã¡rea
+        area_id = self.data_in.get('area')
         if area_id:
             queryset = queryset.filter(id_area=area_id)
-        
+
         # Filtrar solo vigentes
         vigentes = self.request.query_params.get('vigentes')
         if vigentes and vigentes.lower() == 'true':
@@ -105,29 +109,28 @@ class ParametrosAreaViewSet(viewsets.ModelViewSet):
             ).filter(
                 Q(vigente_hasta__isnull=True) | Q(vigente_hasta__gte=hoy)
             )
-        
+
         return queryset.order_by('-vigente_desde')
 
 
 class FeriadoViewSet(viewsets.ModelViewSet):
-    """ViewSet para gestión de feriados con soporte multi-día"""
-    
+    """ViewSet para gestiÃ³n de feriados con soporte multi-Dia"""
+
     queryset = Feriado.objects.all()
     serializer_class = FeriadoSerializer
-    pagination_class = None  # Deshabilitar paginación para cargar todos los feriados
-    permission_classes = []  # Temporalmente sin autenticación para debugging
-    
+    permission_classes = []  # Temporalmente sin autenticaciÃ³n para debugging
+
     def get_queryset(self):
         queryset = super().get_queryset()
-        
-        # Filtros por año - ahora busca en rango de fechas
+
+        # Filtros por anio - ahora busca en rango de fechas
         anio = self.request.query_params.get('anio')
         if anio:
             queryset = queryset.filter(
-                Q(fecha_inicio__year=anio) | 
+                Q(fecha_inicio__year=anio) |
                 Q(fecha_fin__year=anio)
             )
-        
+
         # Filtros por tipo
         tipo = self.request.query_params.get('tipo')
         if tipo == 'nacional':
@@ -136,13 +139,13 @@ class FeriadoViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(es_provincial=True)
         elif tipo == 'local':
             queryset = queryset.filter(es_local=True)
-        
-        return queryset.filter(activo=True).order_by('fecha_inicio', 'fecha_fin', 'nombre').distinct('fecha_inicio', 'fecha_fin', 'nombre')
+
+        return queryset.filter(activo=True).order_by('fecha_inicio', 'fecha_fin')
 
     def create(self, request, *args, **kwargs):
-        """Override del método create para manejar repetición anual"""
+        """Override del mÃ©todo create para manejar repeticiÃ³n anual"""
         repetir_anualmente = request.data.get('repetir_anualmente', False)
-        
+
         if not repetir_anualmente:
             # Verificar si ya existe
             nombre = request.data.get('nombre')
@@ -162,159 +165,167 @@ class FeriadoViewSet(viewsets.ModelViewSet):
                 
             # Comportamiento normal
             return super().create(request, *args, **kwargs)
-        
-        # Crear feriado con repetición anual (5 años hacia adelante)
+
+        # Crear feriado con repeticiÃ³n anual (5 anios hacia adelante)
         try:
-            
+
             fecha_inicio_str = request.data.get('fecha_inicio')
             fecha_fin_str = request.data.get('fecha_fin', fecha_inicio_str)
-            
-            fecha_inicio_base = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
-            fecha_fin_base = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
-            
+
+            fecha_inicio_base = datetime.strptime(
+                fecha_inicio_str, '%Y-%m-%d').date()
+            fecha_fin_base = datetime.strptime(
+                fecha_fin_str, '%Y-%m-%d').date()
+
             feriados_creados = []
-            años_creados = []
-            
+            anios_creados = []
+
             with transaction.atomic():
-                # Crear feriado para los próximos 5 años
+                # Crear feriado para los prÃ³ximos 5 anios
                 for i in range(5):
-                    # Calcular las fechas para este año
-                    fecha_inicio_año = fecha_inicio_base.replace(year=fecha_inicio_base.year + i)
-                    fecha_fin_año = fecha_fin_base.replace(year=fecha_fin_base.year + i)
-                    
+                    # Calcular las fechas para este anio
+                    fecha_inicio_anio = fecha_inicio_base.replace(
+                        year=fecha_inicio_base.year + i)
+                    fecha_fin_anio = fecha_fin_base.replace(
+                        year=fecha_fin_base.year + i)
+
                     # Verificar si ya existe un feriado con el mismo nombre en esas fechas
                     existe = Feriado.objects.filter(
                         nombre=request.data.get('nombre'),
-                        fecha_inicio=fecha_inicio_año,
-                        fecha_fin=fecha_fin_año
+                        fecha_inicio=fecha_inicio_anio,
+                        fecha_fin=fecha_fin_anio
                     ).exists()
-                    
+
                     if not existe:
                         feriado_data = request.data.copy()
-                        feriado_data['fecha_inicio'] = fecha_inicio_año
-                        feriado_data['fecha_fin'] = fecha_fin_año
-                        
+                        feriado_data['fecha_inicio'] = fecha_inicio_anio
+                        feriado_data['fecha_fin'] = fecha_fin_anio
+
                         serializer = self.get_serializer(data=feriado_data)
                         serializer.is_valid(raise_exception=True)
                         feriado = serializer.save()
-                        
-                        feriados_creados.append(FeriadoSerializer(feriado).data)
-                        años_creados.append(str(fecha_inicio_año.year))
-            
+
+                        feriados_creados.append(
+                            FeriadoSerializer(feriado).data)
+                        anios_creados.append(str(fecha_inicio_anio.year))
+
             return Response({
                 'success': True,
-                'message': f'Se crearon {len(feriados_creados)} feriados para los próximos 5 años',
+                'message': f'Se crearon {len(feriados_creados)} feriados para los prÃ³ximos 5 anios',
                 'data': {
                     'feriados_creados': len(feriados_creados),
-                    'años': años_creados,
+                    'anios': anios_creados,
                     'feriados': feriados_creados
                 }
             }, status=status.HTTP_201_CREATED)
-            
+
         except Exception as e:
             return Response({
                 'error': f'Error creando feriados anuales: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=False, methods=['post'])
     def verificar_fecha(self, request):
-        """Verifica si una fecha específica es feriado - ahora soporta múltiples feriados por fecha"""
+        """Verifica si una fecha especÃ­fica es feriado - ahora soporta mÃºltiples feriados por fecha"""
         fecha_str = request.data.get('fecha')
         if not fecha_str:
             return Response(
-                {'error': 'Fecha requerida'}, 
+                {'error': 'Fecha requerida'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from datetime import datetime
             fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-            
+
             # Obtener todos los feriados que incluyen esta fecha
             feriados = Feriado.feriados_en_fecha(fecha)
             es_feriado = feriados.exists()
-            
+
             feriados_info = []
             if es_feriado:
                 feriados_info = FeriadoSerializer(feriados, many=True).data
-            
+
             return Response({
                 'fecha': fecha_str,
                 'es_feriado': es_feriado,
                 'cantidad_feriados': feriados.count(),
                 'feriados': feriados_info
             })
-            
+
         except ValueError:
             return Response(
-                {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                {'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-    
-    @action(detail=False, methods=['get'])
+
+    @action(detail=False, methods=['get', 'post'])
     def por_mes(self, request):
-        """Obtiene feriados para un mes específico (optimizado para calendario)"""
-        año = request.query_params.get('año')
+        """Obtiene feriados para un mes especifico (optimizado para calendario)"""
+        anio = request.query_params.get('anio')
         mes = request.query_params.get('mes')
-        
-        if not año or not mes:
+
+        if not anio or not mes:
             return Response(
-                {'error': 'Año y mes son requeridos'}, 
+                {'error': 'anio y mes son requeridos'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             # Fechas del mes
             from datetime import date, timedelta
-            primer_dia = date(int(año), int(mes), 1)
+            primer_dia = date(int(anio), int(mes), 1)
             if int(mes) == 12:
-                ultimo_dia = date(int(año) + 1, 1, 1) - timedelta(days=1)
+                ultimo_dia = date(int(anio) + 1, 1, 1) - timedelta(days=1)
             else:
-                ultimo_dia = date(int(año), int(mes) + 1, 1) - timedelta(days=1)
-            
+                ultimo_dia = date(int(anio), int(mes) + 1,
+                                  1) - timedelta(days=1)
+
             # Feriados que intersectan con el mes
             feriados = Feriado.feriados_en_rango(primer_dia, ultimo_dia)
-            
+
             return Response({
-                'año': año,
+                'anio': anio,
                 'mes': mes,
                 'primer_dia': primer_dia,
                 'ultimo_dia': ultimo_dia,
                 'total_feriados': feriados.count(),
                 'feriados': FeriadoSerializer(feriados, many=True).data
             })
-            
+
         except ValueError as e:
             return Response(
-                {'error': f'Año o mes inválidos: {str(e)}'}, 
+                {'error': f'anio o mes invÃ¡lidos: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-    
+
     @action(detail=False, methods=['post'])
     def verificar_rango(self, request):
         """Verifica feriados en un rango de fechas"""
         fecha_inicio = request.data.get('fecha_inicio')
         fecha_fin = request.data.get('fecha_fin')
-        
+
         if not fecha_inicio or not fecha_fin:
             return Response(
-                {'error': 'Fecha inicio y fin requeridas'}, 
+                {'error': 'Fecha inicio y fin requeridas'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from datetime import datetime
-            fecha_inicio_obj = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+            fecha_inicio_obj = datetime.strptime(
+                fecha_inicio, '%Y-%m-%d').date()
             fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
-            
+
             if fecha_fin_obj < fecha_inicio_obj:
                 return Response(
-                    {'error': 'La fecha fin debe ser mayor o igual a la fecha inicio'}, 
+                    {'error': 'La fecha fin debe ser mayor o igual a la fecha inicio'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
-            feriados = Feriado.feriados_en_rango(fecha_inicio_obj, fecha_fin_obj)
-            
+
+            feriados = Feriado.feriados_en_rango(
+                fecha_inicio_obj, fecha_fin_obj)
+
             return Response({
                 'fecha_inicio': fecha_inicio,
                 'fecha_fin': fecha_fin,
@@ -322,45 +333,48 @@ class FeriadoViewSet(viewsets.ModelViewSet):
                 'total_feriados': feriados.count(),
                 'feriados': FeriadoSerializer(feriados, many=True).data
             })
-            
+
         except ValueError:
             return Response(
-                {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                {'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
     def perform_create(self, serializer):
-        """Override para agregar auditoría en creación"""
+        """Override para agregar auditorÃ­a en creaciÃ³n"""
         feriado = serializer.save()
-        self._crear_auditoria_feriado('CREAR', feriado.id_feriado, None, serializer.data)
-    
+        self._crear_auditoria_feriado(
+            'CREAR', feriado.id_feriado, None, serializer.data)
+
     def perform_update(self, serializer):
-        """Override para agregar auditoría en actualización"""
+        """Override para agregar auditorÃ­a en actualizaciÃ³n"""
         feriado_anterior = self.get_object()
         valor_previo = FeriadoSerializer(feriado_anterior).data
-        
+
         feriado = serializer.save()
-        self._crear_auditoria_feriado('MODIFICAR', feriado.id_feriado, valor_previo, serializer.data)
-    
+        self._crear_auditoria_feriado(
+            'MODIFICAR', feriado.id_feriado, valor_previo, serializer.data)
+
     def perform_destroy(self, instance):
-        """Override para agregar auditoría en eliminación"""
+        """Override para agregar auditorÃ­a en eliminaciÃ³n"""
         valor_previo = FeriadoSerializer(instance).data
-        self._crear_auditoria_feriado('ELIMINAR', instance.id_feriado, valor_previo, None)
+        self._crear_auditoria_feriado(
+            'ELIMINAR', instance.id_feriado, valor_previo, None)
         instance.delete()
-    
+
     def _crear_auditoria_feriado(self, accion, feriado_id, valor_previo=None, valor_nuevo=None):
-        """Crear registro de auditoría para cambios en feriados"""
+        """Crear registro de auditorÃ­a para cambios en feriados"""
         try:
             from auditoria.models import Auditoria
             from django.utils import timezone
             import logging
             logger = logging.getLogger(__name__)
-            
+
             # Obtener el agente del usuario autenticado
             agente_id = None
             if hasattr(self.request.user, 'agente'):
                 agente_id = self.request.user.agente.id
-            
+
             Auditoria.objects.create(
                 pk_afectada=feriado_id,
                 nombre_tabla='feriado',
@@ -373,169 +387,173 @@ class FeriadoViewSet(viewsets.ModelViewSet):
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"Error al crear auditoría de feriado: {str(e)}")
+            logger.error(f"Error al crear auditorÃ­a de feriado: {str(e)}")
 
 
 class CronogramaViewSet(viewsets.ModelViewSet):
-    """ViewSet extendido para cronogramas con planificación automática"""
-    
+    """ViewSet extendido para cronogramas con planificaciÃ³n automÃ¡tica"""
+
     queryset = Cronograma.objects.all()
     serializer_class = CronogramaExtendidoSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
-        
+
         # Optimizar consultas con select_related
         queryset = queryset.select_related(
-            'id_area', 'id_jefe', 'id_director', 
+            'id_area', 'id_jefe', 'id_director',
             'creado_por_id', 'aprobado_por_id'
         )
-        
+
         # Filtros
-        area_id = self.request.query_params.get('area')
+        area_id = self.data_in.get('area')
         estado = self.request.query_params.get('estado')
         tipo = self.request.query_params.get('tipo')
-        
+
         if area_id:
             queryset = queryset.filter(id_area=area_id)
         if estado:
             queryset = queryset.filter(estado=estado)
         if tipo:
             queryset = queryset.filter(tipo=tipo)
-        
+
         return queryset.order_by('-creado_en')
-    
+
     @action(detail=False, methods=['post'])
     def crear_con_guardias(self, request):
-        """Crea un cronograma con múltiples guardias y registra en auditoría"""
+        """Crea un cronograma con mÃºltiples guardias y registra en auditorÃ­a"""
         try:
             data = request.data
-            
+
             # Debug: Log de datos recibidos
-            print(f"📋 Datos recibidos en crear_con_guardias: {data}")
-            
+            print(f"ðŸ“‹ Datos recibidos en crear_con_guardias: {data}")
+
             # Validar datos requeridos
-            required_fields = ['nombre', 'tipo', 'id_area', 'fecha', 'hora_inicio', 'hora_fin', 'agentes']
+            required_fields = ['nombre', 'tipo', 'id_area',
+                               'fecha', 'hora_inicio', 'hora_fin', 'agentes']
             for field in required_fields:
                 if field not in data:
                     return Response(
-                        {'error': f'Campo requerido: {field}'}, 
+                        {'error': f'Campo requerido: {field}'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-            
+
             # Validar que haya agentes
             if not data['agentes'] or len(data['agentes']) == 0:
                 return Response(
-                    {'error': 'Debe seleccionar al menos un agente'}, 
+                    {'error': 'Debe seleccionar al menos un agente'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             # Validar que la fecha sea fin de semana o feriado
             try:
                 from datetime import datetime as dt
                 from asistencia.views import es_dia_laborable, get_motivo_no_laborable
-                
+
                 fecha_guardia = dt.strptime(data['fecha'], '%Y-%m-%d').date()
                 logger.info(f"Validando fecha para guardia: {fecha_guardia}")
-                
-                # Verificar si es día laborable (si es True, entonces NO es válido para guardias)
+
+                # Verificar si es Dia laborable (si es True, entonces NO es vÃ¡lido para guardias)
                 es_laborable = es_dia_laborable(fecha_guardia)
-                logger.info(f"¿Es día laborable {fecha_guardia}? {es_laborable}")
-                
+                logger.info(
+                    f"Â¿Es Dia laborable {fecha_guardia}? {es_laborable}")
+
                 if es_laborable:
-                    # Es día laborable (lunes a viernes normal), NO permitido para guardias
-                    logger.warning(f"Rechazando guardia en día laborable: {fecha_guardia}")
+                    # Es Dia laborable (lunes a viernes normal), NO permitido para guardias
+                    logger.warning(
+                        f"Rechazando guardia en Dia laborable: {fecha_guardia}")
                     return Response(
-                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sÃ¡bados y domingos) o feriados'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-                
-                # Si llegamos aquí, es fin de semana o feriado (válido para guardias)
+
+                # Si llegamos aquÃ­, es fin de semana o feriado (vÃ¡lido para guardias)
                 motivo = get_motivo_no_laborable(fecha_guardia)
-                logger.info(f"✅ Fecha válida para guardia {fecha_guardia}: {motivo}")
-                
+                logger.info(
+                    f"âœ… Fecha vÃ¡lida para guardia {fecha_guardia}: {motivo}")
+
             except ValueError as e:
                 return Response(
-                    {'error': f'Formato de fecha inválido: {data.get("fecha")}'}, 
+                    {'error': f'Formato de fecha invÃ¡lido: {data.get("fecha")}'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             except Exception as e:
-                logger.error(f"Error validando día laborable: {str(e)}")
+                logger.error(f"Error validando Dia laborable: {str(e)}")
                 return Response(
-                    {'error': 'Error validando fecha de guardia'}, 
+                    {'error': 'Error validando fecha de guardia'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-            
+
             # Obtener el agente del usuario autenticado
             from .utils import get_agente_rol, requiere_aprobacion_rol
-            
+
             agente_id = data.get('agente_id')  # Por ahora recibir del request
-            print(f"🔍 agente_id del request: {agente_id}")
-            
+            print(f"ðŸ” agente_id del request: {agente_id}")
+
             if not agente_id and hasattr(request.user, 'agente'):
                 agente_id = request.user.agente.id_agente
-            
-            # Si no se proporciona agente_id, usar el de la sesión
+
+            # Si no se proporciona agente_id, usar el de la sesiÃ³n
             if not agente_id:
                 agente_id = request.session.get('user_id')
-                print(f"📌 agente_id desde sesión: {agente_id}")
-            
+                print(f"ðŸ“Œ agente_id desde sesiÃ³n: {agente_id}")
+
             if not agente_id:
                 return Response({'error': 'No se pudo determinar el agente creador'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # RBAC: Validación de área permitida según rol
+
+            # RBAC: ValidaciÃ³n de Ã¡rea permitida segun rol
             agente_creador = obtener_agente_sesion(request)
             if agente_creador:
                 rol_creador = obtener_rol_agente(agente_creador)
                 id_area_cronograma = data.get('id_area')
-                
+
                 if rol_creador == 'jefatura':
-                    # Jefatura solo puede crear para su propia área
+                    # Jefatura solo puede crear para su propia Ã¡rea
                     if agente_creador.id_area and agente_creador.id_area.id_area != id_area_cronograma:
                         return Response({
-                            'error': f'Jefatura solo puede crear cronogramas para su propia área (Área: {agente_creador.id_area.nombre})'
+                            'error': f'Jefatura solo puede crear cronogramas para su propia Ã¡rea (Ãrea: {agente_creador.id_area.nombre})'
                         }, status=status.HTTP_403_FORBIDDEN)
-                
+
                 elif rol_creador == 'director':
-                    # Director solo para áreas bajo su dirección
+                    # Director solo para Ã¡reas bajo su direcciÃ³n
                     areas_permitidas = obtener_areas_jerarquia(agente_creador)
                     area_ids = [a.id_area for a in areas_permitidas]
                     if id_area_cronograma not in area_ids:
                         return Response({
-                            'error': 'Director solo puede crear cronogramas para áreas bajo su dirección'
+                            'error': 'Director solo puede crear cronogramas para Ã¡reas bajo su direcciÃ³n'
                         }, status=status.HTTP_403_FORBIDDEN)
-                
-                # Admin: sin restricción
-            
+
+                # Admin: sin restricciÃ³n
+
             # Obtener el agente
-            print(f"✅ Usando agente_id: {agente_id}")
-            
+            print(f"âœ… Usando agente_id: {agente_id}")
+
             # Obtener agente completo
             try:
                 from personas.models import Agente
                 agente_creador = Agente.objects.get(id_agente=agente_id)
             except Agente.DoesNotExist:
                 return Response(
-                    {'error': 'Agente no encontrado'}, 
+                    {'error': 'Agente no encontrado'},
                     status=status.HTTP_404_NOT_FOUND
                 )
-            
+
             # Determinar rol del creador
             rol_creador = get_agente_rol(agente_creador)
             if not rol_creador:
                 rol_creador = 'jefatura'  # Por defecto
-            
-            # Determinar estado inicial según rol
+
+            # Determinar estado inicial segun rol
             if rol_creador.lower() == 'administrador':
                 estado_inicial = 'publicada'  # Auto-aprobado y publicado
                 fecha_aprobacion = timezone.now().date()
-                aprobado_por_id = agente_id  # Se aprueba a sí mismo
+                aprobado_por_id = agente_id  # Se aprueba a sÃ­ mismo
             else:
-                estado_inicial = 'pendiente'  # Requiere aprobación
+                estado_inicial = 'pendiente'  # Requiere aprobaciÃ³n
                 fecha_aprobacion = None
                 aprobado_por_id = None
-            
+
             # Crear el cronograma
             cronograma = Cronograma.objects.create(
                 id_area_id=data['id_area'],
@@ -551,8 +569,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 creado_por_id_id=agente_id,
                 aprobado_por_id_id=aprobado_por_id
             )
-            
-            # Registrar auditoría del cronograma
+
+            # Registrar auditorÃ­a del cronograma
             Auditoria.objects.create(
                 pk_afectada=cronograma.id_cronograma,
                 nombre_tabla='cronograma',
@@ -569,8 +587,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 accion='CREAR',
                 id_agente_id=agente_id
             )
-            
-            # Determinar estado de las guardias según estado del cronograma
+
+            # Determinar estado de las guardias segun estado del cronograma
             if estado_inicial == 'pendiente':
                 estado_guardias = 'pendiente_aprobacion'
                 guardias_activas = False  # No activar hasta aprobar
@@ -578,44 +596,46 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 # Para admin (publicada) y otros estados aprobados
                 estado_guardias = 'planificada'
                 guardias_activas = True
-            
-            # Validar fecha y duración de guardia antes de crear
+
+            # Validar fecha y duracion de guardia antes de crear
             from datetime import datetime
             from .utils import ValidadorHorarios
-            
+
             fecha_guardia = datetime.strptime(data['fecha'], '%Y-%m-%d').date()
-            
+
             # Validar que la fecha sea apta para guardias
-            fecha_valida, mensaje_fecha = ValidadorHorarios.validar_fecha_guardia(fecha_guardia)
+            fecha_valida, mensaje_fecha = ValidadorHorarios.validar_fecha_guardia(
+                fecha_guardia)
             if not fecha_valida:
                 return Response(
-                    {'error': f'Fecha no válida para guardia: {mensaje_fecha}'}, 
+                    {'error': f'Fecha no vÃ¡lida para guardia: {mensaje_fecha}'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
-            # Validar duración de la guardia  
-            from datetime import time, datetime as dt
+
+            # Validar duracion de la guardia
+            from datetime import datetime as dt
             hora_inicio_obj = dt.strptime(data['hora_inicio'], '%H:%M').time()
             hora_fin_obj = dt.strptime(data['hora_fin'], '%H:%M').time()
-            
+
             duracion_valida, mensaje_duracion = ValidadorHorarios.validar_duracion_guardia(
                 hora_inicio_obj, hora_fin_obj
             )
             if not duracion_valida:
                 return Response(
-                    {'error': f'Duración no válida: {mensaje_duracion}'}, 
+                    {'error': f'DuraciÃ³n no vÃ¡lida: {mensaje_duracion}'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
-            print(f"✅ Validaciones pasadas - {mensaje_fecha}, {mensaje_duracion}")
-            
+
+            print(
+                f"âœ… Validaciones pasadas - {mensaje_fecha}, {mensaje_duracion}")
+
             # Debug: Mostrar datos antes de crear guardias
-            print(f"🔍 Datos para crear guardias:")
+            print(f"ðŸ” Datos para crear guardias:")
             print(f"  - Cronograma creado: {cronograma.id_cronograma}")
             print(f"  - Estado guardias: {estado_guardias}")
             print(f"  - Guardias activas: {guardias_activas}")
             print(f"  - Agentes a procesar: {data['agentes']}")
-            
+
             # Crear las guardias para cada agente
             guardias_creadas = []
             for agente_data in data['agentes']:
@@ -624,9 +644,10 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     agente_id_guardia = agente_data['id_agente']
                 else:
                     agente_id_guardia = agente_data
-                
-                print(f"🔍 Creando guardia para agente: {agente_id_guardia} (tipo: {type(agente_data)})")
-                    
+
+                print(
+                    f"ðŸ” Creando guardia para agente: {agente_id_guardia} (tipo: {type(agente_data)})")
+
                 guardia = Guardia.objects.create(
                     id_cronograma=cronograma,
                     id_agente_id=agente_id_guardia,
@@ -639,9 +660,10 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     observaciones=data.get('observaciones', '')
                 )
                 guardias_creadas.append(guardia)
-                print(f"✅ Guardia creada: {guardia.id_guardia} para agente {agente_id_guardia}")
-                
-                # Registrar auditoría de cada guardia
+                print(
+                    f"âœ… Guardia creada: {guardia.id_guardia} para agente {agente_id_guardia}")
+
+                # Registrar auditorÃ­a de cada guardia
                 Auditoria.objects.create(
                     pk_afectada=guardia.id_guardia,
                     nombre_tabla='guardia',
@@ -659,105 +681,110 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     accion='CREAR',
                     id_agente_id=agente_id
                 )
-            
-            print(f"✅ Todas las guardias creadas exitosamente. Total: {len(guardias_creadas)}")
-            
+
+            print(
+                f"âœ… Todas las guardias creadas exitosamente. Total: {len(guardias_creadas)}")
+
             return Response({
                 'mensaje': 'Guardia creada exitosamente',
                 'cronograma_id': cronograma.id_cronograma,
                 'guardias_creadas': len(guardias_creadas)
             }, status=status.HTTP_201_CREATED)
-            
+
         except Exception as e:
             logger.error(f"Error al crear guardia con cronograma: {str(e)}")
             return Response(
-                {'error': f'Error al crear guardia: {str(e)}'}, 
+                {'error': f'Error al crear guardia: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-    
+
     @action(detail=True, methods=['put', 'patch'])
     def actualizar_con_guardias(self, request, pk=None):
-        """Actualiza un cronograma y sus guardias con registro completo en auditoría"""
+        """Actualiza un cronograma y sus guardias con registro completo en auditorÃ­a"""
         try:
             cronograma = self.get_object()
             data = request.data
-            
+
             # Validar que el cronograma pueda ser editado
             if cronograma.estado not in ['pendiente', 'aprobada', 'generada']:
                 return Response(
-                    {'error': f'No se puede editar un cronograma en estado "{cronograma.estado}"'}, 
+                    {'error': f'No se puede editar un cronograma en estado "{cronograma.estado}"'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             # Validar datos requeridos
-            required_fields = ['nombre', 'tipo', 'id_area', 'fecha', 'hora_inicio', 'hora_fin', 'agentes']
+            required_fields = ['nombre', 'tipo', 'id_area',
+                               'fecha', 'hora_inicio', 'hora_fin', 'agentes']
             for field in required_fields:
                 if field not in data:
                     return Response(
-                        {'error': f'Campo requerido: {field}'}, 
+                        {'error': f'Campo requerido: {field}'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-            
+
             # Validar que haya agentes
             if not data['agentes'] or len(data['agentes']) == 0:
                 return Response(
-                    {'error': 'Debe seleccionar al menos un agente'}, 
+                    {'error': 'Debe seleccionar al menos un agente'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             # Validar que la fecha sea fin de semana o feriado
             try:
                 from datetime import datetime as dt
                 fecha_guardia = dt.strptime(data['fecha'], '%Y-%m-%d').date()
-                
-                # Verificar si es día laborable (si es True, entonces NO es válido para guardias)
+
+                # Verificar si es Dia laborable (si es True, entonces NO es vÃ¡lido para guardias)
                 es_laborable = es_dia_laborable(fecha_guardia)
-                logger.info(f"¿Es día laborable {fecha_guardia}? {es_laborable}")
-                
+                logger.info(
+                    f"Â¿Es Dia laborable {fecha_guardia}? {es_laborable}")
+
                 if es_laborable:
-                    # Es día laborable (lunes a viernes normal), NO permitido para guardias
-                    logger.warning(f"Rechazando actualización de guardia en día laborable: {fecha_guardia}")
+                    # Es Dia laborable (lunes a viernes normal), NO permitido para guardias
+                    logger.warning(
+                        f"Rechazando actualizaciÃ³n de guardia en Dia laborable: {fecha_guardia}")
                     return Response(
-                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sÃ¡bados y domingos) o feriados'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-                
+
                 motivo = get_motivo_no_laborable(fecha_guardia)
-                logger.info(f"✅ Fecha válida para actualizar guardia {fecha_guardia}: {motivo}")
-                
+                logger.info(
+                    f"âœ… Fecha vÃ¡lida para actualizar guardia {fecha_guardia}: {motivo}")
+
             except ValueError as e:
                 return Response(
-                    {'error': f'Formato de fecha inválido: {data.get("fecha")}'}, 
+                    {'error': f'Formato de fecha invÃ¡lido: {data.get("fecha")}'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             except Exception as e:
-                logger.error(f"Error validando día laborable: {str(e)}")
+                logger.error(f"Error validando Dia laborable: {str(e)}")
                 return Response(
-                    {'error': 'Error validando fecha de guardia'}, 
+                    {'error': 'Error validando fecha de guardia'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-            
-            # Obtener agente que realiza la actualización
+
+            # Obtener agente que realiza la actualizaciÃ³n
             agente_id = data.get('agente_id')
             if not agente_id and hasattr(request.user, 'agente'):
                 agente_id = request.user.agente.id_agente
-            
+
             if not agente_id:
                 return Response(
-                    {'error': 'No se pudo determinar el agente que actualiza'}, 
+                    {'error': 'No se pudo determinar el agente que actualiza'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             try:
                 from personas.models import Agente
                 agente_actualizador = Agente.objects.get(id_agente=agente_id)
             except Agente.DoesNotExist:
                 return Response(
-                    {'error': 'Agente no encontrado'}, 
+                    {'error': 'Agente no encontrado'},
                     status=status.HTTP_404_NOT_FOUND
                 )
-            
-            # Guardar valores previos para auditoría
+
+            # Guardar valores previos para auditorÃ­a
             valor_previo_cronograma = {
                 'tipo': cronograma.tipo,
                 'hora_inicio': str(cronograma.hora_inicio),
@@ -765,33 +792,33 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 'estado': cronograma.estado,
                 'id_area': cronograma.id_area_id
             }
-            
-            # Obtener guardias existentes para auditoría
+
+            # Obtener guardias existentes para auditorÃ­a
             guardias_previas = list(cronograma.guardia_set.all().values(
-                'id_guardia', 'id_agente_id', 'fecha', 'hora_inicio', 
+                'id_guardia', 'id_agente_id', 'fecha', 'hora_inicio',
                 'hora_fin', 'tipo', 'estado', 'activa'
             ))
-            
+
             # Actualizar campos del cronograma
             cronograma.tipo = data['tipo']
             cronograma.hora_inicio = data['hora_inicio']
             cronograma.hora_fin = data['hora_fin']
             cronograma.id_area_id = data['id_area']
-            
+
             # Si estaba aprobado/publicado y se modifica, volver a pendiente
             if cronograma.estado in ['aprobada', 'publicada']:
                 from .utils import get_agente_rol
                 rol_actualizador = get_agente_rol(agente_actualizador)
-                
+
                 # Solo admin puede editar sin cambiar estado
                 if rol_actualizador and rol_actualizador.lower() != 'administrador':
                     cronograma.estado = 'pendiente'
                     cronograma.fecha_aprobacion = None
                     cronograma.aprobado_por_id = None
-            
+
             cronograma.save()
-            
-            # Registrar auditoría del cronograma
+
+            # Registrar auditorÃ­a del cronograma
             Auditoria.objects.create(
                 pk_afectada=cronograma.id_cronograma,
                 nombre_tabla='cronograma',
@@ -807,18 +834,21 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 accion='ACTUALIZAR',
                 id_agente_id=agente_id
             )
-            
-            # Eliminar guardias existentes y registrar en auditoría
+
+            # Eliminar guardias existentes y registrar en auditorÃ­a
             for guardia_previa in guardias_previas:
-                # Convertir fechas a string para serialización JSON
+                # Convertir fechas a string para serializaciÃ³n JSON
                 guardia_previa_serializable = guardia_previa.copy()
                 if 'fecha' in guardia_previa_serializable:
-                    guardia_previa_serializable['fecha'] = str(guardia_previa_serializable['fecha'])
+                    guardia_previa_serializable['fecha'] = str(
+                        guardia_previa_serializable['fecha'])
                 if 'hora_inicio' in guardia_previa_serializable:
-                    guardia_previa_serializable['hora_inicio'] = str(guardia_previa_serializable['hora_inicio'])
+                    guardia_previa_serializable['hora_inicio'] = str(
+                        guardia_previa_serializable['hora_inicio'])
                 if 'hora_fin' in guardia_previa_serializable:
-                    guardia_previa_serializable['hora_fin'] = str(guardia_previa_serializable['hora_fin'])
-                
+                    guardia_previa_serializable['hora_fin'] = str(
+                        guardia_previa_serializable['hora_fin'])
+
                 Auditoria.objects.create(
                     pk_afectada=guardia_previa['id_guardia'],
                     nombre_tabla='guardia',
@@ -828,9 +858,9 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     accion='ELIMINAR',
                     id_agente_id=agente_id
                 )
-            
+
             cronograma.guardia_set.all().delete()
-            
+
             # Determinar estado de las nuevas guardias
             if cronograma.estado == 'pendiente':
                 estado_guardias = 'pendiente_aprobacion'
@@ -839,7 +869,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 # Para estados aprobados y publicados
                 estado_guardias = 'planificada'
                 guardias_activas = True
-            
+
             # Crear las nuevas guardias
             guardias_creadas = []
             for agente_data in data['agentes']:
@@ -847,7 +877,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     agente_id_guardia = agente_data['id_agente']
                 else:
                     agente_id_guardia = agente_data
-                
+
                 guardia = Guardia.objects.create(
                     id_cronograma=cronograma,
                     id_agente_id=agente_id_guardia,
@@ -860,8 +890,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     observaciones=data.get('observaciones', '')
                 )
                 guardias_creadas.append(guardia)
-                
-                # Registrar auditoría de cada nueva guardia
+
+                # Registrar auditorÃ­a de cada nueva guardia
                 Auditoria.objects.create(
                     pk_afectada=guardia.id_guardia,
                     nombre_tabla='guardia',
@@ -880,18 +910,19 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     accion='CREAR',
                     id_agente_id=agente_id
                 )
-            
-            # Registrar resumen en auditoría
+
+            # Registrar resumen en auditorÃ­a
             Auditoria.objects.create(
                 pk_afectada=cronograma.id_cronograma,
                 nombre_tabla='cronograma',
                 creado_en=timezone.now(),
                 valor_previo={'guardias_previas_count': len(guardias_previas)},
-                valor_nuevo={'guardias_nuevas_count': len(guardias_creadas), 'actualizacion_completa': True},
+                valor_nuevo={'guardias_nuevas_count': len(
+                    guardias_creadas), 'actualizacion_completa': True},
                 accion='ACTUALIZACION_COMPLETA',
                 id_agente_id=agente_id
             )
-            
+
             return Response({
                 'mensaje': 'Cronograma actualizado exitosamente',
                 'cronograma_id': cronograma.id_cronograma,
@@ -899,7 +930,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 'guardias_creadas': len(guardias_creadas),
                 'estado_cronograma': cronograma.estado
             }, status=status.HTTP_200_OK)
-            
+
         except Exception as e:
             import traceback
             error_details = {
@@ -907,15 +938,17 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 'traceback': traceback.format_exc(),
                 'data_received': request.data
             }
-            logger.error(f"Error al actualizar cronograma con guardias: {error_details}")
+            logger.error(
+                f"Error al actualizar cronograma con guardias: {error_details}")
             return Response(
-                {'error': f'Error al actualizar: {str(e)}', 'details': error_details}, 
+                {'error': f'Error al actualizar: {str(e)}',
+                 'details': error_details},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-    
+
     @action(detail=False, methods=['post'])
     def planificar(self, request):
-        """Planificación automática de guardias"""
+        """PlanificaciÃ³n automÃ¡tica de guardias"""
         serializer = PlanificacionCronogramaSerializer(data=request.data)
         if serializer.is_valid():
             try:
@@ -925,47 +958,47 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     fecha_fin=serializer.validated_data['fecha_fin'],
                     agentes_ids=serializer.validated_data.get('agentes_ids')
                 )
-                
+
                 if resultado:
                     return Response(resultado, status=status.HTTP_201_CREATED)
                 else:
                     return Response(
-                        {'error': 'Error en la planificación automática'}, 
+                        {'error': 'Error en la planificaciÃ³n automÃ¡tica'},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR
                     )
-                    
+
             except Exception as e:
-                logger.error(f"Error en planificación: {e}")
+                logger.error(f"Error en planificaciÃ³n: {e}")
                 return Response(
-                    {'error': str(e)}, 
+                    {'error': str(e)},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=True, methods=['patch'])
     def aprobar(self, request, pk=None):
-        """Aprueba un cronograma con validación de jerarquía de roles"""
+        """Aprueba un cronograma con validaciÃ³n de jerarquÃ­a de roles"""
         from .utils import get_agente_rol, puede_aprobar
-        
+
         cronograma = self.get_object()
-        
+
         # Validar estado actual
         if cronograma.estado not in ['generada', 'pendiente']:
             return Response(
                 {'error': f'Solo se pueden aprobar cronogramas en estado "generada" o "pendiente". Estado actual: {cronograma.estado}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # Obtener agente que aprueba (simular con agente_id del request por ahora)
-        # En producción usar: agente_aprobador = request.user.agente
+        # En producciÃ³n usar: agente_aprobador = request.user.agente
         agente_id = request.data.get('agente_id')
         if not agente_id:
             return Response(
                 {'error': 'Se requiere agente_id para aprobar'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from personas.models import Agente
             agente_aprobador = Agente.objects.get(id_agente=agente_id)
@@ -974,7 +1007,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 {'error': 'Agente no encontrado'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         # Obtener rol del aprobador
         rol_aprobador = get_agente_rol(agente_aprobador)
         if not rol_aprobador:
@@ -982,8 +1015,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 {'error': 'El agente no tiene un rol asignado'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
-        # Validar si puede aprobar según jerarquía
+
+        # Validar si puede aprobar segun jerarquÃ­a
         if not puede_aprobar(cronograma, rol_aprobador):
             roles_permitidos = cronograma.puede_aprobar_rol
             return Response(
@@ -993,13 +1026,13 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         # Aprobar y publicar cronograma directamente
         cronograma.estado = 'publicada'
         cronograma.fecha_aprobacion = date.today()
         cronograma.aprobado_por_id = agente_aprobador
         cronograma.save()
-        
+
         # Activar guardias asociadas que estaban pendientes
         guardias_activadas = cronograma.guardia_set.filter(
             estado='pendiente_aprobacion'
@@ -1007,18 +1040,19 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             estado='planificada',
             activa=True
         )
-        
-        # Registrar en auditoría
+
+        # Registrar en auditorÃ­a
         Auditoria.objects.create(
             pk_afectada=cronograma.id_cronograma,
             nombre_tabla='cronograma',
             creado_en=timezone.now(),
             valor_previo={'estado': 'pendiente'},
-            valor_nuevo={'estado': 'publicada', 'guardias_activadas': guardias_activadas},
+            valor_nuevo={'estado': 'publicada',
+                         'guardias_activadas': guardias_activadas},
             accion='APROBAR_Y_PUBLICAR',
             id_agente_id=agente_id
         )
-        
+
         return Response({
             'mensaje': 'Cronograma aprobado y publicado exitosamente',
             'cronograma_id': cronograma.id_cronograma,
@@ -1026,23 +1060,23 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             'fecha_aprobacion': cronograma.fecha_aprobacion,
             'guardias_activadas': guardias_activadas
         })
-    
+
     @action(detail=True, methods=['patch'])
     def publicar(self, request, pk=None):
-        """Publica un cronograma pendiente o aprobado (método legacy)"""
+        """Publica un cronograma pendiente o aprobado (mÃ©todo legacy)"""
         cronograma = self.get_object()
-        
+
         if cronograma.estado not in ['aprobada', 'pendiente']:
             return Response(
                 {'error': f'Solo se pueden publicar cronogramas pendientes o aprobados. Estado actual: {cronograma.estado}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         estado_previo = cronograma.estado
         cronograma.estado = 'publicada'
         cronograma.save()
-        
-        # Registrar en auditoría
+
+        # Registrar en auditorÃ­a
         Auditoria.objects.create(
             pk_afectada=cronograma.id_cronograma,
             nombre_tabla='cronograma',
@@ -1052,20 +1086,20 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             accion='PUBLICAR_DIRECTO',
             id_agente_id=request.data.get('agente_id', 1)
         )
-        
+
         return Response({'mensaje': 'Cronograma publicado exitosamente'})
-    
+
     @action(detail=True, methods=['patch'])
     def despublicar(self, request, pk=None):
-        """Despublica un cronograma para permitir edición"""
+        """Despublica un cronograma para permitir ediciÃ³n"""
         cronograma = self.get_object()
-        
+
         if cronograma.estado != 'publicada':
             return Response(
                 {'error': 'Solo se pueden despublicar cronogramas publicados'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # Obtener agente que despublica
         agente_id = request.data.get('agente_id')
         if not agente_id:
@@ -1073,7 +1107,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 {'error': 'Se requiere agente_id para despublicar'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from personas.models import Agente
             agente_despublicador = Agente.objects.get(id_agente=agente_id)
@@ -1082,13 +1116,13 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 {'error': 'Agente no encontrado'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         # Cambiar estado a pendiente (permite editar y eliminar)
         estado_previo = cronograma.estado
         cronograma.estado = 'pendiente'
         cronograma.save()
-        
-        # Registrar en auditoría
+
+        # Registrar en auditorÃ­a
         Auditoria.objects.create(
             pk_afectada=cronograma.id_cronograma,
             nombre_tabla='cronograma',
@@ -1098,32 +1132,33 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             accion='DESPUBLICAR',
             id_agente_id=agente_id
         )
-        
+
         return Response({
-            'mensaje': 'Cronograma despublicado exitosamente. Ahora está pendiente y puede editarse o eliminarse.',
+            'mensaje': 'Cronograma despublicado exitosamente. Ahora esta¡ pendiente y puede editarse o eliminarse.',
             'cronograma_id': cronograma.id_cronograma,
             'nuevo_estado': cronograma.estado
         })
-    
+
     @action(detail=True, methods=['delete'])
     def eliminar(self, request, pk=None):
-        """Elimina un cronograma solo si está en estado pendiente"""
+        """Elimina un cronograma solo si esta¡ en estado pendiente"""
         cronograma = self.get_object()
-        
+
         if cronograma.estado != 'pendiente':
             return Response(
                 {'error': 'Solo se pueden eliminar cronogramas en estado pendiente'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # Obtener agente que elimina
-        agente_id = request.data.get('agente_id') or request.query_params.get('agente_id')
+        agente_id = request.data.get(
+            'agente_id') or request.query_params.get('agente_id')
         if not agente_id:
             return Response(
                 {'error': 'Se requiere agente_id para eliminar'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from personas.models import Agente
             agente_eliminador = Agente.objects.get(id_agente=agente_id)
@@ -1132,8 +1167,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 {'error': 'Agente no encontrado'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
-        # Guardar datos para auditoría antes de eliminar
+
+        # Guardar datos para auditorÃ­a antes de eliminar
         cronograma_id = cronograma.id_cronograma
         cronograma_data = {
             'id': cronograma_id,
@@ -1142,8 +1177,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             'tipo': cronograma.tipo,
             'fecha': str(cronograma.fecha),
         }
-        
-        # Registrar eliminación de guardias asociadas
+
+        # Registrar eliminaciÃ³n de guardias asociadas
         guardias = cronograma.guardia_set.all()
         for guardia in guardias:
             Auditoria.objects.create(
@@ -1159,8 +1194,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 accion='ELIMINAR',
                 id_agente_id=agente_id
             )
-        
-        # Registrar eliminación del cronograma
+
+        # Registrar eliminaciÃ³n del cronograma
         Auditoria.objects.create(
             pk_afectada=cronograma_id,
             nombre_tabla='cronograma',
@@ -1170,20 +1205,20 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             accion='ELIMINAR',
             id_agente_id=agente_id
         )
-        
-        # Eliminar cronograma (esto también elimina las guardias por CASCADE)
+
+        # Eliminar cronograma (esto tambiÃ©n elimina las guardias por CASCADE)
         cronograma.delete()
-        
+
         return Response({
             'mensaje': 'Cronograma eliminado exitosamente',
             'cronograma_eliminado': cronograma_data
         })
-    
-    @action(detail=False, methods=['get'])
+
+    @action(detail=False, methods=['get', 'post'])
     def pendientes(self, request):
-        """Lista cronogramas pendientes de aprobación según rol del usuario"""
+        """Lista cronogramas pendientes de aprobaciÃ³n segun rol del usuario"""
         from .utils import get_agente_rol, get_approval_hierarchy
-        
+
         # Obtener agente del usuario (por ahora via query param)
         agente_id = request.query_params.get('agente_id')
         if not agente_id:
@@ -1194,7 +1229,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     {'error': 'No se pudo determinar el agente'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-        
+
         try:
             from personas.models import Agente
             agente = Agente.objects.get(id_agente=agente_id)
@@ -1203,7 +1238,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 {'error': 'Agente no encontrado'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         # Obtener rol del agente
         rol_agente = get_agente_rol(agente)
         if not rol_agente:
@@ -1211,46 +1246,48 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 {'error': 'El agente no tiene un rol asignado'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         # Filtrar cronogramas pendientes que el agente puede aprobar
         cronogramas_pendientes = []
         queryset = Cronograma.objects.filter(estado='pendiente').select_related(
             'id_area', 'id_jefe', 'creado_por_id'
         ).prefetch_related('guardia_set')
-        
+
         for cronograma in queryset:
             # Verificar si el rol del agente puede aprobar este cronograma
             if cronograma.creado_por_rol:
-                roles_permitidos = get_approval_hierarchy(cronograma.creado_por_rol)
+                roles_permitidos = get_approval_hierarchy(
+                    cronograma.creado_por_rol)
                 if rol_agente.lower() in roles_permitidos:
                     cronogramas_pendientes.append(cronograma)
             elif rol_agente.lower() == 'administrador':
                 # Si no tiene creado_por_rol, solo admin puede aprobar
                 cronogramas_pendientes.append(cronograma)
-        
+
         # Serializar resultados
-        serializer = CronogramaExtendidoSerializer(cronogramas_pendientes, many=True)
-        
+        serializer = CronogramaExtendidoSerializer(
+            cronogramas_pendientes, many=True)
+
         return Response({
             'count': len(cronogramas_pendientes),
             'rol_agente': rol_agente,
             'cronogramas': serializer.data
         })
-    
+
     @action(detail=True, methods=['post'])
     def rechazar(self, request, pk=None):
         """Rechaza un cronograma con motivo"""
         from .utils import get_agente_rol, puede_aprobar
-        
+
         cronograma = self.get_object()
-        
+
         # Validar estado actual
         if cronograma.estado not in ['generada', 'pendiente']:
             return Response(
                 {'error': f'Solo se pueden rechazar cronogramas pendientes. Estado actual: {cronograma.estado}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # Obtener motivo de rechazo
         motivo = request.data.get('motivo')
         if not motivo:
@@ -1258,7 +1295,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 {'error': 'Se requiere un motivo de rechazo'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # Obtener agente que rechaza
         agente_id = request.data.get('agente_id')
         if not agente_id:
@@ -1266,7 +1303,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 {'error': 'Se requiere agente_id'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from personas.models import Agente
             agente_rechazador = Agente.objects.get(id_agente=agente_id)
@@ -1275,7 +1312,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 {'error': 'Agente no encontrado'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         # Validar permisos
         rol_rechazador = get_agente_rol(agente_rechazador)
         if not rol_rechazador:
@@ -1283,21 +1320,21 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 {'error': 'El agente no tiene un rol asignado'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         if not puede_aprobar(cronograma, rol_rechazador):
             return Response(
                 {'error': 'No tiene permisos para rechazar este cronograma'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
-        # Guardar estado previo para auditoría
+
+        # Guardar estado previo para auditorÃ­a
         estado_previo = cronograma.estado
-        
+
         # Rechazar cronograma
         cronograma.estado = 'rechazada'
         cronograma.save()
-        
-        # Registrar en auditoría
+
+        # Registrar en auditorÃ­a
         Auditoria.objects.create(
             pk_afectada=cronograma.id_cronograma,
             nombre_tabla='cronograma',
@@ -1307,7 +1344,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             accion='RECHAZO',
             id_agente_id=agente_id
         )
-        
+
         return Response({
             'mensaje': 'Cronograma rechazado',
             'cronograma_id': cronograma.id_cronograma,
@@ -1317,81 +1354,81 @@ class CronogramaViewSet(viewsets.ModelViewSet):
 
 
 class GuardiaViewSet(viewsets.ModelViewSet):
-    """ViewSet para guardias con reportes y exportación"""
-    
+    """ViewSet para guardias con reportes y exportaciÃ³n"""
+
     queryset = Guardia.objects.all()
     serializer_class = GuardiaResumenSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def create(self, request, *args, **kwargs):
-        """Override create para validar días permitidos"""
+        """Override create para validar Dias permitidos"""
         fecha_str = request.data.get('fecha')
         if fecha_str:
             try:
                 from datetime import datetime as dt
                 fecha_obj = dt.strptime(fecha_str, '%Y-%m-%d').date()
-                
-                # Validar que NO sea día laborable (solo permitir fines de semana y feriados)
+
+                # Validar que NO sea Dia laborable (solo permitir fines de semana y feriados)
                 if es_dia_laborable(fecha_obj):
                     return Response(
-                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sÃ¡bados y domingos) o feriados'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-                
+
             except ValueError:
                 return Response(
-                    {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                    {'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-        
+
         return super().create(request, *args, **kwargs)
-    
+
     def update(self, request, *args, **kwargs):
-        """Override update para validar días permitidos"""
+        """Override update para validar Dias permitidos"""
         fecha_str = request.data.get('fecha')
         if fecha_str:
             try:
                 from datetime import datetime as dt
                 fecha_obj = dt.strptime(fecha_str, '%Y-%m-%d').date()
-                
-                # Validar que NO sea día laborable (solo permitir fines de semana y feriados)
+
+                # Validar que NO sea Dia laborable (solo permitir fines de semana y feriados)
                 if es_dia_laborable(fecha_obj):
                     return Response(
-                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sÃ¡bados y domingos) o feriados'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-                
+
             except ValueError:
                 return Response(
-                    {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                    {'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-        
+
         return super().update(request, *args, **kwargs)
-    
+
     def partial_update(self, request, *args, **kwargs):
-        """Override partial_update para validar días permitidos"""
+        """Override partial_update para validar Dias permitidos"""
         fecha_str = request.data.get('fecha')
         if fecha_str:
             try:
                 from datetime import datetime as dt
                 fecha_obj = dt.strptime(fecha_str, '%Y-%m-%d').date()
-                
-                # Validar que NO sea día laborable (solo permitir fines de semana y feriados)
+
+                # Validar que NO sea Dia laborable (solo permitir fines de semana y feriados)
                 if es_dia_laborable(fecha_obj):
                     return Response(
-                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'}, 
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sÃ¡bados y domingos) o feriados'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-                
+
             except ValueError:
                 return Response(
-                    {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, 
+                    {'error': 'Formato de fecha invÃ¡lido. Use YYYY-MM-DD'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-        
+
         return super().partial_update(request, *args, **kwargs)
-    
+
     @action(detail=True, methods=['get', 'post'], url_path='notas')
     def notas_guardia(self, request, pk=None):
         """
@@ -1399,32 +1436,33 @@ class GuardiaViewSet(viewsets.ModelViewSet):
         POST: Crea o actualiza nota personal del agente para esta guardia
         """
         guardia = self.get_object()
-        
+
         if request.method == 'GET':
             # Listar todas las notas de esta guardia
             notas = guardia.notas.all().order_by('-fecha_nota')
             from .serializers import NotaGuardiaSerializer
             serializer = NotaGuardiaSerializer(notas, many=True)
             return Response(serializer.data)
-        
+
         elif request.method == 'POST':
             # Crear o actualizar nota del agente actual
-            agente_id = request.data.get('id_agente') or request.data.get('agente_id')
+            agente_id = request.data.get(
+                'id_agente') or request.data.get('agente_id')
             if not agente_id:
                 return Response(
                     {'error': 'Se requiere id_agente o agente_id'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             from .models import NotaGuardia
             from .serializers import NotaGuardiaSerializer
-            
+
             # Buscar si ya existe una nota de este agente para esta guardia
             nota_existente = NotaGuardia.objects.filter(
                 id_guardia=guardia,
                 id_agente_id=agente_id
             ).first()
-            
+
             if nota_existente:
                 # Actualizar nota existente
                 serializer = NotaGuardiaSerializer(
@@ -1437,16 +1475,16 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 data = request.data.copy()
                 data['id_guardia'] = guardia.id_guardia
                 serializer = NotaGuardiaSerializer(data=data)
-            
+
             if serializer.is_valid():
                 serializer.save()
                 return Response(
                     serializer.data,
                     status=status.HTTP_201_CREATED if not nota_existente else status.HTTP_200_OK
                 )
-            
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=False, methods=['put', 'delete'], url_path='notas/(?P<nota_id>[^/.]+)')
     def nota_detalle(self, request, nota_id=None, pk=None):
         """
@@ -1455,7 +1493,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
         """
         from .models import NotaGuardia
         from .serializers import NotaGuardiaSerializer
-        
+
         try:
             nota = NotaGuardia.objects.get(id_nota=nota_id)
         except NotaGuardia.DoesNotExist:
@@ -1463,22 +1501,24 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 {'error': 'Nota no encontrada'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
-        # Validar que el agente que modifica sea el dueño de la nota
-        agente_id = request.data.get('agente_id') if request.method == 'PUT' else request.query_params.get('agente_id')
+
+        # Validar que el agente que modifica sea el dueno de la nota
+        agente_id = request.data.get(
+            'agente_id') if request.method == 'PUT' else request.query_params.get('agente_id')
         if agente_id and str(nota.id_agente_id) != str(agente_id):
             return Response(
                 {'error': 'No tiene permisos para modificar esta nota'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         if request.method == 'PUT':
-            serializer = NotaGuardiaSerializer(nota, data=request.data, partial=True)
+            serializer = NotaGuardiaSerializer(
+                nota, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         elif request.method == 'DELETE':
             nota.delete()
             return Response(
@@ -1486,67 +1526,67 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_204_NO_CONTENT
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'post'])
     def verificar_disponibilidad(self, request):
-        """Verifica disponibilidad de un agente en una fecha específica"""
-        agente_id = request.query_params.get('agente')
+        """Verifica disponibilidad de un agente en una fecha especÃ­fica"""
+        agente_id = data_in.get('agente')
         fecha = request.query_params.get('fecha')
-        
+
         if not agente_id or not fecha:
             return Response(
-                {'error': 'Se requieren parámetros: agente y fecha'}, 
+                {'error': 'Se requieren parÃ¡metros: agente y fecha'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from datetime import datetime
             fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
-            
-            # Verificar si el agente ya tiene guardias ese día
+
+            # Verificar si el agente ya tiene guardias ese Dia
             guardias_existentes = self.get_queryset().filter(
                 id_agente=agente_id,
                 fecha=fecha_obj,
                 activa=True
             ).count()
-            
+
             disponible = guardias_existentes == 0
-            
+
             return Response({
                 'disponible': disponible,
                 'guardias_existentes': guardias_existentes,
                 'fecha': fecha,
                 'agente_id': int(agente_id)
             })
-            
+
         except ValueError as e:
             return Response(
-                {'error': f'Fecha inválida: {fecha}'}, 
+                {'error': f'Fecha invÃ¡lida: {fecha}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
             return Response(
-                {'error': f'Error verificando disponibilidad: {str(e)}'}, 
+                {'error': f'Error verificando disponibilidad: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-    
-    @action(detail=False, methods=['get'])
+
+    @action(detail=False, methods=['get', 'post'])
     def resumen(self, request):
-        """Resumen de guardias por período - solo guardias activas y aprobadas"""
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
-        agente_id = request.query_params.get('agente')
-        area_id = request.query_params.get('area')
-        
+        """Resumen de guardias por perÃ­odo - solo guardias activas y aprobadas"""
+        fecha_desde = data_in.get('fecha_desde')
+        fecha_hasta = data_in.get('fecha_hasta')
+        agente_id = data_in.get('agente')
+        area_id = data_in.get('area')
+
         queryset = self.get_queryset()
-        
-        # FILTRO CRÍTICO: Solo mostrar guardias activas de cronogramas aprobados/publicados
-        # Esto previene que usuarios vean guardias pendientes de aprobación
+
+        # FILTRO CRÃTICO: Solo mostrar guardias activas de cronogramas aprobados/publicados
+        # Esto previene que usuarios vean guardias pendientes de aprobaciÃ³n
         queryset = queryset.filter(
             activa=True,
             estado='planificada',
             id_cronograma__estado__in=['aprobada', 'publicada']
         )
-        
+
         if fecha_desde:
             queryset = queryset.filter(fecha__gte=fecha_desde)
         if fecha_hasta:
@@ -1555,19 +1595,20 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(id_agente=agente_id)
         if area_id:
             queryset = queryset.filter(id_cronograma__id_area=area_id)
-        
-        # Estadísticas
+
+        # EstadÃ­sticas
         estadisticas = queryset.aggregate(
             total_guardias=Count('id_guardia'),
             guardias_activas=Count('id_guardia', filter=Q(activa=True)),
             horas_planificadas=Sum('horas_planificadas'),
             horas_efectivas=Sum('horas_efectivas')
         )
-        
-        # Guardias del período
-        guardias = queryset.order_by('-fecha')[:50]  # Limitar a 50 más recientes
+
+        # Guardias del perÃ­odo
+        # Limitar a 50 mÃ¡s recientes
+        guardias = queryset.order_by('-fecha')[:50]
         serializer = self.get_serializer(guardias, many=True)
-        
+
         return Response({
             'estadisticas': estadisticas,
             'guardias': serializer.data,
@@ -1579,25 +1620,25 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             }
         })
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'post'])
     def guardias_por_cronograma(self, request):
-        """Obtiene todas las guardias de un cronograma específico (incluyendo pendientes)"""
+        """Obtiene todas las guardias de un cronograma especifico (incluyendo pendientes)"""
         cronograma_id = request.query_params.get('id_cronograma')
-        
+
         if not cronograma_id:
             return Response(
-                {'error': 'Se requiere el parámetro id_cronograma'}, 
+                {'error': 'Se requiere el parÃ¡metro id_cronograma'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             # Obtener todas las guardias del cronograma, sin filtrar por estado del cronograma
             guardias = self.get_queryset().filter(
                 id_cronograma=cronograma_id,
                 activa=True
             ).select_related('id_agente', 'id_cronograma').order_by('fecha', 'hora_inicio')
-            
-            # Serializar guardias con información del agente
+
+            # Serializar guardias con informaciÃ³n del agente
             guardias_data = []
             for guardia in guardias:
                 agente = guardia.id_agente
@@ -1614,365 +1655,1001 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                     'agente_nombre': f"{agente.nombre} {agente.apellido}" if agente else 'Sin asignar',
                     'agente_legajo': agente.legajo if agente else ''
                 })
-            
+
             return Response(guardias_data)
-            
+
         except Exception as e:
-            logger.error(f"Error obteniendo guardias del cronograma {cronograma_id}: {e}")
+            logger.error(
+                f"Error obteniendo guardias del cronograma {cronograma_id}: {e}")
             return Response(
-                {'error': f'Error obteniendo guardias del cronograma: {str(e)}'}, 
+                {'error': f'Error obteniendo guardias del cronograma: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'post'])
     def reporte_individual(self, request):
-        """Genera reporte individual según documentación - Planilla Individual de Guardias"""
-        agente_id = request.query_params.get('agente')
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
-        
-        if not all([agente_id, fecha_desde, fecha_hasta]):
-            return Response(
-                {'error': 'Se requieren parámetros: agente, fecha_desde, fecha_hasta'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            from personas.models import Agente
-            from asistencia.models import Asistencia
-            from datetime import datetime, timedelta
-            import calendar
-            
-            agente = Agente.objects.get(id_agente=agente_id)
-            fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
-            fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
-            
-            # Obtener guardias del agente en el período
-            guardias = self.get_queryset().filter(
-                id_agente=agente_id,
-                fecha__range=[fecha_inicio, fecha_fin],
-                activa=True,
-                estado='planificada',
-                id_cronograma__estado__in=['aprobada', 'publicada']
-            ).order_by('fecha')
-            
-            # Crear mapa de guardias por fecha
-            guardias_map = {g.fecha.strftime('%Y-%m-%d'): g for g in guardias}
+        """Genera reporte individual segun documentacion - Planilla Individual de Guardias"""
+        data_in = request.data if request.method.lower() == "post" else request.query_params
+        filtros = {
+            'agente': data_in.get('agente'),
+            'area': data_in.get('area'),
+            'fecha_desde': data_in.get('fecha_desde'),
+            'fecha_hasta': data_in.get('fecha_hasta'),
+            'tipo_guardia': data_in.get('tipo_guardia')
+        }
 
-            
-            # Generar días del mes
-            dias_reporte = []
-            current_date = fecha_inicio
-            
-            while current_date <= fecha_fin:
-                fecha_str = current_date.strftime('%Y-%m-%d')
-                guardia = guardias_map.get(fecha_str)
-                
-                # Obtener registro de asistencia si existe
-                registro_asistencia = None
-                if guardia:
-                    try:
-                        registro_asistencia = Asistencia.objects.filter(
-                            id_agente=agente_id,
-                            fecha=current_date
-                        ).first()
-                    except:
-                        pass
-                
-                # Determinar horario habitual (jornada normal 8hs)
-                horario_habitual_inicio = "08:00"
-                horario_habitual_fin = "16:00"
-                
-                # Calcular horas si hay guardia
-                horas_planificadas = 0
-                if guardia and guardia.hora_inicio and guardia.hora_fin:
-                    inicio = datetime.combine(current_date, guardia.hora_inicio)
-                    fin = datetime.combine(current_date, guardia.hora_fin)
-                    if fin < inicio:  # Si termina al día siguiente
-                        fin += timedelta(days=1)
-                    horas_planificadas = (fin - inicio).total_seconds() / 3600
-                
-                # Determinar novedad/estado del día
-                novedad = ""
-                if not guardia:
-                    # Verificar si es día laboral normal
-                    if current_date.weekday() < 5:  # Lunes a Viernes
-                        novedad = "Jornada habitual"
-                    else:
-                        novedad = "Fin de semana"
-                elif guardia:
-                    novedad = "Guardia operativa"
-                
-                dia_info = {
-                    'fecha': fecha_str,
-                    'dia_semana': calendar.day_name[current_date.weekday()],
-                    'horario_habitual_inicio': horario_habitual_inicio if current_date.weekday() < 5 else "",
-                    'horario_habitual_fin': horario_habitual_fin if current_date.weekday() < 5 else "",
-                    'novedad': novedad,
-                    'horario_guardia_inicio': guardia.hora_inicio.strftime('%H:%M') if guardia and guardia.hora_inicio else "",
-                    'horario_guardia_fin': guardia.hora_fin.strftime('%H:%M') if guardia and guardia.hora_fin else "",
-                    'horas_planificadas': round(horas_planificadas, 2) if horas_planificadas > 0 else "",
-                    'horas_efectivas': guardia.horas_efectivas if guardia and guardia.horas_efectivas else "",
-                    'motivo_guardia': "Operativas" if guardia else "",
-                    'tiene_guardia': bool(guardia),
-                    'estado_asistencia': registro_asistencia.estado if registro_asistencia else "Sin registro"
-                }
-                
-                dias_reporte.append(dia_info)
-                current_date += timedelta(days=1)
-            
-            # Calcular totales
-            total_horas = sum(float(dia['horas_planificadas']) for dia in dias_reporte if dia['horas_planificadas'])
-            total_dias_guardia = len([dia for dia in dias_reporte if dia['tiene_guardia']])
-            
-            resultado = {
-                'agente': {
-                    'nombre_completo': f"{agente.apellido}, {agente.nombre}",
-                    'legajo': agente.legajo,
-                    'dependencia': agente.area.nombre if agente.area else "Sin área",
-                    'categoria': agente.categoria if hasattr(agente, 'categoria') else "Agente",
-                    'turno': "Rotativo"  # Por defecto
-                },
-                'periodo': {
-                    'mes': fecha_inicio.strftime('%B %Y'),
-                    'fecha_desde': fecha_desde,
-                    'fecha_hasta': fecha_hasta
-                },
-                'dias': dias_reporte,
-                'totales': {
-                    'total_horas': round(total_horas, 2),
-                    'total_dias_guardia': total_dias_guardia,
-                    'promedio_horas_dia': round(total_horas / max(total_dias_guardia, 1), 2)
-                }
-            }
-            
-            return Response(resultado)
-            
-        except Agente.DoesNotExist:
-            return Response(
-                {'error': 'Agente no encontrado'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+        agente_sesion = obtener_agente_sesion(request)
+        if not agente_sesion:
+            return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user_ctx = {
+            'agente': agente_sesion,
+            'rol': obtener_rol_agente(agente_sesion)
+        }
+
+        try:
+            data = obtener_datos_reporte(filtros, 'individual', user_ctx)
+            return Response(data)
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            logger.error(f"Error generando reporte individual: {e}")
             return Response(
-                {'error': f'Error generando reporte: {str(e)}'}, 
+                {'error': f'Error generando reporte: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'post'])
     def reporte_general(self, request):
-        """Genera reporte general según documentación - Planilla General/Preventiva"""
-        area_id = request.query_params.get('area')
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
-        
-        if not all([area_id, fecha_desde, fecha_hasta]):
-            return Response(
-                {'error': 'Se requieren parámetros: area, fecha_desde, fecha_hasta'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
+        """Genera reporte general segun documentacion - Planilla General/Preventiva"""
+
+        data_in = request.data if request.method.lower() == 'post' else request.query_params
+        filtros = {
+            'agente': data_in.get('agente'),
+            'area': data_in.get('area'),
+            'fecha_desde': data_in.get('fecha_desde'),
+            'fecha_hasta': data_in.get('fecha_hasta'),
+            'tipo_guardia': data_in.get('tipo_guardia'),
+            'incluir_feriados': data_in.get('incluir_feriados'),
+            'incluir_licencias': data_in.get('incluir_licencias')
+        }
+
+        agente_sesion = obtener_agente_sesion(request)
+        if not agente_sesion:
+            return Response({'error': 'Sesion invalida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user_ctx = {
+            'agente': agente_sesion,
+            'rol': obtener_rol_agente(agente_sesion)
+        }
+
         try:
-            from personas.models import Area, Agente
-            from datetime import datetime, timedelta
-            import calendar
-            
-            area = Area.objects.get(id_area=area_id)
-            fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
-            fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
-            
-            # Obtener todos los agentes del área
-            agentes = Agente.objects.filter(id_area=area_id, activo=True)
-            
-            # Obtener todas las guardias del área en el período
-            guardias = self.get_queryset().filter(
-                id_cronograma__id_area=area_id,
-                fecha__range=[fecha_inicio, fecha_fin],
-                activa=True,
-                estado='planificada',
-                id_cronograma__estado__in=['aprobada', 'publicada']
-            ).select_related('id_agente').order_by('fecha', 'id_agente')
-            
-            # Generar días del período para columnas
-            dias_periodo = []
-            current_date = fecha_inicio
-            while current_date <= fecha_fin:
-                dias_periodo.append({
-                    'fecha': current_date.strftime('%Y-%m-%d'),
-                    'dia': current_date.day,
-                    'dia_semana': current_date.strftime('%a')
-                })
-                current_date += timedelta(days=1)
-            
-            # Procesar datos por agente
-            agentes_data = []
-            for agente in agentes:
-                # Guardias del agente en el período
-                guardias_agente = [g for g in guardias if g.id_agente == agente.id_agente]
-                guardias_por_fecha = {g.fecha.strftime('%Y-%m-%d'): g for g in guardias_agente}
-                
-                # Generar columnas de días
-                dias_agente = []
-                total_horas_agente = 0
-                
-                for dia_info in dias_periodo:
-                    fecha_str = dia_info['fecha']
-                    guardia = guardias_por_fecha.get(fecha_str)
-                    
-                    if guardia and guardia.hora_inicio and guardia.hora_fin:
-                        # Calcular horas de la guardia
-                        inicio = datetime.combine(datetime.strptime(fecha_str, '%Y-%m-%d').date(), guardia.hora_inicio)
-                        fin = datetime.combine(datetime.strptime(fecha_str, '%Y-%m-%d').date(), guardia.hora_fin)
-                        if fin < inicio:  # Si termina al día siguiente
-                            fin += timedelta(days=1)
-                        horas = (fin - inicio).total_seconds() / 3600
-                        total_horas_agente += horas
-                        
-                        dias_agente.append({
-                            'fecha': fecha_str,
-                            'valor': f"{horas:.1f}h",
-                            'tipo': 'guardia',
-                            'horas': horas
-                        })
-                    else:
-                        # Verificar si es día laboral (podría tener LAR, F/C, etc.)
-                        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-                        if fecha_obj.weekday() < 5:  # Lunes a Viernes
-                            dias_agente.append({
-                                'fecha': fecha_str,
-                                'valor': "-",
-                                'tipo': 'normal',
-                                'horas': 0
-                            })
-                        else:
-                            dias_agente.append({
-                                'fecha': fecha_str,
-                                'valor': "",
-                                'tipo': 'fin_semana',
-                                'horas': 0
-                            })
-                
-                agentes_data.append({
-                    'nombre_completo': f"{agente.apellido}, {agente.nombre}",
-                    'legajo': agente.legajo,
-                    'dias': dias_agente,
-                    'total_horas': round(total_horas_agente, 2)
-                })
-            
-            # Calcular totales generales
-            total_horas_direccion = sum(agente['total_horas'] for agente in agentes_data)
-            
-            resultado = {
-                'area': {
-                    'nombre': area.nombre,
-                    'nombre_completo': area.nombre_completo if hasattr(area, 'nombre_completo') else area.nombre
-                },
-                'periodo': {
-                    'mes': fecha_inicio.strftime('%B %Y'),
-                    'fecha_desde': fecha_desde,
-                    'fecha_hasta': fecha_hasta
-                },
-                'dias_columnas': dias_periodo,
-                'agentes': agentes_data,
-                'totales': {
-                    'total_agentes': len(agentes_data),
-                    'total_horas_direccion': round(total_horas_direccion, 2),
-                    'promedio_horas_agente': round(total_horas_direccion / max(len(agentes_data), 1), 2)
-                }
-            }
-            
-            return Response(resultado)
-            
-        except Area.DoesNotExist:
-            return Response(
-                {'error': 'Área no encontrada'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+            data = obtener_datos_reporte(filtros, 'general', user_ctx)
+            return Response(data)
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            logger.error(f"Error generando reporte general: {e}")
             return Response(
-                {'error': f'Error generando reporte general: {str(e)}'}, 
+                {'error': f'Error generando reporte general: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'post'])
     def por_mes(self, request):
-        """Obtiene guardias para un mes específico (optimizado para calendario)"""
-        año = request.query_params.get('año')
+        """Obtiene guardias para un mes especifico (optimizado para calendario)"""
+        anio = request.query_params.get('anio')
         mes = request.query_params.get('mes')
-        
-        if not año or not mes:
+
+        if not anio or not mes:
             return Response(
-                {'error': 'Año y mes son requeridos'}, 
+                {'error': 'anio y mes son requeridos'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from datetime import date, timedelta
             # Fechas del mes
-            primer_dia = date(int(año), int(mes), 1)
+            primer_dia = date(int(anio), int(mes), 1)
             if int(mes) == 12:
-                ultimo_dia = date(int(año) + 1, 1, 1) - timedelta(days=1)
+                ultimo_dia = date(int(anio) + 1, 1, 1) - timedelta(days=1)
             else:
-                ultimo_dia = date(int(año), int(mes) + 1, 1) - timedelta(days=1)
-            
-            # Guardias del mes (incluye las que se extienden desde el día anterior)
-            guardias = []
-            
+                ultimo_dia = date(int(anio), int(mes) + 1,
+                                  1) - timedelta(days=1)
+
             # Guardias que inician en el mes
             guardias_mes = Guardia.objects.filter(
                 fecha__gte=primer_dia,
                 fecha__lte=ultimo_dia,
                 activa=True
             ).select_related('id_agente', 'id_cronograma')
-            
-            # Guardias del día anterior al mes que se extienden (multi-día)
+
             fecha_anterior = primer_dia - timedelta(days=1)
             guardias_extension = Guardia.objects.filter(
                 fecha=fecha_anterior,
-                hora_inicio__gt=F('hora_fin'),  # Indica que cruza días
+                hora_inicio__gt=F('hora_fin'),
                 activa=True
             ).select_related('id_agente', 'id_cronograma')
-            
+
             # Combinar ambos querysets
-            todas_guardias = guardias_mes.union(guardias_extension).order_by('fecha', 'hora_inicio')
-            
+            todas_guardias = guardias_mes.union(
+                guardias_extension).order_by('fecha', 'hora_inicio')
+
             return Response({
-                'año': año,
+                'anio': anio,
                 'mes': mes,
                 'primer_dia': primer_dia,
                 'ultimo_dia': ultimo_dia,
                 'total_guardias': todas_guardias.count(),
                 'guardias': GuardiaResumenSerializer(todas_guardias, many=True).data
             })
-            
+
         except ValueError as e:
             return Response(
-                {'error': f'Año o mes inválidos: {str(e)}'}, 
+                {'error': f'anio o mes invÃ¡lidos: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
             return Response(
-                {'error': f'Error obteniendo guardias: {str(e)}'}, 
+                {'error': f'Error obteniendo guardias: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    # ========================
+    # ENDPOINTS DE EXPORTACION
+    # ========================
+
+    @action(detail=False, methods=["get", "post"])
+    def exportar_pdf(self, request):
+        """
+        Genera y descarga un reporte en formato PDF con formato institucional
+        """
+        try:
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import A4, landscape
+            from reportlab.platypus import (
+                SimpleDocTemplate, Table, TableStyle,
+                Paragraph, Spacer, PageBreak, KeepTogether
+            )
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import mm
+            from django.http import HttpResponse
+            from django.contrib.staticfiles import finders
+            from datetime import datetime as dt
+            from io import BytesIO
+
+            from personas.models import Area
+
+            # =========================
+            # Helpers
+            # =========================
+            MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+            
+            MAX_DIAS_TABLA = 16
+
+            def _col_widths_fixed(doc, max_dias=MAX_DIAS_TABLA):
+                """
+                Mismos anchos para tabla 1 y 2.
+                Ajustá estos mm a tu gusto.
+                """
+                w_nombre = 55 * mm
+                w_cuil   = 28 * mm
+                w_total  = 16 * mm
+
+                disponible = doc.width - (w_nombre + w_cuil + w_total)
+                w_dia = max(5 * mm, disponible / max_dias)
+
+                return [w_nombre, w_cuil] + ([w_dia] * max_dias) + [w_total]
+
+
+            def _weekend_cols_to_table_cols(weekend_cols_originales, desde, hasta, max_dias=MAX_DIAS_TABLA):
+                """
+                weekend_cols_originales viene con índices del rows original:
+                0=Nombre,1=CUIL, 2=dia1, 3=dia2...
+                Acá devolvemos índices para la tabla spliteada y padded.
+                """
+                cols = []
+                for col in weekend_cols_originales:
+                    dia = (col - 2) + 1  # col 2 => día 1
+                    if desde <= dia <= hasta:
+                        # en la tabla split, el día 'desde' cae en col 2
+                        cols.append(2 + (dia - desde))
+                return cols
+
+            def split_rows_por_dias(rows, desde, hasta):
+                """
+                desde / hasta = números de día (1-based)
+                """
+                inicio = 2 + (desde - 1)
+                fin = 2 + hasta
+
+                nuevas_rows = []
+                for row in rows:
+                    nuevas_rows.append(
+                        row[:2] + row[inicio:fin] + [row[-1]]
+                    )
+
+                return nuevas_rows
+
+            def _to_date(v):
+                if v is None:
+                    return None
+                if hasattr(v, "year"):
+                    return v
+                return dt.strptime(v, "%Y-%m-%d").date()
+
+            def draw_header(canvas, doc):
+                canvas.saveState()
+
+                page_w, page_h = doc.pagesize
+
+                # =========================
+                # CONFIG header
+                # =========================
+                left_x = doc.leftMargin + 35
+                top_pad = 6 * mm
+                y_top = page_h - top_pad
+
+                # --- LOGO (arriba izquierda) ---
+                logo_path = finders.find("logos/logoGobByN.jpeg") or finders.find("logos/logoGobColor.jpeg")
+                logo_w = 22 * mm
+                logo_h = 18 * mm
+
+                y_logo = y_top - logo_h
+                if logo_path:
+                    try:
+                        canvas.drawImage(
+                            logo_path,
+                            left_x, y_logo,
+                            width=logo_w, height=logo_h,
+                            preserveAspectRatio=True,
+                            mask="auto"
+                        )
+                    except Exception:
+                        pass
+
+                # --- TEXTO institucional debajo del logo (izquierda) ---
+                y_inst = y_logo - 3 * mm
+
+                canvas.setFont("Helvetica-Oblique", 7)
+                canvas.drawString(left_x - 25, y_inst, "Provincia de Tierra del Fuego, Antártida")
+                y_inst -= 3.2 * mm
+
+                # esta línea va corrida a la derecha
+                canvas.drawString(left_x - 2 * mm, y_inst, "e Islas del Atlántico Sur")
+                y_inst -= 3.2 * mm
+
+                canvas.setFont("Helvetica", 7)
+                # esta línea va más corrida a la derecha
+                canvas.drawString(left_x - 1 * mm, y_inst, "República Argentina")
+                y_inst -= 4.2 * mm
+
+                canvas.setFont("Helvetica-Bold", 7)
+                canvas.drawString(left_x - 30, y_inst, "SUBSECRETARÍA DE SEGURIDAD VIAL")
+
+                # --- TÍTULO centrado (como primera imagen) ---
+                center_x = page_w / 2
+                canvas.setFont("Helvetica-Bold", 12)
+                canvas.drawCentredString(center_x, y_top - 2 * mm, titulo_linea_1)
+
+                canvas.setFont("Helvetica-Bold", 10)
+                canvas.drawCentredString(center_x, y_top - 8.5 * mm, titulo_linea_2)
+
+                # --- Divider (si lo querés: fino y bien arriba del contenido) ---
+                y_div = page_h - doc.topMargin + 2 * mm
+                canvas.setLineWidth(0.6)
+                canvas.line(doc.leftMargin, y_div, page_w - doc.rightMargin, y_div)
+
+                # =========================
+                # FOOTER Malvinas (una sola vez)
+                # =========================
+                footer_text = (
+                    "Las Islas Malvinas, Georgias y Sándwich del Sur, "
+                    "y los espacios marítimos e insulares correspondientes son Argentinos"
+                )
+                canvas.setFont("Helvetica-Oblique", 8)
+                canvas.drawCentredString(page_w / 2, 10 * mm, footer_text)
+
+                canvas.restoreState()
+
+            # =========================
+            # Request data
+            # =========================
+            tipo_reporte = request.data.get("tipo_reporte", "general")
+
+            filtros = {
+                "agente": request.data.get("agente"),
+                "area": request.data.get("area"),
+                "fecha_desde": request.data.get("fecha_desde"),
+                "fecha_hasta": request.data.get("fecha_hasta"),
+                "tipo_guardia": request.data.get("tipo_guardia"),
+                "incluir_feriados": request.data.get("incluir_feriados"),
+                "incluir_licencias": request.data.get("incluir_licencias"),
+            }
+
+            is_general = (tipo_reporte == "general")
+
+            # =========================
+            # Auth/context
+            # =========================
+            agente_sesion = obtener_agente_sesion(request)
+            if not agente_sesion:
+                return Response({"error": "Sesión inválida"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user_ctx = {
+                "agente": agente_sesion,
+                "rol": obtener_rol_agente(agente_sesion),
+            }
+
+            datos_reporte = obtener_datos_reporte(
+                filtros, tipo_reporte, user_ctx)
+
+            # =========================
+            # Doc setup
+            # =========================
+            buffer = BytesIO()
+            page_size = landscape(A4) if is_general else A4
+
+            doc = SimpleDocTemplate(
+                buffer,
+                pagesize=page_size,
+                leftMargin=18 if is_general else 72,
+                rightMargin=18 if is_general else 72,
+                topMargin=46 * mm if is_general else 72,   
+                bottomMargin=18 * mm if is_general else 72
+            )
+
+            styles = getSampleStyleSheet()
+            elements = []
+
+            # =========================
+            # Título institucional (1 sola vez)
+            # =========================
+            # Área (una sola vez)
+            area_id = filtros.get("area")
+            if isinstance(area_id, list):
+                area_id = area_id[0] if area_id else None
+
+            area_nombre = "Todas las Áreas"
+            if area_id:
+                try:
+                    area_nombre = Area.objects.get(id_area=area_id).nombre
+                except Area.DoesNotExist:
+                    area_nombre = str(area_id)
+
+            fd_title = _to_date(filtros.get("fecha_desde"))
+            fh_title = _to_date(filtros.get("fecha_hasta"))
+
+            # Texto meses (octubre–diciembre, 2025)
+            mes_inicio = MESES[fd_title.month - 1] if fd_title else ""
+            mes_fin = MESES[fh_title.month - 1] if fh_title else ""
+            anio = fh_title.year if fh_title else ""
+
+            titulo_linea_1 = f"Planilla General {area_nombre}"
+            if fd_title and fh_title and fd_title.month == fh_title.month and fd_title.year == fh_title.year:
+                titulo_linea_2 = f"Mes {mes_inicio}, {anio}"
+            else:
+                titulo_linea_2 = f"Periodo {mes_inicio} - {mes_fin}, {anio}"
+
+            # =========================
+            # Tablas
+            # =========================
+            tabla_data = self._generar_tabla_pdf(
+                tipo_reporte, datos_reporte, filtros)
+
+            info_style = ParagraphStyle(
+                "InfoStyle",
+                parent=styles["Normal"],
+                fontName="Helvetica",
+                fontSize=8,   
+                leading=9,    
+                spaceAfter=0,
+            )
+
+            if tipo_reporte == "general" and isinstance(tabla_data, dict) and "bloques" in tabla_data:
+                bloques = tabla_data["bloques"]
+
+                def _weekend_cols_split(weekend_cols, desde, hasta):
+                    """
+                    weekend_cols vienen como columnas absolutas de la tabla original:
+                    0 nombre, 1 cuil, 2..32 días 1..31, 33 total
+                    Al cortar días, hay que mapear esas columnas al nuevo índice.
+                    """
+                    out = []
+                    for col in weekend_cols:
+                        day = col - 1  
+                        if desde <= day <= hasta:
+                            new_col = 2 + (day - desde)
+                            out.append(new_col)
+                    return out
+
+                def _col_widths_for(rows_split):
+                    dias_visibles = len(rows_split[0]) - 3
+                    return (
+                        [55 * mm] +        
+                        [28 * mm] +      
+                        [7 * mm] * dias_visibles + 
+                        [16 * mm]            
+                    )
+            
+                for i, bloque in enumerate(bloques):
+                    anio = bloque["anio"]
+                    mes = bloque["mes"]
+                    rows = bloque["rows"]
+                    weekend_cols = bloque["weekend_cols"]
+                    cant_dias = bloque["cant_dias"]
+
+                    import calendar
+                    from datetime import date
+
+                    last_day = calendar.monthrange(anio, mes)[1]
+                    mes_inicio_dt = date(anio, mes, 1)
+                    mes_fin_dt = date(anio, mes, last_day)
+
+                    fd = _to_date(filtros.get("fecha_desde"))
+                    fh = _to_date(filtros.get("fecha_hasta"))
+
+                    periodo_inicio = max(fd, mes_inicio_dt)
+                    periodo_fin = min(fh, mes_fin_dt)
+
+                    info_cells = [
+                        [
+                            Paragraph(f"<b>Área:</b> {area_nombre}", info_style),
+                            Paragraph(f"<b>Período:</b> {periodo_inicio.strftime('%d/%m/%Y')} al {periodo_fin.strftime('%d/%m/%Y')}", info_style),
+                        ],
+                        [
+                            Paragraph(f"<b>Tipo de Guardia:</b> {filtros.get('tipo_guardia') or 'Regular'}", info_style),
+                            Paragraph(
+                                f"<b>Licencias:</b> {'Sí' if filtros.get('incluir_licencias') else 'No'} | "
+                                f"<b>Feriados:</b> {'Sí' if filtros.get('incluir_feriados') else 'No'}",
+                                info_style
+                            ),
+                        ],
+                    ]
+
+                    info_table = Table(
+                        info_cells,
+                        colWidths=[(doc.width * 0.5), (doc.width * 0.5)]
+                    )
+
+                    info_table.setStyle(TableStyle([
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                    ]))
+
+                    elements.append(info_table)
+                    elements.append(Spacer(1, 10))
+
+                    # =========================
+                    # TABLA QUINCENA 1 (1–15)
+                    # =========================
+
+                    hasta_1 = min(15, cant_dias)
+                    rows_1 = split_rows_por_dias(rows, 1, hasta_1)
+                    weekend_1 = _weekend_cols_split(weekend_cols, 1, hasta_1)
+
+                    base_style_1 = [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 8),
+                        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                        ("FONTSIZE", (0, 1), (-1, -1), 7),
+                        ("GRID", (0, 0), (-1, -1), 0.4, colors.black),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                        ("TOPPADDING", (0, 0), (-1, -1), 1),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                    ]
+
+                    weekend_fill = colors.HexColor("#7BE69A")
+                    for col in weekend_1:
+                        base_style_1.append(("BACKGROUND", (col, 1), (col, -1), weekend_fill))
+
+                    tabla_1 = Table(rows_1, colWidths=_col_widths_for(rows_1), repeatRows=1, hAlign="CENTER")
+                    tabla_1.setStyle(TableStyle(base_style_1))
+                    elements.append(tabla_1)
+                    elements.append(Spacer(1, 6))
+
+                    # =========================
+                    # TABLA QUINCENA 2 (16–fin)
+                    # =========================
+                    if cant_dias > 15:
+                        desde_2 = 16
+                        hasta_2 = cant_dias
+
+                        rows_2 = split_rows_por_dias(rows, desde_2, hasta_2)
+                        weekend_2 = _weekend_cols_split(weekend_cols, desde_2, hasta_2)
+
+                        base_style_2 = [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, 0), 8),
+                            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                            ("FONTSIZE", (0, 1), (-1, -1), 7),
+                            ("GRID", (0, 0), (-1, -1), 0.4, colors.black),
+                            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                            ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                            ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                            ("TOPPADDING", (0, 0), (-1, -1), 1),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                        ]
+
+                        for col in weekend_2:
+                            base_style_2.append(("BACKGROUND", (col, 1), (col, -1), weekend_fill))
+
+                        n_day_cols_2 = len(rows_2[0]) - 3
+                        tabla_2 = Table(rows_2, colWidths=_col_widths_for(rows_2), repeatRows=1, hAlign="CENTER")
+                        tabla_2.setStyle(TableStyle(base_style_2))
+                        elements.append(tabla_2)
+
+                    # Salto de página por mes
+                    if i < len(bloques) - 1:
+                        elements.append(PageBreak())
+
+            # =========================
+            # Firmas (más abajo, cerca del pie)
+            # =========================
+            # ajustá: + = más abajo, - = más arriba
+            elements.append(Spacer(1, 30 * mm))
+
+            firma_data = [
+                ["", ""],
+                ["_" * 22, "_" * 22],
+                ["Jefe de Área", "RR.HH./Liquidación"],
+                ["Firma y Sello", "Firma y Sello"],
+            ]
+
+            firma_tabla = Table(firma_data, colWidths=[65 * mm, 65 * mm])
+            firma_tabla.setStyle(TableStyle([
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("TOPPADDING", (0, 0), (-1, -1), 1),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+            ]))
+            elements.append(KeepTogether([firma_tabla]))
+
+            # =========================
+            # Build PDF
+            # =========================
+            doc.build(elements, onFirstPage=draw_header,
+                      onLaterPages=draw_header)
+
+            buffer.seek(0)
+            response = HttpResponse(buffer, content_type="application/pdf")
+
+            timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"GIGA_{tipo_reporte}_{timestamp}.pdf"
+            response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+            return response
+
+        except ReporteError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error generando PDF: {e}")
+            return Response({"error": f"Error generando PDF: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _meses_en_rango(self, fd: date, fh: date):
+        """Devuelve lista [(anio, mes), ...] desde fd hasta fh inclusive."""
+        meses = []
+        cur = fd.replace(day=1)
+        end = fh.replace(day=1)
+        while cur <= end:
+            meses.append((cur.year, cur.month))
+            if cur.month == 12:
+                cur = cur.replace(year=cur.year + 1, month=1)
+            else:
+                cur = cur.replace(month=cur.month + 1)
+        return meses
+
+    def _generar_tabla_pdf(self, tipo_reporte, datos, filtros):
+        """Genera datos de tabla especificos para cada tipo de reporte usando los datos reales."""
+        if tipo_reporte == 'individual':
+            headers = ['Fecha', 'Dia Semana', 'Horario Guardia',
+                       'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Novedad']
+            rows = [headers]
+
+            for dia in datos.get('dias', []):
+                horario_guardia = ""
+                if dia.get('horario_guardia_inicio') and dia.get('horario_guardia_fin'):
+                    horario_guardia = f"{dia['horario_guardia_inicio']}-{dia['horario_guardia_fin']}"
+
+                rows.append([
+                    dia.get('fecha', ''),
+                    dia.get('dia_semana', ''),
+                    horario_guardia,
+                    dia.get('horas_planificadas', ''),
+                    dia.get('horas_efectivas', ''),
+                    dia.get('motivo_guardia', ''),
+                    dia.get('novedad', ''),
+                ])
+            return rows
+
+        # Reporte general: se arma como grilla Agente x Di­a
+        if tipo_reporte == 'general':
+            import calendar
+            from datetime import datetime as dt
+
+            fd = filtros.get("fecha_desde")
+            fh = filtros.get("fecha_hasta")
+
+            if not hasattr(fd, "year"):
+                fd = dt.strptime(fd, "%Y-%m-%d").date()
+            if not hasattr(fh, "year"):
+                fh = dt.strptime(fh, "%Y-%m-%d").date()
+
+            meses = self._meses_en_rango(fd, fh)
+
+            bloques = []
+            for anio, mes in meses:
+                cant_dias = calendar.monthrange(anio, mes)[1]
+
+                weekend_cols = []
+                for day in range(1, cant_dias + 1):
+                    dow = dt(anio, mes, day).weekday()
+                    if dow in (5, 6):
+                        weekend_cols.append(2 + (day - 1))
+
+                headers = ['Apellido y Nombre', 'CUIL'] + \
+                    [str(d) for d in range(1, 32)] + ['Total']
+                rows = [headers]
+
+                totales_por_dia = {d: 0 for d in range(1, 32)}
+                total_general_mes = 0
+
+                for agente in datos.get('agentes', []):
+                    mapa = {}
+                    for dia in agente.get("dias", []):
+                        f = dia.get("fecha")
+                        if not f:
+                            continue
+                        dtn = dt.strptime(f, "%Y-%m-%d")
+                        if dtn.year == anio and dtn.month == mes:
+                            mapa[dtn.day] = dia.get("valor", "")
+
+                    fila = [agente.get('nombre_completo', ''),
+                            agente.get('cuil', '')]
+                    total_agente = 0
+
+                    for d in range(1, 32):
+                        if d <= cant_dias:
+                            v = mapa.get(d, "")
+
+                            if isinstance(v, (int, float)) and v > 0:
+                                total_agente += v
+                                totales_por_dia[d] += v
+                                total_general_mes += v
+                                fila.append(f"{int(v)} hs" if float(
+                                    v).is_integer() else f"{v} hs")
+                            else:
+                                if isinstance(v, str) and v.strip():
+                                    fila.append(v.strip())
+                                else:
+                                    fila.append("")
+                        else:
+                            fila.append("")
+
+                    fila.append(f"{int(total_agente)} hs" if float(
+                        total_agente).is_integer() else f"{total_agente} hs")
+                    rows.append(fila)
+
+                fila_total = ["Total", ""]
+                for d in range(1, 32):
+                    if d <= cant_dias:
+                        td = totales_por_dia[d]
+                        fila_total.append(f"{int(td)} hs" if td > 0 else "")
+                    else:
+                        fila_total.append("")
+                fila_total.append(
+                    f"{int(total_general_mes)} hs" if total_general_mes > 0 else "")
+                rows.append(fila_total)
+
+                bloques.append({
+                    "anio": anio,
+                    "mes": mes,
+                    "rows": rows,
+                    "weekend_cols": weekend_cols,
+                    "cant_dias": cant_dias,
+                })
+
+            return {"bloques": bloques}
+
+        # Fallback generico
+        headers = ['Item', 'Descripcion', 'Valor']
+        rows = [
+            headers,
+            ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), ''],
+            ['Periodo',
+                f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", ''],
+            ['Estado', 'Generado exitosamente', ''],
+        ]
+        return rows
+
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    def exportar_csv(self, request):
+        """
+        Genera y descarga un reporte en formato CSV
+        """
+        try:
+            import csv
+            from django.http import HttpResponse
+            from io import StringIO
+
+            # Obtener datos de la request
+            tipo_reporte = request.data.get('tipo_reporte', 'general')
+            filtros = {
+                'agente': request.data.get('agente'),
+                'area': request.data.get('area'),
+                'fecha_desde': request.data.get('fecha_desde'),
+                'fecha_hasta': request.data.get('fecha_hasta'),
+                'tipo_guardia': request.data.get('tipo_guardia')
+            }
+            configuracion = request.data.get('configuracion', {})
+
+            agente_sesion = obtener_agente_sesion(request)
+            if not agente_sesion:
+                return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user_ctx = {
+                'agente': agente_sesion,
+                'rol': obtener_rol_agente(agente_sesion)
+            }
+
+            datos_reporte = obtener_datos_reporte(
+                filtros, tipo_reporte, user_ctx)
+
+            # Crear buffer para CSV
+            output = StringIO()
+            writer = csv.writer(output)
+
+            # Escribir cabecera informativa
+            writer.writerow(
+                ['# Sistema GIGA - Reporte de Guardias y Asistencias'])
+            writer.writerow(['# Universidad Nacional de Tierra del Fuego'])
+            writer.writerow(
+                [f'# Tipo de Reporte: {tipo_reporte.replace("_", " ").title()}'])
+            writer.writerow(
+                [f'# Perioodo: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'])
+            writer.writerow(
+                [f'# Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'])
+            writer.writerow([])  # Linea Vacia
+
+            # Generar datos segun tipo de reporte
+            datos_csv = self._generar_datos_csv(
+                tipo_reporte, datos_reporte, filtros)
+
+            # Escribir datos
+            for fila in datos_csv:
+                writer.writerow(fila)
+
+            # Preparar respuesta
+            response = HttpResponse(output.getvalue(), content_type='text/csv')
+
+            # Generar nombre de archivo
+            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"GIGA_{tipo_reporte}_{timestamp}.csv"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+            return response
+
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error generando CSV: {e}")
+            return Response(
+                {'error': f'Error generando CSV: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    def exportar_excel(self, request):
+        """
+        Genera y descarga un reporte en formato Excel
+        """
+        try:
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill, Alignment
+            from django.http import HttpResponse
+            from io import BytesIO
+
+            # Obtener datos de la request
+            tipo_reporte = request.data.get('tipo_reporte', 'general')
+            filtros = {
+                'agente': request.data.get('agente'),
+                'area': request.data.get('area'),
+                'fecha_desde': request.data.get('fecha_desde'),
+                'fecha_hasta': request.data.get('fecha_hasta'),
+                'tipo_guardia': request.data.get('tipo_guardia')
+            }
+
+            agente_sesion = obtener_agente_sesion(request)
+            if not agente_sesion:
+                return Response({'error': 'SesiÃ³n invÃ¡lida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user_ctx = {
+                'agente': agente_sesion,
+                'rol': obtener_rol_agente(agente_sesion)
+            }
+
+            datos_reporte = obtener_datos_reporte(
+                filtros, tipo_reporte, user_ctx)
+
+            # Crear workbook
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = f"Reporte {tipo_reporte.title()}"
+
+            # Estilos
+            header_font = Font(bold=True, color="FFFFFF")
+            header_fill = PatternFill(
+                start_color="366092", end_color="366092", fill_type="solid")
+            center_alignment = Alignment(
+                horizontal="center", vertical="center")
+
+            # Cabecera informativa
+            ws['A1'] = 'Sistema GIGA - Universidad Nacional de Tierra del Fuego'
+            ws['A1'].font = Font(bold=True, size=14)
+            ws['A2'] = f'Reporte: {tipo_reporte.replace("_", " ").title()}'
+            ws['A3'] = f'Periodo: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'
+            ws['A4'] = f'Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'
+
+            # Linea Vacia
+            row_start = 6
+
+            # Generar datos
+            datos_excel = self._generar_datos_csv(
+                tipo_reporte, datos_reporte, filtros)
+
+            # Escribir encabezados
+            if datos_excel:
+                headers = datos_excel[0]
+                for col, header in enumerate(headers, 1):
+                    cell = ws.cell(row=row_start, column=col)
+                    cell.value = header
+                    cell.font = header_font
+                    cell.fill = header_fill
+                    cell.alignment = center_alignment
+
+                # Escribir datos
+                for row_idx, fila in enumerate(datos_excel[1:], row_start + 1):
+                    for col_idx, valor in enumerate(fila, 1):
+                        ws.cell(row=row_idx, column=col_idx, value=valor)
+
+                # Ajustar ancho de columnas
+                for column in ws.columns:
+                    max_length = 0
+                    column_letter = column[0].column_letter
+                    for cell in column:
+                        try:
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                        except:
+                            pass
+                    adjusted_width = min(max_length + 2, 30)
+                    ws.column_dimensions[column_letter].width = adjusted_width
+
+            # Guardar en buffer
+            buffer = BytesIO()
+            wb.save(buffer)
+            buffer.seek(0)
+
+            # Preparar respuesta
+            response = HttpResponse(
+                buffer,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+
+            # Generar nombre de archivo
+            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"GIGA_{tipo_reporte}_{timestamp}.xlsx"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+            return response
+
+        except ReporteError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ImportError:
+            logger.error(
+                "openpyxl no esta¡ instalado. Instale con: pip install openpyxl")
+            return Response(
+                {'error': 'Funcionalidad de Excel no disponible. Contacte al administrador.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as e:
+            logger.error(f"Error generando Excel: {e}")
+            return Response(
+                {'error': f'Error generando Excel: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def _generar_datos_csv(self, tipo_reporte, datos, filtros):
+        """Genera datos en formato de filas para CSV/Excel usando los datos reales."""
+        if tipo_reporte == 'individual':
+            headers = ['Fecha', 'Dia Semana', 'Horario Guardia', 'Horas Planificadas',
+                       'Horas Efectivas', 'Motivo', 'Novedad', 'Estado Asistencia']
+            rows = [headers]
+
+            for dia in datos.get('dias', []):
+                horario_guardia = ""
+                if dia.get('horario_guardia_inicio') and dia.get('horario_guardia_fin'):
+                    horario_guardia = f"{dia['horario_guardia_inicio']}-{dia['horario_guardia_fin']}"
+
+                rows.append([
+                    dia.get('fecha', ''),
+                    dia.get('dia_semana', ''),
+                    horario_guardia,
+                    dia.get('horas_planificadas', ''),
+                    dia.get('horas_efectivas', ''),
+                    dia.get('motivo_guardia', ''),
+                    dia.get('novedad', ''),
+                    dia.get('estado_asistencia', ''),
+                ])
+            return rows
+
+        if tipo_reporte == 'general':
+            dias = datos.get('dias_columnas', [])
+            headers = ['Agente', 'Legajo'] + \
+                [d.get('fecha', '') for d in dias] + ['Total Horas']
+            rows = [headers]
+
+            for agente in datos.get('agentes', []):
+                fila = [
+                    agente.get('nombre_completo', ''),
+                    agente.get('legajo', '')
+                ]
+                for d in dias:
+                    fecha = d.get('fecha')
+                    celda = next((dia for dia in agente.get(
+                        'dias', []) if dia.get('fecha') == fecha), {})
+                    fila.append(celda.get('valor', ''))
+                fila.append(agente.get('total_horas', ''))
+                rows.append(fila)
+            return rows
+
+        # Formato generico
+        headers = ['Descripcion', 'Valor', 'Observaciones']
+        rows = [
+            headers,
+            ['Tipo de Reporte', tipo_reporte.replace(
+                '_', ' ').title(), 'Generado automaticamente'],
+            ['Periodo Consultado',
+                f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", 'Rango de fechas seleccionado'],
+            ['Fecha de Generacion', timezone.now().strftime("%d/%m/%Y %H:%M"),
+             'Momento de creacion del reporte'],
+            ['Sistema', 'GIGA - UNTDF', 'Universidad Nacional de Tierra del Fuego'],
+        ]
+        return rows
 
 
 class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
     """ViewSet para resumen mensual con cálculo automático de plus"""
-    
+
     queryset = ResumenGuardiaMes.objects.all()
     serializer_class = ResumenGuardiaMesExtendidoSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
-        
+
         # Filtros
         mes = self.request.query_params.get('mes')
         anio = self.request.query_params.get('anio')
-        agente_id = self.request.query_params.get('agente')
+        agente_id = self.data_in.get('agente')
         estado_plus = self.request.query_params.get('estado_plus')
-        
+
         if mes:
             queryset = queryset.filter(mes=mes)
         if anio:
@@ -1981,9 +2658,9 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(id_agente=agente_id)
         if estado_plus:
             queryset = queryset.filter(estado_plus=estado_plus)
-        
+
         return queryset.order_by('-anio', '-mes')
-    
+
     @action(detail=False, methods=['post'])
     def calcular_mensual(self, request):
         """Dispara el cálculo automático de plus mensual"""
@@ -1994,18 +2671,18 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
                     mes=serializer.validated_data['mes'],
                     anio=serializer.validated_data['anio']
                 )
-                
+
                 return Response(resultado, status=status.HTTP_200_OK)
-                
+
             except Exception as e:
                 logger.error(f"Error en cálculo mensual: {e}")
                 return Response(
-                    {'error': str(e)}, 
+                    {'error': str(e)},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=False, methods=['patch'])
     def aprobar_lote(self, request):
         """Aprueba un lote de asignaciones de plus"""
@@ -2013,55 +2690,55 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             try:
                 resumen_ids = serializer.validated_data['resumen_ids']
-                
+
                 # Actualizar los resúmenes
                 resumenes = ResumenGuardiaMes.objects.filter(
                     id_resumen_guardia_mes__in=resumen_ids,
                     estado_plus='pendiente'
                 )
-                
+
                 resumenes.update(
                     estado_plus='aprobado',
                     aprobado_en=timezone.now()
                 )
-                
+
                 return Response({
                     'mensaje': f'{resumenes.count()} asignaciones de plus aprobadas',
                     'aprobados': resumen_ids
                 })
-                
+
             except Exception as e:
                 logger.error(f"Error aprobando plus: {e}")
                 return Response(
-                    {'error': str(e)}, 
+                    {'error': str(e)},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['get'])
+
+    @action(detail=False, methods=['get', 'post'])
     def reporte_plus_simplificado(self, request):
         """
         Genera reporte de plus usando las reglas simplificadas:
         - Área operativa + guardia = 40%
-        - Otras áreas + 32+ horas = 40%  
+        - Otras áreas + 32+ horas = 40%
         - Resto = 20%
         """
         mes = request.query_params.get('mes')
         anio = request.query_params.get('anio')
         area_id = request.query_params.get('area_id')
-        
+
         if not all([mes, anio]):
             return Response(
-                {'error': 'Se requieren parámetros: mes, anio'}, 
+                {'error': 'Se requieren parámetros: mes, anio'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from personas.models import Agente, Area
             from .utils import CalculadoraPlus
             from django.db.models import Sum
-            
+
             # Filtrar agentes
             agentes_query = Agente.objects.filter(activo=True)
             if area_id:
@@ -2070,28 +2747,28 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
                 area_nombre = area.nombre
             else:
                 area_nombre = "Todas las áreas"
-            
+
             agentes_plus = []
             total_agentes_plus20 = 0
             total_agentes_plus40 = 0
-            
+
             for agente in agentes_query:
                 # Calcular plus usando nueva lógica
                 porcentaje_plus = CalculadoraPlus.calcular_plus_simplificado(
                     agente.id_agente, int(mes), int(anio)
                 )
-                
+
                 if porcentaje_plus > 0:
                     # Obtener detalles de guardias para el reporte
                     from .models import Guardia
                     from datetime import date
-                    
+
                     fecha_inicio = date(int(anio), int(mes), 1)
                     if int(mes) == 12:
                         fecha_fin = date(int(anio) + 1, 1, 1)
                     else:
                         fecha_fin = date(int(anio), int(mes) + 1, 1)
-                    
+
                     guardias = Guardia.objects.filter(
                         id_agente=agente.id_agente,
                         fecha__gte=fecha_inicio,
@@ -2099,16 +2776,16 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
                         activa=True,
                         estado='planificada'
                     )
-                    
+
                     total_horas = guardias.aggregate(
                         total=Sum('horas_efectivas')
                     )['total'] or 0
-                    
+
                     area_nombre_agente = agente.id_area.nombre if agente.id_area else "Sin área"
                     es_operativa = any(op in area_nombre_agente.lower() for op in [
                         'secretaría de protección civil', 'operativo', 'emergencias'
                     ])
-                    
+
                     # Determinar motivo del plus
                     if es_operativa and guardias.exists():
                         motivo = "Área operativa con guardias"
@@ -2116,7 +2793,7 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
                         motivo = f"Otras áreas con {total_horas}h (≥32h)"
                     else:
                         motivo = "Guardias con menos de 32h"
-                    
+
                     agentes_plus.append({
                         'agente_id': agente.id_agente,
                         'nombre_completo': f"{agente.apellido}, {agente.nombre}",
@@ -2128,12 +2805,12 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
                         'porcentaje_plus': float(porcentaje_plus),
                         'motivo_plus': motivo
                     })
-                    
+
                     if porcentaje_plus >= 40:
                         total_agentes_plus40 += 1
                     else:
                         total_agentes_plus20 += 1
-            
+
             resultado = {
                 'area_nombre': area_nombre,
                 'periodo': {
@@ -2154,43 +2831,43 @@ class ResumenGuardiaMesViewSet(viewsets.ModelViewSet):
                     'regla_3': "Resto con guardias = 20% plus"
                 }
             }
-            
+
             return Response({
                 'success': True,
                 'data': resultado
             })
-            
+
         except Exception as e:
             logger.error(f"Error generando reporte plus: {e}")
             return Response(
-                {'error': f'Error generando reporte: {str(e)}'}, 
+                {'error': f'Error generando reporte: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class HoraCompensacionViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de horas de compensación por emergencias"""
-    
+
     queryset = HoraCompensacion.objects.all()
     serializer_class = HoraCompensacionSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
-        
+
         # Optimizar consultas
         queryset = queryset.select_related(
             'id_agente', 'id_guardia', 'id_cronograma',
             'solicitado_por', 'aprobado_por'
         )
-        
+
         # Filtros
-        agente_id = self.request.query_params.get('agente')
+        agente_id = self.data_in.get('agente')
         estado = self.request.query_params.get('estado')
         mes = self.request.query_params.get('mes')
         anio = self.request.query_params.get('anio')
         pendientes = self.request.query_params.get('pendientes')
-        
+
         if agente_id:
             queryset = queryset.filter(id_agente=agente_id)
         if estado:
@@ -2202,9 +2879,9 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             )
         if pendientes and pendientes.lower() == 'true':
             queryset = queryset.filter(estado='pendiente')
-        
+
         return queryset.order_by('-fecha_servicio', '-creado_en')
-    
+
     @action(detail=False, methods=['post'])
     def crear_compensacion(self, request):
         """Crea una nueva solicitud de compensación"""
@@ -2213,21 +2890,23 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
             try:
                 from .utils import ValidadorHorarios
                 from personas.models import Agente
-                
+
                 # Obtener datos validados
                 data = serializer.validated_data
                 guardia = data['guardia']
                 agente = Agente.objects.get(id_agente=data['id_agente'])
-                
+
                 # Obtener agente que solicita (puede ser diferente al que trabajó)
-                agente_solicitante_id = request.data.get('solicitado_por', data['id_agente'])
-                agente_solicitante = Agente.objects.get(id_agente=agente_solicitante_id)
-                
+                agente_solicitante_id = request.data.get(
+                    'solicitado_por', data['id_agente'])
+                agente_solicitante = Agente.objects.get(
+                    id_agente=agente_solicitante_id)
+
                 # Calcular valor monetario
                 valor_hora, monto_total = ValidadorHorarios.calcular_valor_hora_compensacion(
                     agente, data['horas_extra']
                 )
-                
+
                 # Crear la compensación
                 compensacion = HoraCompensacion.objects.create(
                     id_agente=agente,
@@ -2245,7 +2924,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     valor_hora_extra=valor_hora,
                     monto_total=monto_total
                 )
-                
+
                 # Registrar en auditoría
                 Auditoria.objects.create(
                     pk_afectada=compensacion.id_hora_compensacion,
@@ -2262,22 +2941,22 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     accion='CREAR_COMPENSACION',
                     id_agente_id=agente_solicitante.id_agente
                 )
-                
+
                 serializer_response = HoraCompensacionSerializer(compensacion)
                 return Response({
                     'mensaje': 'Compensación creada exitosamente',
                     'compensacion': serializer_response.data
                 }, status=status.HTTP_201_CREATED)
-                
+
             except Exception as e:
                 logger.error(f"Error creando compensación: {e}")
                 return Response(
-                    {'error': f'Error creando compensación: {str(e)}'}, 
+                    {'error': f'Error creando compensación: {str(e)}'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=False, methods=['post'])
     def aprobar_lote(self, request):
         """Aprueba o rechaza un lote de compensaciones"""
@@ -2285,11 +2964,12 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             try:
                 from personas.models import Agente
-                
+
                 compensacion_ids = serializer.validated_data['compensacion_ids']
                 accion = serializer.validated_data['accion']
-                observaciones = serializer.validated_data.get('observaciones', '')
-                
+                observaciones = serializer.validated_data.get(
+                    'observaciones', '')
+
                 # Obtener agente aprobador
                 agente_id = request.data.get('agente_id')
                 if not agente_id:
@@ -2297,23 +2977,25 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                         {'error': 'Se requiere agente_id para aprobar'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-                
+
                 agente_aprobador = Agente.objects.get(id_agente=agente_id)
-                
+
                 # Obtener compensaciones
                 compensaciones = HoraCompensacion.objects.filter(
                     id_hora_compensacion__in=compensacion_ids,
                     estado='pendiente'
                 )
-                
+
                 procesadas = 0
                 for compensacion in compensaciones:
                     try:
                         if accion == 'aprobar':
-                            compensacion.aprobar(agente_aprobador, observaciones)
+                            compensacion.aprobar(
+                                agente_aprobador, observaciones)
                         else:
-                            compensacion.rechazar(agente_aprobador, observaciones)
-                        
+                            compensacion.rechazar(
+                                agente_aprobador, observaciones)
+
                         # Registrar en auditoría
                         Auditoria.objects.create(
                             pk_afectada=compensacion.id_hora_compensacion,
@@ -2321,58 +3003,62 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                             creado_en=timezone.now(),
                             valor_previo={'estado': 'pendiente'},
                             valor_nuevo={'estado': compensacion.estado},
-                            accion=f'APROBAR_COMPENSACION' if accion == 'aprobar' else 'RECHAZAR_COMPENSACION',
+                            accion='APROBAR_COMPENSACION' if accion == 'aprobar' else 'RECHAZAR_COMPENSACION',
                             id_agente_id=agente_aprobador.id_agente
                         )
-                        
+
                         procesadas += 1
-                        
+
                     except Exception as e:
-                        logger.error(f"Error procesando compensación {compensacion.id_hora_compensacion}: {e}")
+                        logger.error(
+                            f"Error procesando compensación {compensacion.id_hora_compensacion}: {e}")
                         continue
-                
+
                 return Response({
                     'mensaje': f'{procesadas} compensaciones procesadas exitosamente',
                     'accion': accion,
                     'procesadas': procesadas,
                     'total_solicitadas': len(compensacion_ids)
                 })
-                
+
             except Exception as e:
                 logger.error(f"Error procesando compensaciones: {e}")
                 return Response(
-                    {'error': f'Error procesando compensaciones: {str(e)}'}, 
+                    {'error': f'Error procesando compensaciones: {str(e)}'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['get'])
+
+    @action(detail=False, methods=['get', 'post'])
     def resumen_mensual(self, request):
         """Resumen mensual de compensaciones por agente"""
-        serializer = ResumenCompensacionSerializer(data=request.query_params.dict())
+        serializer = ResumenCompensacionSerializer(
+            data=request.query_params.dict())
         if serializer.is_valid():
             try:
                 from personas.models import Agente
-                
+
                 agente_id = serializer.validated_data['agente']
                 mes = serializer.validated_data['mes']
                 anio = serializer.validated_data['anio']
-                
+
                 agente = Agente.objects.get(id_agente=agente_id)
-                
+
                 # Obtener resumen usando el método del modelo
-                resumen = HoraCompensacion.resumen_mensual_agente(agente, mes, anio)
-                
+                resumen = HoraCompensacion.resumen_mensual_agente(
+                    agente, mes, anio)
+
                 # Obtener compensaciones del mes
                 compensaciones = self.get_queryset().filter(
                     id_agente=agente,
                     fecha_servicio__month=mes,
                     fecha_servicio__year=anio
                 ).order_by('-fecha_servicio')
-                
-                compensaciones_data = HoraCompensacionSerializer(compensaciones, many=True).data
-                
+
+                compensaciones_data = HoraCompensacionSerializer(
+                    compensaciones, many=True).data
+
                 return Response({
                     'agente': {
                         'id': agente.id_agente,
@@ -2387,52 +3073,52 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     'resumen': resumen,
                     'compensaciones': compensaciones_data
                 })
-                
+
             except Exception as e:
                 logger.error(f"Error generando resumen mensual: {e}")
                 return Response(
-                    {'error': f'Error generando resumen: {str(e)}'}, 
+                    {'error': f'Error generando resumen: {str(e)}'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['get'])
+
+    @action(detail=False, methods=['get', 'post'])
     def reporte_compensaciones(self, request):
         """Reporte general de compensaciones por período y área"""
         mes = request.query_params.get('mes')
         anio = request.query_params.get('anio')
         area_id = request.query_params.get('area_id')
         estado = request.query_params.get('estado', 'aprobada')
-        
+
         if not all([mes, anio]):
             return Response(
-                {'error': 'Se requieren parámetros: mes, anio'}, 
+                {'error': 'Se requieren parámetros: mes, anio'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from personas.models import Area
             from decimal import Decimal
-            
+
             queryset = self.get_queryset().filter(
                 fecha_servicio__month=mes,
                 fecha_servicio__year=anio,
                 estado=estado
             )
-            
+
             if area_id:
                 queryset = queryset.filter(id_agente__id_area=area_id)
                 area = Area.objects.get(id_area=area_id)
                 area_nombre = area.nombre
             else:
                 area_nombre = "Todas las áreas"
-            
+
             # Agrupar por agente
             compensaciones_por_agente = {}
             total_horas_extra = Decimal('0')
             total_monto = Decimal('0')
-            
+
             for compensacion in queryset:
                 agente_id = compensacion.id_agente.id_agente
                 if agente_id not in compensaciones_por_agente:
@@ -2447,27 +3133,28 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                         'total_horas_extra': Decimal('0'),
                         'total_monto': Decimal('0')
                     }
-                
+
                 compensaciones_por_agente[agente_id]['compensaciones'].append({
                     'fecha_servicio': compensacion.fecha_servicio,
                     'horas_extra': compensacion.horas_extra,
                     'motivo': compensacion.get_motivo_display(),
                     'monto': compensacion.monto_total or Decimal('0')
                 })
-                
+
                 compensaciones_por_agente[agente_id]['total_horas_extra'] += compensacion.horas_extra
-                compensaciones_por_agente[agente_id]['total_monto'] += compensacion.monto_total or Decimal('0')
-                
+                compensaciones_por_agente[agente_id]['total_monto'] += compensacion.monto_total or Decimal(
+                    '0')
+
                 total_horas_extra += compensacion.horas_extra
                 total_monto += compensacion.monto_total or Decimal('0')
-            
+
             # Estadísticas por motivo
             from django.db.models import Count, Sum
             stats_por_motivo = queryset.values('motivo').annotate(
                 cantidad=Count('id_hora_compensacion'),
                 total_horas=Sum('horas_extra')
             )
-            
+
             resultado = {
                 'area_nombre': area_nombre,
                 'periodo': {
@@ -2494,45 +3181,45 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     for item in stats_por_motivo
                 ]
             }
-            
+
             return Response({
                 'success': True,
                 'data': resultado
             })
-            
+
         except Exception as e:
             logger.error(f"Error generando reporte compensaciones: {e}")
             return Response(
-                {'error': f'Error generando reporte: {str(e)}'}, 
+                {'error': f'Error generando reporte: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-    
+
     @action(detail=True, methods=['post'])
     def crear_desde_guardia(self, request, pk=None):
         """Crea compensación directamente desde una guardia específica"""
         try:
             guardia = Guardia.objects.get(id_guardia=pk)
-            
+
             # Validar que no exista ya una compensación para esta guardia
             compensacion_existente = HoraCompensacion.objects.filter(
                 id_guardia=guardia
             ).exists()
-            
+
             if compensacion_existente:
                 return Response(
                     {'error': 'Ya existe una compensación para esta guardia'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             # Validar datos requeridos
             required_fields = ['hora_fin_real', 'motivo', 'descripcion_motivo']
             for field in required_fields:
                 if field not in request.data:
                     return Response(
-                        {'error': f'Campo requerido: {field}'}, 
+                        {'error': f'Campo requerido: {field}'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-            
+
             # Obtener agente solicitante
             agente_solicitante_id = request.data.get('solicitado_por')
             if not agente_solicitante_id:
@@ -2540,18 +3227,19 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     {'error': 'Se requiere agente solicitante'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             from personas.models import Agente
-            from datetime import datetime, time
-            agente_solicitante = Agente.objects.get(id_agente=agente_solicitante_id)
-            
+            from datetime import datetime
+            agente_solicitante = Agente.objects.get(
+                id_agente=agente_solicitante_id)
+
             # Convertir hora_fin_real de string a objeto time
             hora_fin_str = request.data['hora_fin_real']
             if isinstance(hora_fin_str, str):
                 hora_fin_real = datetime.strptime(hora_fin_str, '%H:%M').time()
             else:
                 hora_fin_real = hora_fin_str
-            
+
             # Crear compensación usando el método del modelo
             compensacion = HoraCompensacion.crear_desde_guardia_extendida(
                 guardia=guardia,
@@ -2560,13 +3248,13 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 descripcion=request.data['descripcion_motivo'],
                 solicitado_por=agente_solicitante
             )
-            
+
             serializer = HoraCompensacionSerializer(compensacion)
             return Response({
                 'mensaje': 'Compensación creada desde guardia exitosamente',
                 'compensacion': serializer.data
             }, status=status.HTTP_201_CREATED)
-            
+
         except Guardia.DoesNotExist:
             return Response(
                 {'error': 'Guardia no encontrada'},
@@ -2575,37 +3263,37 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Error creando compensación desde guardia: {e}")
             return Response(
-                {'error': f'Error creando compensación: {str(e)}'}, 
+                {'error': f'Error creando compensación: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'post'])
     def reporte_horas_trabajadas(self, request):
         """Reporte de Guardias y Compensaciones - Horas programadas vs efectivas"""
-        area_id = request.query_params.get('area')
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
-        
+        area_id = data_in.get('area')
+        fecha_desde = data_in.get('fecha_desde')
+        fecha_hasta = data_in.get('fecha_hasta')
+
         if not all([fecha_desde, fecha_hasta]):
             return Response(
-                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'}, 
+                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
-            from personas.models import Agente, Area
+            from personas.models import Area
             from datetime import datetime
-            
+
             fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
             fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
-            
+
             # Filtro base de guardias
             guardias_filter = {
                 'fecha__range': [fecha_inicio, fecha_fin],
                 'activa': True,
                 'id_cronograma__estado__in': ['aprobada', 'publicada']
             }
-            
+
             # Filtrar por área si se especifica
             if area_id:
                 guardias_filter['id_cronograma__id_area'] = area_id
@@ -2613,10 +3301,10 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 area_nombre = area.nombre
             else:
                 area_nombre = 'Todas las áreas'
-            
+
             # Obtener guardias en el período
             guardias = self.get_queryset().filter(**guardias_filter)
-            
+
             # Agrupar por agente
             agentes_data = {}
             for guardia in guardias:
@@ -2630,38 +3318,42 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                         'guardias_fines_feriados': 0,
                         'total_guardias': 0
                     }
-                
+
                 # Calcular horas programadas
                 if guardia.hora_inicio and guardia.hora_fin:
-                    inicio = datetime.combine(guardia.fecha, guardia.hora_inicio)
+                    inicio = datetime.combine(
+                        guardia.fecha, guardia.hora_inicio)
                     fin = datetime.combine(guardia.fecha, guardia.hora_fin)
                     if fin < inicio:
                         from datetime import timedelta
                         fin += timedelta(days=1)
                     horas = (fin - inicio).total_seconds() / 3600
                     agentes_data[agente_id]['horas_programadas'] += horas
-                
+
                 # Agregar horas efectivas si las tiene
                 if guardia.horas_efectivas:
                     agentes_data[agente_id]['horas_efectivas'] += guardia.horas_efectivas
-                
+
                 # Contar guardias de fines de semana/feriados
                 if guardia.fecha.weekday() >= 5:  # Sábado o domingo
                     agentes_data[agente_id]['guardias_fines_feriados'] += 1
-                
+
                 agentes_data[agente_id]['total_guardias'] += 1
-            
+
             # Formatear respuesta
             agentes_reporte = []
             for agente_data in agentes_data.values():
-                agente_data['horas_programadas'] = round(agente_data['horas_programadas'], 2)
-                agente_data['horas_efectivas'] = round(agente_data['horas_efectivas'], 2)
-                agente_data['total_horas'] = max(agente_data['horas_programadas'], agente_data['horas_efectivas'])
+                agente_data['horas_programadas'] = round(
+                    agente_data['horas_programadas'], 2)
+                agente_data['horas_efectivas'] = round(
+                    agente_data['horas_efectivas'], 2)
+                agente_data['total_horas'] = max(
+                    agente_data['horas_programadas'], agente_data['horas_efectivas'])
                 agentes_reporte.append(agente_data)
-            
+
             # Ordenar por nombre
             agentes_reporte.sort(key=lambda x: x['agente'])
-            
+
             return Response({
                 'area_nombre': area_nombre,
                 'periodo': {
@@ -2676,58 +3368,60 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     'total_guardias_fines': sum(a['guardias_fines_feriados'] for a in agentes_reporte)
                 }
             })
-        
+
         except Exception as e:
             logger.error(f"Error generando reporte horas trabajadas: {e}")
             return Response(
-                {'error': f'Error generando reporte: {str(e)}'}, 
+                {'error': f'Error generando reporte: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'post'])
     def reporte_parte_diario(self, request):
         """Reporte de Parte Diario/Mensual Consolidado"""
-        area_id = request.query_params.get('area')
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
-        
+        area_id = data_in.get('area')
+        fecha_desde = data_in.get('fecha_desde')
+        fecha_hasta = data_in.get('fecha_hasta')
+
         if not all([fecha_desde, fecha_hasta]):
             return Response(
-                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'}, 
+                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from asistencia.models import Asistencia
-            from personas.models import Agente
             from datetime import datetime, timedelta
-            
+
             fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
             fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
-            
+
             # Obtener asistencias del período
             asistencias_filter = {
                 'fecha__range': [fecha_inicio, fecha_fin]
             }
-            
+
             if area_id:
                 asistencias_filter['id_agente__area_id'] = area_id
-            
-            asistencias = Asistencia.objects.filter(**asistencias_filter).order_by('fecha', 'id_agente__apellido')
-            
+
+            asistencias = Asistencia.objects.filter(
+                **asistencias_filter).order_by('fecha', 'id_agente__apellido')
+
             # Formatear datos
             registros = []
             for asistencia in asistencias:
                 # Calcular horas trabajadas
                 horas_trabajadas = "N/A"
                 if asistencia.hora_ingreso and asistencia.hora_egreso:
-                    inicio = datetime.combine(asistencia.fecha, asistencia.hora_ingreso)
-                    fin = datetime.combine(asistencia.fecha, asistencia.hora_egreso)
+                    inicio = datetime.combine(
+                        asistencia.fecha, asistencia.hora_ingreso)
+                    fin = datetime.combine(
+                        asistencia.fecha, asistencia.hora_egreso)
                     if fin < inicio:
                         fin += timedelta(days=1)
                     horas = (fin - inicio).total_seconds() / 3600
                     horas_trabajadas = f"{int(horas)}h {int((horas % 1) * 60)}m"
-                
+
                 # Determinar novedades
                 novedad = "Jornada habitual"
                 if asistencia.llegada_tarde:
@@ -2736,7 +3430,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     novedad = "Retiro temprano"
                 elif asistencia.comision_oficial:
                     novedad = "Comisión oficial"
-                
+
                 registros.append({
                     'fecha': asistencia.fecha.strftime('%d/%m/%Y'),
                     'agente': f"{asistencia.id_agente.apellido}, {asistencia.id_agente.nombre}",
@@ -2746,7 +3440,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     'horas_trabajadas': horas_trabajadas,
                     'novedad': novedad
                 })
-            
+
             return Response({
                 'area_nombre': 'Todas las áreas' if not area_id else 'Área seleccionada',
                 'periodo': {
@@ -2761,44 +3455,44 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     'total_comisiones': len([r for r in registros if 'Comisión' in r['novedad']])
                 }
             })
-        
+
         except Exception as e:
             logger.error(f"Error generando parte diario: {e}")
             return Response(
-                {'error': f'Error generando reporte: {str(e)}'}, 
+                {'error': f'Error generando reporte: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'post'])
     def reporte_calculo_plus(self, request):
         """Reporte de Cálculo Plus por Guardias (20% / 40%)"""
-        area_id = request.query_params.get('area')
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
-        
+        area_id = data_in.get('area')
+        fecha_desde = data_in.get('fecha_desde')
+        fecha_hasta = data_in.get('fecha_hasta')
+
         if not all([fecha_desde, fecha_hasta]):
             return Response(
-                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'}, 
+                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             from datetime import datetime
-            
+
             fecha_inicio = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
             fecha_fin = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
-            
+
             # Usar el calculador de plus existente
             from .utils import CalculadoraPlus
             calculadora = CalculadoraPlus()
-            
+
             # Obtener cálculos de plus para el período
             filtros = {'fecha_desde': fecha_inicio, 'fecha_hasta': fecha_fin}
             if area_id:
                 filtros['area_id'] = area_id
-            
+
             resultados = calculadora.calcular_plus_periodo(**filtros)
-            
+
             return Response({
                 'periodo': {
                     'fecha_desde': fecha_desde,
@@ -2811,27 +3505,27 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     'total_agentes_plus': len(resultados.get('agentes', []))
                 }
             })
-        
+
         except Exception as e:
             logger.error(f"Error generando reporte plus: {e}")
             return Response(
-                {'error': f'Error generando reporte: {str(e)}'}, 
+                {'error': f'Error generando reporte: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'post'])
     def reporte_resumen_licencias(self, request):
         """Reporte de Resumen de Licencias por agente"""
         from datetime import datetime
-        area_id = request.query_params.get('area')
-        
+        area_id = data_in.get('area')
+
         try:
             from personas.models import Agente
-            
+
             # Datos de ejemplo para licencias
             agentes_reporte = [
                 {
-                    'agente': 'Aguila, Tayra',
+                    'agente': 'Águila, Tayra',
                     'legajo': '001',
                     'licencia_anual_usada': 15,
                     'licencia_anual_total': 21,
@@ -2855,9 +3549,9 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     'dias_disponibles': 52
                 }
             ]
-            
+
             return Response({
-                'año': datetime.now().year,
+                'anio': datetime.now().year,
                 'area_nombre': 'Todas las áreas' if not area_id else 'Área seleccionada',
                 'agentes': agentes_reporte,
                 'totales': {
@@ -2865,43 +3559,43 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     'promedio_dias_usados': 14.5
                 }
             })
-            
+
         except Exception as e:
             logger.error(f"Error generando reporte licencias: {e}")
             return Response(
-                {'error': f'Error generando reporte: {str(e)}'}, 
+                {'error': f'Error generando reporte: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'])  
+    @action(detail=False, methods=['get', 'post'])
     def reporte_incumplimiento_normativo(self, request):
         """Reporte de Incumplimiento Normativo"""
-        fecha_desde = request.query_params.get('fecha_desde')
-        fecha_hasta = request.query_params.get('fecha_hasta')
-        
+        fecha_desde = data_in.get('fecha_desde')
+        fecha_hasta = data_in.get('fecha_hasta')
+
         if not all([fecha_desde, fecha_hasta]):
             return Response(
-                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'}, 
+                {'error': 'Se requieren parámetros: fecha_desde, fecha_hasta'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             # Datos de ejemplo
             alertas = [
                 {
                     'tipo': 'exceso_horas_semanales',
-                    'nivel': 'critico',
-                    'agente': 'Aguila, Tayra',
+                    'nivel': 'crítico',
+                    'agente': 'Águila, Tayra',
                     'descripcion': 'Exceso de horas semanales: 52.0h (máximo: 48h)'
                 },
                 {
                     'tipo': 'descanso_insuficiente',
-                    'nivel': 'advertencia', 
-                    'agente': 'Rodriguez, Carlos',
+                    'nivel': 'advertencia',
+                    'agente': 'Rodríguez, Carlos',
                     'descripcion': 'Posible descanso insuficiente entre guardias'
                 }
             ]
-            
+
             return Response({
                 'periodo': {
                     'fecha_desde': fecha_desde,
@@ -2910,492 +3604,33 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 'alertas': alertas,
                 'resumen': {
                     'total_alertas': 2,
-                    'alertas_criticas': 1,
+                    'alertas_críticas': 1,
                     'alertas_advertencia': 1,
                     'agentes_afectados': 2
                 }
             })
-            
+
         except Exception as e:
             logger.error(f"Error generando reporte incumplimiento: {e}")
             return Response(
-                {'error': f'Error generando reporte: {str(e)}'}, 
+                {'error': f'Error generando reporte: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-    # ========================
-    # ENDPOINTS DE EXPORTACIÓN
-    # ========================
-    
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def exportar_pdf(self, request):
-        """
-        Genera y descarga un reporte en formato PDF con formato institucional
-        """
-        try:
-            from reportlab.lib import colors
-            from reportlab.lib.pagesizes import letter, A4, landscape
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib.units import inch
-            from django.http import HttpResponse
-            from io import BytesIO
-            import os
-            
-            # Obtener datos de la request
-            tipo_reporte = request.data.get('tipo_reporte', 'general')
-            datos_reporte = request.data.get('datos', {})
-            filtros = request.data.get('filtros', {})
-            configuracion = request.data.get('configuracion', {})
-            metadatos = request.data.get('metadatos', {})
-            
-            # Configurar el documento
-            buffer = BytesIO()
-            
-            # Determinar orientación según tipo de reporte
-            orientacion = configuracion.get('reporte_especifico', {}).get('orientacion', 'portrait')
-            page_size = landscape(A4) if orientacion == 'landscape' else A4
-            
-            # Crear documento
-            doc = SimpleDocTemplate(
-                buffer,
-                pagesize=page_size,
-                rightMargin=72,
-                leftMargin=72,
-                topMargin=72,
-                bottomMargin=72
-            )
-            
-            # Preparar elementos del documento
-            elements = []
-            styles = getSampleStyleSheet()
-            
-            # Configurar estilos institucionales
-            title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=styles['Heading1'],
-                fontSize=16,
-                fontName='Helvetica-Bold',
-                spaceAfter=30,
-                alignment=1  # Centrado
-            )
-            
-            header_style = ParagraphStyle(
-                'CustomHeader',
-                parent=styles['Normal'],
-                fontSize=12,
-                fontName='Helvetica-Bold',
-                spaceAfter=12
-            )
-            
-            normal_style = ParagraphStyle(
-                'CustomNormal',
-                parent=styles['Normal'],
-                fontSize=10,
-                fontName='Helvetica'
-            )
-            
-            # ========================================
-            # CABECERA INSTITUCIONAL
-            # ========================================
-            
-            # Logo institucional (si existe)
-            logo_path = os.path.join(os.path.dirname(__file__), '../../static/logos/logo-untdf.png')
-            if os.path.exists(logo_path):
-                try:
-                    logo = Image(logo_path, width=60, height=60)
-                    elements.append(logo)
-                except:
-                    pass  # Si no se puede cargar el logo, continuar sin él
-            
-            # Título del reporte
-            reporte_config = configuracion.get('reporte_especifico', {})
-            titulo_reporte = reporte_config.get('titulo', f'Reporte {tipo_reporte.replace("_", " ").title()}')
-            
-            elements.append(Paragraph(titulo_reporte, title_style))
-            elements.append(Spacer(1, 12))
-            
-            # Información institucional
-            elementos_cabecera = [
-                "Universidad Nacional de Tierra del Fuego",
-                "Sistema GIGA - Gestión Integral de Guardias y Asistencias",
-                f"Fecha de Generación: {metadatos.get('fecha_generacion', '')}",
-                f"Filtros Aplicados: {metadatos.get('filtros_aplicados', '')}"
-            ]
-            
-            for elemento in elementos_cabecera:
-                elements.append(Paragraph(elemento, normal_style))
-            
-            elements.append(Spacer(1, 20))
-            
-            # ========================================
-            # CUERPO DEL REPORTE 
-            # ========================================
-            
-            # Generar tabla según tipo de reporte
-            tabla_data = self._generar_tabla_pdf(tipo_reporte, datos_reporte, filtros)
-            
-            if tabla_data and len(tabla_data) > 0:
-                # Crear tabla
-                tabla = Table(tabla_data)
-                
-                # Aplicar estilos a la tabla
-                tabla.setStyle(TableStyle([
-                    # Encabezado
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, 0), 10),
-                    
-                    # Cuerpo
-                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                    ('FONTSIZE', (0, 1), (-1, -1), 9),
-                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    
-                    # Alternar colores de filas
-                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.beige, colors.white])
-                ]))
-                
-                elements.append(tabla)
-                elements.append(Spacer(1, 20))
-            
-            # ========================================
-            # PIE DE PÁGINA CON FIRMAS
-            # ========================================
-            
-            # Espacio para firmas
-            elements.append(Spacer(1, 40))
-            
-            firma_data = [
-                ['', ''],
-                ['_' * 30, '_' * 30],
-                ['Jefe de Área', 'RR.HH./Liquidación'],
-                ['Firma y Sello', 'Firma y Sello']
-            ]
-            
-            firma_tabla = Table(firma_data, colWidths=[3*inch, 3*inch])
-            firma_tabla.setStyle(TableStyle([
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 1), (-1, -1), 10),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('TOPPADDING', (0, 0), (-1, -1), 12),
-            ]))
-            
-            elements.append(firma_tabla)
-            
-            # Pie institucional
-            elements.append(Spacer(1, 20))
-            elements.append(Paragraph(
-                "2025 - UNTDF - Ushuaia - Tierra del Fuego",
-                ParagraphStyle('Footer', parent=normal_style, alignment=1, fontSize=8)
-            ))
-            
-            # Generar PDF
-            doc.build(elements)
-            
-            # Preparar respuesta
-            buffer.seek(0)
-            response = HttpResponse(buffer, content_type='application/pdf')
-            
-            # Generar nombre de archivo
-            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"GIGA_{tipo_reporte}_{timestamp}.pdf"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            
-            return response
-            
-        except ImportError:
-            logger.error("ReportLab no está instalado. Instale con: pip install reportlab")
-            return Response(
-                {'error': 'Funcionalidad de PDF no disponible. Contacte al administrador.'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        except Exception as e:
-            logger.error(f"Error generando PDF: {e}")
-            return Response(
-                {'error': f'Error generando PDF: {str(e)}'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    def _generar_tabla_pdf(self, tipo_reporte, datos, filtros):
-        """Genera datos de tabla específicos para cada tipo de reporte"""
-        
-        if tipo_reporte == 'individual':
-            headers = ['Fecha', 'Día', 'Horario Guardia', 'Horas', 'Motivo']
-            rows = [headers]
-            
-            # Datos de ejemplo si no hay datos reales
-            dias_ejemplo = [
-                ['01/11/2025', 'Viernes', '08:00-16:00', '8h', 'Guardia operativa'],
-                ['02/11/2025', 'Sábado', '22:00-06:00', '8h', 'Guardia nocturna'],
-                ['03/11/2025', 'Domingo', '-', '0h', 'Descanso'],
-            ]
-            rows.extend(dias_ejemplo)
-            
-        elif tipo_reporte == 'calculo_plus':
-            headers = ['Agente', 'Legajo', 'Área', 'Horas Guardia', 'Plus %', 'Motivo']
-            rows = [headers]
-            
-            # Datos de ejemplo
-            plus_ejemplo = [
-                ['Aguila, Tayra', '001', 'Protección Civil', '48h', '40%', 'Área operativa'],
-                ['Rodriguez, Carlos', '002', 'Administración', '36h', '40%', '+32h guardias'],
-                ['Lopez, Ana', '003', 'Planificación', '24h', '20%', 'Guardias <32h'],
-            ]
-            rows.extend(plus_ejemplo)
-            
-        elif tipo_reporte == 'parte_diario':
-            headers = ['Fecha', 'Agente', 'Ingreso', 'Egreso', 'Horas', 'Novedades']
-            rows = [headers]
-            
-            # Datos de ejemplo
-            asistencia_ejemplo = [
-                ['22/11/2025', 'Aguila, Tayra', '08:00', '16:00', '8h', 'Jornada habitual'],
-                ['22/11/2025', 'Garcia, Cristian', '08:15', '16:00', '7h 45m', 'Llegada tarde'],
-                ['22/11/2025', 'Criniti, Teresa', '08:00', '14:30', '6h 30m', 'Comisión oficial'],
-            ]
-            rows.extend(asistencia_ejemplo)
-            
-        else:
-            # Tabla genérica
-            headers = ['Item', 'Descripción', 'Valor']
-            rows = [
-                headers,
-                ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), ''],
-                ['Período', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", ''],
-                ['Estado', 'Generado exitosamente', ''],
-            ]
-        
-        return rows
-    
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def exportar_csv(self, request):
-        """
-        Genera y descarga un reporte en formato CSV
-        """
-        try:
-            import csv
-            from django.http import HttpResponse
-            from io import StringIO
-            
-            # Obtener datos de la request
-            tipo_reporte = request.data.get('tipo_reporte', 'general')
-            datos_reporte = request.data.get('datos', {})
-            filtros = request.data.get('filtros', {})
-            configuracion = request.data.get('configuracion', {})
-            
-            # Crear buffer para CSV
-            output = StringIO()
-            writer = csv.writer(output)
-            
-            # Escribir cabecera informativa
-            writer.writerow(['# Sistema GIGA - Reporte de Guardias y Asistencias'])
-            writer.writerow(['# Universidad Nacional de Tierra del Fuego'])
-            writer.writerow([f'# Tipo de Reporte: {tipo_reporte.replace("_", " ").title()}'])
-            writer.writerow([f'# Período: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'])
-            writer.writerow([f'# Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'])
-            writer.writerow([])  # Línea vacía
-            
-            # Generar datos según tipo de reporte
-            datos_csv = self._generar_datos_csv(tipo_reporte, datos_reporte, filtros)
-            
-            # Escribir datos
-            for fila in datos_csv:
-                writer.writerow(fila)
-            
-            # Preparar respuesta
-            response = HttpResponse(output.getvalue(), content_type='text/csv')
-            
-            # Generar nombre de archivo
-            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"GIGA_{tipo_reporte}_{timestamp}.csv"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            
-            return response
-            
-        except Exception as e:
-            logger.error(f"Error generando CSV: {e}")
-            return Response(
-                {'error': f'Error generando CSV: {str(e)}'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def exportar_excel(self, request):
-        """
-        Genera y descarga un reporte en formato Excel
-        """
-        try:
-            import openpyxl
-            from openpyxl.styles import Font, PatternFill, Alignment
-            from django.http import HttpResponse
-            from io import BytesIO
-            
-            # Obtener datos de la request
-            tipo_reporte = request.data.get('tipo_reporte', 'general')
-            datos_reporte = request.data.get('datos', {})
-            filtros = request.data.get('filtros', {})
-            
-            # Crear workbook
-            wb = openpyxl.Workbook()
-            ws = wb.active
-            ws.title = f"Reporte {tipo_reporte.title()}"
-            
-            # Estilos
-            header_font = Font(bold=True, color="FFFFFF")
-            header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-            center_alignment = Alignment(horizontal="center", vertical="center")
-            
-            # Cabecera informativa
-            ws['A1'] = 'Sistema GIGA - Universidad Nacional de Tierra del Fuego'
-            ws['A1'].font = Font(bold=True, size=14)
-            ws['A2'] = f'Reporte: {tipo_reporte.replace("_", " ").title()}'
-            ws['A3'] = f'Período: {filtros.get("fecha_desde", "")} - {filtros.get("fecha_hasta", "")}'
-            ws['A4'] = f'Generado: {timezone.now().strftime("%d/%m/%Y %H:%M")}'
-            
-            # Línea vacía
-            row_start = 6
-            
-            # Generar datos
-            datos_excel = self._generar_datos_csv(tipo_reporte, datos_reporte, filtros)
-            
-            # Escribir encabezados
-            if datos_excel:
-                headers = datos_excel[0]
-                for col, header in enumerate(headers, 1):
-                    cell = ws.cell(row=row_start, column=col)
-                    cell.value = header
-                    cell.font = header_font
-                    cell.fill = header_fill
-                    cell.alignment = center_alignment
-                
-                # Escribir datos
-                for row_idx, fila in enumerate(datos_excel[1:], row_start + 1):
-                    for col_idx, valor in enumerate(fila, 1):
-                        ws.cell(row=row_idx, column=col_idx, value=valor)
-                
-                # Ajustar ancho de columnas
-                for column in ws.columns:
-                    max_length = 0
-                    column_letter = column[0].column_letter
-                    for cell in column:
-                        try:
-                            if len(str(cell.value)) > max_length:
-                                max_length = len(str(cell.value))
-                        except:
-                            pass
-                    adjusted_width = min(max_length + 2, 30)
-                    ws.column_dimensions[column_letter].width = adjusted_width
-            
-            # Guardar en buffer
-            buffer = BytesIO()
-            wb.save(buffer)
-            buffer.seek(0)
-            
-            # Preparar respuesta
-            response = HttpResponse(
-                buffer,
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-            
-            # Generar nombre de archivo
-            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"GIGA_{tipo_reporte}_{timestamp}.xlsx"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            
-            return response
-            
-        except ImportError:
-            logger.error("openpyxl no está instalado. Instale con: pip install openpyxl")
-            return Response(
-                {'error': 'Funcionalidad de Excel no disponible. Contacte al administrador.'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        except Exception as e:
-            logger.error(f"Error generando Excel: {e}")
-            return Response(
-                {'error': f'Error generando Excel: {str(e)}'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    def _generar_datos_csv(self, tipo_reporte, datos, filtros):
-        """Genera datos en formato de filas para CSV/Excel"""
-        
-        if tipo_reporte == 'individual':
-            headers = ['Fecha', 'Día Semana', 'Horario Habitual', 'Horario Guardia', 'Horas Planificadas', 'Horas Efectivas', 'Motivo', 'Observaciones']
-            rows = [headers]
-            
-            # Datos de ejemplo
-            dias_ejemplo = [
-                ['01/11/2025', 'Viernes', '08:00-16:00', '08:00-16:00', '8', '8', 'Guardia operativa', 'Presentismo OK'],
-                ['02/11/2025', 'Sábado', '-', '22:00-06:00', '8', '8', 'Guardia nocturna', 'Presentismo OK'],
-                ['03/11/2025', 'Domingo', '-', '-', '0', '0', 'Descanso', 'Sin guardia'],
-            ]
-            rows.extend(dias_ejemplo)
-            
-        elif tipo_reporte == 'calculo_plus':
-            headers = ['Agente', 'Legajo', 'CUIL', 'Área', 'Horas Normales', 'Horas Plus 20%', 'Horas Plus 40%', 'Total a Liquidar', 'Motivo Plus']
-            rows = [headers]
-            
-            plus_ejemplo = [
-                ['Aguila, Tayra', '001', '27-12345678-9', 'Secretaría de Protección Civil', '160', '0', '48', '208', 'Área operativa con guardias'],
-                ['Rodriguez, Carlos', '002', '27-87654321-0', 'Depto. Administrativo', '160', '0', '36', '196', 'Otras áreas con ≥32h guardias'],
-                ['Lopez, Ana', '003', '27-11223344-5', 'División de Planificación', '160', '24', '0', '184', 'Guardias con <32h mensuales'],
-            ]
-            rows.extend(plus_ejemplo)
-            
-        elif tipo_reporte == 'parte_diario':
-            headers = ['Fecha', 'Agente', 'Legajo', 'Área', 'Horario Entrada', 'Horario Salida', 'Horas Trabajadas', 'Tipo Novedad', 'Descripción Novedad']
-            rows = [headers]
-            
-            asistencia_ejemplo = [
-                ['22/11/2025', 'Aguila, Tayra', '001', 'Protección Civil', '08:00', '16:00', '8h 00m', 'Normal', 'Jornada habitual completa'],
-                ['22/11/2025', 'Garcia, Cristian', '002', 'Administración', '08:15', '16:00', '7h 45m', 'Llegada Tarde', 'Retraso de 15 minutos'],
-                ['22/11/2025', 'Criniti, Teresa', '003', 'Planificación', '08:00', '14:30', '6h 30m', 'Comisión', 'Comisión oficial autorizada'],
-            ]
-            rows.extend(asistencia_ejemplo)
-            
-        elif tipo_reporte == 'resumen_licencias':
-            headers = ['Agente', 'Legajo', 'Art. 32.1 Usados', 'Art. 32.1 Disponibles', 'Art. 32.2 Usados', 'Art. 32.2 Disponibles', 'Art. 33 Usados', 'Art. 33 Disponibles', 'Total Días Usados', 'Total Días Disponibles']
-            rows = [headers]
-            
-            licencias_ejemplo = [
-                ['Aguila, Tayra', '001', '15', '6', '3', '27', '2', '8', '20', '41'],
-                ['Rodriguez, Carlos', '002', '8', '13', '0', '30', '1', '9', '9', '52'],
-                ['Lopez, Ana', '003', '12', '9', '5', '25', '0', '10', '17', '44'],
-            ]
-            rows.extend(licencias_ejemplo)
-            
-        else:
-            # Formato genérico
-            headers = ['Descripción', 'Valor', 'Observaciones']
-            rows = [
-                headers,
-                ['Tipo de Reporte', tipo_reporte.replace('_', ' ').title(), 'Generado automáticamente'],
-                ['Período Consultado', f"{filtros.get('fecha_desde', '')} - {filtros.get('fecha_hasta', '')}", 'Rango de fechas seleccionado'],
-                ['Fecha de Generación', timezone.now().strftime("%d/%m/%Y %H:%M"), 'Momento de creación del reporte'],
-                ['Sistema', 'GIGA - UNTDF', 'Universidad Nacional de Tierra del Fuego'],
-            ]
-        
-        return rows
 
     @action(detail=True, methods=['patch'])
     def aprobar(self, request, pk=None):
         """Aprueba una compensación individual"""
         try:
             from personas.models import Agente
-            
+
             compensacion = self.get_object()
-            
+
             if compensacion.estado != 'pendiente':
                 return Response(
                     {'error': 'Solo se pueden aprobar compensaciones pendientes'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             # Obtener agente aprobador
             agente_id = request.data.get('aprobado_por')
             if not agente_id:
@@ -3403,13 +3638,13 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     {'error': 'Se requiere aprobado_por'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             agente_aprobador = Agente.objects.get(id_agente=agente_id)
             observaciones = request.data.get('observaciones', '')
-            
+
             # Aprobar compensación
             compensacion.aprobar(agente_aprobador, observaciones)
-            
+
             # Registrar en auditoría
             Auditoria.objects.create(
                 pk_afectada=compensacion.id_hora_compensacion,
@@ -3420,34 +3655,34 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 accion='APROBAR_COMPENSACION',
                 id_agente_id=agente_aprobador.id_agente
             )
-            
+
             serializer = HoraCompensacionSerializer(compensacion)
             return Response({
                 'mensaje': 'Compensación aprobada exitosamente',
                 'compensacion': serializer.data
             })
-            
+
         except Exception as e:
             logger.error(f"Error aprobando compensación: {e}")
             return Response(
-                {'error': f'Error aprobando compensación: {str(e)}'}, 
+                {'error': f'Error aprobando compensación: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-    
+
     @action(detail=True, methods=['patch'])
     def rechazar(self, request, pk=None):
         """Rechaza una compensación individual"""
         try:
             from personas.models import Agente
-            
+
             compensacion = self.get_object()
-            
+
             if compensacion.estado != 'pendiente':
                 return Response(
                     {'error': 'Solo se pueden rechazar compensaciones pendientes'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             # Obtener agente que rechaza
             agente_id = request.data.get('rechazado_por')
             if not agente_id:
@@ -3455,19 +3690,19 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                     {'error': 'Se requiere rechazado_por'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             agente_rechazador = Agente.objects.get(id_agente=agente_id)
             motivo_rechazo = request.data.get('motivo_rechazo', '')
-            
+
             if not motivo_rechazo:
                 return Response(
                     {'error': 'Se requiere motivo_rechazo'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             # Rechazar compensación
             compensacion.rechazar(agente_rechazador, motivo_rechazo)
-            
+
             # Registrar en auditoría
             Auditoria.objects.create(
                 pk_afectada=compensacion.id_hora_compensacion,
@@ -3478,16 +3713,16 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
                 accion='RECHAZAR_COMPENSACION',
                 id_agente_id=agente_rechazador.id_agente
             )
-            
+
             serializer = HoraCompensacionSerializer(compensacion)
             return Response({
                 'mensaje': 'Compensación rechazada exitosamente',
                 'compensacion': serializer.data
             })
-            
+
         except Exception as e:
             logger.error(f"Error rechazando compensación: {e}")
             return Response(
-                {'error': f'Error rechazando compensación: {str(e)}'}, 
+                {'error': f'Error rechazando compensación: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

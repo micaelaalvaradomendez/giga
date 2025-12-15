@@ -159,9 +159,9 @@
                             <div class="menu-item-title">Guardias</div>
                         </div>
                     </a>
-
+                    {#if isAdmin || isDirector || isJefatura}
                     <a
-                        href="/reportes"
+                        href="paneladmin/reportes"
                         class="menu-item"
                         class:active={currentPath === "/reportes"}
                         on:click={closeMenu}
@@ -171,6 +171,7 @@
                             <div class="menu-item-title">Reportes</div>
                         </div>
                     </a>
+                    {/if}
                 </div>
 
                 {#if isJefatura}

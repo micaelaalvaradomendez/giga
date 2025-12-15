@@ -4,7 +4,6 @@ Aprovecha la lógica existente en la base de datos.
 """
 
 from django.db import connection, models
-from django.utils import timezone
 from datetime import datetime, date, time
 from decimal import Decimal
 import logging
