@@ -1249,6 +1249,8 @@
     transition: all 0.3s ease;
     font-size: 16px;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    min-width: 140px;
+    justify-content: center;
   }
 
   .btn:hover {
@@ -1331,7 +1333,7 @@
       gap: 1rem;
       align-items: center; /* Centrar todo el header */
       margin: 0 0 1.5rem 0;
-      padding-bottom: 0;
+      padding: 0; /* Override desktop padding */
       width: 100%;
     }
 
