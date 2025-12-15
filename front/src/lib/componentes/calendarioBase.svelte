@@ -561,7 +561,7 @@
 
     .calendar-header h1 {
         margin: 0;
-        font-size: 16px;
+        font-size: 13px;
         color: white !important;
     }
 
@@ -579,14 +579,14 @@
     .calendar-header button {
         background: rgba(255, 255, 255, 0.2) !important;
         border: 1px solid rgba(255, 255, 255, 0.4);
-        padding: 6px 10px;
+        padding: 4px 6px;
         color: white !important;
         cursor: pointer;
         outline: 0;
-        border-radius: 6px;
-        margin: 0 3px;
+        border-radius: 4px;
+        margin: 0 2px;
         transition: all 0.2s ease;
-        font-size: 14px;
+        font-size: 11px;
     }
 
     @media (min-width: 640px) {
@@ -629,8 +629,8 @@
     .calendar-header-cell {
         text-align: center;
         font-weight: bold;
-        padding: 8px 4px;
-        margin: 2px;
+        padding: 6px 2px;
+        margin: 1px;
         background: linear-gradient(
             135deg,
             rgba(142, 182, 228, 0.5) 0%,
@@ -640,9 +640,9 @@
         -webkit-backdrop-filter: blur(15px);
         color: rgba(0, 0, 0, 0.63) !important;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.062);
-        border-radius: 8px;
+        border-radius: 6px;
         box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3);
-        font-size: 11px;
+        font-size: 10px;
     }
 
     @media (min-width: 640px) {
@@ -667,14 +667,14 @@
     }
     .calendar-day {
         text-align: left;
-        padding: 4px;
+        padding: 3px;
         background: white !important;
         background-color: #ffffff !important;
-        min-height: 60px;
+        min-height: 50px;
         transition: all 0.2s ease;
         border: 1px solid #f0f0f0;
-        border-radius: 8px;
-        margin: 2px;
+        border-radius: 6px;
+        margin: 1px;
         display: flex;
         flex-direction: column;
         position: relative;
@@ -783,10 +783,10 @@
 
     .day-number {
         font-weight: 600;
-        margin-bottom: 2px;
+        margin-bottom: 1px;
         color: rgba(0, 0, 0, 0.63) !important;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.062);
-        font-size: 12px;
+        font-size: 10px;
     }
 
     @media (min-width: 640px) {
@@ -797,8 +797,8 @@
     }
 
     .feriado-info {
-        font-size: 0.65rem;
-        line-height: 1.2;
+        font-size: 0.5rem;
+        line-height: 1.1;
         flex-grow: 1;
     }
 
@@ -809,10 +809,10 @@
     }
 
     .feriado-item {
-        margin-bottom: 3px;
-        padding: 2px;
-        border-left: 2px solid #d63384;
-        padding-left: 4px;
+        margin-bottom: 1px;
+        padding: 1px;
+        border-left: 1px solid #d63384;
+        padding-left: 2px;
     }
 
     .feriado-item:last-child {
@@ -822,10 +822,10 @@
     .feriado-nombre {
         font-weight: 500;
         color: #d63384 !important;
-        margin-bottom: 2px;
+        margin-bottom: 1px;
         word-wrap: break-word;
         hyphens: auto;
-        font-size: 0.65rem;
+        font-size: 0.5rem;
     }
 
     @media (min-width: 640px) {
@@ -835,10 +835,10 @@
     }
 
     .feriado-duracion {
-        font-size: 0.6rem;
+        font-size: 0.45rem;
         color: #28a745 !important;
         font-weight: 600;
-        margin-bottom: 1px;
+        margin-bottom: 0px;
     }
 
     @media (min-width: 640px) {
@@ -848,9 +848,10 @@
     }
 
     .feriado-tipo {
-        font-size: 0.6rem;
+        font-size: 0.45rem;
         color: #6c757d !important;
         font-style: italic;
+        display: none;
     }
 
     @media (min-width: 640px) {

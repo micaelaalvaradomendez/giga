@@ -601,10 +601,22 @@
 
 <style>
   .container {
-    max-width: 1600px;
+    width: 100%;
+    max-width: 90%;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 1rem 1rem 2rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  @media (min-width: 768px) {
+    .container {
+      padding: 0 1rem 2rem;
+    }
+
+    .header {
+      margin-bottom: 2rem;
+      flex-wrap: nowrap;
+    }
   }
 
   .header {
@@ -617,13 +629,6 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-  }
-
-  @media (min-width: 768px) {
-    .header {
-      margin-bottom: 2rem;
-      flex-wrap: nowrap;
-    }
   }
 
   .header-glass {
@@ -690,10 +695,11 @@
     position: relative;
     padding-bottom: 12px;
     overflow: hidden;
-    text-align: left;
-    display: block;
+    text-align: center;
+    display: inline-block;
     max-width: 100%;
     word-wrap: break-word;
+    margin: 0 auto;
   }
 
   @media (min-width: 480px) {
@@ -1115,6 +1121,31 @@
 
     .btn-limpiar {
       margin-top: 0.5rem;
+    }
+
+    /* Admin actions más compacto en mobile */
+    .admin-actions {
+      margin: 0.5rem 0 1rem 0;
+      padding: 0;
+      width: 100%;
+    }
+
+    .btn-gestionar {
+      width: 100%;
+    }
+
+    /* Tabs en fila en mobile */
+    .tabs {
+      display: flex;
+      flex-direction: row;
+      gap: 0.5rem;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 0.75rem 0.5rem;
+      font-size: 0.85rem;
+      margin-bottom: 15px;
     }
   }
 </style>

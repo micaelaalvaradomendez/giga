@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'guardias',
     'asistencia',
     'incidencias',
+    'notificaciones',
 ]
 
 MIDDLEWARE = [
@@ -300,20 +301,14 @@ LOGGING = {
 }
 
 # ============================================================================
-# EMAIL CONFIGURATION - Gmail SMTP
+# EMAIL CONFIGURATION - Resend API
 # ============================================================================
 
-# Backend de email
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Backend de email usando Resend (Railway bloquea SMTP)
+EMAIL_BACKEND = 'incidencias.resend_backend.ResendEmailBackend'
 
-# Configuración Gmail SMTP
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-
-# Credenciales (usar variables de entorno en producción)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')  # App password de Gmail - DEBE configurarse en variables de entorno
+# API Key de Resend (usar variable de entorno)
+RESEND_API_KEY = config('RESEND_API_KEY', default='')
 
 # Remitente por defecto
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Sistema GIGA <noreply@example.com>')

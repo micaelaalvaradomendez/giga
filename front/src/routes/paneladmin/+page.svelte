@@ -292,8 +292,9 @@
 		padding: 30px 20px;
 		margin: 5px auto 25px auto;
 		max-width: 1200px;
+		min-height: 80px;
 		border-radius: 28px;
-		overflow: hidden;
+		overflow: visible;
 		text-align: center;
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
@@ -315,6 +316,8 @@
 			linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 		background-size: 50px 50px;
 		animation: moveLines 20s linear infinite;
+		z-index: 0;
+		pointer-events: none;
 	}
 
 	.dashboard-welcome h1 {
@@ -332,11 +335,13 @@
 			Arial,
 			sans-serif;
 		position: relative;
+		z-index: 1;
 		padding-bottom: 12px;
-		overflow: hidden;
 		display: block;
 		max-width: 100%;
 		word-wrap: break-word;
+		white-space: normal;
+		line-height: 1.4;
 	}
 
 	@media (min-width: 480px) {
@@ -378,7 +383,7 @@
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		width: 90%;
 		display: grid;
-		margin-top: 50px;
+		margin-top: 20px;
 		margin-right: auto;
 		margin-left: auto;
 		grid-template-rows: repeat(3, 1fr);

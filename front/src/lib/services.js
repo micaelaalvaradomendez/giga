@@ -121,6 +121,14 @@ export const asistenciaService = {
   updateTipoLicencia: (id, data, token = null) => createApiClient(token).put(`/asistencia/admin/tipos-licencia/actualizar/${id}/`, data),
   deleteTipoLicencia: (id, token = null) => createApiClient(token).delete(`/asistencia/admin/tipos-licencia/eliminar/${id}/`),
 
+  // Admin - Asistencias
+  getAsistenciasAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/listar/?${params}`),
+  getResumenAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/resumen/?${params}`),
+  getLicenciasAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/licencias/?${params}`),
+  corregirAsistencia: (id, data, token = null) => createApiClient(token).patch(`/asistencia/admin/corregir/${id}/`, data),
+  marcarAusente: (id, data, token = null) => createApiClient(token).patch(`/asistencia/admin/marcar-ausente/${id}/`, data),
+  marcarAsistencia: (data, token = null) => createApiClient(token).post('/asistencia/marcar/', data),
+
   // Novedades
   getNovedades: () => api.get('/asistencia/novedades/'),
   getNovedad: (id) => api.get(`/asistencia/novedades/${id}/`),
@@ -363,4 +371,11 @@ export const convenioIaService = {
 export const auditoriaService = {
   getParametros: (token = null) => createApiClient(token).get('/auditoria/parametros/'),
   getRegistrosAuditoria: (token = null) => createApiClient(token).get('/auditoria/registros/'),
+};
+
+// SERVICIOS PARA NOTIFICACIONES
+export const notificacionesService = {
+  getNotificaciones: (token = null) => createApiClient(token).get('/notificaciones/'),
+  marcarLeida: (id, token = null) => createApiClient(token).post(`/notificaciones/${id}/marcar_leida/`),
+  marcarTodasLeidas: (token = null) => createApiClient(token).post('/notificaciones/marcar_todas_leidas/'),
 };

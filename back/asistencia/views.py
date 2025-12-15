@@ -919,12 +919,15 @@ def listar_asistencias_admin(request):
             fecha__lte=fecha_hasta
         )
         
-        # Filtro por área
+        # RBAC: Filtrar por áreas permitidas
+        if rol_sesion != 'administrador':
+            areas_permitidas = obtener_areas_jerarquia(agente_sesion)
+            area_ids_permitidas = [a.id_area for a in areas_permitidas]
+            queryset = queryset.filter(id_area__id_area__in=area_ids_permitidas)
+        
+        # Filtro adicional por área específica (si se proporciona)
         if area_id:
             queryset = queryset.filter(id_area_id=area_id)
-        elif rol.id_rol.nombre == 'Jefatura':
-            # Jefatura solo ve su área
-            queryset = queryset.filter(id_area=agente.id_area)
         
         # Filtro por estado
         if estado_filtro == 'completa':

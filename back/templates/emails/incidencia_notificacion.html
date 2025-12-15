@@ -4,185 +4,131 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notificación de Incidencia</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        .header h1 {
-            color: #2c3e50;
-            margin: 0;
-            font-size: 28px;
-        }
-        .content {
-            margin-bottom: 20px;
-        }
-        .incidencia-info {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 4px solid #007bff;
-        }
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 10px 0;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-        .info-row:last-child {
-            border-bottom: none;
-        }
-        .info-label {
-            font-weight: bold;
-            color: #495057;
-            min-width: 120px;
-        }
-        .info-value {
-            text-align: right;
-            flex-grow: 1;
-        }
-
-        .descripcion {
-            background-color: #ffffff;
-            padding: 15px;
-            border-radius: 5px;
-            border: 1px solid #dee2e6;
-            margin: 15px 0;
-        }
-        .action-button {
-            display: inline-block;
-            background-color: #007bff;
-            color: white !important;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-            text-align: center;
-            font-weight: bold;
-        }
-        .action-button:hover {
-            background-color: #0056b3;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
-            text-align: center;
-            color: #6c757d;
-            font-size: 14px;
-        }
-        .notification-type {
-            background-color: #e3f2fd;
-            color: #1565c0;
-            padding: 10px 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: bold;
-        }
-    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Sistema de Gestión de Incidencias</h1>
-        </div>
-
-        <div class="notification-type">
-            {{ notificacion_tipo }}
-        </div>
-
-        <div class="content">
-            <p>Hola {{ destinatario.nombre }} {{ destinatario.apellido }},</p>
-            
-            <p>{{ mensaje_principal }}</p>
-
-            <div class="incidencia-info">
-                <div class="info-row">
-                    <span class="info-label">Número:</span>
-                    <span class="info-value"><strong>{{ incidencia.numero }}</strong></span>
-                </div>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
+        <tr>
+            <td style="background-color: #ffffff; padding: 30px; border-radius: 10px;">
                 
-                <div class="info-row">
-                    <span class="info-label">Título:</span>
-                    <span class="info-value">{{ incidencia.titulo }}</span>
-                </div>
-                
-                <div class="info-row">
-                    <span class="info-label">Estado:</span>
-                    <span class="info-value">
-                        {% if incidencia.fecha_resolucion %}
-                            <span style="color: #059669; font-weight: bold;">Resuelta</span>
-                        {% else %}
-                            <span style="color: #d97706; font-weight: bold;">Pendiente</span>
-                        {% endif %}
-                    </span>
-                </div>
-                
-                <div class="info-row">
-                    <span class="info-label">Creado por:</span>
-                    <span class="info-value">{{ incidencia.creado_por.nombre }} {{ incidencia.creado_por.apellido }}</span>
-                </div>
-                
-                {% if incidencia.asignado_a %}
-                <div class="info-row">
-                    <span class="info-label">Asignado a:</span>
-                    <span class="info-value">{{ incidencia.asignado_a.nombre }} {{ incidencia.asignado_a.apellido }}</span>
-                </div>
-                {% endif %}
-                
-                <div class="info-row">
-                    <span class="info-label">Fecha creación:</span>
-                    <span class="info-value">{{ incidencia.fecha_creacion|date:"d/m/Y H:i" }}</span>
-                </div>
-                
-                {% if incidencia.fecha_limite %}
-                <div class="info-row">
-                    <span class="info-label">Fecha límite:</span>
-                    <span class="info-value">{{ incidencia.fecha_limite|date:"d/m/Y" }}</span>
-                </div>
-                {% endif %}
-            </div>
+                <!-- Encabezado -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e0e0e0;">
+                    <tr>
+                        <td style="text-align: center;">
+                            <h1 style="color: #2c3e50; margin: 0; font-size: 28px;">Sistema de Gestión de Incidencias</h1>
+                        </td>
+                    </tr>
+                </table>
 
-            {% if incidencia.descripcion %}
-            <div class="descripcion">
-                <strong>Descripción:</strong><br>
-                {{ incidencia.descripcion|linebreaks }}
-            </div>
-            {% endif %}
+                <!-- Tipo de Notificación -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                    <tr>
+                        <td style="background-color: #e3f2fd; color: #1565c0; padding: 10px 15px; border-radius: 5px; text-align: center; font-weight: bold;">
+                            {{ notificacion_tipo }}
+                        </td>
+                    </tr>
+                </table>
 
-            {% if sistema_url %}
-            <div style="text-align: center;">
-                <a href="{{ sistema_url }}" class="action-button">Ver en el Sistema</a>
-            </div>
-            {% endif %}
-        </div>
+                <!-- Contenido -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td>
+                            <p style="margin: 15px 0;">Hola {{ destinatario.nombre }} {{ destinatario.apellido }},</p>
+                            
+                            <p style="margin: 15px 0;">{{ mensaje_principal }}</p>
 
-        <div class="footer">
-            <p>Este es un mensaje automático del Sistema de Gestión de Incidencias.</p>
-            <p>Por favor, no responda a este email.</p>
-            <p>Fecha de notificación: {{ fecha_actual|date:"d/m/Y H:i" }}</p>
-        </div>
-    </div>
+                            <!-- Información de la Incidencia -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+                                <tr>
+                                    <td>
+                                        <table width="100%" cellpadding="8" cellspacing="0">
+                                            <tr style="border-bottom: 1px solid #e9ecef;">
+                                                <td style="font-weight: bold; color: #495057; width: 40%;">Número:</td>
+                                                <td style="text-align: right;"><strong>{{ incidencia.numero }}</strong></td>
+                                            </tr>
+                                            
+                                            <tr style="border-bottom: 1px solid #e9ecef;">
+                                                <td style="font-weight: bold; color: #495057;">Título:</td>
+                                                <td style="text-align: right;">{{ incidencia.titulo }}</td>
+                                            </tr>
+                                            
+                                            <tr style="border-bottom: 1px solid #e9ecef;">
+                                                <td style="font-weight: bold; color: #495057;">Estado:</td>
+                                                <td style="text-align: right;">
+                                                    {% if incidencia.fecha_resolucion %}
+                                                        <span style="color: #059669; font-weight: bold;">Resuelta</span>
+                                                    {% else %}
+                                                        <span style="color: #d97706; font-weight: bold;">Pendiente</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            
+                                            <tr style="border-bottom: 1px solid #e9ecef;">
+                                                <td style="font-weight: bold; color: #495057;">Creado por:</td>
+                                                <td style="text-align: right;">{{ incidencia.creado_por.nombre }} {{ incidencia.creado_por.apellido }}</td>
+                                            </tr>
+                                            
+                                            {% if incidencia.asignado_a %}
+                                            <tr style="border-bottom: 1px solid #e9ecef;">
+                                                <td style="font-weight: bold; color: #495057;">Asignado a:</td>
+                                                <td style="text-align: right;">{{ incidencia.asignado_a.nombre }} {{ incidencia.asignado_a.apellido }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            
+                                            <tr style="border-bottom: 1px solid #e9ecef;">
+                                                <td style="font-weight: bold; color: #495057;">Fecha creación:</td>
+                                                <td style="text-align: right;">{{ incidencia.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                            </tr>
+                                            
+                                            {% if incidencia.fecha_limite %}
+                                            <tr>
+                                                <td style="font-weight: bold; color: #495057;">Fecha límite:</td>
+                                                <td style="text-align: right;">{{ incidencia.fecha_limite|date:"d/m/Y" }}</td>
+                                            </tr>
+                                            {% endif %}
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Descripción -->
+                            {% if incidencia.descripcion %}
+                            <table width="100%" cellpadding="15" cellspacing="0" style="background-color: #ffffff; border-radius: 5px; border: 1px solid #dee2e6; margin: 15px 0;">
+                                <tr>
+                                    <td>
+                                        <strong>Descripción:</strong><br>
+                                        {{ incidencia.descripcion|linebreaks }}
+                                    </td>
+                                </tr>
+                            </table>
+                            {% endif %}
+
+                            <!-- Botón de Acción -->
+                            {% if sistema_url %}
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <a href="{{ sistema_url }}" style="display: inline-block; background-color: #007bff; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Ver en el Sistema</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Pie de Página -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                    <tr>
+                        <td style="text-align: center; color: #6c757d; font-size: 14px;">
+                            <p style="margin: 5px 0;">Este es un mensaje automático del Sistema de Gestión de Incidencias.</p>
+                            <p style="margin: 5px 0;">Por favor, no responda a este email.</p>
+                            <p style="margin: 5px 0;">Fecha de notificación: {{ fecha_actual|date:"d/m/Y H:i" }}</p>
+                        </td>
+                    </tr>
+                </table>
+
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

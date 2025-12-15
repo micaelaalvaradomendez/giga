@@ -965,12 +965,12 @@
 </div>
 
 <ModalAlert
-	bind:show={alertConfig.show}
-	type={alertConfig.type}
-	title={alertConfig.title}
-	message={alertConfig.message}
-	on:confirm={() => (alertConfig.show = false)}
-	on:close={() => (alertConfig.show = false)}
+	bind:show={$modalAlert.show}
+	type={$modalAlert.type}
+	title={$modalAlert.title}
+	message={$modalAlert.message}
+	on:confirm={() => ($modalAlert.show = false)}
+	on:close={() => ($modalAlert.show = false)}
 />
 
 <ModalSolicitar

@@ -44,7 +44,6 @@
 	}
 
 	:global(html) {
-		height: 100%;
 		margin: 0;
 		padding: 0;
 		overflow-x: hidden;
@@ -56,7 +55,6 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
-		height: 100%;
 		margin: 0;
 		padding: 0;
 		overflow-x: hidden;
@@ -70,14 +68,13 @@
 	.layout-container {
 		display: flex;
 		flex-direction: column;
-		flex: 1;
+		flex: 1 0 auto;
 		width: 100%;
 		min-height: 0;
 		position: relative;
 	}
 
 	main {
-		flex: 1;
 		padding: 0;
 		width: 100%;
 		max-width: 100%;
@@ -91,4 +88,5 @@
 		width: 100%;
 		height: 100%;
 	}
+
 </style>

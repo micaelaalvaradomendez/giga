@@ -1,6 +1,7 @@
 <script>
     import { createEventDispatcher } from "svelte";
     import AuthService from "../../login/authService.js";
+    import { API_BASE_URL } from "../../api.js";
 
     const dispatch = createEventDispatcher();
 
@@ -103,7 +104,7 @@
         successMessage = "";
 
         try {
-            const response = await fetch("/api/personas/auth/update-email/", {
+            const response = await fetch(`${API_BASE_URL}/personas/auth/update-email/`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

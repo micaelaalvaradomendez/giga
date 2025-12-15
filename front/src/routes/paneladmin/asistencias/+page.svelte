@@ -413,7 +413,7 @@
         width: 100%;
         max-width: 1600px;
         margin: 0 auto;
-        padding: 1rewm 0;
+        padding: 1rem;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
 
