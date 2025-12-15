@@ -74,6 +74,8 @@
 		cursor: pointer;
 		transition: all 0.3s ease;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		box-sizing: border-box;
+		max-width: 100%;
 	}
 
 	.node:hover {
@@ -188,14 +190,39 @@
 	.bg-gray-40 { background-color: #f3f4f6; }
 
 	/* Responsive */
-	@media (max-width: 768px) {
+	@media (max-width: 640px) {
 		.node {
 			padding: 0.75rem;
+			margin: 0.5rem 0; /* Sin margen horizontal */
+			box-sizing: border-box;
+			width: 100%;
+		}
+
+		.node-container {
+			width: 100%;
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
 		}
 
 		.children-container {
-			margin-left: 1rem;
-			padding-left: 1rem;
+			margin-left: 0.25rem;
+			padding-left: 0.25rem;
+			border-left-width: 1px;
+		}
+		
+		.node-title {
+			font-size: 0.95rem;
+			word-break: break-word;
+			overflow-wrap: break-word;
+		}
+		
+		.node-description,
+		.node-titular,
+		.node-contact,
+		.node-agents {
+			font-size: 0.75rem;
+			word-break: break-word;
 		}
 	}
 </style>

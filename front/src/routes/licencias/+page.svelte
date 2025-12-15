@@ -649,7 +649,8 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="table-container">
+			<!-- Vista de tabla para desktop -->
+			<div class="table-container desktop-only">
 				<table class="licencias-table">
 					<thead>
 						<tr>
@@ -749,6 +750,67 @@
 					</tbody>
 				</table>
 			</div>
+
+			<!-- Vista de tarjetas para móvil -->
+			<div class="cards-container mobile-only">
+				{#each $licenciasFiltradas as licencia (licencia.id_licencia)}
+					<div class="licencia-card" class:pending={licencia.estado === "pendiente"}>
+						<div class="card-header">
+							<div class="card-agente">
+								<strong>{licencia.agente_nombre}</strong>
+								<small>{licencia.area_nombre}</small>
+								<span class="tipo-badge-mobile">{licencia.tipo_licencia_descripcion}</span>
+							</div>
+							<span
+								class="estado-badge"
+								style="background-color: {obtenerColorEstado(licencia.estado)}20; color: {obtenerColorEstado(licencia.estado)}; border: 1px solid {obtenerColorEstado(licencia.estado)}40"
+							>
+								{obtenerIconoEstado(licencia.estado)}
+								{licencia.estado.toUpperCase()}
+							</span>
+						</div>
+						
+						<div class="card-body">
+							<div class="card-row">
+								<span class="card-label">📅 Período:</span>
+								<span class="card-value">{formatearFecha(licencia.fecha_desde)} - {formatearFecha(licencia.fecha_hasta)}</span>
+							</div>
+							<div class="card-row">
+								<span class="card-label">⏱️ Duración:</span>
+								<span class="dias-count-big">{calcularDiasLicencia(licencia.fecha_desde, licencia.fecha_hasta)} días</span>
+							</div>
+							<div class="card-row">
+								<span class="card-label">📨 Solicitado:</span>
+								<span class="card-value">{formatearFecha(licencia.creado_en)}</span>
+							</div>
+						</div>
+
+						{#if licencia.estado === "pendiente" && puedeAprobar(licencia)}
+							<div class="card-actions">
+								<button
+									class="btn-card btn-success"
+									on:click={() => abrirModalAprobar(licencia)}
+								>
+									✅ Aprobar
+								</button>
+								<button
+									class="btn-card btn-danger"
+									on:click={() => abrirModalRechazar(licencia)}
+								>
+									❌ Rechazar
+								</button>
+							</div>
+						{/if}
+						
+						{#if licencia.observaciones}
+							<div class="card-observaciones">
+								<span class="card-label">💬 Observaciones:</span>
+								<p>{licencia.observaciones}</p>
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
 		{/if}
 	</div>
 </div>
@@ -803,12 +865,24 @@
 />
 
 <style>
-	.page-container {
-		max-width: 1600px;
-		margin: 0 auto;
-		min-height: 100vh;
-		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-	}
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+.page-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    min-height: 100vh;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
 
 	.page-header {
 		display: flex;
@@ -1308,6 +1382,190 @@
 		box-shadow: 0 4px 8px rgba(76, 81, 191, 0.4);
 	}
 
+	/* Clases para mostrar/ocultar según dispositivo */
+	.mobile-only {
+		display: none !important;
+	}
+
+	.desktop-only {
+		display: block;
+	}
+
+	/* Estilos de tarjetas para móvil */
+	.cards-container {
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.licencia-card {
+		background: white;
+		border-radius: 16px;
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+		overflow: hidden;
+		border: 1px solid #e5e7eb;
+	}
+
+	.licencia-card.pending {
+		border-left: 4px solid #ed8936;
+		background: linear-gradient(to right, #fffbeb, white);
+	}
+
+	.card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		padding: 12px 14px;
+		background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+		border-bottom: 1px solid #e5e7eb;
+		gap: 10px;
+	}
+
+	.card-header .estado-badge {
+		font-size: 13px;
+		padding: 8px 14px;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.card-agente {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.card-agente strong {
+		font-size: 15px;
+		color: #1e293b;
+		font-weight: 700;
+	}
+
+	.card-agente small {
+		font-size: 12px;
+		color: #64748b;
+	}
+
+	.tipo-badge-mobile {
+		display: inline-block;
+		margin-top: 6px;
+		padding: 4px 10px;
+		background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+		color: #3730a3;
+		font-size: 11px;
+		font-weight: 600;
+		border-radius: 12px;
+		border: 1px solid #a5b4fc;
+	}
+
+	.dias-count-big {
+		background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+		color: white;
+		padding: 4px 12px;
+		border-radius: 12px;
+		font-size: 14px;
+		font-weight: 700;
+		box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+	}
+
+	.card-body {
+		padding: 8px 14px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.card-row {
+		display: flex;
+		justify-content: flex-start;
+		align-items: baseline;
+		gap: 4px;
+		padding: 2px 0;
+		flex-wrap: wrap;
+	}
+
+	.card-label {
+		font-size: 13px;
+		color: #64748b;
+		font-weight: 500;
+		flex-shrink: 0;
+	}
+
+	.card-value {
+		font-size: 13px;
+		color: #1e293b;
+		font-weight: 600;
+	}
+
+	.tipo-row {
+		flex-wrap: wrap;
+	}
+
+	.card-tipo-value {
+		font-size: 12px;
+		color: #1e293b;
+		font-weight: 600;
+		word-break: break-word;
+	}
+
+	.card-actions {
+		display: flex;
+		gap: 10px;
+		padding: 12px 16px;
+		background: #f8fafc;
+		border-top: 1px solid #e5e7eb;
+	}
+
+	.btn-card {
+		flex: 1;
+		padding: 12px 16px;
+		border: none;
+		border-radius: 10px;
+		font-weight: 600;
+		font-size: 14px;
+		cursor: pointer;
+		transition: all 0.2s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+	}
+
+	.btn-card.btn-success {
+		background: linear-gradient(135deg, #10b981, #059669);
+		color: white;
+		box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+	}
+
+	.btn-card.btn-success:hover {
+		background: linear-gradient(135deg, #059669, #047857);
+		transform: translateY(-1px);
+	}
+
+	.btn-card.btn-danger {
+		background: linear-gradient(135deg, #ef4444, #dc2626);
+		color: white;
+		box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+	}
+
+	.btn-card.btn-danger:hover {
+		background: linear-gradient(135deg, #dc2626, #b91c1c);
+		transform: translateY(-1px);
+	}
+
+	.card-observaciones {
+		padding: 12px 16px;
+		background: #fef3c7;
+		border-top: 1px solid #fcd34d;
+	}
+
+	.card-observaciones p {
+		margin: 6px 0 0 0;
+		font-size: 13px;
+		color: #92400e;
+		line-height: 1.4;
+	}
+
 	/* Responsive */
 	@media (max-width: 1200px) {
 		.page-container {
@@ -1339,8 +1597,20 @@
 	}
 
 	@media (max-width: 768px) {
+		/* Mostrar tarjetas, ocultar tabla */
+		.desktop-only {
+			display: none !important;
+		}
+
+		.mobile-only {
+			display: flex !important;
+		}
+
 		.page-container {
-			padding: 0.5rem;
+			padding: 0.75rem;
+			 max-width: 100vw;  
+        overflow-x: hidden;
+        box-sizing: border-box; 
 		}
 
 		.page-header {
@@ -1348,21 +1618,27 @@
 			gap: 1rem;
 			align-items: stretch;
 			padding-bottom: 1rem;
+			margin-bottom: 1rem;
 		}
 
 		.header-title {
-			padding: 20px 15px;
+			padding: 18px 12px;
 			border-radius: 16px;
-			margin-right: 0;
+			margin: 0;
+			width: 100%;
+			box-sizing: border-box;
 		}
 
 		.header-title h1 {
-			font-size: 20px;
+			font-size: 18px;
+			word-break: break-word;
+			line-height: 1.3;
 		}
 
 		.header-actions {
 			flex-direction: column;
 			width: 100%;
+			gap: 8px;
 		}
 
 		.btn-primary,
@@ -1370,25 +1646,34 @@
 			width: 100%;
 			justify-content: center;
 			margin-left: 0;
-			padding: 12px 20px;
-			font-size: 15px;
+			padding: 14px 16px;
+			font-size: 14px;
+			border-radius: 12px;
 		}
 
 		.stats-container {
-			grid-template-columns: repeat(2, 1fr);
+			grid-template-columns: 1fr;
 			gap: 0.75rem;
+			padding: 0;
 		}
 
 		.stat-card {
-			padding: 15px;
+			padding: 16px 12px;
+			border-radius: 12px;
 		}
 
 		.stat-number {
-			font-size: 1.8rem;
+			font-size: 1.75rem;
+		}
+
+		.stat-label {
+			font-size: 14px;
 		}
 
 		.filtros-container {
 			padding: 1rem;
+			border-radius: 10px;
+			margin-bottom: 1rem;
 		}
 
 		.filtros-row {
@@ -1403,70 +1688,37 @@
 
 		.filtro-group label {
 			font-size: 14px;
+			display: block;
+			margin-bottom: 6px;
+		}
+
+		.filtro-group input,
+		.filtro-group select {
+			padding: 12px;
+			font-size: 14px;
+			border-radius: 10px;
 		}
 
 		.btn-clear {
 			width: 100%;
 			height: auto;
-			padding: 12px;
+			padding: 14px;
+			font-size: 14px;
+			border-radius: 10px;
+			margin-top: 0.5rem;
 		}
 
 		/* Tabla responsive */
 		.table-container {
-			border-radius: 8px;
-			max-height: 500px;
+			border-radius: 10px;
+			max-height: 450px;
+			margin: 0;
+			width: 100%;
+			box-sizing: border-box;
 		}
 
 		.licencias-table th {
-			padding: 12px 10px;
-			font-size: 11px;
-		}
-
-		.licencias-table td {
-			padding: 12px 10px;
-			font-size: 13px;
-		}
-
-		.agente-info strong {
-			font-size: 13px;
-		}
-
-		.agente-info small {
-			font-size: 11px;
-		}
-
-		.tipo-badge,
-		.estado-badge {
-			font-size: 10px;
-			padding: 6px 10px;
-		}
-
-		.acciones {
-			flex-direction: column;
-			gap: 6px;
-		}
-	}
-
-	@media (max-width: 480px) {
-		.header-title h1 {
-			font-size: 18px;
-		}
-
-		.stats-container {
-			grid-template-columns: 1fr;
-		}
-
-		.stat-number {
-			font-size: 1.5rem;
-		}
-
-		.stat-label {
-			font-size: 14px;
-		}
-
-		/* Tabla muy pequeña */
-		.licencias-table th {
-			padding: 10px 8px;
+			padding: 12px 8px;
 			font-size: 10px;
 		}
 
@@ -1475,8 +1727,155 @@
 			font-size: 12px;
 		}
 
+		.agente-info strong {
+			font-size: 12px;
+		}
+
+		.agente-info small {
+			font-size: 10px;
+		}
+
+		.tipo-badge {
+			font-size: 9px;
+			padding: 4px 8px;
+		}
+
+		.estado-badge {
+			font-size: 9px;
+			padding: 5px 8px;
+		}
+
+		.dias-count {
+			font-size: 10px;
+			padding: 3px 6px;
+		}
+
+		.acciones {
+			flex-direction: column;
+			gap: 4px;
+		}
+
+		.btn-small {
+			padding: 6px 10px;
+			font-size: 11px;
+		}
+
+		.periodo {
+			font-size: 11px;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.page-container {
+			padding: 8px;
+		}
+
+		.header-title {
+			padding: 15px 10px;
+			border-radius: 14px;
+		}
+
+		.header-title h1 {
+			font-size: 16px;
+		}
+
+		.btn-primary,
+		.btn-secondary {
+			padding: 12px 14px;
+			font-size: 13px;
+		}
+
+		.stats-container {
+			gap: 0.5rem;
+		}
+
+		.stat-card {
+			padding: 14px 10px;
+		}
+
+		.stat-number {
+			font-size: 1.5rem;
+		}
+
+		.stat-label {
+			font-size: 13px;
+		}
+
+		.filtros-container {
+			padding: 0.75rem;
+		}
+
+		.filtro-group label {
+			font-size: 13px;
+		}
+
+		.filtro-group input,
+		.filtro-group select {
+			padding: 10px;
+			font-size: 13px;
+		}
+
+		/* Tabla muy pequeña */
 		.table-container {
-			max-height: 400px;
+			max-height: 380px;
+			border-radius: 8px;
+		}
+
+		.licencias-table th {
+			padding: 8px 6px;
+			font-size: 9px;
+		}
+
+		.licencias-table td {
+			padding: 8px 6px;
+			font-size: 11px;
+		}
+
+		.agente-info strong {
+			font-size: 11px;
+		}
+
+		.agente-info small {
+			font-size: 9px;
+		}
+
+		.tipo-badge {
+			font-size: 8px;
+			padding: 3px 6px;
+		}
+
+		.estado-badge {
+			font-size: 8px;
+			padding: 4px 6px;
+		}
+
+		.dias-count {
+			font-size: 9px;
+		}
+
+		.periodo {
+			font-size: 10px;
+		}
+
+		.btn-small {
+			padding: 5px 8px;
+			font-size: 10px;
+		}
+
+		.empty-state {
+			padding: 2rem 1rem;
+		}
+
+		.empty-icon {
+			font-size: 2.5rem;
+		}
+
+		.empty-state h3 {
+			font-size: 16px;
+		}
+
+		.empty-state p {
+			font-size: 14px;
 		}
 	}
 </style>

@@ -487,6 +487,8 @@
 			border-color 0.2s,
 			box-shadow 0.2s;
 		min-width: 250px;
+		max-width: 100%;
+		box-sizing: border-box;
 	}
 
 	.input-busqueda:focus,
@@ -548,12 +550,24 @@
 		border-radius: 24px;
 		box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
 		background: white;
-		scrollbar-width: none;
-		-ms-overflow-style: none;
+		scrollbar-width: thin;
+		scrollbar-color: #c1c7cd #f1f3f4;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.table-container::-webkit-scrollbar {
-		display: none;
+		height: 8px;
+		width: 8px;
+	}
+
+	.table-container::-webkit-scrollbar-track {
+		background: #f1f3f4;
+		border-radius: 10px;
+	}
+
+	.table-container::-webkit-scrollbar-thumb {
+		background: #c1c7cd;
+		border-radius: 10px;
 	}
 
 	.table-container::-webkit-scrollbar {
@@ -755,26 +769,34 @@
 
 	.btn-success {
 		border: none;
-		border-radius: 4px;
+		border-radius: 6px;
 		background: #28a745;
 		color: white;
-		padding: 3px 5px 3px 5px;
+		padding: 8px 14px;
+		font-size: 0.95rem;
+		cursor: pointer;
+		transition: all 0.2s ease;
 	}
 
 	.btn-success:hover:not(:disabled) {
 		background: #1e7e34;
+		transform: translateY(-1px);
 	}
 
 	.btn-secondary {
 		border: none;
-		border-radius: 4px;
-		background: #4b4b4baf;
+		border-radius: 6px;
+		background: #6c757d;
 		color: white;
-		padding: 5px 5px 5px 5px;
+		padding: 8px 14px;
+		font-size: 0.95rem;
+		cursor: pointer;
+		transition: all 0.2s ease;
 	}
 
 	.btn-secondary:hover:not(:disabled) {
-		background: #3d3c3cc2;
+		background: #545b62;
+		transform: translateY(-1px);
 	}
 
 	.spinner-sm {
@@ -790,6 +812,11 @@
 
 	/* Responsive */
 	@media (max-width: 1200px) {
+		.page-container {
+			width: 100%;
+			max-width: 100%;
+		}
+
 		.roles-table {
 			font-size: 0.85rem;
 		}
@@ -802,19 +829,81 @@
 
 	@media (max-width: 768px) {
 		.page-container {
+			padding: 0.75rem;
+			width: 100%;
+			box-sizing: border-box;
+		}
+
+		.page-header {
+			padding: 20px 15px;
+			margin-bottom: 15px;
+			border-radius: 16px;
+		}
+
+		.filtros-container {
 			padding: 1rem;
+		}
+
+		.filtros-row {
+			grid-template-columns: 1fr;
+			gap: 0.75rem;
+		}
+
+		.input-busqueda,
+		.select-area {
+			min-width: unset;
+			width: 100%;
+		}
+
+		.filtro-actions {
+			width: 100%;
+		}
+
+		.btn-limpiar {
+			width: 100%;
 		}
 
 		.table-container {
 			overflow-x: auto;
+			border-radius: 12px;
 		}
 
 		.roles-table {
-			min-width: 900px;
+			min-width: 800px;
+		}
+
+		th, td {
+			padding: 10px 12px;
+			font-size: 0.85rem;
 		}
 
 		.area-badge {
-			max-width: 120px;
+			max-width: 100px;
+			font-size: 0.75rem;
+		}
+
+		.rol-editor {
+			flex-direction: column;
+			gap: 0.5rem;
+			align-items: stretch;
+			min-width: 180px;
+		}
+
+		.rol-select {
+			min-width: 100%;
+			padding: 0.6rem;
+			font-size: 0.9rem;
+		}
+
+		.rol-actions {
+			display: flex;
+			justify-content: center;
+			gap: 0.5rem;
+		}
+
+		.rol-actions button {
+			padding: 8px 16px;
+			font-size: 1rem;
 		}
 	}
 
@@ -822,8 +911,49 @@
 		.page-container {
 			padding: 0.5rem;
 		}
+
+		.page-header {
+			padding: 16px 12px;
+			border-radius: 14px;
+		}
+
+		.filtros-container {
+			padding: 0.75rem;
+		}
+
+		.filtro-group label {
+			font-size: 0.8rem;
+		}
+
+		.input-busqueda,
+		.select-area {
+			padding: 0.6rem;
+			font-size: 0.85rem;
+		}
+
+		.btn-limpiar {
+			padding: 8px 16px;
+			font-size: 0.85rem;
+			height: auto;
+		}
+
 		.roles-table {
-			min-width: 1000px;
+			min-width: 700px;
+		}
+
+		th, td {
+			padding: 8px 10px;
+			font-size: 0.8rem;
+		}
+
+		.legajo-badge {
+			font-size: 0.75rem;
+			padding: 0.2rem 0.4rem;
+		}
+
+		.btn-primary {
+			padding: 6px 10px;
+			font-size: 12px;
 		}
 	}
 </style>

@@ -232,39 +232,19 @@
 
 <div class="modules-space">
 	{#each modules as module}
-		<div class="module-card">
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<!-- svelte-ignore a11y-no-static-element-interactions -->
+		<div class="module-card" on:click={() => (window.location.href = module.path)}>
 			<div class="module-info">
 				<div class="text-content">
 					<h2>{module.name}</h2>
 					<p>{module.description}</p>
 				</div>
-				<button
-					on:click={() => (window.location.href = module.path)}
-					aria-label="Abrir módulo"
-				>
-					<div class="button-box">
-						<span class="button-elem">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								viewBox="0 0 24 24"
-							>
-								<path
-									d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-								></path>
-							</svg>
-						</span>
-						<span class="button-elem">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								viewBox="0 0 24 24"
-							>
-								<path
-									d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-								></path>
-							</svg>
-						</span>
-					</div>
-				</button>
+				<div class="arrow-icon">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+						<path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
+					</svg>
+				</div>
 			</div>
 		</div>
 	{/each}
@@ -337,11 +317,12 @@
 		position: relative;
 		z-index: 1;
 		padding-bottom: 12px;
-		display: block;
+		display: inline-block;
 		max-width: 100%;
 		word-wrap: break-word;
 		white-space: normal;
 		line-height: 1.4;
+		overflow: hidden;
 	}
 
 	@media (min-width: 480px) {
@@ -389,6 +370,7 @@
 		grid-template-rows: repeat(3, 1fr);
 		grid-template-columns: repeat(3, 1fr);
 		gap: 20px;
+		padding-bottom: 40px;
 	}
 
 	.module-card {
@@ -399,16 +381,19 @@
 		overflow: hidden;
 		justify-content: flex-start;
 		align-items: flex-start;
-		background-color: rgba(255, 255, 255, 0.08);
-		border: 2.3px solid hsl(var(--color) / 0.2);
-		border-radius: 10px;
+		background: linear-gradient(135deg, #fffcf8 0%, #fff8f0 100%);
+		border: 2px solid rgba(224, 152, 27, 0.35);
+		border-radius: 12px;
 		padding: 1.25rem 1.5rem;
 		text-decoration: none;
 		color: inherit;
 		transition: all 0.3s ease;
 		min-height: 100px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+		box-shadow: 0 2px 10px rgba(224, 152, 27, 0.1);
 		isolation: isolate;
+		max-width: 100%;
+		box-sizing: border-box;
+		cursor: pointer;
 	}
 
 	.module-card::before {
@@ -474,6 +459,36 @@
 		color: #6c757d;
 		line-height: 1.3;
 		margin: 0;
+	}
+
+	.arrow-icon {
+		width: 40px;
+		height: 40px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+		border: 2px solid #dee2e6;
+		flex-shrink: 0;
+		transition: all 0.3s ease;
+	}
+
+	.arrow-icon svg {
+		width: 20px;
+		height: 20px;
+		fill: #6c757d;
+		transition: all 0.3s ease;
+	}
+
+	.module-card:hover .arrow-icon {
+		background: linear-gradient(135deg, #e0981b 0%, #d4850f 100%);
+		border-color: #e0981b;
+		transform: translateX(3px);
+	}
+
+	.module-card:hover .arrow-icon svg {
+		fill: white;
 	}
 
 	.module-info button {
@@ -574,27 +589,84 @@
 
 	@media (max-width: 768px) {
 		.modules-space {
-			grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+			grid-template-columns: 1fr;
+			width: 95%;
+			gap: 12px;
+			padding-bottom: 20px;
 		}
+		
 		.module-card {
 			padding: 1rem;
-			min-height: 140px;
+			min-height: auto;
+			width: 100%;
+			box-sizing: border-box;
 		}
+		
+		.module-info {
+			flex-direction: row;
+			align-items: center;
+		}
+		
 		.module-info h2 {
-			font-size: 1.1rem;
+			font-size: 1rem;
 		}
 
 		.module-info p {
-			font-size: 0.85rem;
+			font-size: 0.8rem;
+		}
+		
+		.module-info button {
+			width: 44px;
+			height: 44px;
+		}
+		
+		.button-elem {
+			margin: 12px 12px 0 12px;
 		}
 
 		.dashboard-welcome {
-			margin: -2rem -1rem 2rem -1rem;
-			padding: 1.5rem;
+			margin: 10px 10px 20px 10px;
+			padding: 20px 15px;
+			border-radius: 20px;
 		}
 
 		.dashboard-welcome h1 {
-			font-size: 2rem;
+			font-size: 18px;
+			line-height: 1.3;
+		}
+	}
+	
+	@media (max-width: 480px) {
+		.dashboard-welcome {
+			margin: 8px;
+			padding: 16px 12px;
+			border-radius: 16px;
+		}
+		
+		.dashboard-welcome h1 {
+			font-size: 20px;
+		}
+		
+		.modules-space {
+			width: 100%;
+			padding: 0 12px 30px 12px;
+			gap: 10px;
+			box-sizing: border-box;
+			overflow-x: hidden;
+		}
+		
+		.module-card {
+			padding: 12px;
+			width: 100%;
+			box-sizing: border-box;
+		}
+		
+		.module-info h2 {
+			font-size: 0.95rem;
+		}
+		
+		.module-info p {
+			font-size: 0.75rem;
 		}
 	}
 </style>

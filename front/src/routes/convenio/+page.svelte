@@ -137,7 +137,7 @@
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
 		padding: 40px 20px;
-		margin: 20px auto;
+		margin: 20px 10px;
 		max-width: 1200px;
 		border-radius: 28px;
 		overflow: hidden;
@@ -145,6 +145,12 @@
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
 			0 20px 60px rgba(30, 64, 175, 0.4);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	}
+
+	@media (min-width: 768px) {
+		.hero {
+			margin: 20px auto;
+		}
 	}
 
 	.hero::before {
@@ -243,8 +249,14 @@
 	}
 
 	.container-pregunta {
-		max-width: 60%;
+		max-width: 95%;
 		width: 100%;
+	}
+
+	@media (min-width: 768px) {
+		.container-pregunta {
+			max-width: 60%;
+		}
 	}
 
 	.container-pregunta .card {
@@ -397,9 +409,15 @@
 	}
 
 	.container {
-		max-width: 60%;
+		max-width: 95%;
 		width: 100%;
 		margin: 40px auto 0;
+	}
+
+	@media (min-width: 768px) {
+		.container {
+			max-width: 60%;
+		}
 	}
 
 	.loader-container {
@@ -532,10 +550,10 @@
 	}
 
 	.container {
-		max-width: 60%;
 		width: 100%;
 		margin: 0 auto;
 		margin-top: 40px;
+		margin-bottom: 20px;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
@@ -603,13 +621,21 @@
 	.answer {
 		background: #f0f9ff;
 		border-radius: 10px;
-		padding: 16px;
-		line-height: 1.7;
+		padding: 20px;
+		line-height: 1.8;
 		color: #374151;
-		font-size: 15px;
+		font-size: 18px;
 		white-space: pre-wrap;
 		max-height: 600px;
 		overflow-y: auto;
+	}
+
+	@media (min-width: 768px) {
+		.answer {
+			padding: 16px;
+			font-size: 15px;
+			line-height: 1.7;
+		}
 	}
 
 	/* Estilos para el HTML renderizado en las respuestas */
@@ -699,6 +725,7 @@
 
 		.container {
 			padding: 12px;
+			width: 90%;
 		}
 
 		.card {

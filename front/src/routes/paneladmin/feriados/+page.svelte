@@ -256,5 +256,46 @@
     .calendar-wrapper {
         width: 100%;
         margin-top: 20px;
+        box-sizing: border-box;
+        overflow-x: hidden;
+    }
+
+    /* Responsive styles */
+    @media (max-width: 768px) {
+        .admin-page-container {
+            padding: 0.75rem;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .page-header {
+            padding: 20px 15px;
+            margin: 0 0 15px 0;
+            border-radius: 16px;
+        }
+
+        .page-header h1 {
+            font-size: 16px;
+        }
+
+        .calendar-wrapper {
+            margin-top: 10px;
+            padding: 0;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .admin-page-container {
+            padding: 0.5rem;
+        }
+
+        .page-header {
+            padding: 16px 12px;
+            border-radius: 14px;
+        }
+
+        .page-header h1 {
+            font-size: 14px;
+        }
     }
 </style>

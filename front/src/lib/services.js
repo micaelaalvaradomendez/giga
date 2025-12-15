@@ -361,3 +361,10 @@ export const auditoriaService = {
   getParametros: (token = null) => createApiClient(token).get('/auditoria/parametros/'),
   getRegistrosAuditoria: (token = null) => createApiClient(token).get('/auditoria/registros/'),
 };
+
+// SERVICIOS PARA NOTIFICACIONES
+export const notificacionesService = {
+  getNotificaciones: (token = null) => createApiClient(token).get('/notificaciones/'),
+  marcarLeida: (id, token = null) => createApiClient(token).post(`/notificaciones/${id}/marcar_leida/`),
+  marcarTodasLeidas: (token = null) => createApiClient(token).post('/notificaciones/marcar_todas_leidas/'),
+};
