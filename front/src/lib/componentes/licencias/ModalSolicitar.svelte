@@ -23,6 +23,17 @@
 	let enviando = false;
 	let diasLicencia = 0;
 
+	// Calcular fecha mínima (hoy) y máxima según el mes actual
+	const hoy = new Date();
+	const mesActual = hoy.getMonth(); // 0 = enero, 11 = diciembre
+	const anioActual = hoy.getFullYear();
+	
+	const fechaMinima = hoy.toISOString().split('T')[0];
+	
+	// Si estamos en octubre (9), noviembre (10) o diciembre (11), permitir hasta el año siguiente
+	const anioMaximo = (mesActual >= 9) ? anioActual + 1 : anioActual;
+	const fechaMaxima = `${anioMaximo}-12-31`;
+
 	$: if (!show) {
 		formLicencia = {
 			id_tipo_licencia: "",
@@ -139,6 +150,8 @@
 								type="date"
 								id="fecha_desde_crear"
 								bind:value={formLicencia.fecha_desde}
+								min={fechaMinima}
+								max={fechaMaxima}
 								required
 							/>
 						</div>
@@ -148,7 +161,8 @@
 								type="date"
 								id="fecha_hasta_crear"
 								bind:value={formLicencia.fecha_hasta}
-								min={formLicencia.fecha_desde}
+								min={formLicencia.fecha_desde || fechaMinima}
+								max={fechaMaxima}
 								required
 							/>
 						</div>

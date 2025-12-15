@@ -255,11 +255,6 @@
     }
   }
 
-  .SsSV:hover {
-    filter: drop-shadow(0 6px 16px rgba(255, 255, 255, 0.4)) brightness(1.2);
-    transform: scale(1.05);
-  }
-
   @media (max-width: 480px) {
     .organization-name {
       display: none;

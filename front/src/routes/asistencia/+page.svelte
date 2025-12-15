@@ -167,7 +167,7 @@
 		</div>
 	{:else}
 		<div class="estado-card">
-			<h2>�📊 Estado de Hoy</h2>
+			<h2>📊 Estado de Hoy</h2>
 			<div class="estado-grid">
 				<div
 					class="estado-item {estado.tiene_entrada
