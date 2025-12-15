@@ -100,26 +100,6 @@ def notificar_cambio_estado_incidencia(sender, instance, created, **kwargs):
                 link=f"/incidencias/{instance.pk}"
             )
 
-    if instance.es_correccion:
-         if instance.id_agente:
-            Notificacion.objects.create(
-                agente=instance.id_agente,
-                titulo="Corrección de Asistencia",
-                mensaje=f"Se ha registrado una corrección en tu asistencia del {instance.fecha}",
-                tipo="ASISTENCIA",
-                link="/asistencia"
-            )
-        
-         if instance.id_area and instance.id_area.jefe_area:
-             if instance.id_area.jefe_area != instance.id_agente:
-                 Notificacion.objects.create(
-                    agente=instance.id_area.jefe_area,
-                    titulo="Corrección de Asistencia en Área",
-                    mensaje=f"Se corrigió asistencia de {instance.id_agente} en tu área",
-                    tipo="ASISTENCIA",
-                    link="/paneladmin/asistencias"
-                )
-
 
 
 @receiver(pre_save, sender=Agente)
