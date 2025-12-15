@@ -40,7 +40,7 @@ class ReporteController {
 
 		// Datos del reporte generado
 		this.datosReporte = writable(null);
-		this.tipoReporteActual = writable('general'); // 'individual' | 'general'
+		this.tipoReporteActual = writable('general');
 		this.vistaPreviaVisible = writable(false);
 
 		// Opciones de exportacion
@@ -128,18 +128,12 @@ class ReporteController {
 		this.agentesFiltrados = derived(
 			[this.filtrosDisponibles, this.filtrosSeleccionados],
 			([$disponibles, $seleccionados]) => {
-				console.log('ðŸ” Filtrando agentes por Ã¡rea:', {
-					disponibles: $disponibles.agentes?.length || 0,
-					areaSeleccionada: $seleccionados.area_id
-				});
-
 				if (!$disponibles.agentes || !Array.isArray($disponibles.agentes)) {
 					return [];
 				}
 
 				// Si no hay Ã¡rea seleccionada, mostrar todos los agentes
 				if (!$seleccionados.area_id) {
-					console.log('ðŸ“„ Sin Ã¡rea seleccionada, mostrando todos los agentes:', $disponibles.agentes.length);
 					return $disponibles.agentes;
 				}
 
@@ -149,13 +143,9 @@ class ReporteController {
 					const agenteAreaId = agente.area_id || agente.id_area;
 					const coincide = agenteAreaId === $seleccionados.area_id;
 
-					if (!coincide && $disponibles.agentes.length < 5) { // Solo debug si hay pocos agentes
-						console.log(`âŒ Agente ${agente.nombre_completo} (Ã¡rea ${agenteAreaId}) no coincide con Ã¡rea seleccionada (${$seleccionados.area_id})`);
-					}
 					return coincide;
 				});
 
-				console.log('âœ… Agentes filtrados:', filtrados.length, filtrados.map(a => `${a.nombre_completo} (Ã¡rea: ${a.area_id})`));
 				return filtrados;
 			}
 		);
@@ -218,11 +208,10 @@ class ReporteController {
 	}
 
 	// ========================================
-	// MÃ‰TODOS DE INICIALIZACIÃ“N
+	// METODOS DE INICIALIZACION
 	// ========================================
 
 	async inicializar() {
-		console.log('ðŸš€ INICIANDO CONTROLADOR DE REPORTES...');
 		this.loadingFiltros.set(true);
 		this.error.set(null);
 
@@ -234,7 +223,6 @@ class ReporteController {
 			await this._configurarFiltrosPorDefecto();
 
 		} catch (error) {
-			console.error('Error al inicializar reportes:', error);
 			this.error.set('Error al cargar los filtros disponibles');
 		} finally {
 			this.loadingFiltros.set(false);
@@ -243,91 +231,98 @@ class ReporteController {
 
 	async _cargarFiltrosDisponibles() {
 		try {
-			// Usar servicios existentes para obtener datos con timeout y retry
-			console.log('ðŸ”„ Cargando filtros disponibles...');
-
-			const timeout = 10000; // 10 segundos timeout
+			const timeout = 10000;
 			const [areasResponse, agentesResponse] = await Promise.all([
 				Promise.race([
 					personasService.getAreas(),
-					new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Ã¡reas')), timeout))
+					new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Areas")), timeout))
 				]),
 				Promise.race([
 					personasService.getAgentes(),
-					new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout agentes')), timeout))
+					new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Agentes")), timeout))
 				])
 			]);
 
-			console.log('ðŸ¢ Respuesta de Ã¡reas:', areasResponse);
-			console.log('ðŸ‘¤ Respuesta de agentes:', agentesResponse);
-
-			// Procesar Ã¡reas - usar el mismo patrÃ³n que usuariosController
 			const areas = areasResponse?.data?.data?.results || areasResponse?.data?.results || [];
+			const agentes = agentesResponse?.data?.results || agentesResponse?.data?.data?.results || [];
 
-			// Procesar agentes - usar el mismo patrÃ³n que usuariosController
-			const agentes = agentesResponse?.data?.results || [];
+			const tipos_guardia = ["Operativas", "Administrativas", "Especiales"];
 
-			console.log('ðŸ“‹ Estructura primer agente:', agentes[0]);
-
-			// Asegurar que sean arrays vÃ¡lidos
-			if (!Array.isArray(areas)) {
-				console.warn('âš ï¸ Areas no es array, usando fallback:', areas);
-			}
-			if (!Array.isArray(agentes)) {
-				console.warn('âš ï¸ Agentes no es array, usando fallback:', agentes);
+			let usuario = null;
+			try {
+				const raw = localStorage.getItem("user");
+				usuario = raw ? JSON.parse(raw) : null;
+			} catch {
+				usuario = null;
 			}
 
-			// Obtener tipos de guardia (esto podrÃ­amos necesitar agregarlo al backend)
-			const tipos_guardia = ['Operativas', 'Administrativas', 'Especiales']; // Por ahora hardcoded
+			const rol = (usuario?.roles?.[0]?.nombre || "").toLowerCase();
+			const userAreaId = usuario?.area?.id ?? null;
 
-			// Procesar y mapear datos
-			const areasFormateadas = areas.map(area => ({
+			const areasFormateadas = areas.map((area) => ({
 				id: area.id_area || area.id,
 				nombre: area.nombre,
 				nombre_completo: area.nombre_completo || area.nombre,
-				nivel: area.nivel || 0
+				nivel: area.nivel || 0,
+				idAreaPadre: area.id_area_padre ?? null
 			}));
+			let areasFiltradas = areasFormateadas;
 
-			const agentesFormateados = agentes
-				.filter(agente => agente.activo !== false)
-				.map(agente => ({
+			const esAdmin = rol === "administrador" || rol === "admin";
+			const esDirector = rol === "director";
+			const esJefe = rol === "jefatura" || rol === "jefe";
+
+			if (!esAdmin && userAreaId) {
+				if (esJefe) {
+					areasFiltradas = areasFormateadas.filter((a) => a.id === userAreaId);
+				} else if (esDirector) {
+					areasFiltradas = areasFormateadas.filter((a) => a.idAreaPadre === userAreaId);
+				} else {
+
+					areasFiltradas = areasFormateadas.filter((a) => a.id === userAreaId);
+				}
+			}
+
+			const allowedAreaIds = new Set(areasFiltradas.map((a) => a.id));
+
+			let agentesFormateados = agentes
+				.filter((agente) => agente.activo !== false)
+				.map((agente) => ({
 					id: agente.id_agente || agente.id,
 					nombre_completo: `${agente.apellido}, ${agente.nombre}`,
 					legajo: agente.legajo,
-					area_id: agente.area_id || agente.id_area, // Probar ambos campos
-					id_area: agente.id_area, // Mantener campo original tambiÃ©n
-					area_nombre: agente.area_nombre || 'Sin Ã¡rea'
-				}))
-				.sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
+					area_id: agente.area_id || agente.id_area,
+					id_area: agente.id_area,
+					area_nombre: agente.area_nombre || "Sin área"
+				}));
 
-			console.log('âœ… Ãreas procesadas:', areasFormateadas.length, areasFormateadas);
-			console.log('âœ… Agentes procesados:', agentesFormateados.length);
-			console.log('ðŸ“‹ Estructura de agentes:', agentesFormateados.slice(0, 3)); // Solo primeros 3 para debug
+			if (!esAdmin) {
+				agentesFormateados = agentesFormateados.filter((a) => allowedAreaIds.has(a.area_id));
+			}
+
+			agentesFormateados.sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
 
 			this.filtrosDisponibles.set({
-				areas: areasFormateadas,
+				areas: areasFiltradas,
 				agentes: agentesFormateados,
-				tipos_guardia: tipos_guardia,
+				tipos_guardia,
 				permisos_usuario: {
-					puede_ver_todos: true, // Administrador puede ver todo
-					puede_ver_equipo: true,
-					solo_individual: false,
-					areas_accesibles: areasFormateadas.length,
+					puede_ver_todos: esAdmin,
+					puede_ver_equipo: esDirector || esAdmin,
+					solo_individual: esJefe,
+					areas_accesibles: areasFiltradas.length,
 					agentes_accesibles: agentesFormateados.length
 				}
 			});
 
+			if (esJefe && userAreaId) {
+				this.filtrosSeleccionados.update((f) => ({ ...f, area_id: userAreaId }));
+			}
 		} catch (error) {
-			console.error('Error cargando filtros disponibles:', error);
-
-			// Fallback con datos bÃ¡sicos para que la aplicaciÃ³n no se rompa
-			console.log('ðŸ“ Usando datos de fallback para filtros');
 			this.filtrosDisponibles.set({
-				areas: [
-					{ id: 1, nombre: 'Todas las Ã¡reas', nombre_completo: 'Todas las Ã¡reas', nivel: 0 }
-				],
+				areas: [{ id: 1, nombre: "Todas las Areas", nombre_completo: "Todas las Areas", nivel: 0 }],
 				agentes: [],
-				tipos_guardia: ['Operativas', 'Administrativas', 'Especiales'],
+				tipos_guardia: ["Operativas", "Administrativas", "Especiales"],
 				permisos_usuario: {
 					puede_ver_todos: true,
 					puede_ver_equipo: true,
@@ -336,9 +331,6 @@ class ReporteController {
 					agentes_accesibles: 0
 				}
 			});
-
-			// No hacer throw para que la app siga funcionando
-			console.log('âš ï¸ Filtros cargados en modo fallback');
 		}
 	}
 
@@ -771,7 +763,7 @@ class ReporteController {
 	_formatearFecha(fecha) {
 		return fecha.toISOString().split('T')[0];
 	}
-	
+
 
 	_generarNombreArchivo({ tipo, formato, fechaDesde, fechaHasta }) {
 		const extension = formato === 'pdf' ? 'pdf' : 'xlsx';

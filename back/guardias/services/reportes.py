@@ -108,25 +108,6 @@ def _normalizar_filtros(filtros: Dict) -> Dict:
     return out
 
 
-
-def _to_int_or_none(valor) -> Optional[int]:
-    try:
-        return int(valor) if valor not in [None, ""] else None
-    except (TypeError, ValueError):
-        return None
-
-
-def _parse_fecha(valor, requerido=False):
-    if not valor:
-        if requerido:
-            raise ReporteError("Las fechas son obligatorias (YYYY-MM-DD)")
-        return None
-    try:
-        return datetime.strptime(valor, DATE_FMT).date()
-    except ValueError:
-        raise ReporteError("Formato de fecha invalido. Use YYYY-MM-DD")
-
-
 def _validar_rango_fechas(filtros: Dict):
     fd = filtros.get("fecha_desde")
     fh = filtros.get("fecha_hasta")
