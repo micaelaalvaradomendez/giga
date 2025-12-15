@@ -1115,6 +1115,14 @@
 		}
 	}
 
+	/* Desktop: 2x2 grid */
+	@media (min-width: 1024px) {
+		.accesos-grid {
+			grid-template-columns: 1fr 1fr;
+			gap: 1.5rem;
+		}
+	}
+
 	.acceso-btn {
 		display: flex;
 		flex-direction: column;

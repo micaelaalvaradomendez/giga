@@ -265,4 +265,42 @@
       display: none;
     }
   }
+
+  /* Aggressive mobile optimization for navbar */
+  @media (max-width: 640px) {
+    .navbar {
+      padding: 4px 0;
+      position: relative;
+    }
+
+    .navbar-container {
+      padding: 0 0.5rem;
+      gap: 0.5rem;
+    }
+
+    .navbar-left {
+      padding: 4px 8px;
+      gap: 2px;
+    }
+
+    .logo-title {
+      font-size: 16px;
+      letter-spacing: 0.3px;
+    }
+
+    .logo-subtitle {
+      font-size: 8px;
+      letter-spacing: 0.2px;
+    }
+
+    .navbar-right {
+      padding: 4px 6px;
+      gap: 6px;
+    }
+
+    .SsSV {
+      height: 32px;
+    }
+  }
+
 </style>

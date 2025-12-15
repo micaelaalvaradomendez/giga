@@ -360,7 +360,7 @@
         background-image: linear-gradient(163deg, #8eb6e4 0%, #3d97ff 90%);
         border-radius: 20px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        padding: 0;
+        padding: 3px;
         box-shadow:
             0 8px 32px rgba(64, 124, 255, 0.671),
             inset 0 1px 2px rgba(255, 255, 255, 0.3);
@@ -399,10 +399,9 @@
             rgba(255, 255, 255, 0.95) 0%,
             rgba(255, 255, 255, 0.88) 100%
         );
-        border-radius: 18px;
+        border-radius: 17px;
         padding: 20px 25px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        margin: 3px;
         border: 1px solid rgba(64, 123, 255, 0.15);
         box-shadow:
             0 4px 16px rgba(64, 123, 255, 0.1),
@@ -413,7 +412,7 @@
 
     @media (min-width: 640px) {
         .container {
-            border-radius: 20px;
+            border-radius: 21px;
             padding: 25px 35px;
         }
     }
@@ -471,7 +470,7 @@
     @media (min-width: 640px) {
         .form .input {
             font-size: 18px;
-            width: 85%;
+            width: 100%;
             padding: 15px 20px;
         }
     }
@@ -644,7 +643,7 @@
 
     @media (min-width: 640px) {
         .input-wrapper .input {
-            width: 76%;
+            width: 100%;
         }
     }
 
@@ -693,7 +692,7 @@
 
     .form .recover-password {
         text-align: center;
-        margin-top: 10px;
+        margin-top: 20px;
         margin-bottom: 10px;
     }
 

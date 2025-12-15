@@ -242,17 +242,26 @@
         position: absolute;
         top: 120%;
         right: 0;
-        /* Align right edge with the button right edge usually,
-           but if we want it to the left of user avatar, maybe left align 
-           or center. Let's try right-aligned to bell for now, can adjust. */
         width: 350px;
         background: white;
         border-radius: 12px;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        z-index: 1000;
+        z-index: 9999;
         overflow: hidden;
         border: 1px solid rgba(0, 0, 0, 0.08);
         transform-origin: top right;
+    }
+
+    @media (max-width: 640px) {
+        .dropdown-menu {
+            position: fixed;
+            width: calc(100vw - 20px);
+            max-width: 350px;
+            left: 50%;
+            top: 230px;
+            transform: translateX(-50%);
+            transform-origin: top center;
+        }
     }
 
     .dropdown-header {

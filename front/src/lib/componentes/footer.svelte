@@ -15,7 +15,8 @@
     width: 100%;
     max-width: 100%;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
-    padding: 12px 0;
+    padding: 8px 0;
+    margin: 0;
     background: linear-gradient(
       135deg,
       rgba(64, 123, 255, 0.85) 0%,
@@ -30,6 +31,7 @@
       inset 0 -1px 2px rgba(0, 0, 0, 0.1);
     overflow-x: hidden;
     box-sizing: border-box;
+    position: static;
   }
 
   .footer-container {
@@ -158,21 +160,55 @@
   }
 
   @media (max-width: 640px) {
-    .footer-container {
-      flex-direction: column;
-      gap: 0.75rem;
-      text-align: center;
+    .footer {
+      padding: 4px 0;
+      position: relative;
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
     }
 
-    .footer-left,
-    .footer-right {
-      justify-content: center;
+    .footer-container {
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 0.25rem;
+      padding: 0 0.25rem;
       width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     .footer-left {
-      flex-direction: column;
-      gap: 8px;
+      gap: 4px;
+      padding: 2px 0;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .footer-right {
+      padding: 2px 0;
+      flex-shrink: 1;
+      min-width: 0;
+    }
+
+    .footer-logo {
+      height: 24px;
+    }
+
+    .department-name {
+      font-size: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
+    }
+
+    .footer-info {
+      font-size: 7px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
+
 </style>
