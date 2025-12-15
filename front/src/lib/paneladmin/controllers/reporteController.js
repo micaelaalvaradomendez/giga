@@ -40,7 +40,7 @@ class ReporteController {
 
 		// Datos del reporte generado
 		this.datosReporte = writable(null);
-		this.tipoReporteActual = writable('individual'); // 'individual' | 'general'
+		this.tipoReporteActual = writable('general'); // 'individual' | 'general'
 		this.vistaPreviaVisible = writable(false);
 
 		// Opciones de exportacion
