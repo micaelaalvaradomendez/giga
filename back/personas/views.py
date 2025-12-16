@@ -30,7 +30,8 @@ from .serializers import (
 # RBAC Permissions
 from common.permissions import (
     IsAuthenticatedGIGA, IsAdministrador, IsJefaturaOrAbove,
-    obtener_agente_sesion, obtener_rol_agente, obtener_areas_jerarquia
+    obtener_agente_sesion, obtener_rol_agente, obtener_areas_jerarquia,
+    obtener_area_y_subareas
 )
 
 
@@ -281,14 +282,35 @@ def create_agente(request):
 
 @csrf_exempt
 @api_view(['PATCH'])
-@permission_classes([IsAdministrador])  #CRÍTICO: Solo admin puede editar agentes
+@permission_classes([IsJefaturaOrAbove])  # Jefatura puede editar agentes de su área
 def update_agente(request, agente_id):
     """
     Actualizar un agente existente.
+    Jefatura solo puede editar agentes de su área.
     """
     try:
         with transaction.atomic():
             agente = get_object_or_404(Agente, id_agente=agente_id)
+            
+            # Validar permisos según rol
+            agente_logueado = get_authenticated_agente(request)
+            rol = obtener_rol_agente(agente_logueado)
+            
+            if rol == 'jefatura':
+                # Jefatura solo puede editar agentes de su propia área
+                if agente.id_area != agente_logueado.id_area:
+                    return Response({
+                        'success': False,
+                        'message': 'No tienes permiso para editar agentes de otras áreas'
+                    }, status=status.HTTP_403_FORBIDDEN)
+            elif rol == 'director':
+                # Director puede editar agentes de su área y sub-áreas
+                areas_permitidas = obtener_area_y_subareas(agente_logueado.id_area)
+                if agente.id_area not in areas_permitidas:
+                    return Response({
+                        'success': False,
+                        'message': 'No tienes permiso para editar agentes fuera de tu división'
+                    }, status=status.HTTP_403_FORBIDDEN)
             
             # Capturar datos previos para auditoría
             agente_previo = AgenteDetailSerializer(agente).data
