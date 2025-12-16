@@ -215,6 +215,7 @@
 	<title>Parámetros del Sistema - GIGA</title>
 </svelte:head>
 
+<div class="page-container">
 <div class="page-header">
 	<div class="page-header-title">
 		<h1>Parámetros del Sistema</h1>
@@ -569,6 +570,7 @@
 		</div>
 	</div>
 {/if}
+</div>
 
 <!-- Componentes Modales -->
 <ModalArea
@@ -647,12 +649,19 @@
 />
 
 <style>
+	.page-container {
+		 width: 100%;
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+	}
+
 	.page-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 1rem;
-		padding-bottom: 20px;
+		margin-bottom: 0.5rem;
+		padding-bottom: 5px;
 	}
 
 	.page-header-title {
@@ -926,8 +935,8 @@
 	.content-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 30px;
-		margin: 30px 0;
+		gap: 20px;
+		margin: 15px 0;
 	}
 
 	@media (max-width: 1024px) {
@@ -1071,12 +1080,8 @@
 		overflow-y: auto;
 		position: relative;
 		border-radius: 0 0 24px 24px;
-		scrollbar-width: none;
-		-ms-overflow-style: none;
-	}
-
-	.table-container::-webkit-scrollbar {
-		display: none;
+		scrollbar-width: thin;
+		scrollbar-color: #c1c7cd #f1f3f4;
 	}
 
 	.table-container::-webkit-scrollbar {
@@ -1123,7 +1128,18 @@
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
 		background: #f8f9fa;
+        white-space: nowrap;
 	}
+
+    /* Column distribution */
+    th:first-child, td:first-child {
+        min-width: 200px; /* Name column */
+    }
+
+    th:last-child, td:last-child {
+        width: 1%; /* Actions column - shrink to fit */
+        white-space: nowrap;
+    }
 
 	td {
 		padding: 15px 20px;
@@ -1246,52 +1262,135 @@
 		}
 	}
 
+	/* Ajustes específicos para móviles */
 	@media (max-width: 768px) {
+		.page-container {
+			padding-left: 45px !important; 
+            padding-right: 45px !important;
+            padding-bottom: 40px !important;
+            padding-top: 15px !important;
+            margin: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            display: block;
+		}
+
 		.page-header {
 			flex-direction: column;
-			gap: 20px;
+			gap: 10px;
 			text-align: center;
+			align-items: stretch;
+            margin-bottom: 0.5rem;
 		}
 
 		.header-actions {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			width: 100%;
+		}
+
+		.btn-primary,
+		.btn-secondary,
+		.btn-horario-global {
+			width: 100%;
+			margin: 0;
 			justify-content: center;
+            padding: 12px 20px;
+		}
+
+
+		.panel-stats {
+			padding: 10px 15px;
+            gap: 10px; 
+		}
+
+		.stat-card {
+			padding: 15px; 
+            margin-bottom: 0;
+		}
+
+		.panel-header {
+			padding: 15px;
+		}
+        
+        .panel-header h2 {
+			font-size: 1.1rem;
 		}
 
 		.filtros-container {
 			flex-direction: column;
 			align-items: stretch;
+			padding: 10px 15px;
+            gap: 5px;
 		}
 
 		.filtro-group {
+			width: 100%;
 			min-width: auto;
-			flex: 1 1 auto;
+			flex: none;
 		}
 
 		.filtro-actions {
 			width: 100%;
-			justify-content: stretch;
+			margin-top: 0;
 		}
 
 		.btn-limpiar {
-			flex: 1;
+			width: 100%;
+            height: 38px;
+		}
+        
+        .panel-areas, .panel-agrupaciones {
+            margin-bottom: 15px; 
+        }
+
+		th,
+		td {
+			padding: 5px 4px;
+			font-size: 0.8rem;
+            white-space: nowrap;
+            line-height: 1.2;
+		}
+
+		.badge {
+			padding: 4px 6px;
+			font-size: 0.7rem;
+		}
+
+		.panel-header h2 {
+			font-size: 1.1rem;
 		}
 
 		.actions {
-			flex-direction: column;
+			flex-wrap: nowrap; /* Keep actions in one line if possible */
+			justify-content: flex-start;
+            gap: 8px;
 		}
 
-		.table-container {
-			max-height: 400px;
-		}
+        .btn-icon,
+        .btn-icon-danger {
+            padding: 8px 10px; /* Restored larger padding for touch targets */
+            font-size: 16px; /* Larger icon */
+        }
 	}
 
 	@media (max-width: 480px) {
-		.header-actions {
-			flex-direction: column;
-		}
+        .page-container {
+            padding-left: 15px !important;
+            padding-right: 15px !important;
+        }
 
-		.filtros-container {
+		.page-header-title {
 			padding: 15px;
 		}
+
+		.page-header-title h1 {
+			font-size: 1.1rem;
+		}
+        
+        .panel-stats {
+            grid-template-columns: 1fr;
+        }
 	}
 </style>
