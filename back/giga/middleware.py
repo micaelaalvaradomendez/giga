@@ -3,6 +3,9 @@ Middleware personalizado para manejar cookies con atributo Partitioned
 Necesario para compatibilidad con modo incógnito de Chrome
 """
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PartitionedSessionCookieMiddleware:
     """
@@ -27,6 +30,8 @@ class PartitionedSessionCookieMiddleware:
         # 2. La response tiene cookies
         # 3. Existe la cookie de sesión
         if not settings.DEBUG and hasattr(response, 'cookies') and settings.SESSION_COOKIE_NAME in response.cookies:
+            logger.info(f"🍪 Processing session cookie for path: {request.path}")
+            
             # Obtener todos los headers Set-Cookie
             set_cookie_headers = response._headers.get('set-cookie')
             
@@ -40,7 +45,9 @@ class PartitionedSessionCookieMiddleware:
                     for cookie in header_value:
                         if settings.SESSION_COOKIE_NAME in cookie and 'Partitioned' not in cookie:
                             # Agregar Partitioned al final de la cookie de sesión
-                            updated_cookies.append(cookie.rstrip(';') + '; Partitioned')
+                            updated_cookie = cookie.rstrip(';') + '; Partitioned'
+                            updated_cookies.append(updated_cookie)
+                            logger.info(f"✅ Added Partitioned to session cookie")
                         else:
                             updated_cookies.append(cookie)
                     response._headers['set-cookie'] = (header_key, updated_cookies)
@@ -49,9 +56,8 @@ class PartitionedSessionCookieMiddleware:
                 elif isinstance(header_value, str):
                     if settings.SESSION_COOKIE_NAME in header_value and 'Partitioned' not in header_value:
                         # Agregar Partitioned al final
-                        response._headers['set-cookie'] = (
-                            header_key,
-                            header_value.rstrip(';') + '; Partitioned'
-                        )
+                        updated_value = header_value.rstrip(';') + '; Partitioned'
+                        response._headers['set-cookie'] = (header_key, updated_value)
+                        logger.info(f"✅ Added Partitioned to session cookie")
         
         return response
