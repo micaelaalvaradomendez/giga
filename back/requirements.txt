@@ -12,3 +12,4 @@ django-ratelimit==4.1.0
 apscheduler>=3.8.0
 python-dateutil>=2.8.0
 resend>=0.8.0
+pytz>=2024.0
