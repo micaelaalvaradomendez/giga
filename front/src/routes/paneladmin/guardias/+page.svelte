@@ -162,6 +162,11 @@
     margin: 0 auto;
     padding: 2rem 1.5rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    box-sizing: border-box;
+  }
+
+  .guardias-wrap * {
+    box-sizing: border-box;
   }
 
   .head {
@@ -263,6 +268,10 @@
     grid-template-columns: 400px 1fr;
     gap: 2rem;
     align-items: start;
+  }
+
+  .left, .right {
+      min-width: 0;
   }
 
   .left {
@@ -441,6 +450,64 @@
   @media (max-width: 900px) {
     .estadisticas {
       grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .grid-general {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .guardias-wrap {
+      padding: 1rem 1rem 1rem 1.5rem;
+    }
+
+    .head {
+      padding: 20px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    .head h1 {
+        font-size: 1.5rem;
+    }
+
+    .titulo-wrapper h2 {
+        font-size: 1.5rem;
+        padding-left: 2.5rem; 
+    }
+
+    .card {
+        padding: 1rem;
+        gap: 0.5rem;
+        grid-template-columns: 50px 1fr 20px;
+    }
+
+    .icon {
+        font-size: 1.5rem;
+    }
+
+    .chev {
+        font-size: 1.5rem;
+    }
+    
+    .loading-container {
+        padding: 2rem 1rem;
+    }
+    
+    .grid-general {
+        gap: 1.5rem;
+    }
+
+    .titulo-wrapper {
+        margin-bottom: 1rem;
+    }
+
+    .calendario-section {
+        padding: 1rem;
+        overflow-x: auto; 
     }
   }
 </style>

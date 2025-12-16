@@ -771,7 +771,7 @@
 					{/if}
 				</div>
 			{:else}
-				<div class="table-container">
+				<div class="table-container desktop-only">
 					<table class="table">
 						<thead>
 							<tr>
@@ -869,6 +869,79 @@
 						</tbody>
 					</table>
 				</div>
+
+            <!-- Vista de tarjetas para móvil -->
+			<div class="cards-container mobile-only">
+				{#each $licenciasFiltradas as licencia (licencia.id_licencia)}
+					<div class="licencia-card" class:pending={licencia.estado === "pendiente"}>
+						<div class="card-header">
+							<div class="card-agente">
+								<strong>{licencia.agente_nombre || "SIN AGENTE"}</strong>
+								<small>{licencia.area_nombre || "N/A"}</small>
+								<span class="tipo-badge-mobile">{licencia.tipo_licencia_descripcion || "SIN TIPO"}</span>
+							</div>
+							<span
+								class="estado-badge"
+								style="background-color: {obtenerColorEstado(licencia.estado)}20; color: {obtenerColorEstado(licencia.estado)}; border: 1px solid {obtenerColorEstado(licencia.estado)}40"
+							>
+								{obtenerIconoEstado(licencia.estado)}
+								{licencia.estado.toUpperCase()}
+							</span>
+						</div>
+						
+						<div class="card-body">
+							<div class="card-row">
+								<span class="card-label">📅 Período:</span>
+								<span class="card-value">{formatearFecha(licencia.fecha_desde)} - {formatearFecha(licencia.fecha_hasta)}</span>
+							</div>
+							<div class="card-row">
+								<span class="card-label">⏱️ Duración:</span>
+								<span class="dias-count-big">{calcularDiasLicencia(licencia.fecha_desde, licencia.fecha_hasta)} días</span>
+							</div>
+							<div class="card-row">
+								<span class="card-label">📨 Solicitado:</span>
+								<span class="card-value">{formatearFecha(licencia.creado_en)}</span>
+							</div>
+                            {#if licencia.observaciones}
+                                <div class="card-row">
+                                    <span class="card-label">💬 Obs:</span>
+                                    <span class="card-value">{licencia.observaciones}</span>
+                                </div>
+                            {/if}
+						</div>
+
+                        <div class="card-actions-wrapper">
+                            {#if puedeAprobarLicenciaEspecifica(licencia)}
+                                <div class="card-actions">
+                                    <button
+                                        class="btn-card btn-success"
+                                        on:click={() => abrirModalAprobar(licencia)}
+                                    >
+                                        ✅ Aprobar
+                                    </button>
+                                    <button
+                                        class="btn-card btn-danger"
+                                        on:click={() => abrirModalRechazar(licencia)}
+                                    >
+                                        ❌ Rechazar
+                                    </button>
+                                </div>
+                            {/if}
+
+                            {#if isAdmin}
+                                <div class="card-actions" style="margin-top: 8px;">
+                                     <button
+                                        class="btn-card btn-warning"
+                                        on:click={() => abrirModalEliminarLicencia(licencia)}
+                                    >
+                                        🗑️ Eliminar Licencia
+                                    </button>
+                                </div>
+                            {/if}
+                        </div>
+					</div>
+				{/each}
+			</div>
 			{/if}
 		{:else}
 			{#if errorTipos}
@@ -921,7 +994,7 @@
 					</p>
 				</div>
 			{:else}
-				<div class="table-container">
+				<div class="table-container desktop-only">
 					<table class="roles-table">
 						<thead>
 							<tr>
@@ -959,6 +1032,42 @@
 						</tbody>
 					</table>
 				</div>
+
+                <!-- Cards Tipos View Mobile -->
+                <div class="cards-container mobile-only">
+                    {#each tiposFiltrados as tipo (tipo.id_tipo_licencia || tipo.id)}
+                        <div class="licencia-card">
+                            <div class="card-header">
+                                <span class="card-value" style="font-size: 16px;">
+                                    📝 <strong>{tipo.codigo || tipo.nombre || "—"}</strong>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-row" style="flex-direction: column; gap: 4px;">
+                                    <span class="card-label">Descripción:</span>
+                                    <span class="card-value" style="font-weight: normal;">{tipo.descripcion || "—"}</span>
+                                </div>
+                            </div>
+                            <div class="card-actions-wrapper">
+                                <div class="card-actions">
+                                    <button
+                                        class="btn-card btn-success"
+                                        style="background: linear-gradient(135deg, #4c51bf, #5b21b6);"
+                                        on:click={() => abrirEdicion(tipo)}
+                                    >
+                                        ✏️ Editar
+                                    </button>
+                                    <button
+                                        class="btn-card btn-danger"
+                                        on:click={() => eliminar(tipo)}
+                                    >
+                                        🗑️ Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
 			{/if}
 		{/if}
 	</div>
@@ -1044,11 +1153,25 @@
 />
 
 <style>
+	* {
+		box-sizing: border-box;
+	}
+
+	html,
+	body {
+		overflow-x: hidden;
+		max-width: 100vw;
+	}
+
 	.page-container {
-		max-width: 1600px;
 		margin: 0 auto;
+		padding: 1.5rem;
 		min-height: 100vh;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		box-sizing: border-box;
+		overflow-x: hidden;
+		max-width: 1600px;
+		width: 100%;
 	}
 
 	.page-header {
@@ -1921,6 +2044,21 @@
 		}
 	}
 
+	.header-title {
+		position: relative;
+		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+		color: white;
+		padding: 30px 40px;
+		margin: 0;
+		max-width: 1000px;
+		border-radius: 28px;
+		overflow: hidden;
+		text-align: center;
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+			0 20px 60px rgba(30, 64, 175, 0.4);
+	}
+
 	.header-title::before {
 		content: "";
 		position: absolute;
@@ -2383,5 +2521,237 @@
 	.empty-state h3 {
 		color: #2d3748;
 		margin-bottom: 0.5rem;
+	}
+	/* Responsive Styles */
+    @media (max-width: 1024px) {
+        .desktop-only {
+            display: none !important;
+        }
+        
+        .mobile-only {
+            display: flex !important;
+        }
+
+        .filtros-container {
+			padding: 1rem;
+			border-radius: 10px;
+			margin-bottom: 1rem;
+		}
+
+		.filtros-row {
+			flex-direction: column;
+			gap: 1rem;
+		}
+
+		.filtro-group, .filtro-actions {
+            flex: 1 1 100%;
+			min-width: 100%;
+            width: 100%;
+		}
+        
+        .filtro-group label {
+			font-size: 14px;
+			display: block;
+			margin-bottom: 6px;
+		}
+
+		.filtro-group input,
+		.filtro-group select,
+        .input-busqueda { /* Added input-busqueda here */
+			padding: 12px;
+			font-size: 14px;
+			border-radius: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 45px;
+		}
+
+        .btn-clear {
+			width: 100%;
+			height: auto;
+			padding: 14px;
+			font-size: 14px;
+			border-radius: 10px;
+			margin-top: 0.5rem;
+		}
+        
+        .page-header {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .header-actions {
+            flex-direction: column;
+        }
+        
+         .btn-secondary, .btn-nuevoTipo {
+            margin-left: 0;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .toggle-buttons {
+            flex-direction: column;
+        }
+        
+        .btn-toggle {
+            width: 100%;
+        }
+    }
+
+    @media (min-width: 1025px) {
+        .mobile-only {
+            display: none !important;
+        }
+    }
+
+    /* Mobile Cards Styles */
+    .cards-container {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.licencia-card {
+		background: white;
+		border-radius: 16px;
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+		overflow: hidden;
+		border: 1px solid #e5e7eb;
+	}
+
+	.licencia-card.pending {
+		border-left: 4px solid #ed8936;
+		background: linear-gradient(to right, #fffbeb, white);
+	}
+
+	.card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		padding: 12px 14px;
+		background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+		border-bottom: 1px solid #e5e7eb;
+		gap: 10px;
+	}
+
+	.card-header .estado-badge {
+		font-size: 13px;
+		padding: 8px 14px;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.card-agente {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.card-agente strong {
+		font-size: 15px;
+		color: #1e293b;
+		font-weight: 700;
+	}
+
+	.card-agente small {
+		font-size: 12px;
+		color: #64748b;
+	}
+
+	.tipo-badge-mobile {
+		display: inline-block;
+		margin-top: 6px;
+		padding: 4px 10px;
+		background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+		color: #3730a3;
+		font-size: 11px;
+		font-weight: 600;
+		border-radius: 12px;
+		border: 1px solid #a5b4fc;
+	}
+
+	.dias-count-big {
+		background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+		color: white;
+		padding: 4px 12px;
+		border-radius: 12px;
+		font-size: 14px;
+		font-weight: 700;
+		box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+	}
+
+	.card-body {
+		padding: 12px 14px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.card-row {
+		display: flex;
+		justify-content: flex-start;
+		align-items: baseline;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.card-label {
+		font-size: 13px;
+		color: #64748b;
+		font-weight: 600;
+		flex-shrink: 0;
+	}
+
+	.card-value {
+		font-size: 13px;
+		color: #1e293b;
+		font-weight: 600;
+	}
+
+    .card-actions-wrapper {
+        padding: 12px 16px;
+		background: #f8fafc;
+		border-top: 1px solid #e5e7eb;
+    }
+
+	.card-actions {
+		display: flex;
+		gap: 10px;
+	}
+
+	.btn-card {
+		flex: 1;
+		padding: 12px 16px;
+		border: none;
+		border-radius: 10px;
+		font-weight: 600;
+		font-size: 14px;
+		cursor: pointer;
+		transition: all 0.2s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+	}
+    
+    .btn-card.btn-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+		color: white;
+        box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+    }
+
+	.btn-card.btn-success {
+		background: linear-gradient(135deg, #10b981, #059669);
+		color: white;
+		box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+	}
+
+	.btn-card.btn-danger {
+		background: linear-gradient(135deg, #ef4444, #dc2626);
+		color: white;
+		box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
 	}
 </style>
