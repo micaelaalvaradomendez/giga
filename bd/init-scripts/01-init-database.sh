@@ -58,6 +58,9 @@ run_sql "$SCRIPT_DIR/fix-plus.sql" \
 
 run_sql "$SCRIPT_DIR/sesion-activa.sql" \
     "Tabla para sesiones concurrentes"
+    
+run_sql "$SCRIPT_DIR/08-create-notificaciones.sql" \
+    "Tabla de notificaciones"
 
 # ========================================================================
 # Finalización

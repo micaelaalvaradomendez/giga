@@ -754,9 +754,9 @@ class ReporteController {
 	_getFechaDefecto(tipo) {
 		// Para demo, usar octubre 2025 donde hay datos completos de guardias (75% presentismo)
 		if (tipo === 'inicio') {
-			return this._formatearFecha(new Date(2025, 9, 1)); // 1 oct 2025
+			return this._formatearFecha(new Date()); 
 		} else {
-			return this._formatearFecha(new Date(2025, 9, 31)); // 31 oct 2025
+			return this._formatearFecha(new Date()); 
 		}
 	}
 

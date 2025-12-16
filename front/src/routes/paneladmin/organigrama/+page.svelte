@@ -67,9 +67,6 @@
         }
       };
 
-      const handleFocus = () => {
-        loadOrganigrama();
-      };
 
       document.addEventListener("visibilitychange", handleVisibilityChange);
       window.addEventListener("focus", handleFocus);
