@@ -58,6 +58,14 @@
 	];
 
 	// Funciones para manejar cambios en filtros
+	function handleFechaDesdeChange(e) {
+		// Si la nueva fecha desde es posterior a la fecha hasta, limpiar fecha hasta
+		if ($filtros.fechaDesde && $filtros.fechaHasta && $filtros.fechaDesde > $filtros.fechaHasta) {
+			auditoriaController.actualizarFiltros({ fechaHasta: '' });
+		}
+		actualizarFiltro('fechaDesde', e.target.value);
+	}
+
 	function actualizarFiltro(campo, valor) {
 		auditoriaController.actualizarFiltros({ [campo]: valor });
 	}
@@ -184,7 +192,7 @@
 				type="date" 
 				id="fechaDesde"
 				bind:value={$filtros.fechaDesde}
-				on:change={(e) => actualizarFiltro('fechaDesde', e.target.value)}
+				on:change={handleFechaDesdeChange}
 			/>
 		</div>
 
@@ -194,6 +202,7 @@
 				type="date" 
 				id="fechaHasta"
 				bind:value={$filtros.fechaHasta}
+				min={$filtros.fechaDesde}
 				on:change={(e) => actualizarFiltro('fechaHasta', e.target.value)}
 			/>
 		</div>

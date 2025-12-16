@@ -88,6 +88,18 @@ export class AuthService {
                 credentials: 'include'
             });
 
+            // Si recibimos 401, es normal - no hay sesión activa (esperado en modo incógnito)
+            if (response.status === 401) {
+                if (isBrowser) {
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('isAuthenticated');
+                    localStorage.removeItem('requires_password_change');
+                }
+                isAuthenticated.set(false);
+                user.set(null);
+                return { authenticated: false };
+            }
+
             const data = await response.json();
 
             if (data.authenticated) {
@@ -110,6 +122,7 @@ export class AuthService {
                 return { authenticated: false };
             }
         } catch (error) {
+            // Solo loguear errores de red reales, no 401
             console.error('Error verificando sesión:', error);
             if (isBrowser) {
                 localStorage.removeItem('user');

@@ -452,10 +452,14 @@ def logout_view(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET', 'OPTIONS'])
-@permission_classes([IsAuthenticatedGIGA])
+@permission_classes([AllowAny])  # Cambio: AllowAny para permitir verificar sesión sin cookie
 def check_session(request):
     """
     Verificar si el usuario tiene una sesión activa
+    
+    IMPORTANTE: Usa AllowAny porque este endpoint debe poder responder
+    incluso cuando no hay cookie de sesión (modo incógnito, primera carga, etc.)
+    Si usáramos IsAuthenticatedGIGA, devolvería 401 antes de llegar aquí.
     """
     if request.method == 'OPTIONS':
         return Response(status=status.HTTP_200_OK)

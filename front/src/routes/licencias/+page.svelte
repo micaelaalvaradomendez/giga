@@ -475,6 +475,14 @@
 	}
 
 	// Funciones para filtros
+	function handleFechaDesdeChange() {
+		// Si la nueva fecha desde es posterior a la fecha hasta, limpiar fecha hasta
+		if ($filtros.fecha_desde && $filtros.fecha_hasta && $filtros.fecha_desde > $filtros.fecha_hasta) {
+			actualizarFiltros({ fecha_hasta: '' });
+		}
+		aplicarFiltros();
+	}
+
 	function aplicarFiltros() {
 		// Los filtros se actualizan automáticamente por el binding con $filtros
 		// Solo necesitamos recargar las licencias con los filtros actuales
@@ -548,7 +556,7 @@
 					type="date"
 					id="fecha_desde"
 					bind:value={$filtros.fecha_desde}
-					on:change={aplicarFiltros}
+					on:change={handleFechaDesdeChange}
 				/>
 			</div>
 			<div class="filtro-group">

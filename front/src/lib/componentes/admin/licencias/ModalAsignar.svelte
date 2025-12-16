@@ -76,6 +76,13 @@
 		cargarUsuarioActual();
 	}
 
+	function handleFechaDesdeChange() {
+		// Si la nueva fecha desde es posterior a la fecha hasta, limpiar fecha hasta
+		if (formLicencia.fecha_desde && formLicencia.fecha_hasta && formLicencia.fecha_desde > formLicencia.fecha_hasta) {
+			formLicencia.fecha_hasta = '';
+		}
+	}
+
 	$: if (!show) {
 		formLicencia = {
 			id_agente: "",
@@ -346,6 +353,7 @@
 							type="date"
 							id="fecha_desde_asignar"
 							bind:value={formLicencia.fecha_desde}
+							on:change={handleFechaDesdeChange}
 							required
 						/>
 					</div>
@@ -356,6 +364,7 @@
 							type="date"
 							id="fecha_hasta_asignar"
 							bind:value={formLicencia.fecha_hasta}
+							min={formLicencia.fecha_desde}
 							required
 						/>
 					</div>

@@ -361,7 +361,8 @@
                                 {#each day.guardias.slice(0, 1) as guardia}
                                     <div class="guardia-item">
                                         <div class="guardia-tipo">
-                                            🚨 {guardia.tipo || "Guardia"}
+                                            <span class="g-icon">🚨</span>
+                                            <span class="g-text">{guardia.tipo || "Guardia"}</span>
                                         </div>
                                         <div class="guardia-horario">
                                             {guardia.hora_inicio?.slice(0, 5)} -
@@ -603,14 +604,27 @@
 
     .calendar-grid-wrapper {
         overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
         width: 100%;
+        scrollbar-width: thin;
+        scrollbar-color: #c1c7cd #f1f3f4;
     }
 
     .calendar-grid-wrapper::-webkit-scrollbar {
-        display: none;
+        height: 8px; /* Horizontal scrollbar height */
+        display: block;
     }
+
+    .calendar-grid-wrapper::-webkit-scrollbar-track {
+        background: #f1f3f4;
+        border-radius: 4px;
+    }
+
+    .calendar-grid-wrapper::-webkit-scrollbar-thumb {
+        background-color: #c1c7cd;
+        border-radius: 4px;
+        border: 2px solid #f1f3f4;
+    }
+
 
     .calendar-grid {
         display: grid;
@@ -618,7 +632,7 @@
         gap: 0;
         background: transparent;
         padding: 0;
-        min-width: 280px;
+        min-width: 280px; /* Revert to small min-width to fit screen */
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
@@ -823,8 +837,9 @@
         font-weight: 500;
         color: #d63384 !important;
         margin-bottom: 1px;
-        word-wrap: break-word;
-        hyphens: auto;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
         font-size: 0.5rem;
     }
 
@@ -921,18 +936,50 @@
         font-weight: 500;
         color: #2563eb;
         font-size: 0.7rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Mobile simplification */
+    @media (max-width: 768px) {
+        .g-text { display: none; }
+        .guardia-horario { display: none; }
+        .guardia-agente { display: none; }
+        .guardia-duracion { display: none !important; }
+        .guardia-cantidad { display: none; }
+        
+        .guardia-item {
+            justify-content: center;
+            text-align: center;
+            padding: 2px 0;
+        }
+        
+        .guardia-tipo {
+            justify-content: center;
+            font-size: 1rem; /* Make icon larger */
+        }
     }
 
     .guardia-horario {
         font-size: 0.65rem;
         color: #475569;
         font-style: italic;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .guardia-agente {
         font-size: 0.65rem;
         color: #374151;
         font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .guardia-cantidad {
