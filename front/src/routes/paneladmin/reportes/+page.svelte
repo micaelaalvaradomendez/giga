@@ -24,9 +24,7 @@
 	
 	// Inicialización
 	onMount(async () => {
-		console.log('🔄 ONMOUNT EJECUTÁNDOSE...');
 		await reporteController.inicializar();
-		console.log('✅ INICIALIZACIÓN COMPLETADA');
 	});
 	
 	// Funciones del componente
@@ -337,7 +335,6 @@
 				<label class="filtro-label" for="area-select">🏢 Área/Dirección:</label>
 				<select 
 					id="area-select"
-					bind:value={$filtrosSeleccionados.area_id}
 					on:change={(e) => handleFiltroChange('area_id', parseInt(e.target.value) || null)}
 					disabled={$cargandoGeneral}
 					class="select-filtro"
@@ -358,7 +355,6 @@
 					<label class="filtro-label" for="agente-select">👤 Agente:</label>
 					<select 
 						id="agente-select"
-						bind:value={$filtrosSeleccionados.agente_id}
 						on:change={(e) => handleFiltroChange('agente_id', parseInt(e.target.value) || null)}
 						disabled={$cargandoGeneral}
 						class="select-filtro requerido"

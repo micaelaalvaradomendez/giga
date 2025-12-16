@@ -67,19 +67,14 @@
         }
       };
 
-      const handleFocus = () => {
-        loadOrganigrama();
-      };
 
       document.addEventListener("visibilitychange", handleVisibilityChange);
-      window.addEventListener("focus", handleFocus);
-
+      
       return () => {
         document.removeEventListener(
           "visibilitychange",
           handleVisibilityChange,
         );
-        window.removeEventListener("focus", handleFocus);
       };
     }
   });
@@ -457,12 +452,12 @@
         }
       }
     } else if (modalType === "edit" && selectedNode) {
-      selectedNode.nombre = formData.nombre.trim();
-      selectedNode.tipo = formData.tipo;
-      selectedNode.descripcion = formData.descripcion.trim();
-      selectedNode.titular = formData.titular.trim();
-      selectedNode.email = formData.email.trim();
-      selectedNode.telefono = formData.telefono.trim();
+      selectedNode.nombre = formData.nombre.trimEnd();
+      selectedNode.tipo = formData.tipo.trimEnd();
+      selectedNode.descripcion = formData.descripcion.trimEnd();
+      selectedNode.titular = formData.titular.trimEnd();
+      selectedNode.email = formData.email.trimEnd();
+      selectedNode.telefono = formData.telefono.trimEnd();
     }
 
     // � SOLO ACTUALIZAR LOCALMENTE (no guardar en API todavía)

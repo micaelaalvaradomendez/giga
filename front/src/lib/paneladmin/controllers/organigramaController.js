@@ -21,16 +21,14 @@ class OrganigramaController {
 		this.filtroRol = writable('');
 		this.busqueda = writable('');
 
-		// Store derivado para estructura organizacional
+
 		this.estructuraOrganizacional = derived(
 			[this.agentes, this.areas, this.roles, this.vistaActual, this.filtroArea, this.filtroRol, this.busqueda],
 			([$agentes, $areas, $roles, $vistaActual, $filtroArea, $filtroRol, $busqueda]) => {
 				if (!$agentes || !Array.isArray($agentes)) return {};
 
-				// Aplicar filtros
 				let agentesFiltrados = [...$agentes];
 
-				// Filtro por búsqueda
 				if ($busqueda.trim()) {
 					const termino = $busqueda.toLowerCase();
 					agentesFiltrados = agentesFiltrados.filter(agente =>
@@ -41,21 +39,18 @@ class OrganigramaController {
 					);
 				}
 
-				// Filtro por área
 				if ($filtroArea) {
 					agentesFiltrados = agentesFiltrados.filter(agente =>
 						agente.area_id === parseInt($filtroArea)
 					);
 				}
 
-				// Filtro por rol
 				if ($filtroRol) {
 					agentesFiltrados = agentesFiltrados.filter(agente =>
 						agente.roles && agente.roles.some(rol => rol.id === parseInt($filtroRol))
 					);
 				}
 
-				// Organizar según la vista actual
 				switch ($vistaActual) {
 					case 'areas':
 						return this.organizarPorAreas(agentesFiltrados, $areas);
@@ -89,8 +84,6 @@ class OrganigramaController {
 			return m;
 		});
 
-
-		// Store derivado para estadísticas
 		this.estadisticas = derived(
 			[this.agentes, this.areas, this.roles],
 			([$agentes, $areas, $roles]) => {
@@ -112,7 +105,6 @@ class OrganigramaController {
 				let sinArea = 0;
 
 				$agentes.forEach(agente => {
-					// Contar por área
 					if (agente.area_id) {
 						const area = $areas.find(a => a.id_area === agente.area_id);
 						const areaNombre = area ? area.nombre : `Área ${agente.area_id}`;
@@ -121,7 +113,6 @@ class OrganigramaController {
 						sinArea++;
 					}
 
-					// Contar por rol
 					if (agente.roles && agente.roles.length > 0) {
 						agente.roles.forEach(rol => {
 							agentesPorRol[rol.nombre] = (agentesPorRol[rol.nombre] || 0) + 1;
@@ -144,9 +135,6 @@ class OrganigramaController {
 		);
 	}
 
-	/**
-	 * Inicializar el controlador
-	 */
 	async init() {
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
@@ -155,9 +143,6 @@ class OrganigramaController {
 		await this.cargarDatos();
 	}
 
-	/**
-	 * Cargar todos los datos necesarios
-	 */
 	async cargarDatos() {
 		try {
 			this.loading.set(true);
@@ -169,7 +154,6 @@ class OrganigramaController {
 				personasService.getRoles()
 			]);
 
-			// Normalizador universal
 			const normalize = r =>
 				r?.data?.data?.results ||
 				r?.data?.results ||
@@ -177,21 +161,16 @@ class OrganigramaController {
 				r?.data ||
 				[];
 
-			// Agentes
 			const agentesData = normalize(agentesResponse);
 			this.agentes.set(Array.isArray(agentesData) ? agentesData : []);
 
-			// Áreas
 			const areasData = normalize(areasResponse);
 			this.areas.set(Array.isArray(areasData) ? areasData : []);
 
-			// Roles
 			const rolesData = normalize(rolesResponse);
 			this.roles.set(Array.isArray(rolesData) ? rolesData : []);
 
-			console.log('✅ Datos del organigrama cargados correctamente');
 		} catch (error) {
-			console.error('❌ Error cargando datos del organigrama:', error);
 
 			let errorMessage = 'Error al cargar datos del organigrama: ';
 			if (error.response?.status === 401) {
