@@ -55,9 +55,7 @@ def get_authenticated_agente(request):
     
     try:
         agente_id = request.session.get('user_id')
-        return Agente.objects.select_related('id_area').prefetch_related(
-            'agenterol_set__id_rol'
-        ).get(id_agente=agente_id, activo=True)
+        return Agente.objects.get(id_agente=agente_id, activo=True)
     except Agente.DoesNotExist:
         return None
 
