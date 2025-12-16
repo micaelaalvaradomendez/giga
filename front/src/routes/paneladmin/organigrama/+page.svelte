@@ -218,7 +218,6 @@
 
     try {
       loading = true;
-
       // GUARDAR EN LA API DEL BACKEND
       const response = await fetch(
         `${API_BASE_URL}/personas/organigrama/save/`,
@@ -337,6 +336,7 @@
 
     formData = {
       nombre: node.nombre ?? "",
+      nombreAgente: node.jefe.nombre ?? "",
       tipo: tiposValidos.includes(tipoDetectado)
         ? tipoDetectado
         : tiposNodo[0].value,
@@ -452,20 +452,23 @@
         }
       }
     } else if (modalType === "edit" && selectedNode) {
-      selectedNode.nombre = formData.nombre.trimEnd();
-      selectedNode.tipo = formData.tipo.trimEnd();
-      selectedNode.descripcion = formData.descripcion.trimEnd();
-      selectedNode.titular = formData.titular.trimEnd();
-      selectedNode.email = formData.email.trimEnd();
-      selectedNode.telefono = formData.telefono.trimEnd();
+
+      console.log(selectedNode, "SELECTED NODE")
+      console.log(formData, "FORM DATA")  
+      selectedNode.nombre = formData.nombre;
+      selectedNode.tipo = formData.tipo;
+      selectedNode.descripcion = formData.descripcion;
+      selectedNode.jefe.id_agente = formData.titular_id;
+      selectedNode.jefe.email = formData.email;
+      selectedNode.jefe.nombre = formData.nombreAgente;
+      selectedNode.email = formData.email;
+      selectedNode.telefono = formData.telefono;
     }
 
-    // � SOLO ACTUALIZAR LOCALMENTE (no guardar en API todavía)
-    organigramaData = { ...organigramaData }; // Trigger reactivity
+    organigramaData = { ...organigramaData }; 
     updateNodesList();
     closeModal();
 
-    // Mostrar mensaje de que hay cambios pendientes
     showUnsavedWarning = true;
   }
 
@@ -852,11 +855,11 @@
               on:change={(e) => {
                 const id = e.target.value ? Number(e.target.value) : null;
                 formData.titular_id = id;
-
                 const a = $agenteById.get(id);
                 if (a) {
                   formData.email = a.email ?? "";
                   formData.telefono = a.telefono ?? "";
+                  formData.nombreAgente = a.nombre_completo ?? "";
                 }
               }}
             >
