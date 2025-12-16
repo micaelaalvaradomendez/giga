@@ -40,9 +40,20 @@
     console.log("✅ Controller de planificador inicializado");
   });
 
+  // Fecha mínima: hoy
+  const hoy = new Date().toISOString().split('T')[0];
+
   // Handlers delegados al controller
   async function handleAreaChange() {
     await planificadorGuardiasController.handleAreaChange();
+  }
+
+  async function handleFechaInicioChange() {
+    // Si la nueva fecha inicio es posterior a la fecha fin, limpiar fecha fin
+    if ($fechaInicio && $fechaFin && $fechaInicio > $fechaFin) {
+      fechaFin.set('');
+    }
+    await planificadorGuardiasController.handleFechaHorarioChange();
   }
 
   async function handleFechaHorarioChange() {
@@ -199,7 +210,8 @@
             id="fechaInicio"
             type="date"
             bind:value={$fechaInicio}
-            on:change={handleFechaHorarioChange}
+            on:change={handleFechaInicioChange}
+            min={hoy}
             disabled={$loading}
           />
         </div>

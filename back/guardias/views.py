@@ -1555,6 +1555,62 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @action(detail=False, methods=['post'])
+    def verificar_disponibilidad_batch(self, request):
+        """Verifica disponibilidad de múltiples agentes en una fecha específica (optimizado)"""
+        agentes_ids = request.data.get('agentes', [])
+        fecha = request.data.get('fecha')
+        fecha_fin = request.data.get('fecha_fin')  # Opcional para rangos
+
+        if not agentes_ids or not fecha:
+            return Response(
+                {'error': 'Se requieren parámetros: agentes (array) y fecha'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            from datetime import datetime
+            fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
+            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date() if fecha_fin else fecha_obj
+
+            # Query optimizado: una sola consulta para todos los agentes
+            guardias_conflicto = self.get_queryset().filter(
+                id_agente__in=agentes_ids,
+                fecha__gte=fecha_obj,
+                fecha__lte=fecha_fin_obj,
+                activa=True
+            ).values('id_agente').annotate(count=Count('id_guardia'))
+
+            # Crear diccionario de agentes con conflictos
+            agentes_con_guardias = {g['id_agente']: g['count'] for g in guardias_conflicto}
+
+            # Construir respuesta para cada agente
+            resultados = []
+            for agente_id in agentes_ids:
+                guardias_existentes = agentes_con_guardias.get(agente_id, 0)
+                resultados.append({
+                    'agente_id': agente_id,
+                    'disponible': guardias_existentes == 0,
+                    'guardias_existentes': guardias_existentes
+                })
+
+            return Response({
+                'fecha': fecha,
+                'fecha_fin': fecha_fin or fecha,
+                'resultados': resultados
+            })
+
+        except ValueError as e:
+            return Response(
+                {'error': f'Fecha inválida: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Error verificando disponibilidad: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
     @action(detail=False, methods=['get', 'post'])
     def resumen(self, request):
         """Resumen de guardias por periodo - solo guardias activas y aprobadas"""

@@ -191,44 +191,58 @@ class PlanificadorGuardiasController {
 			
 			// Si tenemos fecha y horario, filtrar agentes que NO tienen conflictos ni licencias
 			if (fechaInicio && horaInicio && horaFin) {
-				const agentesDisponibles = [];
-				
-				for (const agente of agentes) {
-					let disponible = true;
+				try {
+					const fechaFinalGuardia = fechaFin || fechaInicio;
+					const agentesIds = agentes.map(a => a.id_agente);
 					
-					try {
-						// 1. Verificar conflictos con otras guardias
-						const disponibilidadGuardias = await guardiasService.verificarDisponibilidad(agente.id_agente, fechaInicio, token);
-						if (!disponibilidadGuardias.data?.disponible) {
-							console.log(`🚫 Agente ${agente.nombre} ${agente.apellido} tiene conflictos con guardias`);
-							disponible = false;
-						}
-					} catch (e) {
-						console.warn(`⚠️ Error verificando disponibilidad de guardias del agente ${agente.id_agente}:`, e);
+					// 1. Verificar conflictos con guardias en batch (1 sola llamada)
+					const disponibilidadResponse = await guardiasService.verificarDisponibilidadBatch(
+						agentesIds, 
+						fechaInicio, 
+						fechaFinalGuardia,
+						token
+					);
+					
+					const disponibilidadMap = new Map();
+					if (disponibilidadResponse.data?.resultados) {
+						disponibilidadResponse.data.resultados.forEach(r => {
+							disponibilidadMap.set(r.agente_id, r.disponible);
+						});
 					}
 					
-					if (disponible) {
+					// 2. Verificar licencias (aún se hace individual, pero más rápido que antes)
+					const agentesDisponibles = [];
+					for (const agente of agentes) {
+						// Verificar disponibilidad de guardias desde el batch
+						const disponibleGuardias = disponibilidadMap.get(agente.id_agente) !== false;
+						
+						if (!disponibleGuardias) {
+							console.log(`🚫 Agente ${agente.nombre} ${agente.apellido} tiene conflictos con guardias`);
+							continue;
+						}
+						
+						// Verificar licencias
 						try {
-							// 2. Verificar si está en licencia durante el período de la guardia
-							const fechaFinalGuardia = fechaFin || fechaInicio;
 							const estaEnLicencia = await this.verificarLicenciasAgente(agente.id_agente, fechaInicio, fechaFinalGuardia);
 							if (estaEnLicencia) {
 								console.log(`🏖️ Agente ${agente.nombre} ${agente.apellido} está en licencia durante el período`);
-								disponible = false;
+								continue;
 							}
 						} catch (e) {
 							console.warn(`⚠️ Error verificando licencias del agente ${agente.id_agente}:`, e);
-							// En caso de error verificando licencias, incluir el agente pero con advertencia
+							// En caso de error, incluir el agente
 						}
-					}
-					
-					if (disponible) {
+						
 						agentesDisponibles.push(agente);
 					}
+					
+					this.agentesDisponibles.set(agentesDisponibles);
+					console.log(`✅ Agentes disponibles para ${fechaInicio}-${fechaFinalGuardia}: ${agentesDisponibles.length}/${agentes.length} (sin guardias ni licencias)`);
+				} catch (error) {
+					console.error('❌ Error verificando disponibilidad:', error);
+					// En caso de error, mostrar todos los agentes
+					this.agentesDisponibles.set(agentes);
 				}
-				
-				this.agentesDisponibles.set(agentesDisponibles);
-				console.log(`✅ Agentes disponibles para ${fechaInicio}-${fechaFin || fechaInicio}: ${agentesDisponibles.length}/${agentes.length} (sin guardias ni licencias)`);
 			} else {
 				// Sin fecha/horario, mostrar todos los agentes activos
 				this.agentesDisponibles.set(agentes);
