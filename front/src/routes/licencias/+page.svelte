@@ -557,6 +557,7 @@
 					type="date"
 					id="fecha_hasta"
 					bind:value={$filtros.fecha_hasta}
+					min={$filtros.fecha_desde}
 					on:change={aplicarFiltros}
 				/>
 			</div>

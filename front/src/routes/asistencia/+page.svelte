@@ -2,9 +2,11 @@
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { API_BASE_URL } from "$lib/api.js";
+	import LoadingSpinner from "$lib/componentes/LoadingSpinner.svelte";
 
 	let dni = "";
 	let loading = false;
+	let loadingEstado = true; // Indicador de carga inicial
 	let mensaje = null;
 	let mensajeTipo = null; // 'success', 'error', 'info'
 	let estado = {
@@ -63,6 +65,8 @@
 			}
 		} catch (error) {
 			console.error("Error al cargar estado:", error);
+		} finally {
+			loadingEstado = false;
 		}
 	}
 
@@ -156,7 +160,11 @@
 	</div>
 
 	<!-- Estado actual -->
-	{#if estado.es_dia_no_laborable}
+	{#if loadingEstado}
+		<div class="estado-card">
+			<LoadingSpinner message="Cargando estado de asistencia..." />
+		</div>
+	{:else if estado.es_dia_no_laborable}
 		<div class="estado-card no-laborable">
 			<h2>Día No Laborable</h2>
 			<div class="mensaje-no-laborable">
@@ -214,7 +222,7 @@
 
 	<div class="content-grid">
 		<!-- Formulario de marcación -->
-		{#if !estado.es_dia_no_laborable && (estado.puede_marcar_entrada || estado.puede_marcar_salida)}
+		{#if !loadingEstado && !estado.es_dia_no_laborable && (estado.puede_marcar_entrada || estado.puede_marcar_salida)}
 			<div class="marcacion-card">
 				<h2>
 					{#if estado.puede_marcar_entrada}
@@ -258,7 +266,7 @@
 					</button>
 				</form>
 			</div>
-		{:else}
+		{:else if !loadingEstado}
 			<div class="completado-card">
 				<div class="icono-grande">✅</div>
 				<h2>Asistencia Completa</h2>
