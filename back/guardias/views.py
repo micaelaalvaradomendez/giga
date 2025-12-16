@@ -1529,6 +1529,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'post'])
     def verificar_disponibilidad(self, request):
         """Verifica disponibilidad de un agente en una fecha especÃ­fica"""
+        data_in = request.data if request.method.lower() == 'post' else request.query_params
         agente_id = data_in.get('agente')
         fecha = request.query_params.get('fecha')
 
@@ -1572,6 +1573,9 @@ class GuardiaViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'post'])
     def resumen(self, request):
         """Resumen de guardias por perÃ­odo - solo guardias activas y aprobadas"""
+
+        data_in = request.data if request.method.lower() == 'post' else request.query_params    
+
         fecha_desde = data_in.get('fecha_desde')
         fecha_hasta = data_in.get('fecha_hasta')
         agente_id = data_in.get('agente')
@@ -3270,6 +3274,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'post'])
     def reporte_horas_trabajadas(self, request):
         """Reporte de Guardias y Compensaciones - Horas programadas vs efectivas"""
+        data_in = request.data if request.method.lower() == 'post' else request.query_params
         area_id = data_in.get('area')
         fecha_desde = data_in.get('fecha_desde')
         fecha_hasta = data_in.get('fecha_hasta')
@@ -3379,6 +3384,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'post'])
     def reporte_parte_diario(self, request):
         """Reporte de Parte Diario/Mensual Consolidado"""
+        data_in = request.data if request.method.lower() == 'post' else request.query_params
         area_id = data_in.get('area')
         fecha_desde = data_in.get('fecha_desde')
         fecha_hasta = data_in.get('fecha_hasta')
@@ -3466,6 +3472,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'post'])
     def reporte_calculo_plus(self, request):
         """Reporte de Cálculo Plus por Guardias (20% / 40%)"""
+        data_in = request.data if request.method.lower() == 'post' else request.query_params
         area_id = data_in.get('area')
         fecha_desde = data_in.get('fecha_desde')
         fecha_hasta = data_in.get('fecha_hasta')
@@ -3516,6 +3523,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'post'])
     def reporte_resumen_licencias(self, request):
         """Reporte de Resumen de Licencias por agente"""
+        data_in = request.data if request.method.lower() == 'post' else request.query_params
         from datetime import datetime
         area_id = data_in.get('area')
 
@@ -3570,6 +3578,7 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'post'])
     def reporte_incumplimiento_normativo(self, request):
         """Reporte de Incumplimiento Normativo"""
+        data_in = request.data if request.method.lower() == 'post' else request.query_params
         fecha_desde = data_in.get('fecha_desde')
         fecha_hasta = data_in.get('fecha_hasta')
 
