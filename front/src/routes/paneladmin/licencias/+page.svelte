@@ -422,6 +422,14 @@
 		cargarLicencias();
 	}
 
+	function handleFechaDesdeChange() {
+		// Si la nueva fecha desde es posterior a la fecha hasta, limpiar fecha hasta
+		if ($filtros.fecha_desde && $filtros.fecha_hasta && $filtros.fecha_desde > $filtros.fecha_hasta) {
+			actualizarFiltros({ fecha_hasta: '' });
+		}
+		aplicarFiltros();
+	}
+
 	function aplicarFiltros() {
 		console.log("🔍 Aplicando filtros:", $filtros);
 		console.log(
@@ -671,7 +679,7 @@
 							type="date"
 							id="fecha_desde"
 							bind:value={$filtros.fecha_desde}
-							on:change={aplicarFiltros}
+							on:change={handleFechaDesdeChange}
 						/>
 					</div>
 					<div class="filtro-group">
@@ -680,6 +688,7 @@
 							type="date"
 							id="fecha_hasta"
 							bind:value={$filtros.fecha_hasta}
+							min={$filtros.fecha_desde}
 							on:change={aplicarFiltros}
 						/>
 					</div>

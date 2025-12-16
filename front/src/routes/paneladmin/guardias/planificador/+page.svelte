@@ -132,6 +132,33 @@
     const diffTime = fin - inicio;
     return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
   })();
+
+  // Validar fechas y horarios
+  $: errorFechaHora = (() => {
+    if (!$fechaInicio || !$fechaFin || !$horaInicio || !$horaFin) return null;
+
+    // Si fecha inicio es posterior a fecha fin
+    if ($fechaInicio > $fechaFin) {
+      return '⚠️ La fecha de inicio no puede ser posterior a la fecha de fin';
+    }
+
+    // Si es el mismo día, verificar que hora inicio no sea mayor que hora fin
+    if ($fechaInicio === $fechaFin) {
+      const [horaI, minI] = $horaInicio.split(':').map(Number);
+      const [horaF, minF] = $horaFin.split(':').map(Number);
+      const minutosInicio = horaI * 60 + minI;
+      const minutosFin = horaF * 60 + minF;
+      
+      if (minutosInicio >= minutosFin) {
+        return '⚠️ En el mismo día, la hora de inicio debe ser anterior a la hora de fin';
+      }
+    }
+
+    return null;
+  })();
+
+  // Validar que todos los campos obligatorios estén completos
+  $: puedeAvanzar = $nombre && $areaSeleccionada && $fechaInicio && $fechaFin && $horaInicio && $horaFin && !errorFechaHora;
 </script>
 
 <section class="guardias-wrap">
@@ -217,18 +244,6 @@
         </div>
 
         <div class="campo">
-          <label for="horaInicio">Hora Inicio *</label>
-          <input
-            class="input"
-            id="horaInicio"
-            type="time"
-            bind:value={$horaInicio}
-            on:change={handleFechaHorarioChange}
-            disabled={$loading}
-          />
-        </div>
-
-        <div class="campo">
           <label for="fechaFin">Fecha Fin *</label>
           <input
             class="input"
@@ -238,6 +253,18 @@
             on:change={handleFechaHorarioChange}
             disabled={$loading}
             min={$fechaInicio}
+          />
+        </div>
+
+        <div class="campo">
+          <label for="horaInicio">Hora Inicio *</label>
+          <input
+            class="input"
+            id="horaInicio"
+            type="time"
+            bind:value={$horaInicio}
+            on:change={handleFechaHorarioChange}
+            disabled={$loading}
           />
         </div>
 
@@ -284,6 +311,12 @@
         </div>
       </div>
 
+      {#if errorFechaHora}
+        <div class="error-mensaje">
+          {errorFechaHora}
+        </div>
+      {/if}
+
       <div class="acciones">
         <button
           class="btn btn-secondary"
@@ -295,7 +328,7 @@
         <button
           class="btn btn-primary"
           on:click={handleAvanzarPaso2}
-          disabled={$loading}
+          disabled={$loading || !puedeAvanzar}
         >
           Siguiente →
         </button>
@@ -782,6 +815,20 @@
     border: 1px solid #fecaca;
     white-space: pre-line;
     line-height: 1.6;
+  }
+
+  .error-mensaje {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .alert-success {
