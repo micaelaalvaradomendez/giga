@@ -50,7 +50,7 @@ class AuditoriaViewSet(viewsets.ReadOnlyModelViewSet):
 @api_view(['GET'])
 @permission_classes([IsAuthenticatedGIGA])  # RBAC: Solo usuarios autenticados
 def registros_auditoria(request):
-    """API endpoint para obtener registros de auditoría"""
+    """API endpoint para obtener registros de auditoría con filtrado jerárquico por rol"""
     try:
         # Verificar autenticación manualmente usando el mismo sistema que check_session
         user_id = request.session.get('user_id')
@@ -62,10 +62,47 @@ def registros_auditoria(request):
                 'message': 'Debe iniciar sesión para acceder a este recurso'
             }, status=403)
         
+        # Obtener agente y su rol desde el sistema de permisos
+        from common.permissions import obtener_agente_sesion, obtener_rol_agente, obtener_areas_jerarquia
+        from personas.models import Agente
+        
+        agente = obtener_agente_sesion(request)
+        if not agente:
+            return Response({
+                'error': 'Usuario no encontrado',
+                'message': 'No se pudo obtener información del usuario'
+            }, status=403)
+        
+        rol = obtener_rol_agente(agente)
+        
+        # Verificar que el rol tenga permisos para ver auditoría
+        if rol not in ['administrador', 'director', 'jefatura']:
+            return Response({
+                'error': 'Acceso denegado',
+                'message': 'No tiene permisos para acceder a la auditoría'
+            }, status=403)
+        
         # Obtener todos los registros con información del agente
         registros = Auditoria.objects.select_related('id_agente').order_by('-creado_en')
         
-        # Aplicar filtros si se proporcionan
+        # Filtrar por áreas según el rol del usuario
+        if rol == 'administrador':
+            # Administrador ve toda la auditoría del sistema
+            pass  # No filtrar por área
+        elif rol == 'director':
+            # Director ve auditoría de su área + sub-áreas
+            areas_accesibles = obtener_areas_jerarquia(agente)
+            area_ids = [area.id_area for area in areas_accesibles]
+            registros = registros.filter(id_agente__id_area__in=area_ids)
+        elif rol == 'jefatura':
+            # Jefatura ve auditoría solo de su área (sin sub-áreas)
+            if agente.id_area:
+                registros = registros.filter(id_agente__id_area=agente.id_area)
+            else:
+                # Si no tiene área asignada, no ve nada
+                registros = registros.none()
+        
+        # Aplicar filtros adicionales si se proporcionan
         fecha_desde = request.query_params.get('fecha_desde')
         fecha_hasta = request.query_params.get('fecha_hasta')
         accion = request.query_params.get('accion')
