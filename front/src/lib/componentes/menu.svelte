@@ -54,18 +54,23 @@
             : `${base}/${clean}`;
     }
 
-
     onMount(() => {
         // Solo intentar checkSession si no estamos autenticados y no se intentó antes
         // Nota: +layout.svelte ya hace checkSession, así que esto es redundante en la mayoría de casos
-        if (!($authStore) && !_checkSessionCalled) {
+        if (!$authStore && !_checkSessionCalled) {
             _checkSessionCalled = true;
             // lanzar sin bloquear render y sin logs pesados
             AuthService.checkSession().catch((error) => {
                 // El servicio AuthService ya maneja y registra errores críticos
                 // Solo registramos errores de red que puedan requerir atención
-                if (error?.message && !error.message.includes('authenticated')) {
-                    console.error('Error en verificación de sesión del menú:', error.message);
+                if (
+                    error?.message &&
+                    !error.message.includes("authenticated")
+                ) {
+                    console.error(
+                        "Error en verificación de sesión del menú:",
+                        error.message,
+                    );
                 }
             });
         }
@@ -86,89 +91,89 @@
     {#if currentUser}
         <div class={roleBadgeClass}></div>
     {/if}
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <h2>Menú Principal</h2>
-                <p>Sistema GIGA</p>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Menú Principal</h2>
+            <p>Sistema GIGA</p>
+        </div>
+        {#if isAuth && currentUser}
+            <div class="menu-section">
+                <div class="menu-section-title">Principal</div>
+                <a
+                    href="/inicio"
+                    class="menu-item"
+                    class:active={currentPath === "/inicio"}
+                    on:click={closeMenu}
+                >
+                    <span class="menu-item-icon">🏠</span>
+                    <div class="menu-item-text">
+                        <div class="menu-item-title">Inicio</div>
+                    </div>
+                </a>
+                <a
+                    href="/incidencias"
+                    class="menu-item menu-item-highlight"
+                    class:active={currentPath.startsWith("/incidencias")}
+                    on:click={closeMenu}
+                >
+                    <span class="menu-item-icon">📧</span>
+                    <div class="menu-item-text">
+                        <div class="menu-item-title">Incidencias</div>
+                    </div>
+                </a>
+                <a
+                    href="/organigrama"
+                    class="menu-item"
+                    class:active={currentPath === "/organigrama"}
+                    on:click={closeMenu}
+                >
+                    <span class="menu-item-icon">🏛️</span>
+                    <div class="menu-item-text">
+                        <div class="menu-item-title">Organigrama</div>
+                    </div>
+                </a>
             </div>
-            {#if isAuth && currentUser}
-                <div class="menu-section">
-                    <div class="menu-section-title">Principal</div>
-                    <a
-                        href="/inicio"
-                        class="menu-item"
-                        class:active={currentPath === "/inicio"}
-                        on:click={closeMenu}
-                    >
-                        <span class="menu-item-icon">🏠</span>
-                        <div class="menu-item-text">
-                            <div class="menu-item-title">Inicio</div>
-                        </div>
-                    </a>
-                    <a
-                        href="/incidencias"
-                        class="menu-item menu-item-highlight"
-                        class:active={currentPath.startsWith("/incidencias")}
-                        on:click={closeMenu}
-                    >
-                        <span class="menu-item-icon">📧</span>
-                        <div class="menu-item-text">
-                            <div class="menu-item-title">Incidencias</div>
-                        </div>
-                    </a>
-                    <a
-                        href="/organigrama"
-                        class="menu-item"
-                        class:active={currentPath === "/organigrama"}
-                        on:click={closeMenu}
-                    >
-                        <span class="menu-item-icon">🏛️</span>
-                        <div class="menu-item-text">
-                            <div class="menu-item-title">Organigrama</div>
-                        </div>
-                    </a>
-                </div>
 
-                <div class="menu-section">
-                    <div class="menu-section-title">Operaciones</div>
+            <div class="menu-section">
+                <div class="menu-section-title">Operaciones</div>
+                <a
+                    href="/asistencia"
+                    class="menu-item"
+                    class:active={currentPath === "/asistencia"}
+                    on:click={closeMenu}
+                >
+                    <span class="menu-item-icon">📋</span>
+                    <div class="menu-item-text">
+                        <div class="menu-item-title">Asistencia</div>
+                    </div>
+                </a>
+
+                {#if isAuth}
                     <a
-                        href="/asistencia"
+                        href="/licencias"
                         class="menu-item"
-                        class:active={currentPath === "/asistencia"}
+                        class:active={currentPath === "/licencias"}
                         on:click={closeMenu}
                     >
-                        <span class="menu-item-icon">📋</span>
+                        <span class="menu-item-icon">🏥</span>
                         <div class="menu-item-text">
-                            <div class="menu-item-title">Asistencia</div>
+                            <div class="menu-item-title">Licencias</div>
                         </div>
                     </a>
+                {/if}
 
-                    {#if isAuth}
-                        <a
-                            href="/licencias"
-                            class="menu-item"
-                            class:active={currentPath === "/licencias"}
-                            on:click={closeMenu}
-                        >
-                            <span class="menu-item-icon">🏥</span>
-                            <div class="menu-item-text">
-                                <div class="menu-item-title">Licencias</div>
-                            </div>
-                        </a>
-                    {/if}
-
-                    <a
-                        href="/guardias"
-                        class="menu-item"
-                        class:active={currentPath === "/guardias"}
-                        on:click={closeMenu}
-                    >
-                        <span class="menu-item-icon">🛡️</span>
-                        <div class="menu-item-text">
-                            <div class="menu-item-title">Guardias</div>
-                        </div>
-                    </a>
-                    {#if isAdmin || isDirector || isJefatura}
+                <a
+                    href="/guardias"
+                    class="menu-item"
+                    class:active={currentPath === "/guardias"}
+                    on:click={closeMenu}
+                >
+                    <span class="menu-item-icon">🛡️</span>
+                    <div class="menu-item-text">
+                        <div class="menu-item-title">Guardias</div>
+                    </div>
+                </a>
+                {#if isAdmin || isDirector || isJefatura}
                     <a
                         href={goTO("reportes")}
                         class="menu-item"
@@ -180,178 +185,168 @@
                             <div class="menu-item-title">Reportes</div>
                         </div>
                     </a>
-                    {/if}
-                </div>
+                {/if}
+            </div>
 
-                {#if isJefatura}
-                    <div class="menu-section">
-                        <div class="menu-section-title">
-                            Administración y Control
+            {#if isJefatura}
+                <div class="menu-section">
+                    <div class="menu-section-title">
+                        Administración y Control
+                    </div>
+
+                    <a
+                        href="/paneladmin/auditoria"
+                        class="menu-item"
+                        class:active={currentPath === "/paneladmin/auditoria"}
+                        on:click={closeMenu}
+                    >
+                        <span class="menu-item-icon">🔍</span>
+                        <div class="menu-item-text">
+                            <div class="menu-item-title">Auditoría</div>
                         </div>
+                    </a>
 
+                    {#if isJefatura || isAdmin}
                         <a
-                            href="/paneladmin/auditoria"
+                            href="/paneladmin/licencias"
                             class="menu-item"
                             class:active={currentPath ===
-                                "/paneladmin/auditoria"}
+                                "/paneladmin/licencias"}
                             on:click={closeMenu}
                         >
-                            <span class="menu-item-icon">🔍</span>
+                            <span class="menu-item-icon">🏷️</span>
                             <div class="menu-item-text">
-                                <div class="menu-item-title">Auditoría</div>
+                                <div class="menu-item-title">
+                                    Gestión de Licencias
+                                </div>
                             </div>
                         </a>
+                    {/if}
 
-                        {#if isJefatura || isAdmin}
-                            <a
-                                href="/paneladmin/licencias"
-                                class="menu-item"
-                                class:active={currentPath ===
-                                    "/paneladmin/licencias"}
-                                on:click={closeMenu}
-                            >
-                                <span class="menu-item-icon">🏷️</span>
-                                <div class="menu-item-text">
-                                    <div class="menu-item-title">
-                                        Gestión de Licencias
-                                    </div>
-                                </div>
-                            </a>
-                        {/if}
+                    <a
+                        href="/paneladmin/guardias/compensaciones"
+                        class="menu-item"
+                        class:active={currentPath.includes("/compensaciones")}
+                        on:click={closeMenu}
+                    >
+                        <span class="menu-item-icon">⏱️</span>
+                        <div class="menu-item-text">
+                            <div class="menu-item-title">Compensaciones</div>
+                            <div class="menu-item-subtitle">Horas extra</div>
+                        </div>
+                    </a>
 
+                    {#if isDirector}
                         <a
-                            href="/paneladmin/guardias/compensaciones"
+                            href="/paneladmin/parametros"
                             class="menu-item"
-                            class:active={currentPath.includes(
-                                "/compensaciones",
-                            )}
+                            class:active={currentPath ===
+                                "/paneladmin/parametros"}
                             on:click={closeMenu}
                         >
                             <span class="menu-item-icon">⏱️</span>
                             <div class="menu-item-text">
+                                <div class="menu-item-title">Parámetros</div>
+                            </div>
+                        </a>
+                    {/if}
+
+                    {#if isAdmin}
+                        <a
+                            href="/paneladmin/organigrama"
+                            class="menu-item"
+                            class:active={currentPath ===
+                                "/paneladmin/organigrama"}
+                            on:click={closeMenu}
+                        >
+                            <span class="menu-item-icon">🏛️</span>
+                            <div class="menu-item-text">
                                 <div class="menu-item-title">
-                                    Compensaciones
-                                </div>
-                                <div class="menu-item-subtitle">
-                                    Horas extra
+                                    Editar Organigrama
                                 </div>
                             </div>
                         </a>
 
-                        {#if isDirector}
-                            <a
-                                href="/paneladmin/parametros"
-                                class="menu-item"
-                                class:active={currentPath ===
-                                    "/paneladmin/parametros"}
-                                on:click={closeMenu}
-                            >
-                                <span class="menu-item-icon">⏱️</span>
-                                <div class="menu-item-text">
-                                    <div class="menu-item-title">
-                                        Parámetros
-                                    </div>
-                                </div>
-                            </a>
-                        {/if}
+                        <a
+                            href="/paneladmin/roles"
+                            class="menu-item"
+                            class:active={currentPath === "/paneladmin/roles"}
+                            on:click={closeMenu}
+                        >
+                            <span class="menu-item-icon">🛡️</span>
+                            <div class="menu-item-text">
+                                <div class="menu-item-title">Roles</div>
+                            </div>
+                        </a>
 
-                        {#if isAdmin}
-                            <a
-                                href="/paneladmin/organigrama"
-                                class="menu-item"
-                                class:active={currentPath ===
-                                    "/paneladmin/organigrama"}
-                                on:click={closeMenu}
-                            >
-                                <span class="menu-item-icon">🏛️</span>
-                                <div class="menu-item-text">
-                                    <div class="menu-item-title">
-                                        Editar Organigrama
-                                    </div>
+                        <a
+                            href="/paneladmin"
+                            class="menu-item menu-item-admin"
+                            class:active={currentPath === "/paneladmin"}
+                            on:click={closeMenu}
+                        >
+                            <span class="menu-item-icon">👥</span>
+                            <div class="menu-item-text">
+                                <div class="menu-item-title">
+                                    Panel Administrativo
                                 </div>
-                            </a>
-
-                            <a
-                                href="/paneladmin/roles"
-                                class="menu-item"
-                                class:active={currentPath ===
-                                    "/paneladmin/roles"}
-                                on:click={closeMenu}
-                            >
-                                <span class="menu-item-icon">🛡️</span>
-                                <div class="menu-item-text">
-                                    <div class="menu-item-title">Roles</div>
-                                </div>
-                            </a>
-
-                            <a
-                                href="/paneladmin"
-                                class="menu-item menu-item-admin"
-                                class:active={currentPath === "/paneladmin"}
-                                on:click={closeMenu}
-                            >
-                                <span class="menu-item-icon">👥</span>
-                                <div class="menu-item-text">
-                                    <div class="menu-item-title">
-                                        Panel Administrativo
-                                    </div>
-                                </div>
-                            </a>
-                        {/if}
-                    </div>
-                {/if}
-            {/if}
-            {#if !isAuth}
-                <div class="menu-section">
-                    <div class="menu-section-title">Acceso</div>
-                    <a
-                        href="/"
-                        class="menu-item"
-                        class:active={currentPath === "/"}
-                        on:click={closeMenu}
-                    >
-                        <span class="menu-item-icon">🔐</span>
-                        <div class="menu-item-text">
-                            <div class="menu-item-title">Iniciar Sesión</div>
-                        </div>
-                    </a>
+                            </div>
+                        </a>
+                    {/if}
                 </div>
             {/if}
+        {/if}
+        {#if !isAuth}
             <div class="menu-section">
-                <div class="menu-section-title">Herramientas</div>
+                <div class="menu-section-title">Acceso</div>
                 <a
-                    href="/convenio"
+                    href="/"
                     class="menu-item"
-                    class:active={currentPath === "/convenio"}
+                    class:active={currentPath === "/"}
                     on:click={closeMenu}
                 >
-                    <span class="menu-item-icon">🧠</span>
+                    <span class="menu-item-icon">🔐</span>
                     <div class="menu-item-text">
-                        <div class="menu-item-title">Consultar CCT</div>
+                        <div class="menu-item-title">Iniciar Sesión</div>
                     </div>
                 </a>
             </div>
-
-            {#if isAuth}
-                <div class="menu-section">
-                    <div class="menu-section-title">Sesión</div>
-                    <button
-                        class="menu-item logout-button"
-                        on:click={async () => {
-                            await AuthService.logout();
-                            closeMenu();
-                            goto("/");
-                        }}
-                    >
-                        <span class="menu-item-icon">🚪</span>
-                        <div class="menu-item-text">
-                            <div class="menu-item-title">Cerrar Sesión</div>
-                        </div>
-                    </button>
+        {/if}
+        <div class="menu-section">
+            <div class="menu-section-title">Herramientas</div>
+            <a
+                href="/convenio"
+                class="menu-item"
+                class:active={currentPath === "/convenio"}
+                on:click={closeMenu}
+            >
+                <span class="menu-item-icon">🧠</span>
+                <div class="menu-item-text">
+                    <div class="menu-item-title">Consultar CCT</div>
                 </div>
-            {/if}
+            </a>
         </div>
+
+        {#if isAuth}
+            <div class="menu-section">
+                <div class="menu-section-title">Sesión</div>
+                <button
+                    class="menu-item logout-button"
+                    on:click={async () => {
+                        await AuthService.logout();
+                        closeMenu();
+                        goto("/");
+                    }}
+                >
+                    <span class="menu-item-icon">🚪</span>
+                    <div class="menu-item-text">
+                        <div class="menu-item-title">Cerrar Sesión</div>
+                    </div>
+                </button>
+            </div>
+        {/if}
     </div>
+</div>
 
 {#if isActive}
     <div
@@ -407,10 +402,10 @@
     }
 
     .sidebar-tab.active {
-        transform: translateX(min(280px, 80vw)) translateY(-50%);
+        transform: translateX(calc(min(280px, 80vw) - 55px)) translateY(-50%);
         opacity: 1;
         visibility: visible;
-        margin-left: -55px;
+
         background: linear-gradient(
             135deg,
             rgba(44, 87, 199, 0.95) 0%,
@@ -427,7 +422,8 @@
 
     @media (min-width: 768px) {
         .sidebar-tab.active {
-            transform: translateX(min(320px, 80vw)) translateY(-50%);
+            transform: translateX(calc(min(320px, 80vw) - 55px))
+                translateY(-50%);
         }
     }
 
@@ -486,7 +482,8 @@
     .sidebar {
         position: fixed;
         width: min(280px, 80vw);
-        left: calc(-1 * min(280px, 80vw));
+        left: 0;
+        transform: translateX(-100%);
         background: linear-gradient(
             180deg,
             rgba(255, 255, 255, 0.75) 0%,
@@ -499,7 +496,8 @@
             4px 0 32px rgba(64, 123, 255, 0.15),
             inset -1px 0 2px rgba(255, 255, 255, 0.8),
             inset 1px 0 2px rgba(64, 123, 255, 0.1);
-        transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: transform;
         overflow-y: auto;
         overflow-x: hidden;
         top: 0;
@@ -512,12 +510,11 @@
     @media (min-width: 768px) {
         .sidebar {
             width: min(320px, 80vw);
-            left: calc(-1 * min(320px, 80vw));
         }
     }
 
     .sidebar-container.active .sidebar {
-        left: 0;
+        transform: translateX(0);
     }
 
     .sidebar-header {
@@ -588,7 +585,8 @@
         width: 35%;
         height: 2px;
         bottom: 0;
-        left: -35%;
+        left: 0;
+        transform: translateX(-105%);
         background: linear-gradient(
             90deg,
             transparent,
@@ -617,6 +615,7 @@
     .menu-item:hover::after {
         opacity: 1;
         animation: moveLine 2s linear infinite;
+        will-change: transform;
     }
 
     .menu-item.active {
@@ -672,10 +671,10 @@
 
     @keyframes moveLine {
         0% {
-            left: -35%;
+            transform: translateX(-105%);
         }
         100% {
-            left: 100%;
+            transform: translateX(400%);
         }
     }
 
@@ -812,7 +811,8 @@
         width: 35%;
         height: 2px;
         bottom: 0;
-        left: -35%;
+        left: 0;
+        transform: translateX(-105%);
         background: linear-gradient(
             90deg,
             transparent,
@@ -876,5 +876,4 @@
         width: 0;
         height: 0;
     }
-
 </style>
