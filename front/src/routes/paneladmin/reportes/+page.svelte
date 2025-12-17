@@ -115,6 +115,7 @@
     return totalesPorDia.get(fecha) || 0;
   }
 </script>
+
 <svelte:head>
   <title>Reportes - Panel Administrador | Sistema GIGA</title>
 </svelte:head>
@@ -890,23 +891,25 @@
     </div>
   {/if}
 </div>
+
 <style>
   .container-reportes {
     max-width: 1200px;
     margin: 0 auto;
     padding: 16px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
   .header-reportes-messages {
     margin-bottom: 1rem;
   }
-  
+
   .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
   }
-  
+
   .header-title {
     position: relative;
     background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
@@ -921,7 +924,7 @@
       0 0 0 1px rgba(255, 255, 255, 0.1) inset,
       0 20px 60px rgba(30, 64, 175, 0.4);
   }
-  
+
   .header-title::before {
     content: "";
     position: absolute;
@@ -938,7 +941,7 @@
     background-size: 50px 50px;
     animation: moveLines 20s linear infinite;
   }
-  
+
   .header-title h1 {
     margin: 10px;
     font-weight: 800;
@@ -952,32 +955,32 @@
     word-wrap: break-word;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-  
+
   @media (min-width: 480px) {
     .header-title h1 {
       font-size: 22px;
     }
   }
-  
+
   @media (min-width: 640px) {
     .header-title h1 {
       font-size: 26px;
       display: inline-block;
     }
   }
-  
+
   @media (min-width: 768px) {
     .header-title h1 {
       font-size: 30px;
     }
   }
-  
+
   @media (max-width: 768px) {
     .header-title {
       padding: 20px 20px;
     }
   }
-  
+
   .header-title h1::after {
     content: "";
     position: absolute;
@@ -993,7 +996,7 @@
     );
     animation: moveLine 2s linear infinite;
   }
-  
+
   @keyframes moveLine {
     0% {
       left: -40%;
@@ -1002,7 +1005,7 @@
       left: 100%;
     }
   }
-  
+
   @keyframes moveLines {
     0% {
       background-position: 0 0;
@@ -1011,33 +1014,20 @@
       background-position: 50px 50px;
     }
   }
-  
+
   @media (min-width: 768px) {
-    .container-reportes { padding: 24px; }
-  }
-  @media (min-width: 1280px) {
-  .container-reportes {
-    width: min(1800px, 96vw);
-  }
-}
-@media (min-width: 1600px) {
-  .container-reportes {
-    width: min(2000px, 92vw);
-  }
-}
-  @media (min-width: 768px) {
-    .header-reportes {
+    .container-reportes {
       padding: 24px;
     }
   }
-  @media (min-width: 640px) {
-    .titulo-section h1 {
-      font-size: 1.7rem;
+  @media (min-width: 1280px) {
+    .container-reportes {
+      width: min(1800px, 96vw);
     }
   }
-  @media (min-width: 768px) {
-    .titulo-section h1 {
-      font-size: 2rem;
+  @media (min-width: 1600px) {
+    .container-reportes {
+      width: min(2000px, 92vw);
     }
   }
   @media (max-width: 768px) {
@@ -1049,23 +1039,42 @@
       width: 100%;
       justify-content: center;
     }
-  }
-  .titulo-section p {
-    margin: 0;
-    color: rgba(255, 255, 255, 0.95);
-    font-size: 1rem;
-  }
-  .estado-carga {
-    color: #007bff !important;
-    font-weight: 500;
-  }
-  .estado-advertencia {
-    color: #ffc107 !important;
-    font-weight: 500;
-  }
-  .estado-ok {
-    color: #28a745 !important;
-    font-weight: 500;
+    .rango-fechas {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+    }
+    .rango-separador {
+      text-align: center;
+    }
+    .input-fecha {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .filtros-grid {
+      grid-template-columns: 1fr;
+    }
+    .filtro-grupo {
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .select-filtro {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .header-title {
+      padding: 20px 20px;
+      border-radius: 16px;
+    }
+    .panel-filtros {
+      padding: 1rem;
+      border-radius: 12px;
+      margin-left: 0;
+      margin-right: 0;
+    }
   }
   .mensaje {
     margin-top: 1rem;
@@ -1090,28 +1099,7 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     margin-bottom: 2rem;
   }
-  .tipos-categoria {
-    margin-bottom: 2.5rem;
-  }
-  .tipos-categoria:last-child {
-    margin-bottom: 0;
-  }
-  .categoria-titulo {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #e9ecef;
-  }
-  .categoria-titulo h3 {
-    margin: 0 0 0.5rem 0;
-    color: #2c3e50;
-    font-size: 1.3rem;
-    font-weight: 700;
-  }
-  .categoria-titulo p {
-    margin: 0;
-    color: #6c757d;
-    font-size: 0.95rem;
-  }
+
   .input-fecha,
   .select-filtro {
     width: 100%;
@@ -1197,11 +1185,11 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
   .input-fecha {
     flex: 1;
-    min-width: 150px;
+    min-width: 130px;
     padding: 0.75rem;
     border: 1px solid #dee2e6;
     border-radius: 6px;
@@ -1252,8 +1240,8 @@
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
   }
   .select-filtro.requerido {
-    border-color: #ffc107;
-    background: #fff8e1;
+    border-color: #dee2e6;
+    background: white;
   }
   .summary-grid {
     display: grid;
@@ -1493,32 +1481,7 @@
     font-size: 0.9rem;
     color: #6c757d;
   }
-  .tabla-reporte .text-center {
-    text-align: center;
-  }
-  .badge {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
-    border-radius: 4px;
-    font-weight: 500;
-  }
-  .badge-activo {
-    background: #d4edda;
-    color: #155724;
-  }
-  .badge-inactivo {
-    background: #f8d7da;
-    color: #721c24;
-  }
-  .totales-reporte {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    padding: 1rem;
-    background: white;
-    border-radius: 6px;
-    border: 1px solid #e9ecef;
-  }
+
   .total-item {
     display: flex;
     justify-content: space-between;
@@ -1533,15 +1496,6 @@
     font-weight: 700;
     color: #007bff;
     font-size: 1.1rem;
-  }
-  .vista-limitada {
-    text-align: center;
-    padding: 1rem;
-    background: #fff3cd;
-    color: #856404;
-    border-radius: 4px;
-    margin: 1rem 0;
-    font-style: italic;
   }
   .spinner {
     width: 20px;
@@ -1581,245 +1535,25 @@
     padding: 4rem 2rem;
     color: #6c757d;
   }
-  .tabla-individual .dia-fecha {
-    text-align: center;
-    min-width: 80px;
-  }
-  .fecha-completa {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-  }
-  .numero-dia {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #2c3e50;
-  }
-  .nombre-dia {
-    font-size: 0.8rem;
-    color: #6c757d;
-    text-transform: capitalize;
-  }
-  .horario-novedad {
-    min-width: 150px;
-  }
-  .novedad {
-    color: #ffc107;
-    font-weight: 600;
-    font-style: italic;
-  }
-  .horario-habitual {
-    color: #28a745;
-    font-weight: 500;
-  }
-  .sin-jornada {
-    color: #6c757d;
-    font-style: italic;
-  }
-  .horario-guardia {
-    position: relative;
-    min-width: 120px;
-  }
-  .horario-guardia-valor {
-    color: #007bff;
-    font-weight: 600;
-  }
-  .presentismo-ok {
-    color: #28a745;
-    font-weight: bold;
-    margin-left: 0.5rem;
-  }
-  .presentismo-pendiente {
-    color: #ffc107;
-    font-weight: bold;
-    margin-left: 0.5rem;
-  }
-  .horas-columna {
-    min-width: 100px;
-  }
-  .horas-planificadas {
-    font-weight: 600;
-    color: #2c3e50;
-  }
   .horas-efectivas {
     font-size: 0.8rem;
     color: #28a745;
     font-style: italic;
-  }
-  .motivo-guardia {
-    min-width: 100px;
-  }
-  .motivo {
-    background: #e3f2fd;
-    color: #1976d2;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    font-weight: 500;
-  }
-  .dia-con-guardia {
-    background: linear-gradient(135deg, #fff8e1 0%, #ffffff 100%);
-    border-left: 4px solid #ffc107;
-  }
-  .fin-semana {
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-  }
-  .total-row {
-    background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
-    border-top: 2px solid #28a745;
-    font-weight: 600;
-  }
-  .tabla-grilla {
-    overflow-x: auto;
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
-  }
-  .tabla-general {
-    min-width: 800px;
-    font-size: 0.85rem;
-  }
-  .agente-header,
-  .total-header {
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-    color: white;
-    text-align: center;
-    font-weight: 600;
-    min-width: 150px;
-  }
-  .dias-header {
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-    color: white;
-    text-align: center;
-    font-weight: 600;
-  }
-  .dias-numeros th {
-    background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
-    color: #2c3e50;
-    padding: 0.5rem 0.25rem;
-    border-bottom: 1px solid #95a5a6;
-    min-width: 45px;
-    max-width: 45px;
-  }
-  .dias-numeros th.fin-semana {
-    background: linear-gradient(135deg, #fadbd8 0%, #f1948a 100%);
-    color: #922b21;
-  }
-  .dia-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    line-height: 1.2;
-  }
-  .dia-info .numero {
-    font-weight: 700;
-    font-size: 0.9rem;
-  }
-  .dia-info .dia-sem {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-  }
-  .agente-info {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border-right: 2px solid #dee2e6;
-    min-width: 150px;
-    max-width: 150px;
-    padding: 0.75rem 0.5rem;
-  }
-  .nombre-legajo {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  .nombre {
-    font-weight: 600;
-    color: #2c3e50;
-    font-size: 0.9rem;
-    line-height: 1.2;
-  }
-  .legajo {
-    font-size: 0.75rem;
-    color: #7f8c8d;
-    font-style: italic;
-  }
-  .dia-celda {
-    text-align: center;
-    padding: 0.5rem 0.25rem;
-    vertical-align: middle;
-    min-width: 45px;
-    max-width: 45px;
-    border-right: 1px solid #ecf0f1;
-  }
-  .dia-celda.fin-semana {
-    background: linear-gradient(135deg, #fdf2e9 0%, #fadbd8 100%);
-  }
-  .dia-celda.con-horas {
-    background: linear-gradient(135deg, #d5f4e6 0%, #a9dfbf 100%);
-    font-weight: 600;
   }
   .horas-guardia {
     color: #27ae60;
     font-weight: 700;
     font-size: 0.8rem;
   }
-  .sin-actividad,
-  .sin-datos {
-    color: #bdc3c7;
-    font-style: italic;
-  }
-  .novedad {
-    background: #fff3cd;
-    color: #856404;
-    padding: 0.1rem 0.3rem;
-    border-radius: 3px;
-    font-size: 0.7rem;
-    font-weight: 500;
-    display: inline-block;
-    transform: rotate(-45deg);
-    font-style: normal;
-  }
-  .total-agente {
-    background: linear-gradient(135deg, #e8f5e8 0%, #d5f4e6 100%);
-    border-left: 2px solid #27ae60;
-    text-align: center;
-    font-weight: 600;
-    color: #27ae60;
-    min-width: 80px;
-  }
-  .total-direccion {
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-    color: white;
-    font-weight: 700;
-  }
-  .total-direccion td {
-    padding: 0.75rem 0.5rem;
-    text-align: center;
-    border-top: 3px solid #f39c12;
-  }
-  .total-dia {
-    font-size: 0.8rem;
-  }
-  .total-general {
-    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-    font-size: 1.1rem;
-  }
+
   @media (max-width: 768px) {
     .rango-fechas {
       gap: 8px;
     }
-    .rango-separador {
-      order: 0;
-    }
     .container-reportes {
       padding: 0.75rem;
     }
-    .header-reportes {
-      padding: 1.5rem 1rem;
-      border-radius: 16px;
-    }
-    .titulo-section h1 {
-      font-size: 1.25rem;
-    }
+
     .selector-tipo,
     .panel-filtros,
     .panel-resultado {
@@ -1833,12 +1567,6 @@
     }
     .selector-tipo-container {
       grid-template-columns: 1fr;
-    }
-    .tipos-categoria {
-      margin-bottom: 2rem;
-    }
-    .categoria-titulo h3 {
-      font-size: 1.1rem;
     }
     .alertas-normativas {
       gap: 0.75rem;
@@ -1859,9 +1587,15 @@
       flex-direction: column;
       align-items: stretch;
     }
+    .input-fecha:first-of-type {
+      order: 1;
+    }
     .rango-separador {
       text-align: center;
-      order: 1;
+      order: 2;
+    }
+    .input-fecha:last-of-type {
+      order: 3;
     }
     .resultado-header {
       flex-direction: column;
@@ -1875,76 +1609,16 @@
     .datos-area {
       grid-template-columns: 1fr;
     }
-    .totales-reporte {
-      grid-template-columns: 1fr;
-    }
     .opciones-adicionales {
       flex-direction: column;
       gap: 1rem;
-    }
-    .presentismo-info {
-      grid-column: 1 / -1;
-    }
-    .totales-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0.5rem;
     }
   }
   .horas-efectivas {
     color: #28a745;
     font-weight: 600;
   }
-  .sin-registro {
-    color: #ffc107;
-    font-size: 0.8rem;
-    font-weight: 500;
-  }
-  .badge-warning {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeaa7;
-    font-size: 0.7rem;
-    margin-left: 0.25rem;
-  }
-  .presentismo-info {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    padding: 1.5rem;
-    border-radius: 12px;
-    border: 1px solid #dee2e6;
-    margin-top: 1rem;
-  }
-  .presentismo-info h4 {
-    margin: 0 0 1rem 0;
-    color: #495057;
-    font-size: 1rem;
-    font-weight: 600;
-  }
-  .totales-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-  .total-item.success {
-    border-left: 4px solid #28a745;
-  }
-  .total-item.warning {
-    border-left: 4px solid #ffc107;
-  }
-  .alerta-presentismo {
-    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-    border: 1px solid #ffc107;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-top: 1rem;
-  }
-  .alerta-presentismo p {
-    margin: 0;
-    color: #856404;
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
+
   .tabla-horas-trabajadas .horas-programadas {
     color: #007bff;
     font-weight: 600;
@@ -2090,11 +1764,7 @@
     color: #0c5460;
     font-weight: 600;
   }
-  .tabla-plus .horas-normales {
-    text-align: center;
-    color: #2c3e50;
-    font-weight: 600;
-  }
+
   .tabla-plus .plus-20 {
     text-align: center;
     color: #f39c12;
@@ -2106,12 +1776,6 @@
     color: #e74c3c;
     font-weight: 600;
     background: #fdf2f2;
-  }
-  .tabla-plus .total-liquidar {
-    text-align: center;
-    background: linear-gradient(135deg, #d4edda 0%, #a9dfbf 100%);
-    color: #155724;
-    font-size: 0.95rem;
   }
   .alertas-normativas {
     display: flex;
