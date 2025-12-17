@@ -912,6 +912,36 @@
 		}
 
 		.modal-overlay {
+			padding: 0.5rem;
+			align-items: flex-start; /* Better for tall modals on mobile */
+		}
+
+		.modal-content {
+			max-height: 95vh;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.modal-header {
+			padding: 1rem;
+		}
+
+		.modal-header h2 {
+			font-size: 1.1rem; /* Smaller title */
+		}
+
+		.tabs {
+			overflow-x: auto; /* Scrollable tabs */
+			white-space: nowrap;
+			-webkit-overflow-scrolling: touch;
+		}
+		
+		.tab-button {
+			padding: 0.75rem 1rem;
+			font-size: 0.85rem;
+		}
+
+		.form-content {
 			padding: 1rem;
 		}
 	}

@@ -51,8 +51,6 @@
 	let esAgente = false;
 	let esJefaturaODirector = false;
 
-
-
 	let showModalSolicitar = false;
 	let showModalCrear = false;
 	let showModalAsignar = false;
@@ -397,7 +395,11 @@
 	}
 
 	function mostrarAlerta(mensaje, tipo = "info") {
-		const titles = { error: "Error", success: "Éxito", info: "Información" };
+		const titles = {
+			error: "Error",
+			success: "Éxito",
+			info: "Información",
+		};
 		const title = titles[tipo] || "Información";
 		showAlert(mensaje, tipo, title);
 	}
@@ -424,8 +426,12 @@
 
 	function handleFechaDesdeChange() {
 		// Si la nueva fecha desde es posterior a la fecha hasta, limpiar fecha hasta
-		if ($filtros.fecha_desde && $filtros.fecha_hasta && $filtros.fecha_desde > $filtros.fecha_hasta) {
-			actualizarFiltros({ fecha_hasta: '' });
+		if (
+			$filtros.fecha_desde &&
+			$filtros.fecha_hasta &&
+			$filtros.fecha_desde > $filtros.fecha_hasta
+		) {
+			actualizarFiltros({ fecha_hasta: "" });
 		}
 		aplicarFiltros();
 	}
@@ -879,78 +885,121 @@
 					</table>
 				</div>
 
-            <!-- Vista de tarjetas para móvil -->
-			<div class="cards-container mobile-only">
-				{#each $licenciasFiltradas as licencia (licencia.id_licencia)}
-					<div class="licencia-card" class:pending={licencia.estado === "pendiente"}>
-						<div class="card-header">
-							<div class="card-agente">
-								<strong>{licencia.agente_nombre || "SIN AGENTE"}</strong>
-								<small>{licencia.area_nombre || "N/A"}</small>
-								<span class="tipo-badge-mobile">{licencia.tipo_licencia_descripcion || "SIN TIPO"}</span>
+				<!-- Vista de tarjetas para móvil -->
+				<div class="cards-container mobile-only">
+					{#each $licenciasFiltradas as licencia (licencia.id_licencia)}
+						<div
+							class="licencia-card"
+							class:pending={licencia.estado === "pendiente"}
+						>
+							<div class="card-header">
+								<div class="card-agente">
+									<strong
+										>{licencia.agente_nombre ||
+											"SIN AGENTE"}</strong
+									>
+									<small
+										>{licencia.area_nombre || "N/A"}</small
+									>
+									<span class="tipo-badge-mobile"
+										>{licencia.tipo_licencia_descripcion ||
+											"SIN TIPO"}</span
+									>
+								</div>
+								<span
+									class="estado-badge"
+									style="background-color: {obtenerColorEstado(
+										licencia.estado,
+									)}20; color: {obtenerColorEstado(
+										licencia.estado,
+									)}; border: 1px solid {obtenerColorEstado(
+										licencia.estado,
+									)}40"
+								>
+									{obtenerIconoEstado(licencia.estado)}
+									{licencia.estado.toUpperCase()}
+								</span>
 							</div>
-							<span
-								class="estado-badge"
-								style="background-color: {obtenerColorEstado(licencia.estado)}20; color: {obtenerColorEstado(licencia.estado)}; border: 1px solid {obtenerColorEstado(licencia.estado)}40"
-							>
-								{obtenerIconoEstado(licencia.estado)}
-								{licencia.estado.toUpperCase()}
-							</span>
-						</div>
-						
-						<div class="card-body">
-							<div class="card-row">
-								<span class="card-label">📅 Período:</span>
-								<span class="card-value">{formatearFecha(licencia.fecha_desde)} - {formatearFecha(licencia.fecha_hasta)}</span>
-							</div>
-							<div class="card-row">
-								<span class="card-label">⏱️ Duración:</span>
-								<span class="dias-count-big">{calcularDiasLicencia(licencia.fecha_desde, licencia.fecha_hasta)} días</span>
-							</div>
-							<div class="card-row">
-								<span class="card-label">📨 Solicitado:</span>
-								<span class="card-value">{formatearFecha(licencia.creado_en)}</span>
-							</div>
-                            {#if licencia.observaciones}
-                                <div class="card-row">
-                                    <span class="card-label">💬 Obs:</span>
-                                    <span class="card-value">{licencia.observaciones}</span>
-                                </div>
-                            {/if}
-						</div>
 
-                        <div class="card-actions-wrapper">
-                            {#if puedeAprobarLicenciaEspecifica(licencia)}
-                                <div class="card-actions">
-                                    <button
-                                        class="btn-card btn-success"
-                                        on:click={() => abrirModalAprobar(licencia)}
-                                    >
-                                        ✅ Aprobar
-                                    </button>
-                                    <button
-                                        class="btn-card btn-danger"
-                                        on:click={() => abrirModalRechazar(licencia)}
-                                    >
-                                        ❌ Rechazar
-                                    </button>
-                                </div>
-                            {/if}
+							<div class="card-body">
+								<div class="card-row">
+									<span class="card-label">📅 Período:</span>
+									<span class="card-value"
+										>{formatearFecha(licencia.fecha_desde)} -
+										{formatearFecha(
+											licencia.fecha_hasta,
+										)}</span
+									>
+								</div>
+								<div class="card-row">
+									<span class="card-label">⏱️ Duración:</span>
+									<span class="dias-count-big"
+										>{calcularDiasLicencia(
+											licencia.fecha_desde,
+											licencia.fecha_hasta,
+										)} días</span
+									>
+								</div>
+								<div class="card-row">
+									<span class="card-label"
+										>📨 Solicitado:</span
+									>
+									<span class="card-value"
+										>{formatearFecha(
+											licencia.creado_en,
+										)}</span
+									>
+								</div>
+								{#if licencia.observaciones}
+									<div class="card-row">
+										<span class="card-label">💬 Obs:</span>
+										<span class="card-value"
+											>{licencia.observaciones}</span
+										>
+									</div>
+								{/if}
+							</div>
 
-                            {#if isAdmin}
-                                <div class="card-actions" style="margin-top: 8px;">
-                                     <button
-                                        class="btn-card btn-warning"
-                                        on:click={() => abrirModalEliminarLicencia(licencia)}
-                                    >
-                                        🗑️ Eliminar Licencia
-                                    </button>
-                                </div>
-                            {/if}
-                        </div>
-					</div>
-				{/each}
-			</div>
+							<div class="card-actions-wrapper">
+								{#if puedeAprobarLicenciaEspecifica(licencia)}
+									<div class="card-actions">
+										<button
+											class="btn-card btn-success"
+											on:click={() =>
+												abrirModalAprobar(licencia)}
+										>
+											✅ Aprobar
+										</button>
+										<button
+											class="btn-card btn-danger"
+											on:click={() =>
+												abrirModalRechazar(licencia)}
+										>
+											❌ Rechazar
+										</button>
+									</div>
+								{/if}
+
+								{#if isAdmin}
+									<div
+										class="card-actions"
+										style="margin-top: 8px;"
+									>
+										<button
+											class="btn-card btn-warning"
+											on:click={() =>
+												abrirModalEliminarLicencia(
+													licencia,
+												)}
+										>
+											🗑️ Eliminar Licencia
+										</button>
+									</div>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
 			{/if}
 		{:else}
 			{#if errorTipos}
@@ -1042,41 +1091,55 @@
 					</table>
 				</div>
 
-                <!-- Cards Tipos View Mobile -->
-                <div class="cards-container mobile-only">
-                    {#each tiposFiltrados as tipo (tipo.id_tipo_licencia || tipo.id)}
-                        <div class="licencia-card">
-                            <div class="card-header">
-                                <span class="card-value" style="font-size: 16px;">
-                                    📝 <strong>{tipo.codigo || tipo.nombre || "—"}</strong>
-                                </span>
-                            </div>
-                            <div class="card-body">
-                                <div class="card-row" style="flex-direction: column; gap: 4px;">
-                                    <span class="card-label">Descripción:</span>
-                                    <span class="card-value" style="font-weight: normal;">{tipo.descripcion || "—"}</span>
-                                </div>
-                            </div>
-                            <div class="card-actions-wrapper">
-                                <div class="card-actions">
-                                    <button
-                                        class="btn-card btn-success"
-                                        style="background: linear-gradient(135deg, #4c51bf, #5b21b6);"
-                                        on:click={() => abrirEdicion(tipo)}
-                                    >
-                                        ✏️ Editar
-                                    </button>
-                                    <button
-                                        class="btn-card btn-danger"
-                                        on:click={() => eliminar(tipo)}
-                                    >
-                                        🗑️ Eliminar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    {/each}
-                </div>
+				<!-- Cards Tipos View Mobile -->
+				<div class="cards-container mobile-only">
+					{#each tiposFiltrados as tipo (tipo.id_tipo_licencia || tipo.id)}
+						<div class="licencia-card">
+							<div class="card-header">
+								<span
+									class="card-value"
+									style="font-size: 16px;"
+								>
+									📝 <strong
+										>{tipo.codigo ||
+											tipo.nombre ||
+											"—"}</strong
+									>
+								</span>
+							</div>
+							<div class="card-body">
+								<div
+									class="card-row"
+									style="flex-direction: column; gap: 4px;"
+								>
+									<span class="card-label">Descripción:</span>
+									<span
+										class="card-value"
+										style="font-weight: normal;"
+										>{tipo.descripcion || "—"}</span
+									>
+								</div>
+							</div>
+							<div class="card-actions-wrapper">
+								<div class="card-actions">
+									<button
+										class="btn-card btn-success"
+										style="background: linear-gradient(135deg, #4c51bf, #5b21b6);"
+										on:click={() => abrirEdicion(tipo)}
+									>
+										✏️ Editar
+									</button>
+									<button
+										class="btn-card btn-danger"
+										on:click={() => eliminar(tipo)}
+									>
+										🗑️ Eliminar
+									</button>
+								</div>
+							</div>
+						</div>
+					{/each}
+				</div>
 			{/if}
 		{/if}
 	</div>
@@ -1166,12 +1229,6 @@
 		box-sizing: border-box;
 	}
 
-	html,
-	body {
-		overflow-x: hidden;
-		max-width: 100vw;
-	}
-
 	.page-container {
 		margin: 0 auto;
 		padding: 1.5rem;
@@ -1236,16 +1293,18 @@
 		word-wrap: break-word;
 	}
 
-	@media (min-width: 480px) {
+	@media (min-width: 640px) {
 		.header-title h1 {
-			font-size: 22px;
+			font-size: 16px;
+			display: inline-block;
 		}
 	}
 
-	@media (min-width: 640px) {
+	@media (max-width: 768px) {
 		.header-title h1 {
-			font-size: 26px;
-			display: inline-block;
+			font-size: 1.2rem !important; 
+			margin: 5px 0 !important;
+			padding-bottom: 8px !important;
 		}
 	}
 
@@ -1900,13 +1959,27 @@
 			flex-direction: column;
 			gap: 1rem;
 			align-items: stretch;
-			padding-bottom: 1rem;
+			padding: 0;
 		}
 
 		.header-title {
-			padding: 20px 15px;
-			border-radius: 16px;
+			padding: 0.75rem !important;
+			border-radius: 16px !important;
 			margin-right: 0;
+			margin-bottom: 15px;
+			min-height: unset !important;
+		}
+
+		.header-title h1 {
+			font-size: 18px !important;
+			margin: 10px !important;
+			padding-bottom: 12px !important; 
+			padding-top: 0 !important;
+			padding-left: 0 !important;
+			padding-right: 0 !important;
+			line-height: normal !important;
+			display: block !important;
+			border-radius: 0 !important;
 		}
 
 		.header-actions {
@@ -1916,12 +1989,13 @@
 
 		.btn-secondary,
 		.btn-refresh,
-		.btn-header {
+		.btn-header,
+		.btn-primary { 
 			width: 100%;
 			justify-content: center;
 			margin-left: 0;
-			padding: 12px 20px;
-			font-size: 15px;
+			padding: 12px 20px !important; 
+			font-size: 0.95rem !important; 
 		}
 
 		.toggle-buttons {
@@ -1933,7 +2007,7 @@
 		.btn-toggle {
 			width: 100%;
 			padding: 0.75rem 1.5rem;
-			font-size: 15px;
+			font-size: 0.85rem;
 		}
 
 		.stats-container {
@@ -2531,17 +2605,17 @@
 		color: #2d3748;
 		margin-bottom: 0.5rem;
 	}
-	/* Responsive Styles */
-    @media (max-width: 1024px) {
-        .desktop-only {
-            display: none !important;
-        }
-        
-        .mobile-only {
-            display: flex !important;
-        }
 
-        .filtros-container {
+	@media (max-width: 1024px) {
+		.desktop-only {
+			display: none !important;
+		}
+
+		.mobile-only {
+			display: flex !important;
+		}
+
+		.filtros-container {
 			padding: 1rem;
 			border-radius: 10px;
 			margin-bottom: 1rem;
@@ -2552,13 +2626,14 @@
 			gap: 1rem;
 		}
 
-		.filtro-group, .filtro-actions {
-            flex: 1 1 100%;
+		.filtro-group,
+		.filtro-actions {
+			flex: 1 1 100%;
 			min-width: 100%;
-            width: 100%;
+			width: 100%;
 		}
-        
-        .filtro-group label {
+
+		.filtro-group label {
 			font-size: 14px;
 			display: block;
 			margin-bottom: 6px;
@@ -2566,16 +2641,16 @@
 
 		.filtro-group input,
 		.filtro-group select,
-        .input-busqueda { /* Added input-busqueda here */
+		.input-busqueda {
 			padding: 12px;
 			font-size: 14px;
 			border-radius: 10px;
-            width: 100%;
-            box-sizing: border-box;
-            min-height: 45px;
+			width: 100%;
+			box-sizing: border-box;
+			min-height: 45px;
 		}
 
-        .btn-clear {
+		.btn-clear {
 			width: 100%;
 			height: auto;
 			padding: 14px;
@@ -2583,39 +2658,40 @@
 			border-radius: 10px;
 			margin-top: 0.5rem;
 		}
-        
-        .page-header {
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .header-actions {
-            flex-direction: column;
-        }
-        
-         .btn-secondary, .btn-nuevoTipo {
-            margin-left: 0;
-            width: 100%;
-            justify-content: center;
-        }
-        
-        .toggle-buttons {
-            flex-direction: column;
-        }
-        
-        .btn-toggle {
-            width: 100%;
-        }
-    }
 
-    @media (min-width: 1025px) {
-        .mobile-only {
-            display: none !important;
-        }
-    }
+		.page-header {
+			flex-direction: column;
+			gap: 1rem;
+		}
 
-    /* Mobile Cards Styles */
-    .cards-container {
+		.header-actions {
+			flex-direction: column;
+		}
+
+		.btn-secondary,
+		.btn-nuevoTipo {
+			margin-left: 0;
+			width: 100%;
+			justify-content: center;
+		}
+
+		.toggle-buttons {
+			flex-direction: column;
+		}
+
+		.btn-toggle {
+			width: 100%;
+		}
+	}
+
+	@media (min-width: 1025px) {
+		.mobile-only {
+			display: none !important;
+		}
+	}
+
+	/* Mobile Cards Styles */
+	.cards-container {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
@@ -2720,11 +2796,11 @@
 		font-weight: 600;
 	}
 
-    .card-actions-wrapper {
-        padding: 12px 16px;
+	.card-actions-wrapper {
+		padding: 12px 16px;
 		background: #f8fafc;
 		border-top: 1px solid #e5e7eb;
-    }
+	}
 
 	.card-actions {
 		display: flex;
@@ -2745,12 +2821,12 @@
 		justify-content: center;
 		gap: 6px;
 	}
-    
-    .btn-card.btn-warning {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
+
+	.btn-card.btn-warning {
+		background: linear-gradient(135deg, #f59e0b, #d97706);
 		color: white;
-        box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
-    }
+		box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+	}
 
 	.btn-card.btn-success {
 		background: linear-gradient(135deg, #10b981, #059669);

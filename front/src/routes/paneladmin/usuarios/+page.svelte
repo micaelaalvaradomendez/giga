@@ -155,232 +155,268 @@
 	<a href="/paneladmin">Panel de Administración</a>
 </div>
 
-<div class="page-header">
-	<div class="page-header-title">
-		<h1>Gestión de Agentes</h1>
-	</div>
-	{#if $usuarioActual && $usuarioActual.rol && $usuarioActual.rol.toLowerCase() === "administrador"}
-		<button class="btn-primary" on:click={agregarAgente}>
-			+ Añadir Agente
-		</button>
-	{:else}
-		<!-- Director/Jefatura NO pueden agregar usuarios -->
-		<div class="info-message">
-			📝 Solo puedes editar agentes que estén bajo tu jerarquía
+<div class="page-container">
+	<div class="page-header">
+		<div class="page-header-title">
+			<h1>Gestión de Agentes</h1>
 		</div>
-	{/if}
-</div>
-
-<!-- Controles de filtrado -->
-<div class="filtros-container">
-	<div class="filtros-row">
-		<div class="filtro-group">
-			<label for="busqueda">🔍 Buscar agente</label>
-			<input
-				type="text"
-				id="busqueda"
-				bind:value={$busqueda}
-				placeholder="Buscar por nombre, apellido, DNI, email o legajo..."
-				class="input-busqueda"
-			/>
-		</div>
-		<div class="filtro-group">
-			<label for="filtroArea">📍 Filtrar por área</label>
-			<select
-				id="filtroArea"
-				bind:value={$filtroArea}
-				class="select-area"
-			>
-				<option value=""
-					>Todas las áreas ({$areasDisponibles.length})</option
-				>
-				{#each $areasDisponibles as area}
-					<option value={area.id_area}>{area.nombre}</option>
-				{/each}
-				{#if $areasDisponibles.length === 0}
-					<option disabled>❌ No hay áreas cargadas</option>
-				{/if}
-			</select>
-		</div>
-		<div class="filtro-actions">
-			<button
-				class="btn-limpiar"
-				on:click={limpiarFiltros}
-				title="Limpiar filtros"
-			>
-				🗑️ Limpiar
+		{#if $usuarioActual && $usuarioActual.rol && $usuarioActual.rol.toLowerCase() === "administrador"}
+			<button class="btn-primary" on:click={agregarAgente}>
+				+ Añadir Agente
 			</button>
+		{:else}
+			<!-- Director/Jefatura NO pueden agregar usuarios -->
+			<div class="info-message">
+				📝 Solo puedes editar agentes que estén bajo tu jerarquía
+			</div>
+		{/if}
+	</div>
+
+	<!-- Controles de filtrado -->
+	<div class="filtros-container">
+		<div class="filtros-row">
+			<div class="filtro-group">
+				<label for="busqueda">🔍 Buscar agente</label>
+				<input
+					type="text"
+					id="busqueda"
+					bind:value={$busqueda}
+					placeholder="Buscar por nombre, apellido, DNI, email o legajo..."
+					class="input-busqueda"
+				/>
+			</div>
+			<div class="filtro-group">
+				<label for="filtroArea">📍 Filtrar por área</label>
+				<select
+					id="filtroArea"
+					bind:value={$filtroArea}
+					class="select-area"
+				>
+					<option value=""
+						>Todas las áreas ({$areasDisponibles.length})</option
+					>
+					{#each $areasDisponibles as area}
+						<option value={area.id_area}>{area.nombre}</option>
+					{/each}
+					{#if $areasDisponibles.length === 0}
+						<option disabled>❌ No hay áreas cargadas</option>
+					{/if}
+				</select>
+			</div>
+			<div class="filtro-actions">
+				<button
+					class="btn-limpiar"
+					on:click={limpiarFiltros}
+					title="Limpiar filtros"
+				>
+					🗑️ Limpiar
+				</button>
+			</div>
 		</div>
 	</div>
-</div>
 
-<div class="table-container">
-	<table>
-		<thead>
-			<tr>
-				<th>Legajo</th>
-				<th>Nombre Completo</th>
-				<th>DNI</th>
-				<th>Categoría</th>
-				<th>Área</th>
-				<th>Rol</th>
-				<th>Acciones</th>
-			</tr>
-		</thead>
-		<tbody>
-			{#if $agentesFiltrados && $agentesFiltrados.length > 0}
-				{#each $agentesFiltrados as agente}
-					{@const currentUser = usuariosController.getCurrentUser()}
-					<tr
-						class={usuariosController.isCurrentUser(agente)
-							? "current-user"
-							: ""}
-					>
-						<td><strong>{agente.legajo || "N/A"}</strong></td>
-						<td>
-							<strong>{agente.nombre} {agente.apellido}</strong>
-							{#if usuariosController.isCurrentUser(agente)}
-								<span class="badge badge-current-user">Tú</span>
-							{/if}
-						</td>
-						<td>{agente.dni}</td>
-						<td>{agente.categoria_revista || "N/A"}</td>
-						<td>
-							{#if agente.area_nombre}
-								<span class="badge badge-area"
-									>{agente.area_nombre}</span
+	<div class="table-container">
+		<table>
+			<thead>
+				<tr>
+					<th>Legajo</th>
+					<th>Nombre Completo</th>
+					<th>DNI</th>
+					<th>Categoría</th>
+					<th>Área</th>
+					<th>Rol</th>
+					<th>Acciones</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#if $agentesFiltrados && $agentesFiltrados.length > 0}
+					{#each $agentesFiltrados as agente}
+						{@const currentUser =
+							usuariosController.getCurrentUser()}
+						<tr
+							class={usuariosController.isCurrentUser(agente)
+								? "current-user"
+								: ""}
+						>
+							<td><strong>{agente.legajo || "N/A"}</strong></td>
+							<td>
+								<strong
+									>{agente.nombre} {agente.apellido}</strong
 								>
-							{:else if agente.agrupacion_display}
-								<span
-									class="badge badge-{agente.agrupacion?.toLowerCase()}"
-									>{agente.agrupacion_display}</span
-								>
-							{:else}
-								<span class="badge badge-sin-area"
-									>Sin área</span
-								>
-							{/if}
-						</td>
-						<td>
-							{#if agente.roles && agente.roles.length > 0}
-								<span class="badge badge-role"
-									>{agente.roles[0].nombre}</span
-								>
-								{#if agente.roles.length > 1}
-									<span class="badge badge-secondary"
-										>+{agente.roles.length - 1}</span
+								{#if usuariosController.isCurrentUser(agente)}
+									<span class="badge badge-current-user"
+										>Tú</span
 									>
 								{/if}
+							</td>
+							<td>{agente.dni}</td>
+							<td>{agente.categoria_revista || "N/A"}</td>
+							<td>
+								{#if agente.area_nombre}
+									<span class="badge badge-area"
+										>{agente.area_nombre}</span
+									>
+								{:else if agente.agrupacion_display}
+									<span
+										class="badge badge-{agente.agrupacion?.toLowerCase()}"
+										>{agente.agrupacion_display}</span
+									>
+								{:else}
+									<span class="badge badge-sin-area"
+										>Sin área</span
+									>
+								{/if}
+							</td>
+							<td>
+								{#if agente.roles && agente.roles.length > 0}
+									<span class="badge badge-role"
+										>{agente.roles[0].nombre}</span
+									>
+									{#if agente.roles.length > 1}
+										<span class="badge badge-secondary"
+											>+{agente.roles.length - 1}</span
+										>
+									{/if}
+								{:else}
+									<span class="badge badge-sin-rol"
+										>Sin rol</span
+									>
+								{/if}
+							</td>
+							<td class="actions">
+								<button
+									class="btn-icon"
+									title="Editar"
+									on:click={() => editarAgente(agente)}
+									>✏️</button
+								>
+								<button
+									class="btn-icon"
+									title="Ver detalles"
+									on:click={() => verAgente(agente)}
+									>👁️</button
+								>
+								{#if usuariosController.isCurrentUser(agente)}
+									<button
+										class="btn-icon-disabled"
+										title="No puedes eliminarte a ti mismo"
+										disabled>🔒</button
+									>
+								{:else if $usuarioActual && $usuarioActual.rol && $usuarioActual.rol.toLowerCase() === "administrador"}
+									<button
+										class="btn-icon-danger"
+										title="Eliminar usuario"
+										on:click={() => eliminarAgente(agente)}
+										>🗑️</button
+									>
+								{:else}
+									<button
+										class="btn-icon-disabled"
+										title="Solo administradores pueden eliminar usuarios"
+										disabled>🔒</button
+									>
+								{/if}
+							</td>
+						</tr>
+					{/each}
+				{:else}
+					<tr>
+						<td
+							colspan="7"
+							style="text-align: center; padding: 2rem;"
+						>
+							{#if $busqueda || $filtroArea}
+								No se encontraron agentes que coincidan con los
+								filtros aplicados.
+								<br /><button
+									class="btn-link"
+									on:click={limpiarFiltros}
+									>Limpiar filtros</button
+								>
 							{:else}
-								<span class="badge badge-sin-rol">Sin rol</span>
-							{/if}
-						</td>
-						<td class="actions">
-							<button
-								class="btn-icon"
-								title="Editar"
-								on:click={() => editarAgente(agente)}>✏️</button
-							>
-							<button
-								class="btn-icon"
-								title="Ver detalles"
-								on:click={() => verAgente(agente)}>👁️</button
-							>
-							{#if usuariosController.isCurrentUser(agente)}
-								<button
-									class="btn-icon-disabled"
-									title="No puedes eliminarte a ti mismo"
-									disabled>🔒</button
-								>
-							{:else if $usuarioActual && $usuarioActual.rol && $usuarioActual.rol.toLowerCase() === "administrador"}
-								<button
-									class="btn-icon-danger"
-									title="Eliminar usuario"
-									on:click={() => eliminarAgente(agente)}
-									>🗑️</button
-								>
-							{:else}
-								<button
-									class="btn-icon-disabled"
-									title="Solo administradores pueden eliminar usuarios"
-									disabled>🔒</button
-								>
+								No se encontraron agentes. Total: {$agentes
+									? $agentes.length
+									: "undefined"}
 							{/if}
 						</td>
 					</tr>
-				{/each}
-			{:else}
-				<tr>
-					<td colspan="7" style="text-align: center; padding: 2rem;">
-						{#if $busqueda || $filtroArea}
-							No se encontraron agentes que coincidan con los
-							filtros aplicados.
-							<br /><button
-								class="btn-link"
-								on:click={limpiarFiltros}
-								>Limpiar filtros</button
-							>
-						{:else}
-							No se encontraron agentes. Total: {$agentes
-								? $agentes.length
-								: "undefined"}
-						{/if}
-					</td>
-				</tr>
-			{/if}
-		</tbody>
-	</table>
+				{/if}
+			</tbody>
+		</table>
+	</div>
+
+	<!-- Modales -->
+	<ModalVerAgente
+		bind:isOpen={$modalVerAgente.isOpen}
+		agente={$modalVerAgente.agente}
+		on:cerrar={cerrarModales}
+	/>
+
+	<ModalEditarAgente
+		bind:isOpen={$modalEditarAgente.isOpen}
+		agente={$modalEditarAgente.agente}
+		bind:isSaving={$modalEditarAgente.isSaving}
+		areasDisponibles={$areasDisponibles}
+		rolesDisponibles={$rolesDisponibles}
+		on:cerrar={cerrarModales}
+		on:guardar={guardarCambiosAgente}
+	/>
+
+	<ModalEliminarAgente
+		bind:isOpen={$modalEliminarAgente.isOpen}
+		agente={$modalEliminarAgente.agente}
+		bind:isDeleting={$modalEliminarAgente.isDeleting}
+		on:cerrar={cerrarModales}
+		on:confirmar={confirmarEliminacionAgente}
+	/>
+
+	<ModalAgregarAgente
+		bind:isOpen={$modalAgregarAgente.isOpen}
+		bind:isSaving={$modalAgregarAgente.isSaving}
+		areasDisponibles={$areasDisponibles}
+		rolesDisponibles={$rolesDisponibles}
+		on:cerrar={cerrarModales}
+		on:guardar={crearNuevoAgente}
+	/>
+
+	<!-- Modal de alertas -->
+	<ModalAlert
+		bind:show={$modalAlert.show}
+		type={$modalAlert.type}
+		title={$modalAlert.title}
+		message={$modalAlert.message}
+		showConfirmButton={$modalAlert.showConfirmButton}
+		confirmText={$modalAlert.confirmText}
+		showCancelButton={$modalAlert.showCancelButton}
+		cancelText={$modalAlert.cancelText}
+		on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
+	/>
 </div>
 
-<!-- Modales -->
-<ModalVerAgente
-	bind:isOpen={$modalVerAgente.isOpen}
-	agente={$modalVerAgente.agente}
-	on:cerrar={cerrarModales}
-/>
-
-<ModalEditarAgente
-	bind:isOpen={$modalEditarAgente.isOpen}
-	agente={$modalEditarAgente.agente}
-	bind:isSaving={$modalEditarAgente.isSaving}
-	areasDisponibles={$areasDisponibles}
-	rolesDisponibles={$rolesDisponibles}
-	on:cerrar={cerrarModales}
-	on:guardar={guardarCambiosAgente}
-/>
-
-<ModalEliminarAgente
-	bind:isOpen={$modalEliminarAgente.isOpen}
-	agente={$modalEliminarAgente.agente}
-	bind:isDeleting={$modalEliminarAgente.isDeleting}
-	on:cerrar={cerrarModales}
-	on:confirmar={confirmarEliminacionAgente}
-/>
-
-<ModalAgregarAgente
-	bind:isOpen={$modalAgregarAgente.isOpen}
-	bind:isSaving={$modalAgregarAgente.isSaving}
-	areasDisponibles={$areasDisponibles}
-	rolesDisponibles={$rolesDisponibles}
-	on:cerrar={cerrarModales}
-	on:guardar={crearNuevoAgente}
-/>
-
-<!-- Modal de alertas -->
-<ModalAlert
-	bind:show={$modalAlert.show}
-	type={$modalAlert.type}
-	title={$modalAlert.title}
-	message={$modalAlert.message}
-	showConfirmButton={$modalAlert.showConfirmButton}
-	confirmText={$modalAlert.confirmText}
-	showCancelButton={$modalAlert.showCancelButton}
-	cancelText={$modalAlert.cancelText}
-	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
-	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
-/>
-
 <style>
+	.page-container {
+		width: 1600px;
+		margin: 0 auto;
+		padding: 0.5rem;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	}
+
+	@media (max-width: 1650px) {
+		.page-container {
+			width: 100%;
+			max-width: 100%;
+			padding: 0.5rem;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.page-container {
+			padding: 0.5rem;
+			width: 100%;
+			box-sizing: border-box;
+		}
+	}
+
 	:global(body) {
 		margin: 0;
 		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -705,12 +741,10 @@
 		border-radius: 24px;
 		box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
 		background: white;
-		scrollbar-width: none;
-		-ms-overflow-style: none;
-	}
-
-	.table-container::-webkit-scrollbar {
-		display: none;
+		scrollbar-width: thin;
+		scrollbar-color: #c1c7cd #f1f3f4;
+		margin-bottom: 2rem;
+		-ms-overflow-style: auto;
 	}
 
 	.table-container::-webkit-scrollbar {
@@ -936,40 +970,84 @@
 		.stats-container {
 			grid-template-columns: repeat(3, 1fr);
 		}
+
+		table {
+			font-size: 0.85rem;
+		}
+
+		th,
+		td {
+			padding: 0.75rem 0.5rem;
+		}
 	}
 
 	@media (max-width: 768px) {
+		:global(.admin-content-full) {
+			padding: 0.5rem;
+			margin: 0.5rem;
+			width: calc(100% - 1rem);
+			box-sizing: border-box;
+		}
+
 		.page-header {
 			flex-direction: column;
 			gap: 1rem;
 			align-items: stretch;
+			padding: 0;
+			margin-bottom: 15px;
+		}
+
+		.page-header-title {
+			padding: 0.75rem;
+			border-radius: 16px;
+		}
+
+		.btn-primary {
+			width: 100%;
+			padding: 12px 20px;
+			font-size: 0.95rem;
+			text-align: center;
+			display: flex;
+			justify-content: center;
 		}
 
 		.stats-container {
 			grid-template-columns: repeat(2, 1fr);
 		}
 
-		.filtros-row {
-			grid-template-columns: 1fr;
-			gap: 1rem;
+		.filtros-container {
+			padding: 0.75rem;
+			margin-bottom: 15px;
 		}
 
-		.filtros-container {
-			padding: 1rem;
+		.filtros-row {
+			grid-template-columns: 1fr;
+			gap: 0.75rem;
 		}
 
 		.input-busqueda,
 		.select-area {
-			min-width: auto;
+			min-width: unset;
 			width: 100%;
+			box-sizing: border-box;
 		}
 
 		.filtro-actions {
 			justify-content: center;
+			width: 100%;
+		}
+
+		.btn-limpiar {
+			width: 100%;
 		}
 
 		.table-container {
-			overflow-x: auto;
+			display: block;
+			width: auto;
+			overflow: auto;
+			max-height: 60vh;
+			border-radius: 12px;
+			margin-bottom: 2rem;
 		}
 
 		.info-message {
@@ -984,13 +1062,13 @@
 		}
 
 		table {
-			min-width: 800px; /* Reducir ancho mínimo para móviles */
+			min-width: 800px;
 		}
 
 		th,
 		td {
-			padding: 0.5rem;
-			font-size: 0.875rem;
+			padding: 10px 12px;
+			font-size: 0.85rem;
 		}
 
 		.btn-icon,
@@ -1000,6 +1078,14 @@
 	}
 
 	@media (max-width: 480px) {
+		:global(.admin-content-full) {
+			padding: 0.5rem;
+		}
+
+		.page-header {
+			border-radius: 10px;
+		}
+
 		.stats-container {
 			grid-template-columns: 1fr;
 		}
@@ -1010,6 +1096,32 @@
 
 		.stat-number {
 			font-size: 1.5rem;
+		}
+
+		.filtros-container {
+			padding: 0.75rem;
+		}
+
+		.input-busqueda,
+		.select-area {
+			padding: 0.6rem;
+			font-size: 0.85rem;
+		}
+
+		.btn-limpiar {
+			padding: 8px 16px;
+			font-size: 0.85rem;
+			height: auto;
+		}
+
+		table {
+			min-width: 700px;
+		}
+
+		th,
+		td {
+			padding: 8px 10px;
+			font-size: 0.8rem;
 		}
 	}
 
