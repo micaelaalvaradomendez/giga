@@ -129,6 +129,12 @@ CREATE TABLE IF NOT EXISTS organigrama (
 CREATE TABLE IF NOT EXISTS cronograma (
     id_cronograma BIGSERIAL PRIMARY KEY,
 
+    -- NUEVOS CAMPOS (mes completo)
+    anio INT,
+    mes INT,
+    fecha_desde DATE,
+    fecha_hasta DATE,
+
     fecha_aprobacion DATE,
     tipo VARCHAR(50),
     hora_fin TIME,
@@ -158,10 +164,22 @@ CREATE INDEX IF NOT EXISTS idx_cronograma_creado_por_rol ON cronograma(creado_po
 CREATE INDEX IF NOT EXISTS idx_cronograma_creado_por_id ON cronograma(creado_por_id);
 CREATE INDEX IF NOT EXISTS idx_cronograma_aprobado_por_id ON cronograma(aprobado_por_id);
 
+-- NUEVOS
+CREATE INDEX IF NOT EXISTS idx_cronograma_anio_mes ON cronograma(anio, mes);
+CREATE INDEX IF NOT EXISTS idx_cronograma_area_anio_mes_estado ON cronograma(id_area, anio, mes, estado);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_cronograma_area_mes_anio_pendiente
+ON cronograma(id_area, anio, mes)
+WHERE estado = 'pendiente';
+
 COMMENT ON COLUMN cronograma.creado_por_rol IS 'Rol del agente que creó el cronograma (jefatura, director, administrador)';
 COMMENT ON COLUMN cronograma.creado_por_id IS 'ID del agente que creó el cronograma';
 COMMENT ON COLUMN cronograma.aprobado_por_id IS 'ID del agente que aprobó el cronograma';
 COMMENT ON COLUMN cronograma.estado IS 'Estados: generada, pendiente, aprobada, publicada, rechazada, cancelada';
+COMMENT ON COLUMN cronograma.anio IS 'Año del cronograma';
+COMMENT ON COLUMN cronograma.mes IS 'Mes del cronograma (1-12)';
+COMMENT ON COLUMN cronograma.fecha_desde IS 'Inicio del período (primer día del mes)';
+COMMENT ON COLUMN cronograma.fecha_hasta IS 'Fin del período (último día del mes)';
 
 
 -- 8. Tabla: guardia
