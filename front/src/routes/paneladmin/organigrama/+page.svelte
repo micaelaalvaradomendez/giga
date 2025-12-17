@@ -8,7 +8,10 @@
   import { derived } from "svelte/store";
   import ModalAlert from "$lib/componentes/ModalAlert.svelte";
   import { modalAlert, showAlert, showConfirm } from "$lib/stores/modalAlertStore.js";
-  import { organigrama as organigramaStore, loadOrganigrama as loadOrganigramaCache, invalidateCache } from "$lib/stores/dataCache.js";
+  import { organigrama, loadOrganigrama, invalidateCache } from "$lib/stores/dataCache.js";
+  
+  const organigramaStore = organigrama;
+  const loadOrganigramaCache = loadOrganigrama;
   
   let organigramaData = null;
   let loading = true;
