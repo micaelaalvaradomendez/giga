@@ -66,7 +66,7 @@
       } catch (e) {
         console.error("Error init organigramaController:", e);
       }
-      await loadOrganigrama();
+      await loadOrganigramaLocal();
 
       // OPTIMIZACIÓN: Solo recargar si el caché está obsoleto (>10 minutos)
       const handleVisibilityChange = () => {
@@ -81,7 +81,7 @@
             if (timeDiff > 600000) {
               console.log("🔄 Recargando organigrama (caché obsoleto)");
               invalidateCache("organigrama");
-              loadOrganigrama();
+              loadOrganigramaLocal();
               localStorage.setItem(
                 "lastOrganigramaUpdate",
                 Date.now().toString(),
@@ -96,7 +96,7 @@
           } catch (error) {
             // Si localStorage no está disponible, recargar directamente
             console.warn("localStorage no disponible, recargando organigrama");
-            loadOrganigrama();
+            loadOrganigramaLocal();
           }
         }
       };
@@ -119,7 +119,7 @@
     }
   });
 
-  async function loadOrganigrama() {
+  async function loadOrganigramaLocal() {
     try {
       loading = true;
       console.log("🔄 Cargando organigrama...");
@@ -195,7 +195,7 @@
             "Éxito",
           );
           // Recargar el organigrama
-          await loadOrganigrama();
+          await loadOrganigramaLocal();
           return true;
         } else {
           throw new Error(result.message || "Error al sincronizar organigrama");
