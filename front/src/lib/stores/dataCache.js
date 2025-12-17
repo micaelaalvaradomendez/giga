@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { writable, derived, get } from 'svelte/store';
 /**
  * Global Data Cache Store
@@ -29,10 +30,10 @@ function createCachedStore(initialValue = null) {
 	});
 }
 
-// Stores de datos cacheados
-export const feriadosCache = createCachedStore([]);
-export const areasCache = createCachedStore([]);
-export const organigramaCache = createCachedStore(null);
+// Stores de datos cacheados - solo crear en el cliente
+export const feriadosCache = browser ? createCachedStore([]) : writable({ data: [], timestamp: null, loading: false, error: null });
+export const areasCache = browser ? createCachedStore([]) : writable({ data: [], timestamp: null, loading: false, error: null });
+export const organigramaCache = browser ? createCachedStore(null) : writable({ data: null, timestamp: null, loading: false, error: null });
 
 // Store de estado de carga general
 export const cacheLoading = writable(false);
@@ -50,6 +51,11 @@ function isCacheStale(timestamp, ttl) {
  * Carga feriados desde API o caché
  */
 export async function loadFeriados(forceRefresh = false) {
+	// Prevenir ejecución en SSR
+	if (!browser) {
+		return [];
+	}
+	
 	const cache = get(feriadosCache);
 
 	// Si no forzamos refresh y el caché es válido, retornar datos existentes
@@ -119,6 +125,11 @@ export async function loadFeriados(forceRefresh = false) {
  * Carga áreas desde API o caché
  */
 export async function loadAreas(forceRefresh = false) {
+	// Prevenir ejecución en SSR
+	if (!browser) {
+		return [];
+	}
+	
 	const cache = get(areasCache);
 
 	if (!forceRefresh && !isCacheStale(cache.timestamp, CACHE_TTL.areas) && cache.data?.length > 0) {
@@ -185,6 +196,11 @@ export async function loadAreas(forceRefresh = false) {
  * Carga organigrama desde API o caché
  */
 export async function loadOrganigrama(forceRefresh = false) {
+	// Prevenir ejecución en SSR
+	if (!browser) {
+		return null;
+	}
+	
 	const cache = get(organigramaCache);
 
 	if (!forceRefresh && !isCacheStale(cache.timestamp, CACHE_TTL.organigrama) && cache.data) {
