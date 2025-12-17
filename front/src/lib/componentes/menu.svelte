@@ -1,11 +1,12 @@
 <script>
     import { browser } from '$app/environment';
-    import { onMount } from "svelte";
+    import { onMount, onDestroy } from "svelte";
     import { goto } from "$app/navigation";
     import { page } from "$app/stores";
     
     // Guard SSR - solo cargar AuthService en el cliente
     let AuthService, authStore, userStore;
+    let unsubscribeAuth, unsubscribeUser;
     
     export let isActive = false;
 
@@ -62,9 +63,9 @@
             authStore = authModule.isAuthenticated;
             userStore = authModule.user;
             
-            // Suscribirse a los stores
-            authStore.subscribe(value => { isAuth = value; });
-            userStore.subscribe(value => { currentUser = value; });
+            // Suscribirse a los stores y guardar funciones de desuscripción
+            unsubscribeAuth = authStore.subscribe(value => { isAuth = value; });
+            unsubscribeUser = userStore.subscribe(value => { currentUser = value; });
             
             // Solo intentar checkSession si no estamos autenticados y no se intentó antes
             // Nota: +layout.svelte ya hace checkSession, así que esto es redundante en la mayoría de casos
@@ -86,6 +87,12 @@
                 });
             }
         }
+    });
+    
+    onDestroy(() => {
+        // Limpiar suscripciones para evitar memory leaks
+        if (unsubscribeAuth) unsubscribeAuth();
+        if (unsubscribeUser) unsubscribeUser();
     });
 </script>
 

@@ -22,7 +22,7 @@
     let crumbs = [];
     
     // Solo calcular breadcrumbs en el cliente
-    $: if (browser && $page) {
+    $: if (browser && $page?.url?.pathname) {
         crumbs = $page.url.pathname
             .split("/")
             .filter(Boolean)
