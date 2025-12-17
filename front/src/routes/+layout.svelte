@@ -8,25 +8,31 @@
 
 	onMount(async () => {
 		if (browser) {
-			// Importación dinámica de todos los componentes
-			const [navbarModule, footerModule, menuModule, breadcrumbsModule, authModule] = await Promise.all([
-				import("$lib/componentes/navbar.svelte"),
-				import("$lib/componentes/footer.svelte"),
-				import("$lib/componentes/menu.svelte"),
-				import("$lib/componentes/breadcrumbs.svelte"),
-				import("$lib/login/authService.js")
-			]);
-			
-			Navbar = navbarModule.default;
-			Footer = footerModule.default;
-			Menu = menuModule.default;
-			Breadcrumbs = breadcrumbsModule.default;
-			AuthService = authModule.AuthService;
-			
-			componentsLoaded = true;
-			
-			// Verificar sesión
-			await AuthService.checkSession();
+			try {
+				// Importación dinámica de todos los componentes
+				const [navbarModule, footerModule, menuModule, breadcrumbsModule, authModule] = await Promise.all([
+					import("$lib/componentes/navbar.svelte"),
+					import("$lib/componentes/footer.svelte"),
+					import("$lib/componentes/menu.svelte"),
+					import("$lib/componentes/breadcrumbs.svelte"),
+					import("$lib/login/authService.js")
+				]);
+				
+				Navbar = navbarModule.default;
+				Footer = footerModule.default;
+				Menu = menuModule.default;
+				Breadcrumbs = breadcrumbsModule.default;
+				AuthService = authModule.AuthService;
+				
+				componentsLoaded = true;
+				
+				// Verificar sesión
+				await AuthService.checkSession();
+			} catch (error) {
+				console.error('Error loading components:', error);
+				// En caso de error, mostrar mensaje al usuario
+				// Los componentes no se cargarán y se mostrará el loading spinner
+			}
 		}
 	});
 </script>
