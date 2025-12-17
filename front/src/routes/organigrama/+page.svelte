@@ -1,73 +1,35 @@
 <script>
 	import { onMount } from "svelte";
 	import { browser } from "$app/environment";
-	import { API_BASE_URL } from "$lib/api.js";
 	import OrganigramaViewer from "$lib/componentes/admin/organigrama/OrganigramaViewer.svelte";
+	import { organigrama as organigramaStore, loadOrganigrama } from "$lib/stores/dataCache.js";
 
-	let organigramaData = null;
 	let loading = true;
+	
+	// Usar store de organigrama
+	$: organigramaData = $organigramaStore;
 
 	onMount(async () => {
 		if (browser) {
-			await loadOrganigrama();
+			await cargarOrganigramaOptimizado();
 		}
 	});
 
-	async function loadOrganigrama() {
+	async function cargarOrganigramaOptimizado() {
 		try {
-			console.log("🔄 Cargando organigrama desde API...");
-			// CARGAR DESDE API DEL BACKEND
-			const response = await fetch(`${API_BASE_URL}/personas/organigrama/`, {
-				method: "GET",
-				credentials: "include",
-			});
-
-			if (response.ok) {
-				const result = await response.json();
-				console.log("🔍 Respuesta del API organigrama:", result);
-				if (result.success) {
-					// Convertir estructura de la API al formato esperado por el frontend
-					organigramaData = {
-						version: result.data.version,
-						lastUpdated: result.data.actualizado_en,
-						updatedBy: result.data.creado_por,
-						organigrama: result.data.estructura,
-					};
-					console.log(
-						"✅ Datos del organigrama procesados:",
-						organigramaData,
-					);
-				} else {
-					throw new Error(
-						result.message || "Error al cargar organigrama",
-					);
-				}
-			} else {
-				throw new Error("Error de conexión con el servidor");
+			console.log("🔄 Cargando organigrama...");
+			loading = true;
+			
+			// Usar caché global - evita cargas duplicadas
+			const data = await loadOrganigrama();
+			
+			// Si no hay datos en caché, usar fallback
+			if (!data) {
+				console.log("⚠️ No hay datos de organigrama, usando fallback");
+				// Los datos de fallback ya están manejados en dataCache.js
 			}
 		} catch (error) {
-			console.error("❌ Error cargando organigrama desde API:", error);
-
-			// Datos de fallback básicos para mostrar algo en caso de error
-			organigramaData = {
-				version: "1.0.0",
-				lastUpdated: new Date().toISOString(),
-				updatedBy: "Sistema",
-				organigrama: [
-					{
-						id: "root",
-						tipo: "secretaria",
-						nombre: "Secretaría de Protección Civil",
-						titular: "No disponible",
-						email: "",
-						telefono: "",
-						descripcion: "Organigrama no disponible temporalmente",
-						nivel: 0,
-						children: [],
-					},
-				],
-			};
-			console.log("✅ Usando datos de fallback básicos");
+			console.error("❌ Error cargando organigrama:", error);
 		} finally {
 			loading = false;
 		}

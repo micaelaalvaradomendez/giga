@@ -1,16 +1,19 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import { guardiasService } from '$lib/services.js';
 import AuthService from '$lib/login/authService.js';
+import { loadFeriados as loadFeriadosCache, invalidateCache, feriadosCache } from '$lib/stores/dataCache.js';
 
 /**
  * Controlador para la gestión de feriados
  * Centraliza toda la lógica de negocio relacionada con la gestión de feriados del calendario
+ * OPTIMIZADO: Usa caché global para evitar cargas duplicadas
  */
 class FeriadosController {
 	constructor() {
-		// Stores principales
-		this.feriados = writable([]);
-		this.loading = writable(false);
+		// OPTIMIZACIÓN: Usar store de caché global en lugar de store local
+		// Esto permite compartir datos entre múltiples componentes
+		this.feriados = derived(feriadosCache, $cache => $cache.data || []);
+		this.loading = derived(feriadosCache, $cache => $cache.loading);
 		this.error = writable(null);
 		this.success = writable(null);
 
@@ -48,55 +51,43 @@ class FeriadosController {
 
 	/**
 	 * Inicializa el controlador cargando los datos necesarios
+	 * OPTIMIZADO: Usa caché global
 	 */
 	async init() {
-		if (this.initialized) return;
-
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
 		}
 
 		try {
-			this.loading.set(true);
 			await this.loadFeriados();
 			this.initialized = true;
 		} catch (error) {
 			console.error('Error inicializando controlador de feriados:', error);
 			this.error.set('Error al inicializar el controlador de feriados');
-		} finally {
-			this.loading.set(false);
 		}
 	}
 
 	/**
 	 * Carga todos los feriados
+	 * OPTIMIZADO: Usa función de caché global que maneja duplicación
 	 */
 	async loadFeriados() {
 		try {
-			this.loading.set(true);
 			this.error.set(null);
-
-
-			const response = await guardiasService.getFeriados();
-
-			const feriadosData = response.data?.results || response.data || [];
-			this.feriados.set(feriadosData);
-
+			await loadFeriadosCache();
 		} catch (error) {
 			console.error('Error cargando feriados:', error);
 			this.error.set('Error al cargar los feriados');
 			throw error;
-		} finally {
-			this.loading.set(false);
 		}
 	}
 
 	/**
 	 * Crea un nuevo feriado (con soporte multi-día)
+	 * OPTIMIZADO: Invalida caché después de crear
 	 */
 	async createFeriado(feriadoData) {
 		try {
-			this.loading.set(true);
 			this.error.set(null);
 			this.success.set(null);
 
@@ -117,7 +108,8 @@ class FeriadosController {
 
 			const response = await guardiasService.createFeriado(requestData);
 
-			// Actualizar la lista de feriados
+			// OPTIMIZACIÓN: Invalidar caché y recargar
+			invalidateCache('feriados');
 			await this.loadFeriados();
 
 			// Mensaje personalizado
@@ -137,17 +129,15 @@ class FeriadosController {
 			const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Error al crear el feriado';
 			this.error.set(errorMsg);
 			throw error;
-		} finally {
-			this.loading.set(false);
 		}
 	}
 
 	/**
 	 * Actualiza un feriado existente
+	 * OPTIMIZADO: Invalida caché después de actualizar
 	 */
 	async updateFeriado(id, feriadoData) {
 		try {
-			this.loading.set(true);
 			this.error.set(null);
 			this.success.set(null);
 
@@ -163,7 +153,8 @@ class FeriadosController {
 
 			const response = await guardiasService.updateFeriado(id, requestData);
 
-			// Actualizar la lista de feriados
+			// OPTIMIZACIÓN: Invalidar caché y recargar
+			invalidateCache('feriados');
 			await this.loadFeriados();
 
 			this.success.set('Feriado actualizado exitosamente');
@@ -174,23 +165,22 @@ class FeriadosController {
 			const errorMsg = error.response?.data?.message || 'Error al actualizar el feriado';
 			this.error.set(errorMsg);
 			throw error;
-		} finally {
-			this.loading.set(false);
 		}
 	}
 
 	/**
 	 * Elimina un feriado
+	 * OPTIMIZADO: Invalida caché después de eliminar
 	 */
 	async deleteFeriado(id) {
 		try {
-			this.loading.set(true);
 			this.error.set(null);
 			this.success.set(null);
 
 			await guardiasService.deleteFeriado(id);
 
-			// Actualizar la lista de feriados
+			// OPTIMIZACIÓN: Invalidar caché y recargar
+			invalidateCache('feriados');
 			await this.loadFeriados();
 
 			this.success.set('Feriado eliminado exitosamente');
@@ -200,8 +190,6 @@ class FeriadosController {
 			const errorMsg = error.response?.data?.message || 'Error al eliminar el feriado';
 			this.error.set(errorMsg);
 			throw error;
-		} finally {
-			this.loading.set(false);
 		}
 	}
 

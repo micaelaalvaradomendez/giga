@@ -1,20 +1,39 @@
 <script>
-	import { onMount } from "svelte";
+	import { onMount, tick } from "svelte";
 	import NodeRenderer from "./NodeRenderer.svelte";
 	export let data = null;
 	let expandedNodes = new Set();
-	// Expandir automáticamente los primeros 2 niveles
-	onMount(() => {
+	
+	// OPTIMIZACIÓN: Expandir nodos de forma lazy (después del primer render)
+	// para reducir el tiempo de carga inicial
+	onMount(async () => {
 		if (data?.organigrama) {
-			if (Array.isArray(data.organigrama)) {
-				data.organigrama.forEach((rootNode) =>
-					expandAllNodes(rootNode, 2),
-				);
+			// Esperar un tick para que el DOM se renderice primero
+			await tick();
+			
+			// Usar requestIdleCallback si está disponible, sino setTimeout
+			if (typeof requestIdleCallback !== 'undefined') {
+				requestIdleCallback(() => {
+					expandNodesLazy();
+				});
 			} else {
-				expandAllNodes(data.organigrama, 2);
+				setTimeout(() => {
+					expandNodesLazy();
+				}, 100);
 			}
 		}
 	});
+	
+	function expandNodesLazy() {
+		if (Array.isArray(data.organigrama)) {
+			data.organigrama.forEach((rootNode) =>
+				expandAllNodes(rootNode, 2),
+			);
+		} else {
+			expandAllNodes(data.organigrama, 2);
+		}
+	}
+	
 	function expandAllNodes(node, maxLevel) {
 		if (node.nivel < maxLevel) {
 			expandedNodes.add(node.id);
