@@ -72,7 +72,6 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'giga.middleware.PartitionedSessionCookieMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -189,14 +188,6 @@ SESSION_COOKIE_HTTPONLY = True
 # SameSite=None para permitir cookies cross-domain en producción (Railway)
 # En desarrollo local (mismo dominio) usa 'Lax'
 SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
-
-# Dominio de la cookie de sesión para compartir entre subdominios
-# En Railway: .up.railway.app permite compartir entre giga-untdf y backend-production
-# En local: None (no configurar la variable de entorno)
-if not DEBUG:
-    SESSION_COOKIE_DOMAIN = config('SESSION_COOKIE_DOMAIN', default=None)
-else:
-    SESSION_COOKIE_DOMAIN = None  # Local siempre None
 
 # CSRF Trusted Origins - Necesario para POST requests cross-domain
 # Leer de variable de entorno con fallback a localhost

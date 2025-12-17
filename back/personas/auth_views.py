@@ -269,11 +269,6 @@ def login_view(request):
         if not request.session.session_key:
             request.session.create()
         
-        # Debug temporal
-        print(f"[LOGIN] Sesión creada - Session key: {request.session.session_key}")
-        print(f"[LOGIN] User ID guardado: {request.session.get('user_id')}")
-        print(f"[LOGIN] Cookies en response: {hasattr(request, '_cached_cookies')}")
-        
         # ✅ CONTROL DE SESIONES CONCURRENTES (Máximo 2)
         from .models import SesionActiva
         from django.contrib.sessions.models import Session
@@ -457,24 +452,17 @@ def logout_view(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET', 'OPTIONS'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedGIGA])
 def check_session(request):
     """
     Verificar si el usuario tiene una sesión activa
-    Usa AllowAny para evitar 401 en celular/incógnito sin sesión
     """
     if request.method == 'OPTIONS':
         return Response(status=status.HTTP_200_OK)
 
     try:
-        # Debug temporal
-        print(f"[CHECK_SESSION] Cookies recibidas: {request.COOKIES.keys()}")
-        print(f"[CHECK_SESSION] Session key: {request.session.session_key}")
-        
         user_id = request.session.get('user_id')
         is_authenticated = request.session.get('is_authenticated', False)
-        
-        print(f"[CHECK_SESSION] user_id={user_id}, is_authenticated={is_authenticated}")
 
         if not user_id or not is_authenticated:
             return Response({

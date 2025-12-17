@@ -88,16 +88,6 @@ export class AuthService {
                 credentials: 'include'
             });
 
-            // Si recibe 401, limpiar estado local
-            if (response.status === 401) {
-                localStorage.removeItem('user');
-                localStorage.removeItem('isAuthenticated');
-                localStorage.removeItem('requires_password_change');
-                isAuthenticated.set(false);
-                user.set(null);
-                return { authenticated: false };
-            }
-
             const data = await response.json();
 
             if (data.authenticated) {
