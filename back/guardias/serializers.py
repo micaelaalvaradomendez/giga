@@ -110,7 +110,8 @@ class CronogramaExtendidoSerializer(serializers.ModelSerializer):
                           'requiere_aprobacion', 'puede_aprobar_rol']
     
     def get_total_guardias(self, obj):
-        """Cuenta el total de guardias activas del cronograma"""
+        if obj.estado == 'pendiente':
+            return obj.guardia_set.filter(estado='pendiente').count()
         return obj.guardia_set.filter(activa=True).count()
     
     def get_requiere_aprobacion(self, obj):

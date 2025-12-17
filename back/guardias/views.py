@@ -398,290 +398,239 @@ class CronogramaViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-
-        # Optimizar consultas con select_related
-        queryset = queryset.select_related(
+        queryset = super().get_queryset().select_related(
             'id_area', 'id_jefe', 'id_director',
             'creado_por_id', 'aprobado_por_id'
         )
+
+        estado = self.request.query_params.get('estado')
+        if estado:
+            queryset = queryset.filter(estado=estado)
 
         return queryset.order_by('-creado_en')
 
     @action(detail=False, methods=['post'])
     def crear_con_guardias(self, request):
-        """Crea un cronograma con mÃºltiples guardias y registra en auditorÃ­a"""
+        import calendar
+        from datetime import datetime as dt, date
+
+        """Crea guardias (pendientes) y las asocia al cronograma PENDIENTE del mes; si no existe, crea cronograma."""
         try:
             data = request.data
 
-            # Validar datos requeridos
-            required_fields = ['nombre', 'tipo', 'id_area',
-                               'fecha', 'hora_inicio', 'hora_fin', 'agentes']
+            required_fields = ['tipo', 'id_area', 'hora_inicio', 'hora_fin', 'agentes']
             for field in required_fields:
                 if field not in data:
-                    return Response(
-                        {'error': f'Campo requerido: {field}'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    return Response({'error': f'Campo requerido: {field}'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Validar que haya agentes
-            if not data['agentes'] or len(data['agentes']) == 0:
-                return Response(
-                    {'error': 'Debe seleccionar al menos un agente'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            if not data.get('agentes') or len(data['agentes']) == 0:
+                return Response({'error': 'Debe seleccionar al menos un agente'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Validar que la fecha sea fin de semana o feriado
+            fecha_str = data.get('fecha') or data.get('fecha_desde')
+            if not fecha_str:
+                return Response({'error': 'Campo requerido: fecha o fecha_desde'}, status=status.HTTP_400_BAD_REQUEST)
+
             try:
-                from datetime import datetime as dt
+                fecha_guardia = dt.strptime(fecha_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({'error': f'Formato de fecha inválido: {fecha_str}'}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
                 from asistencia.views import es_dia_laborable, get_motivo_no_laborable
-
-                fecha_guardia = dt.strptime(data['fecha'], '%Y-%m-%d').date()
-                logger.info(f"Validando fecha para guardia: {fecha_guardia}")
-
-                # Verificar si es Dia laborable (si es True, entonces NO es vÃ¡lido para guardias)
                 es_laborable = es_dia_laborable(fecha_guardia)
-                logger.info(
-                    f"Â¿Es Dia laborable {fecha_guardia}? {es_laborable}")
-
                 if es_laborable:
-                    # Es Dia laborable (lunes a viernes normal), NO permitido para guardias
-                    logger.warning(
-                        f"Rechazando guardia en Dia laborable: {fecha_guardia}")
                     return Response(
-                        {'error': 'Las guardias solo pueden programarse en fines de semana (sÃ¡bados y domingos) o feriados'},
+                        {'error': 'Las guardias solo pueden programarse en fines de semana (sábados y domingos) o feriados'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-
-                # Si llegamos aquÃ­, es fin de semana o feriado (vÃ¡lido para guardias)
-                motivo = get_motivo_no_laborable(fecha_guardia)
-                logger.info(
-                    f"âœ… Fecha vÃ¡lida para guardia {fecha_guardia}: {motivo}")
-
-            except ValueError as e:
-                return Response(
-                    {'error': f'Formato de fecha invÃ¡lido: {data.get("fecha")}'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                _motivo = get_motivo_no_laborable(fecha_guardia)
             except Exception as e:
-                logger.error(f"Error validando Dia laborable: {str(e)}")
-                return Response(
-                    {'error': 'Error validando fecha de guardia'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+                logger.error(f"Error validando Día laborable: {str(e)}")
+                return Response({'error': 'Error validando fecha de guardia'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            # Obtener el agente del usuario autenticado
-            from .utils import get_agente_rol, requiere_aprobacion_rol
-
-            agente_id = data.get('agente_id')  # Por ahora recibir del request
-            print(f"ðŸ” agente_id del request: {agente_id}")
+            from .utils import get_agente_rol
+            agente_id = data.get('agente_id')
 
             if not agente_id and hasattr(request.user, 'agente'):
                 agente_id = request.user.agente.id_agente
-
-            # Si no se proporciona agente_id, usar el de la sesiÃ³n
             if not agente_id:
                 agente_id = request.session.get('user_id')
-                print(f"ðŸ“Œ agente_id desde sesiÃ³n: {agente_id}")
-
             if not agente_id:
                 return Response({'error': 'No se pudo determinar el agente creador'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # RBAC: ValidaciÃ³n de Ã¡rea permitida segun rol
             agente_creador = obtener_agente_sesion(request)
             if agente_creador:
-                rol_creador = obtener_rol_agente(agente_creador)
+                rol_creador_rbac = obtener_rol_agente(agente_creador)
                 id_area_cronograma = data.get('id_area')
 
-                if rol_creador == 'jefatura':
-                    # Jefatura solo puede crear para su propia Ã¡rea
+                if rol_creador_rbac == 'jefatura':
                     if agente_creador.id_area and agente_creador.id_area.id_area != id_area_cronograma:
                         return Response({
-                            'error': f'Jefatura solo puede crear cronogramas para su propia Ã¡rea (Ãrea: {agente_creador.id_area.nombre})'
+                            'error': f'Jefatura solo puede crear cronogramas para su propia área (Área: {agente_creador.id_area.nombre})'
                         }, status=status.HTTP_403_FORBIDDEN)
 
-                elif rol_creador == 'director':
-                    # Director solo para Ã¡reas bajo su direcciÃ³n
+                elif rol_creador_rbac == 'director':
                     areas_permitidas = obtener_areas_jerarquia(agente_creador)
                     area_ids = [a.id_area for a in areas_permitidas]
                     if id_area_cronograma not in area_ids:
-                        return Response({
-                            'error': 'Director solo puede crear cronogramas para Ã¡reas bajo su direcciÃ³n'
-                        }, status=status.HTTP_403_FORBIDDEN)
+                        return Response({'error': 'Director solo puede crear cronogramas para áreas bajo su dirección'},
+                                        status=status.HTTP_403_FORBIDDEN)
 
-                # Admin: sin restricciÃ³n
-
-            # Obtener el agente
-            print(f"âœ… Usando agente_id: {agente_id}")
-
-            # Obtener agente completo
+            from personas.models import Agente
             try:
-                from personas.models import Agente
-                agente_creador = Agente.objects.get(id_agente=agente_id)
+                agente_creador_obj = Agente.objects.get(id_agente=agente_id)
             except Agente.DoesNotExist:
-                return Response(
-                    {'error': 'Agente no encontrado'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+                return Response({'error': 'Agente no encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
-            # Determinar rol del creador
-            rol_creador = get_agente_rol(agente_creador)
-            if not rol_creador:
-                rol_creador = 'jefatura'  # Por defecto
+            rol_creador = get_agente_rol(agente_creador_obj) or 'jefatura'
 
-            # Determinar estado inicial segun rol
-            if rol_creador.lower() == 'administrador':
-                estado_inicial = 'publicada'  # Auto-aprobado y publicado
-                fecha_aprobacion = timezone.now().date()
-                aprobado_por_id = agente_id  # Se aprueba a sÃ­ mismo
-            else:
-                estado_inicial = 'pendiente'  # Requiere aprobaciÃ³n
-                fecha_aprobacion = None
-                aprobado_por_id = None
-
-            # Crear el cronograma
-            cronograma = Cronograma.objects.create(
-                id_area_id=data['id_area'],
-                id_jefe_id=agente_id,  # El jefe es quien crea
-                id_director_id=agente_id,  # Por ahora, el mismo agente es jefe y director
-                tipo=data['tipo'],
-                hora_inicio=data['hora_inicio'],
-                hora_fin=data['hora_fin'],
-                estado=estado_inicial,
-                fecha_creacion=timezone.now().date(),
-                fecha_aprobacion=fecha_aprobacion,
-                creado_por_rol=rol_creador,
-                creado_por_id_id=agente_id,
-                aprobado_por_id_id=aprobado_por_id
-            )
-
-            # Registrar auditorÃ­a del cronograma
-            Auditoria.objects.create(
-                pk_afectada=cronograma.id_cronograma,
-                nombre_tabla='cronograma',
-                creado_en=timezone.now(),
-                valor_previo=None,
-                valor_nuevo={
-                    'nombre': data['nombre'],
-                    'tipo': data['tipo'],
-                    'id_area': data['id_area'],
-                    'hora_inicio': data['hora_inicio'],
-                    'hora_fin': data['hora_fin'],
-                    'observaciones': data.get('observaciones', '')
-                },
-                accion='CREAR',
-                id_agente_id=agente_id
-            )
-
-            # Determinar estado de las guardias segun estado del cronograma
-            if estado_inicial == 'pendiente':
-                estado_guardias = 'pendiente_aprobacion'
-                guardias_activas = False  # No activar hasta aprobar
-            else:
-                # Para admin (publicada) y otros estados aprobados
-                estado_guardias = 'planificada'
-                guardias_activas = True
-
-            # Validar fecha y duracion de guardia antes de crear
-            from datetime import datetime
             from .utils import ValidadorHorarios
+            try:
+                hora_inicio_obj = dt.strptime(data['hora_inicio'], '%H:%M').time()
+                hora_fin_obj = dt.strptime(data['hora_fin'], '%H:%M').time()
+            except ValueError:
+                return Response({'error': 'Formato de hora inválido. Use HH:MM'}, status=status.HTTP_400_BAD_REQUEST)
 
-            fecha_guardia = datetime.strptime(data['fecha'], '%Y-%m-%d').date()
-
-            # Validar que la fecha sea apta para guardias
-            fecha_valida, mensaje_fecha = ValidadorHorarios.validar_fecha_guardia(
-                fecha_guardia)
+            fecha_valida, mensaje_fecha = ValidadorHorarios.validar_fecha_guardia(fecha_guardia)
             if not fecha_valida:
-                return Response(
-                    {'error': f'Fecha no vÃ¡lida para guardia: {mensaje_fecha}'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({'error': f'Fecha no válida para guardia: {mensaje_fecha}'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Validar duracion de la guardia
-            from datetime import datetime as dt
-            hora_inicio_obj = dt.strptime(data['hora_inicio'], '%H:%M').time()
-            hora_fin_obj = dt.strptime(data['hora_fin'], '%H:%M').time()
-
-            duracion_valida, mensaje_duracion = ValidadorHorarios.validar_duracion_guardia(
-                hora_inicio_obj, hora_fin_obj
-            )
+            duracion_valida, mensaje_duracion = ValidadorHorarios.validar_duracion_guardia(hora_inicio_obj, hora_fin_obj)
             if not duracion_valida:
-                return Response(
-                    {'error': f'DuraciÃ³n no vÃ¡lida: {mensaje_duracion}'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({'error': f'Duración no válida: {mensaje_duracion}'}, status=status.HTTP_400_BAD_REQUEST)
 
-            print(
-                f"âœ… Validaciones pasadas - {mensaje_fecha}, {mensaje_duracion}")
+            anio = fecha_guardia.year
+            mes = fecha_guardia.month
+            fecha_desde_mes = date(anio, mes, 1)
+            fecha_hasta_mes = date(anio, mes, calendar.monthrange(anio, mes)[1])
 
-            # Debug: Mostrar datos antes de crear guardias
-            print(f"ðŸ” Datos para crear guardias:")
-            print(f"  - Cronograma creado: {cronograma.id_cronograma}")
-            print(f"  - Estado guardias: {estado_guardias}")
-            print(f"  - Guardias activas: {guardias_activas}")
-            print(f"  - Agentes a procesar: {data['agentes']}")
+            estado_guardias = 'pendiente'
+            guardias_activas = False
 
-            # Crear las guardias para cada agente
-            guardias_creadas = []
-            for agente_data in data['agentes']:
-                # Manejar tanto el formato de entero como de objeto
-                if isinstance(agente_data, dict):
-                    agente_id_guardia = agente_data['id_agente']
-                else:
-                    agente_id_guardia = agente_data
+            with transaction.atomic():
+                cronograma = Cronograma.objects.filter(
+                    id_area_id=data['id_area'],
+                    anio=anio,
+                    mes=mes,
+                    estado='pendiente'
+                ).order_by('-creado_en').first()
 
-                print(
-                    f"ðŸ” Creando guardia para agente: {agente_id_guardia} (tipo: {type(agente_data)})")
+                cronograma_creado = False
+                if not cronograma:
+                    cronograma = Cronograma.objects.create(
+                        id_area_id=data['id_area'],
+                        id_jefe_id=agente_id,
+                        id_director_id=agente_id,  # TODO: resolver director real
+                        tipo=data.get('tipo'),
+                        hora_inicio=data.get('hora_inicio'),
+                        hora_fin=data.get('hora_fin'),
+                        estado='pendiente',
+                        fecha_creacion=timezone.now().date(),
+                        fecha_aprobacion=None,
+                        creado_por_rol=rol_creador,
+                        creado_por_id_id=agente_id,
+                        aprobado_por_id_id=None,
 
-                guardia = Guardia.objects.create(
-                    id_cronograma=cronograma,
-                    id_agente_id=agente_id_guardia,
-                    fecha=data['fecha'],
-                    hora_inicio=data['hora_inicio'],
-                    hora_fin=data['hora_fin'],
-                    tipo=data['tipo'],
-                    estado=estado_guardias,
-                    activa=guardias_activas,
-                    observaciones=data.get('observaciones', '')
-                )
-                guardias_creadas.append(guardia)
-                print(
-                    f"âœ… Guardia creada: {guardia.id_guardia} para agente {agente_id_guardia}")
+                        # campos nuevos
+                        anio=anio,
+                        mes=mes,
+                        fecha_desde=fecha_desde_mes,
+                        fecha_hasta=fecha_hasta_mes,
 
-                # Registrar auditorÃ­a de cada guardia
-                Auditoria.objects.create(
-                    pk_afectada=guardia.id_guardia,
-                    nombre_tabla='guardia',
-                    creado_en=timezone.now(),
-                    valor_previo=None,
-                    valor_nuevo={
-                        'id_cronograma': cronograma.id_cronograma,
-                        'id_agente': agente_id_guardia,
-                        'fecha': data['fecha'],
-                        'hora_inicio': data['hora_inicio'],
-                        'hora_fin': data['hora_fin'],
-                        'tipo': data['tipo'],
-                        'estado': 'planificada'
-                    },
-                    accion='CREAR',
-                    id_agente_id=agente_id
-                )
+                        creado_en=timezone.now(),
+                        actualizado_en=timezone.now(),
+                    )
+                    cronograma_creado = True
 
-            print(
-                f"âœ… Todas las guardias creadas exitosamente. Total: {len(guardias_creadas)}")
+                    # Auditoría SOLO si efectivamente se creó el cronograma
+                    Auditoria.objects.create(
+                        pk_afectada=cronograma.id_cronograma,
+                        nombre_tabla='cronograma',
+                        creado_en=timezone.now(),
+                        valor_previo=None,
+                        valor_nuevo={
+                            'nombre': (data.get('nombre') or '').strip(),
+                            'tipo': data.get('tipo'),
+                            'id_area': data.get('id_area'),
+                            'anio': anio,
+                            'mes': mes,
+                            'fecha_desde': str(fecha_desde_mes),
+                            'fecha_hasta': str(fecha_hasta_mes),
+                            'hora_inicio': data.get('hora_inicio'),
+                            'hora_fin': data.get('hora_fin'),
+                            'observaciones': (data.get('observaciones') or '').strip()
+                        },
+                        accion='CREAR',
+                        id_agente_id=agente_id
+                    )
+
+                def _calc_horas_planificadas(fecha_guardia, hora_inicio_obj, hora_fin_obj) -> int:
+                    from datetime import timedelta
+
+                    dt_inicio = datetime.combine(fecha_guardia, hora_inicio_obj)
+                    dt_fin = datetime.combine(fecha_guardia, hora_fin_obj)
+
+                    # por si algún día permiten rangos que cruzan medianoche
+                    if dt_fin <= dt_inicio:
+                        dt_fin += timedelta(days=1)
+
+                    horas = (dt_fin - dt_inicio).total_seconds() / 3600
+                    return int(horas)
+
+                guardias_creadas = []
+                now = timezone.now()
+                horas_plan = _calc_horas_planificadas(fecha_guardia, hora_inicio_obj, hora_fin_obj)
+                for agente_data in data['agentes']:
+                    agente_id_guardia = agente_data['id_agente'] if isinstance(agente_data, dict) else agente_data
+
+                    guardia = Guardia.objects.create(
+                        id_cronograma=cronograma,
+                        id_agente_id=agente_id_guardia,
+                        fecha=fecha_guardia,  
+                        hora_inicio=data['hora_inicio'],
+                        hora_fin=data['hora_fin'],
+                        tipo=data.get('tipo'),
+                        estado=estado_guardias,
+                        activa=guardias_activas,
+                        observaciones=(data.get('observaciones') or '').strip(),
+                        horas_planificadas=horas_plan,
+                        horas_efectivas=None,     
+                        creado_en=now,
+                        actualizado_en=now,
+                    )
+                    guardias_creadas.append(guardia)
+
+                    Auditoria.objects.create(
+                        pk_afectada=guardia.id_guardia,
+                        nombre_tabla='guardia',
+                        creado_en=timezone.now(),
+                        valor_previo=None,
+                        valor_nuevo={
+                            'id_cronograma': cronograma.id_cronograma,
+                            'id_agente': agente_id_guardia,
+                            'fecha': str(fecha_guardia),
+                            'hora_inicio': data['hora_inicio'],
+                            'hora_fin': data['hora_fin'],
+                            'tipo': data.get('tipo'),
+                            'estado': estado_guardias
+                        },
+                        accion='CREAR',
+                        id_agente_id=agente_id
+                    )
 
             return Response({
-                'mensaje': 'Guardia creada exitosamente',
+                'mensaje': 'Guardias creadas y asociadas al cronograma del mes (pendiente)',
                 'cronograma_id': cronograma.id_cronograma,
-                'guardias_creadas': len(guardias_creadas)
+                'cronograma_creado': cronograma_creado,
+                'guardias_creadas': len(guardias_creadas),
+                'anio': anio,
+                'mes': mes
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"Error al crear guardia con cronograma: {str(e)}")
-            return Response(
-                {'error': f'Error al crear guardia: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({'error': f'Error al crear guardia: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     @action(detail=True, methods=['put', 'patch'])
     def actualizar_con_guardias(self, request, pk=None):
@@ -862,7 +811,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     agente_id_guardia = agente_data['id_agente']
                 else:
                     agente_id_guardia = agente_data
-
+                now = timezone.now()
                 guardia = Guardia.objects.create(
                     id_cronograma=cronograma,
                     id_agente_id=agente_id_guardia,
@@ -872,7 +821,8 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                     tipo=data['tipo'],
                     estado=estado_guardias,
                     activa=guardias_activas,
-                    observaciones=data.get('observaciones', '')
+                    observaciones=data.get('observaciones', ''),
+                    actualizado_en=now,
                 )
                 guardias_creadas.append(guardia)
 
@@ -1020,7 +970,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
 
         # Activar guardias asociadas que estaban pendientes
         guardias_activadas = cronograma.guardia_set.filter(
-            estado='pendiente_aprobacion'
+            estado='pendiente'
         ).update(
             estado='planificada',
             activa=True
@@ -1203,6 +1153,7 @@ class CronogramaViewSet(viewsets.ModelViewSet):
     def pendientes(self, request):
         """Lista cronogramas pendientes de aprobaciÃ³n segun rol del usuario"""
         from .utils import get_agente_rol, get_approval_hierarchy
+        from django.db.models import Prefetch
 
         # Obtener agente del usuario (por ahora via query param)
         agente_id = request.query_params.get('agente_id')
@@ -1236,7 +1187,12 @@ class CronogramaViewSet(viewsets.ModelViewSet):
         cronogramas_pendientes = []
         queryset = Cronograma.objects.filter(estado='pendiente').select_related(
             'id_area', 'id_jefe', 'creado_por_id'
-        ).prefetch_related('guardia_set')
+        ).prefetch_related( 
+            Prefetch(
+                'guardia_set',
+                queryset=Guardia.objects.filter(estado='pendiente'),
+                to_attr='guardias_pendientes'
+            ))
 
         for cronograma in queryset:
             # Verificar si el rol del agente puede aprobar este cronograma
@@ -1414,6 +1370,57 @@ class GuardiaViewSet(viewsets.ModelViewSet):
 
         return super().partial_update(request, *args, **kwargs)
 
+    @action(detail=False, methods=['post'])
+    def verificar_disponibilidad_batch(self, request):
+        data = request.data
+
+        agentes_ids = (
+            data.get('agentes_ids')
+            or data.get('agentes')
+        )
+
+        fecha_desde = (
+            data.get('fecha_desde')
+            or data.get('fecha')
+        )
+
+        fecha_hasta = (
+            data.get('fecha_hasta')
+            or fecha_desde
+        )
+        if not isinstance(agentes_ids, list) or not agentes_ids or not fecha_desde:
+            return Response(
+                {
+                    'error': 'Se requieren parámetros: agentes_ids (array) y fecha_desde',
+                    'debug': {
+                        'agentes_ids': agentes_ids,
+                        'fecha_desde': fecha_desde,
+                        'keys_recibidas': list(data.keys())
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            fd = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+            fh = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Formato de fecha inválido (YYYY-MM-DD)'}, status=status.HTTP_400_BAD_REQUEST)
+
+        estados_validos = ['pendiente', 'planificada']
+
+        ocupados_qs = Guardia.objects.filter(
+            id_agente_id__in=agentes_ids,
+            fecha__range=(fd, fh),
+        ).filter(
+            Q(estado__in=estados_validos) | Q(activa=True)
+        ).values_list('id_agente_id', flat=True).distinct()
+
+        ocupados = set(ocupados_qs)
+
+        resultados = [{'agente_id': aid, 'disponible': aid not in ocupados} for aid in agentes_ids]
+        return Response({'resultados': resultados}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['get', 'post'], url_path='notas')
     def notas_guardia(self, request, pk=None):
         """
@@ -1555,61 +1562,6 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['post'])
-    def verificar_disponibilidad_batch(self, request):
-        """Verifica disponibilidad de múltiples agentes en una fecha específica (optimizado)"""
-        agentes_ids = request.data.get('agentes', [])
-        fecha = request.data.get('fecha')
-        fecha_fin = request.data.get('fecha_fin')  # Opcional para rangos
-
-        if not agentes_ids or not fecha:
-            return Response(
-                {'error': 'Se requieren parámetros: agentes (array) y fecha'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            from datetime import datetime
-            fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
-            fecha_fin_obj = datetime.strptime(fecha_fin, '%Y-%m-%d').date() if fecha_fin else fecha_obj
-
-            # Query optimizado: una sola consulta para todos los agentes
-            guardias_conflicto = self.get_queryset().filter(
-                id_agente__in=agentes_ids,
-                fecha__gte=fecha_obj,
-                fecha__lte=fecha_fin_obj,
-                activa=True
-            ).values('id_agente').annotate(count=Count('id_guardia'))
-
-            # Crear diccionario de agentes con conflictos
-            agentes_con_guardias = {g['id_agente']: g['count'] for g in guardias_conflicto}
-
-            # Construir respuesta para cada agente
-            resultados = []
-            for agente_id in agentes_ids:
-                guardias_existentes = agentes_con_guardias.get(agente_id, 0)
-                resultados.append({
-                    'agente_id': agente_id,
-                    'disponible': guardias_existentes == 0,
-                    'guardias_existentes': guardias_existentes
-                })
-
-            return Response({
-                'fecha': fecha,
-                'fecha_fin': fecha_fin or fecha,
-                'resultados': resultados
-            })
-
-        except ValueError as e:
-            return Response(
-                {'error': f'Fecha inválida: {str(e)}'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        except Exception as e:
-            return Response(
-                {'error': f'Error verificando disponibilidad: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
 
     @action(detail=False, methods=['get', 'post'])
     def resumen(self, request):
@@ -1665,25 +1617,24 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             }
         })
 
-    @action(detail=False, methods=['get', 'post'])
+    @action(detail=False, methods=['get'])
     def guardias_por_cronograma(self, request):
-        """Obtiene todas las guardias de un cronograma especifico (incluyendo pendientes)"""
+        """Obtiene todas las guardias de un cronograma específico (incluyendo pendientes)"""
         cronograma_id = request.query_params.get('id_cronograma')
-
         if not cronograma_id:
-            return Response(
-                {'error': 'Se requiere el parÃ¡metro id_cronograma'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'Se requiere el parámetro id_cronograma'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Obtener todas las guardias del cronograma, sin filtrar por estado del cronograma
-            guardias = self.get_queryset().filter(
-                id_cronograma=cronograma_id,
-                activa=True
-            ).select_related('id_agente', 'id_cronograma').order_by('fecha', 'hora_inicio')
+            estado = request.query_params.get('estado')  # opcional: pendiente/planificada/publicada/etc
 
-            # Serializar guardias con informaciÃ³n del agente
+            qs = self.get_queryset().filter(id_cronograma=cronograma_id)
+
+            # Si mandan estado, filtramos
+            if estado:
+                qs = qs.filter(estado=estado)
+
+            guardias = qs.select_related('id_agente', 'id_cronograma').order_by('fecha', 'hora_inicio')
+
             guardias_data = []
             for guardia in guardias:
                 agente = guardia.id_agente
@@ -1693,6 +1644,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
                     'hora_inicio': guardia.hora_inicio.strftime('%H:%M:%S') if guardia.hora_inicio else '',
                     'hora_fin': guardia.hora_fin.strftime('%H:%M:%S') if guardia.hora_fin else '',
                     'estado': guardia.estado,
+                    'activa': guardia.activa,
                     'horas_planificadas': guardia.horas_planificadas,
                     'horas_efectivas': guardia.horas_efectivas,
                     'observaciones': guardia.observaciones,
@@ -1704,12 +1656,9 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             return Response(guardias_data)
 
         except Exception as e:
-            logger.error(
-                f"Error obteniendo guardias del cronograma {cronograma_id}: {e}")
-            return Response(
-                {'error': f'Error obteniendo guardias del cronograma: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            logger.error(f"Error obteniendo guardias del cronograma {cronograma_id}: {e}")
+            return Response({'error': f'Error obteniendo guardias del cronograma: {str(e)}'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['get', 'post'])
     def reporte_individual(self, request):

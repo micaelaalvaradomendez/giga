@@ -56,8 +56,6 @@ class AprobacionesGuardiasController {
 	 * Inicializa el controller
 	 */
 	async init() {
-		console.log('🔄 Inicializando AprobacionesGuardiasController...');
-
 		try {
 			// Use isAuthenticated check (checkSession already called in +layout.svelte)
 			if (!AuthService.isAuthenticated()) {
@@ -69,9 +67,7 @@ class AprobacionesGuardiasController {
 			this.token.set(token);
 
 			await this.cargarDatos();
-			console.log('✅ Controller de aprobaciones inicializado');
 		} catch (err) {
-			console.error('❌ Error verificando sesión:', err);
 			goto('/');
 		}
 	}
@@ -102,7 +98,6 @@ class AprobacionesGuardiasController {
 			}
 		} catch (e) {
 			this.error.set('Error cargando datos iniciales');
-			console.error('❌ Error cargando datos:', e);
 		}
 	}
 
@@ -116,8 +111,6 @@ class AprobacionesGuardiasController {
 
 			let token;
 			this.token.subscribe(t => token = t)();
-
-			console.log('🔍 Cargando cronogramas pendientes...');
 			const response = await guardiasService.getCronogramasPendientes(token);
 			const todosCronogramas = response.data?.results || response.data || [];
 
@@ -128,10 +121,8 @@ class AprobacionesGuardiasController {
 
 			this.cronogramasPendientes.set(pendientes);
 
-			console.log('✅ Cronogramas pendientes cargados:', pendientes.length, 'de', todosCronogramas.length, 'totales');
 		} catch (e) {
 			this.error.set('Error al cargar los cronogramas pendientes');
-			console.error('❌ Error cargando pendientes:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -148,11 +139,8 @@ class AprobacionesGuardiasController {
 			let token;
 			this.token.subscribe(t => token = t)();
 
-			console.log('🔍 Cargando cronogramas publicadas...');
 			const response = await guardiasService.getCronogramasAprobadas(token);
-			console.log('📦 Respuesta getCronogramasAprobadas:', response);
-
-			const aprobadas = response.data?.results || response.data || [];
+			const aprobadas = (response.data?.results || response.data || []).filter(c => c.estado === 'publicada');
 
 			// Precalcular si cada cronograma puede ser despublicado
 			const aprobadasConValidacion = await Promise.all(
@@ -167,10 +155,8 @@ class AprobacionesGuardiasController {
 
 			this.cronogramasAprobadas.set(aprobadasConValidacion);
 
-			console.log('✅ Cronogramas publicadas cargadas:', aprobadasConValidacion.length);
 		} catch (e) {
 			this.error.set('Error al cargar los cronogramas publicados');
-			console.error('❌ Error cargando aprobadas:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -188,18 +174,9 @@ class AprobacionesGuardiasController {
 			let token;
 			this.token.subscribe(t => token = t)();
 
-			console.log('🔍 Cargando guardias del cronograma:', cronograma.id_cronograma);
-			console.log('📋 Cronograma seleccionado:', {
-				id: cronograma.id_cronograma,
-				estado: cronograma.estado,
-				total_guardias: cronograma.total_guardias,
-				area: cronograma.area_nombre
-			});
 
 			// Cargar guardias usando el nuevo endpoint específico
 			const response = await guardiasService.getGuardiasPorCronograma(cronograma.id_cronograma, token);
-
-			console.log('📦 Respuesta del servidor:', response);
 
 			// Manejar diferentes formatos de respuesta
 			let guardias = [];
@@ -213,25 +190,12 @@ class AprobacionesGuardiasController {
 				}
 			}
 
-			console.log('✅ Guardias procesadas:', guardias.length);
-			console.log('📊 Primeras 2 guardias:', guardias.slice(0, 2));
-
 			this.cronogramaSeleccionado.set(cronograma);
 			this.guardiasDelCronograma.set(guardias);
 			this.mostrarModal.set(true);
 
-			if (guardias.length === 0) {
-				console.log('⚠️ No se encontraron guardias para el cronograma', cronograma.id_cronograma);
-				console.log('🔍 Posibles causas:');
-				console.log('  - Estado del cronograma:', cronograma.estado);
-				console.log('  - Guardias inactivas');
-				console.log('  - Error en el filtrado del backend');
-			}
 
 		} catch (e) {
-			console.error('❌ Error completo cargando detalles:', e);
-			console.error('❌ Respuesta del servidor:', e.response?.data);
-			console.error('❌ Status:', e.response?.status);
 
 			const mensaje = e.response?.data?.message || e.response?.data?.error || 'Error al cargar los detalles del cronograma';
 			this.error.set(mensaje);
@@ -266,13 +230,10 @@ class AprobacionesGuardiasController {
 
 			alert('Cronograma aprobado y publicado exitosamente');
 			await this.cargarDatos();
-
-			console.log('✅ Cronograma aprobado y publicado:', cronograma.id_cronograma);
 		} catch (e) {
 			const mensaje = e.response?.data?.message || e.response?.data?.error || 'Error al aprobar el cronograma';
 			this.error.set(mensaje);
 			alert(mensaje);
-			console.error('❌ Error aprobando cronograma:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -324,12 +285,10 @@ class AprobacionesGuardiasController {
 			alert('Cronograma rechazado');
 			await this.cargarDatos();
 
-			console.log('✅ Cronograma rechazado:', cronogramaARechazar.id_cronograma);
 		} catch (e) {
 			const mensaje = e.response?.data?.message || 'Error al rechazar el cronograma';
 			this.error.set(mensaje);
 			alert(mensaje);
-			console.error('❌ Error rechazando cronograma:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -356,12 +315,11 @@ class AprobacionesGuardiasController {
 			alert('Cronograma publicado exitosamente');
 			await this.cargarDatos();
 
-			console.log('✅ Cronograma publicado:', cronograma.id_cronograma);
+			
 		} catch (e) {
 			const mensaje = e.response?.data?.message || 'Error al publicar el cronograma';
 			this.error.set(mensaje);
 			alert(mensaje);
-			console.error('❌ Error publicando cronograma:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -421,11 +379,9 @@ class AprobacionesGuardiasController {
 
 			await this.cargarDatos();
 
-			console.log('✅ Guardia eliminada:', guardia.id_guardia);
 		} catch (e) {
 			const mensaje = e.response?.data?.message || 'Error al eliminar la guardia';
 			alert(mensaje);
-			console.error('❌ Error eliminando guardia:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -452,11 +408,9 @@ class AprobacionesGuardiasController {
 			this.cerrarModal();
 			await this.cargarDatos();
 
-			console.log('✅ Cronograma eliminado:', cronograma.id_cronograma);
 		} catch (e) {
 			const mensaje = e.response?.data?.message || 'Error al eliminar el cronograma';
 			alert(mensaje);
-			console.error('❌ Error eliminando cronograma:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -504,17 +458,15 @@ class AprobacionesGuardiasController {
 	 */
 	async cargarAreas() {
 		try {
-			console.log('🔄 Cargando áreas para filtros...');
 			let token;
 			this.token.subscribe(t => token = t)();
-			console.log('🔑 Token:', token ? 'Disponible' : 'No disponible');
 
 			const response = await personasService.getAreas(token);
-			console.log('📦 Respuesta completa áreas:', response);
 
 			// Axios devuelve la respuesta en response.data
 			let areas = [];
 			const responseData = response.data;
+			
 
 			if (responseData.success && responseData.data && responseData.data.results) {
 				areas = responseData.data.results;
@@ -524,18 +476,11 @@ class AprobacionesGuardiasController {
 				areas = responseData.results;
 			} else if (Array.isArray(responseData)) {
 				areas = responseData;
-			} else {
-				console.log('📊 Estructura inesperada de respuesta:', responseData);
-			}
-
-			console.log('✅ Áreas procesadas:', areas.length, 'áreas encontradas');
-			console.log('📋 Primeras 3 áreas:', areas.slice(0, 3));
+			} 
 
 			this.areas.set(areas);
 		} catch (e) {
-			console.error('❌ Error cargando áreas para filtros:', e);
-			console.error('❌ Respuesta del servidor:', e.response?.data);
-			console.error('❌ Status:', e.response?.status);
+			
 		}
 	}
 
@@ -610,12 +555,11 @@ class AprobacionesGuardiasController {
 			alert('Cronograma despublicado exitosamente. Ahora está pendiente y puede editarse o eliminarse.');
 			await this.cargarDatos();
 
-			console.log('✅ Cronograma despublicado:', cronograma.id_cronograma);
+		
 		} catch (e) {
 			const mensaje = e.response?.data?.message || e.response?.data?.error || 'Error al despublicar el cronograma';
 			this.error.set(mensaje);
 			alert(mensaje);
-			console.error('❌ Error despublicando cronograma:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -652,12 +596,10 @@ class AprobacionesGuardiasController {
 			alert('Cronograma eliminado exitosamente.');
 			await this.cargarDatos();
 
-			console.log('✅ Cronograma eliminado:', cronograma.id_cronograma);
 		} catch (e) {
 			const mensaje = e.response?.data?.message || e.response?.data?.error || 'Error al eliminar el cronograma';
 			this.error.set(mensaje);
 			alert(mensaje);
-			console.error('❌ Error eliminando cronograma:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -667,7 +609,6 @@ class AprobacionesGuardiasController {
 	 * Recarga todos los datos
 	 */
 	async recargar() {
-		console.log('🔄 Recargando datos de aprobaciones...');
 		await this.cargarDatos();
 	}
 
@@ -717,7 +658,6 @@ class AprobacionesGuardiasController {
 
 			return tieneGuardiaPasada;
 		} catch (e) {
-			console.error('❌ Error verificando guardias pasadas:', e);
 			// En caso de error, por seguridad no permitir despublicar
 			return true;
 		}

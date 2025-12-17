@@ -172,6 +172,12 @@ class Cronograma(models.Model):
     id_area = models.ForeignKey('personas.Area', models.DO_NOTHING, db_column='id_area')
     estado = models.CharField(max_length=50, blank=True, null=True)
     fecha_creacion = models.DateField(blank=True, null=True)
+
+    # Campos para asociar guardias a los cronogramas
+    anio = models.IntegerField(blank=True, null=True)
+    mes = models.IntegerField(blank=True, null=True)
+    fecha_desde = models.DateField(blank=True, null=True)
+    fecha_hasta = models.DateField(blank=True, null=True)
     
     # Campos de aprobación jerárquica
     creado_por_rol = models.CharField(max_length=50, blank=True, null=True)  # jefatura, director, administrador

@@ -20,11 +20,9 @@ export const personasService = {
   // Crear agente con rol asignado
   async createAgenteConRol(agenteData) {
     try {
-      console.log('Datos enviados a createAgente:', agenteData);
       // El backend AgenteCreateUpdateSerializer ya maneja la asignación de rol
       // cuando se envía rol_id, por lo que no necesitamos crear asignación separada
       const response = await this.createAgente(agenteData);
-      console.log('Respuesta del agente creado:', response);
 
       // Devolver la respuesta directamente - el rol ya está asignado automáticamente
       const agenteData_response = response.data?.data || response.data;
@@ -150,6 +148,12 @@ export const guardiasService = {
   publicarCronograma: (id, token = null) => createApiClient(token).patch(`/guardias/cronogramas/${id}/publicar/`),
   crearGuardia: (data, token = null) => createApiClient(token).post('/guardias/cronogramas/crear_con_guardias/', data),
   actualizarConGuardias: (id, data, token = null) => createApiClient(token).put(`/guardias/cronogramas/${id}/actualizar_con_guardias/`, data),
+  verificarDisponibilidadBatch: (agentesIds, fechaDesde, fechaHasta, token = null) => 
+  createApiClient(token).post('/guardias/guardias/verificar_disponibilidad_batch/', {
+    agentes_ids: agentesIds,
+    fecha_desde: fechaDesde,
+    fecha_hasta: fechaHasta
+  }),
 
   // Aprobaciones jerárquicas
   getPendientesAprobacion: (agenteId, token = null) => createApiClient(token).get(`/guardias/cronogramas/pendientes/?agente_id=${agenteId}`),

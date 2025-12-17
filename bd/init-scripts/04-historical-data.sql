@@ -12,6 +12,7 @@ INSERT INTO cronograma (
     id_jefe, id_director, id_area, tipo, hora_inicio, hora_fin,
     estado, fecha_creacion, fecha_aprobacion,
     creado_por_rol, creado_por_id, aprobado_por_id,
+    anio, mes, fecha_desde, fecha_hasta,
     creado_en, actualizado_en
 ) 
 SELECT 
@@ -27,6 +28,12 @@ SELECT
     'jefatura',
     (SELECT id_agente FROM agente WHERE legajo = '004' LIMIT 1),
     (SELECT id_agente FROM agente WHERE legajo = '003' LIMIT 1),
+
+    EXTRACT(YEAR FROM mes_fecha)::INT,
+    EXTRACT(MONTH FROM mes_fecha)::INT,
+    DATE_TRUNC('month', mes_fecha)::DATE,
+    (DATE_TRUNC('month', mes_fecha) + INTERVAL '1 month - 1 day')::DATE,
+
     NOW(),
     NOW()
 FROM (VALUES 
@@ -34,6 +41,7 @@ FROM (VALUES
     ('2025-10-01'::DATE),
     ('2025-11-01'::DATE)
 ) AS meses(mes_fecha);
+
 
 -- =====================================================
 -- GUARDIAS (algunas guardias de ejemplo)

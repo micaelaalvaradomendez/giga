@@ -106,12 +106,6 @@
 	}
 	function guardarAgente() {
 		if (isFormValid && !isSaving) {
-			console.log("💾 Guardando agente con datos:", formData);
-			console.log("📊 Validaciones:", {
-				isFormValid,
-				rolesCount: rolesDisponibles.length,
-				areasCount: areasDisponibles.length,
-			});
 			dispatch("guardar", { formData });
 		} else {
 			console.warn("⚠️ No se puede guardar:", { isFormValid, isSaving });
