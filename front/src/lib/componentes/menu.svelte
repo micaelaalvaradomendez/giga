@@ -46,6 +46,15 @@
         isActive = false;
     }
 
+    export function goTO(url) {
+        const clean = String(url || "").replace(/^\/+/, "");
+        const base = "/paneladmin";
+        return clean.startsWith("paneladmin/")
+            ? `/${clean}`
+            : `${base}/${clean}`;
+    }
+
+
     onMount(() => {
         // Solo intentar checkSession si no estamos autenticados y no se intentó antes
         // Nota: +layout.svelte ya hace checkSession, así que esto es redundante en la mayoría de casos
@@ -161,7 +170,7 @@
                     </a>
                     {#if isAdmin || isDirector || isJefatura}
                     <a
-                        href="paneladmin/reportes"
+                        href={goTO("reportes")}
                         class="menu-item"
                         class:active={currentPath === "/reportes"}
                         on:click={closeMenu}

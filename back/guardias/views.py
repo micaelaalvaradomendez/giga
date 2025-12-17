@@ -2841,35 +2841,52 @@ class HoraCompensacionViewSet(viewsets.ModelViewSet):
     serializer_class = HoraCompensacionSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
 
-        # Optimizar consultas
-        queryset = queryset.select_related(
-            'id_agente', 'id_guardia', 'id_cronograma',
-            'solicitado_por', 'aprobado_por'
+    def _data_in(self):
+        """
+        Fuente de filtros:
+        - GET: query_params
+        - POST: request.data (solo si es endpoint de lista, no detail)
+        - PUT/PATCH/DELETE: no usar body para filtrar queryset (evita romper retrieve/update)
+        """
+        method = (self.request.method or "").upper()
+
+        action = getattr(self, "action", None)
+
+        if method == "GET":
+            return self.request.query_params
+
+        if method == "POST" and action == "list":
+            return self.request.data
+
+        return {}
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+    
+        qs = qs.select_related(
+            "id_agente", "id_guardia", "id_cronograma",
+            "solicitado_por", "aprobado_por"
         )
 
-        # Filtros
-        agente_id = self.data_in.get('agente')
-        estado = self.request.query_params.get('estado')
-        mes = self.request.query_params.get('mes')
-        anio = self.request.query_params.get('anio')
-        pendientes = self.request.query_params.get('pendientes')
+        data_in = self._data_in()
+
+        # Filtros (toman de data_in cuando corresponde)
+        agente_id = data_in.get("agente") or data_in.get("agente_id")
+        estado = data_in.get("estado") or self.request.query_params.get("estado")
+        area_id = data_in.get("area_id") or self.request.query_params.get("area_id")
 
         if agente_id:
-            queryset = queryset.filter(id_agente=agente_id)
-        if estado:
-            queryset = queryset.filter(estado=estado)
-        if mes and anio:
-            queryset = queryset.filter(
-                fecha_servicio__month=mes,
-                fecha_servicio__year=anio
-            )
-        if pendientes and pendientes.lower() == 'true':
-            queryset = queryset.filter(estado='pendiente')
+            qs = qs.filter(id_agente_id=agente_id)
 
-        return queryset.order_by('-fecha_servicio', '-creado_en')
+        if estado:
+            qs = qs.filter(estado=estado)
+
+        if area_id:
+            qs = qs.filter(id_agente__id_area_id=area_id)
+
+        return qs.order_by("-fecha_servicio", "-creado_en")
+
 
     @action(detail=False, methods=['post'])
     def crear_compensacion(self, request):
