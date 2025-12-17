@@ -83,13 +83,19 @@
                 "/api/personas/auth/change-password/",
                 {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
+                    headers: headers,
                     credentials: "include",
                     body: JSON.stringify(updateData),
                 },
             );
+
+            // Verificar si la respuesta es OK antes de parsear JSON
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Error del servidor:", response.status, errorText);
+                errors.general = `Error del servidor (${response.status}). Contacte al administrador.`;
+                return;
+            }
 
             const result = await response.json();
 
@@ -118,7 +124,7 @@
             }
         } catch (error) {
             console.error("Error al actualizar contraseña:", error);
-            errors.general = "Error de conexión. Intente nuevamente.";
+            errors.general = "Error de conexión. Verifique que el servidor esté activo.";
         } finally {
             loading = false;
         }
