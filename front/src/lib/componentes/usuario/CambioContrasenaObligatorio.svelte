@@ -1,6 +1,7 @@
 <script>
     import { createEventDispatcher, onMount } from "svelte";
     import AuthService from "../../login/authService.js";
+    import { API_BASE_URL } from "../../api.js";
 
     const dispatch = createEventDispatcher();
 
@@ -80,7 +81,7 @@
             if (csrf) headers["X-CSRFToken"] = csrf;
 
             const response = await fetch(
-                "/api/personas/auth/change-password/",
+                `${API_BASE_URL}/personas/auth/change-password/`,
                 {
                     method: "POST",
                     headers: headers,
