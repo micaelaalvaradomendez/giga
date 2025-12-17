@@ -28,21 +28,51 @@
     cronogramasPendientesFiltrados,
     cronogramasAprobadasFiltradas,
   } = aprobacionesGuardiasController;
+
+  // Timestamp de la última carga para evitar recargas excesivas
+  let lastLoadTimestamp = 0;
+  const MIN_RELOAD_INTERVAL = 2000; // 2 segundos
+
   onMount(async () => {
     console.log(
       "🔄 Componente de aprobaciones montado, iniciando controller...",
     );
     await aprobacionesGuardiasController.init();
+    lastLoadTimestamp = Date.now();
     console.log("✅ Controller de aprobaciones inicializado");
     // Recargar cuando la página vuelve a ser visible
     if (browser) {
       const handleVisibilityChange = () => {
         if (document.visibilityState === "visible") {
-          aprobacionesGuardiasController.cargarDatos();
+          const now = Date.now();
+          const timeSinceLastLoad = now - lastLoadTimestamp;
+
+          // Solo recargar si pasaron más de 2 segundos desde la última carga
+          if (timeSinceLastLoad > MIN_RELOAD_INTERVAL) {
+            console.log("🔄 Recargando datos (visibility change)");
+            aprobacionesGuardiasController.cargarDatos();
+            lastLoadTimestamp = now;
+          } else {
+            console.log(
+              `⏭️ Saltando recarga (última carga hace ${timeSinceLastLoad}ms)`,
+            );
+          }
         }
       };
       const handleFocus = () => {
-        aprobacionesGuardiasController.cargarDatos();
+        const now = Date.now();
+        const timeSinceLastLoad = now - lastLoadTimestamp;
+
+        // Solo recargar si pasaron más de 2 segundos desde la última carga
+        if (timeSinceLastLoad > MIN_RELOAD_INTERVAL) {
+          console.log("🔄 Recargando datos (focus)");
+          aprobacionesGuardiasController.cargarDatos();
+          lastLoadTimestamp = now;
+        } else {
+          console.log(
+            `⏭️ Saltando recarga (última carga hace ${timeSinceLastLoad}ms)`,
+          );
+        }
       };
       document.addEventListener("visibilitychange", handleVisibilityChange);
       window.addEventListener("focus", handleFocus);
@@ -61,6 +91,8 @@
   }
   async function handleAprobar(cronograma) {
     await aprobacionesGuardiasController.aprobar(cronograma);
+    // Actualizar timestamp para evitar recarga automática inmediata
+    lastLoadTimestamp = Date.now();
   }
   function handleIniciarRechazo(cronograma) {
     aprobacionesGuardiasController.iniciarRechazo(cronograma);
@@ -93,6 +125,7 @@
     await aprobacionesGuardiasController.eliminar(cronograma);
   }
 </script>
+
 <section class="aprobaciones-wrap">
   <header class="head">
     <h1>Aprobaciones de Guardias</h1>
@@ -388,6 +421,7 @@
     on:confirmar={handleConfirmarRechazo}
   />
 {/if}
+
 <style>
   .aprobaciones-wrap {
     max-width: 1200px;
