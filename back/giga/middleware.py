@@ -23,7 +23,6 @@ class PartitionedSessionCookieMiddleware:
             print(f"[MIDDLEWARE] Cookies en response: {list(response.cookies.keys())}")
         print(f"[MIDDLEWARE] SESSION_COOKIE_NAME: {settings.SESSION_COOKIE_NAME}")
         print(f"[MIDDLEWARE] SESSION_COOKIE_DOMAIN: {getattr(settings, 'SESSION_COOKIE_DOMAIN', 'None')}")
-        print(f"[MIDDLEWARE] Set-Cookie header: {response._headers.get('set-cookie', 'None')}")
         
         # Solo en producción (DEBUG=False) y si hay cookie de sesión
         if not settings.DEBUG and hasattr(response, 'cookies') and settings.SESSION_COOKIE_NAME in response.cookies:

@@ -190,6 +190,14 @@ SESSION_COOKIE_HTTPONLY = True
 # En desarrollo local (mismo dominio) usa 'Lax'
 SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
 
+# Dominio de la cookie de sesión para compartir entre subdominios
+# En Railway: .up.railway.app permite compartir entre giga-untdf y backend-production
+# En local: None (no configurar la variable de entorno)
+if not DEBUG:
+    SESSION_COOKIE_DOMAIN = config('SESSION_COOKIE_DOMAIN', default=None)
+else:
+    SESSION_COOKIE_DOMAIN = None  # Local siempre None
+
 # CSRF Trusted Origins - Necesario para POST requests cross-domain
 # Leer de variable de entorno con fallback a localhost
 csrf_origins_env = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:3000,http://127.0.0.1:3000')
