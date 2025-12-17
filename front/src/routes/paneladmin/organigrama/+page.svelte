@@ -1,3 +1,4 @@
+<script>
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import OrganigramaViewer from "$lib/componentes/admin/organigrama/OrganigramaViewer.svelte";
@@ -7,9 +8,17 @@
   import { API_BASE_URL } from "$lib/api.js";
   import { derived } from "svelte/store";
   import ModalAlert from "$lib/componentes/ModalAlert.svelte";
-  import { modalAlert, showAlert, showConfirm } from "$lib/stores/modalAlertStore.js";
-  import { organigrama as organigramaStore, loadOrganigrama as loadOrganigramaCache, invalidateCache } from "$lib/stores/dataCache.js";
-  
+  import {
+    modalAlert,
+    showAlert,
+    showConfirm,
+  } from "$lib/stores/modalAlertStore.js";
+  import {
+    organigrama,
+    loadOrganigrama,
+    invalidateCache,
+  } from "$lib/stores/dataCache.js";
+
   let organigramaData = null;
   let loading = true;
   let showModal = false;
@@ -25,12 +34,12 @@
   let showDeleteModal = false;
   let nodeToDelete = null;
   const agentes = organigramaController.agentes;
-  
+
   // OPTIMIZACIÓN: Reaccionar a cambios en el store de organigrama
-  $: if ($organigramaStore) {
-    organigramaData = $organigramaStore;
+  $: if ($organigrama) {
+    organigramaData = $organigrama;
   }
-  
+
   // Datos del formulario
   let formData = {
     nombre: "",
@@ -49,7 +58,7 @@
     { value: "departamento", label: "Departamento" },
     { value: "division", label: "División" },
   ];
-  
+
   onMount(async () => {
     if (browser) {
       try {
@@ -57,41 +66,50 @@
       } catch (e) {
         console.error("Error init organigramaController:", e);
       }
-      await loadOrganigrama();
-      
+      await loadOrganigramaLocal();
+
       // OPTIMIZACIÓN: Solo recargar si el caché está obsoleto (>10 minutos)
       const handleVisibilityChange = () => {
         if (document.visibilityState === "visible") {
           try {
-            const lastUpdate = localStorage.getItem('lastOrganigramaUpdate');
-            const timeDiff = lastUpdate ? Date.now() - parseInt(lastUpdate) : Infinity;
-            
+            const lastUpdate = localStorage.getItem("lastOrganigramaUpdate");
+            const timeDiff = lastUpdate
+              ? Date.now() - parseInt(lastUpdate)
+              : Infinity;
+
             // Solo recargar si pasaron más de 10 minutos (600000ms)
             if (timeDiff > 600000) {
-              console.log('🔄 Recargando organigrama (caché obsoleto)');
-              invalidateCache('organigrama');
-              loadOrganigrama();
-              localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
+              console.log("🔄 Recargando organigrama (caché obsoleto)");
+              invalidateCache("organigrama");
+              loadOrganigramaLocal();
+              localStorage.setItem(
+                "lastOrganigramaUpdate",
+                Date.now().toString(),
+              );
             } else {
-              console.log('✅ Usando organigrama en caché (actualizado hace', Math.round(timeDiff/1000), 'segundos)');
+              console.log(
+                "✅ Usando organigrama en caché (actualizado hace",
+                Math.round(timeDiff / 1000),
+                "segundos)",
+              );
             }
           } catch (error) {
             // Si localStorage no está disponible, recargar directamente
-            console.warn('localStorage no disponible, recargando organigrama');
-            loadOrganigrama();
+            console.warn("localStorage no disponible, recargando organigrama");
+            loadOrganigramaLocal();
           }
         }
       };
-      
+
       document.addEventListener("visibilitychange", handleVisibilityChange);
-      
+
       // Guardar timestamp inicial
       try {
-        localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
+        localStorage.setItem("lastOrganigramaUpdate", Date.now().toString());
       } catch (e) {
-        console.warn('No se pudo guardar timestamp en localStorage:', e);
+        console.warn("No se pudo guardar timestamp en localStorage:", e);
       }
-      
+
       return () => {
         document.removeEventListener(
           "visibilitychange",
@@ -100,20 +118,20 @@
       };
     }
   });
-  
-  async function loadOrganigrama() {
+
+  async function loadOrganigramaLocal() {
     try {
       loading = true;
       console.log("🔄 Cargando organigrama...");
-      
+
       // OPTIMIZACIÓN: Usar caché global
-      const data = await loadOrganigramaCache();
-      
+      const data = await loadOrganigrama();
+
       if (data) {
         organigramaData = data;
         console.log("✅ Organigrama cargado desde caché");
       }
-      
+
       // Actualizar lista de nodos para el selector
       updateNodesList();
       console.log("✅ Lista de nodos actualizada:", allNodes.length, "nodos");
@@ -177,7 +195,7 @@
             "Éxito",
           );
           // Recargar el organigrama
-          await loadOrganigrama();
+          await loadOrganigramaLocal();
           return true;
         } else {
           throw new Error(result.message || "Error al sincronizar organigrama");
@@ -226,15 +244,18 @@
           organigramaData.lastUpdated = result.data.actualizado_en;
           organigramaData.updatedBy = result.data.creado_por;
           showUnsavedWarning = false;
-          
+
           // OPTIMIZACIÓN: Invalidar caché para forzar recarga en otras páginas
-          invalidateCache('organigrama');
+          invalidateCache("organigrama");
           try {
-            localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
+            localStorage.setItem(
+              "lastOrganigramaUpdate",
+              Date.now().toString(),
+            );
           } catch (e) {
-            console.warn('No se pudo actualizar timestamp en localStorage:', e);
+            console.warn("No se pudo actualizar timestamp en localStorage:", e);
           }
-          
+
           updateNodesList();
           return true;
         } else {
@@ -419,8 +440,8 @@
         }
       }
     } else if (modalType === "edit" && selectedNode) {
-      console.log(selectedNode, "SELECTED NODE")
-      console.log(formData, "FORM DATA")  
+      console.log(selectedNode, "SELECTED NODE");
+      console.log(formData, "FORM DATA");
       selectedNode.nombre = formData.nombre;
       selectedNode.tipo = formData.tipo;
       selectedNode.descripcion = formData.descripcion;
@@ -430,7 +451,7 @@
       selectedNode.email = formData.email;
       selectedNode.telefono = formData.telefono;
     }
-    organigramaData = { ...organigramaData }; 
+    organigramaData = { ...organigramaData };
     updateNodesList();
     closeModal();
     showUnsavedWarning = true;
@@ -589,6 +610,7 @@
     return colors[tipo] || "border-gray-500 bg-gray-40";
   }
 </script>
+
 <svelte:head>
   <title>Administrar Organigrama - GIGA</title>
 </svelte:head>
@@ -836,6 +858,7 @@
     </div>
   </div>
 {/if}
+
 <!-- El componente AdminNodeRenderer se importa al inicio -->
 <style>
   .admin-container {
@@ -1204,9 +1227,9 @@
     .admin-header {
       flex-direction: column;
       gap: 1rem;
-      align-items: center; 
+      align-items: center;
       margin: 0 0 1.5rem 0;
-      padding: 0; 
+      padding: 0;
       width: 100%;
     }
     .admin-header-title {
