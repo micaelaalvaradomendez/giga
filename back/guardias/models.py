@@ -173,6 +173,7 @@ class Cronograma(models.Model):
     estado = models.CharField(max_length=50, blank=True, null=True)
     fecha_creacion = models.DateField(blank=True, null=True)
 
+
     # Campos para asociar guardias a los cronogramas
     anio = models.IntegerField(blank=True, null=True)
     mes = models.IntegerField(blank=True, null=True)
