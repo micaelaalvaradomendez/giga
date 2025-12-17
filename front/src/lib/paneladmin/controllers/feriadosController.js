@@ -1,7 +1,6 @@
 import { writable, derived, get } from 'svelte/store';
 import { guardiasService } from '$lib/services.js';
 import AuthService from '$lib/login/authService.js';
-import { loadFeriados as loadFeriadosCache, invalidateCache, feriadosCache } from '$lib/stores/dataCache.js';
 
 /**
  * Controlador para la gestión de feriados
@@ -10,10 +9,10 @@ import { loadFeriados as loadFeriadosCache, invalidateCache, feriadosCache } fro
  */
 class FeriadosController {
 	constructor() {
-		// OPTIMIZACIÓN: Usar store de caché global en lugar de store local
-		// Esto permite compartir datos entre múltiples componentes
-		this.feriados = derived(feriadosCache, $cache => $cache.data || []);
-		this.loading = derived(feriadosCache, $cache => $cache.loading);
+		// OPTIMIZACIÓN: Crear stores locales que se sincronizarán con el caché global
+		// No podemos importar dataCache estáticamente por dependencia circular
+		this.feriados = writable([]);
+		this.loading = writable(false);
 		this.error = writable(null);
 		this.success = writable(null);
 
@@ -47,6 +46,7 @@ class FeriadosController {
 
 		// Inicializar
 		this.initialized = false;
+		this._cacheModule = null; // Cache module reference
 	}
 
 	/**
@@ -68,16 +68,34 @@ class FeriadosController {
 	}
 
 	/**
+	 * Lazy load dataCache module
+	 */
+	async _getCacheModule() {
+		if (!this._cacheModule) {
+			this._cacheModule = await import('$lib/stores/dataCache.js');
+		}
+		return this._cacheModule;
+	}
+
+	/**
 	 * Carga todos los feriados
 	 * OPTIMIZADO: Usa función de caché global que maneja duplicación
 	 */
 	async loadFeriados() {
 		try {
 			this.error.set(null);
-			await loadFeriadosCache();
+			this.loading.set(true);
+
+			const cacheModule = await this._getCacheModule();
+			const data = await cacheModule.loadFeriados();
+
+			// Sync with local store
+			this.feriados.set(data || []);
+			this.loading.set(false);
 		} catch (error) {
 			console.error('Error cargando feriados:', error);
 			this.error.set('Error al cargar los feriados');
+			this.loading.set(false);
 			throw error;
 		}
 	}
@@ -109,7 +127,8 @@ class FeriadosController {
 			const response = await guardiasService.createFeriado(requestData);
 
 			// OPTIMIZACIÓN: Invalidar caché y recargar
-			invalidateCache('feriados');
+			const cacheModule = await this._getCacheModule();
+			cacheModule.invalidateCache('feriados');
 			await this.loadFeriados();
 
 			// Mensaje personalizado
@@ -154,7 +173,8 @@ class FeriadosController {
 			const response = await guardiasService.updateFeriado(id, requestData);
 
 			// OPTIMIZACIÓN: Invalidar caché y recargar
-			invalidateCache('feriados');
+			const cacheModule = await this._getCacheModule();
+			cacheModule.invalidateCache('feriados');
 			await this.loadFeriados();
 
 			this.success.set('Feriado actualizado exitosamente');
@@ -180,7 +200,8 @@ class FeriadosController {
 			await guardiasService.deleteFeriado(id);
 
 			// OPTIMIZACIÓN: Invalidar caché y recargar
-			invalidateCache('feriados');
+			const cacheModule = await this._getCacheModule();
+			cacheModule.invalidateCache('feriados');
 			await this.loadFeriados();
 
 			this.success.set('Feriado eliminado exitosamente');
