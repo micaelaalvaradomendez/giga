@@ -2,7 +2,6 @@
 	import { onMount } from "svelte";
 	import { parametrosController } from "$lib/paneladmin/controllers";
 	import { goto } from "$app/navigation";
-
 	// Importar componentes modales
 	import ModalArea from "$lib/componentes/admin/parametros/ModalArea.svelte";
 	import ModalAgrupacion from "$lib/componentes/admin/parametros/ModalAgrupacion.svelte";
@@ -11,7 +10,6 @@
 	import ModalHorarioGlobal from "$lib/componentes/admin/parametros/ModalHorarioGlobal.svelte";
 	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
 	import { modalAlert } from "$lib/stores/modalAlertStore.js";
-
 	// Obtener referencias a los stores individuales
 	const {
 		areas,
@@ -30,14 +28,12 @@
 		agrupacionForm,
 		scheduleForm,
 	} = parametrosController;
-
 	// Validación de autenticación e inicialización
 	onMount(async () => {
 		try {
 			console.log("🚀 Iniciando controlador de parámetros...");
 			await parametrosController.init();
 			console.log("✅ Controlador de parámetros inicializado");
-
 			// Recargar cuando la página vuelve a ser visible
 			if (typeof window !== "undefined") {
 				const handleVisibilityChange = () => {
@@ -45,17 +41,14 @@
 						parametrosController.init();
 					}
 				};
-
 				const handleFocus = () => {
 					parametrosController.init();
 				};
-
 				document.addEventListener(
 					"visibilitychange",
 					handleVisibilityChange,
 				);
 				window.addEventListener("focus", handleFocus);
-
 				return () => {
 					document.removeEventListener(
 						"visibilitychange",
@@ -76,49 +69,39 @@
 			// El controlador maneja el error automáticamente
 		}
 	});
-
 	// Event handlers para filtros de búsqueda
 	function actualizarBusquedaAreas(event) {
 		parametrosController.actualizarBusquedaAreas(event.target.value);
 	}
-
 	function actualizarBusquedaAgrupaciones(event) {
 		parametrosController.actualizarBusquedaAgrupaciones(event.target.value);
 	}
-
 	let mensajeExito = "";
 	let mensajeError = "";
-
 	// Estado para modal de horario global
 	let modalHorarioGlobal = false;
 	let guardandoHorarioGlobal = false;
-
 	function mostrarExito(mensaje) {
 		mensajeExito = mensaje;
 		setTimeout(() => {
 			mensajeExito = "";
 		}, 5000);
 	}
-
 	function mostrarError(mensaje) {
 		mensajeError = mensaje;
 		setTimeout(() => {
 			mensajeError = "";
 		}, 5000);
 	}
-
 	function abrirModalHorarioGlobal() {
 		modalHorarioGlobal = true;
 	}
-
 	function cerrarModalHorarioGlobal() {
 		modalHorarioGlobal = false;
 		guardandoHorarioGlobal = false;
 	}
-
 	async function guardarHorarioGlobal(event) {
 		const { horario_entrada, horario_salida } = event.detail;
-
 		guardandoHorarioGlobal = true;
 		try {
 			const response = await fetch(
@@ -133,9 +116,7 @@
 					}),
 				},
 			);
-
 			const data = await response.json();
-
 			if (response.ok && data.success) {
 				mostrarExito(`✅ ${data.message}`);
 				cerrarModalHorarioGlobal();
@@ -150,19 +131,16 @@
 			guardandoHorarioGlobal = false;
 		}
 	}
-
 	// Event handlers para modales
 	async function actualizarHorarios() {
 		try {
 			const formData = $scheduleForm;
 			const modalData = $modalSchedule;
-
 			const result = await parametrosController.actualizarHorarios(
 				formData,
 				modalData.tipo,
 				modalData.target,
 			);
-
 			if (result.success) {
 				mostrarExito("✅ Horarios actualizados correctamente");
 			}
@@ -171,11 +149,9 @@
 			mostrarError(error.message || "Error al actualizar horarios");
 		}
 	}
-
 	async function confirmarEliminar() {
 		try {
 			const modalData = $modalDelete;
-
 			if (modalData.tipo === "area") {
 				await parametrosController.confirmarEliminarArea(
 					modalData.item.id_area,
@@ -191,7 +167,6 @@
 			// Manejar error - podríamos mostrar una notificación
 		}
 	}
-
 	async function guardarArea() {
 		try {
 			await parametrosController.guardarArea($areaForm);
@@ -200,7 +175,6 @@
 			parametrosController.error.set(error.message);
 		}
 	}
-
 	async function guardarAgrupacion() {
 		try {
 			await parametrosController.guardarAgrupacion($agrupacionForm);
@@ -210,11 +184,9 @@
 		}
 	}
 </script>
-
 <svelte:head>
 	<title>Parámetros del Sistema - GIGA</title>
 </svelte:head>
-
 <div class="page-container">
 <div class="page-header">
 	<div class="page-header-title">
@@ -238,7 +210,6 @@
 		</button>
 	</div>
 </div>
-
 <!-- Mensajes de éxito -->
 {#if mensajeExito}
 	<div class="alert alert-success">
@@ -247,7 +218,6 @@
 		>
 	</div>
 {/if}
-
 <!-- Mensajes de error -->
 {#if mensajeError}
 	<div class="alert alert-error">
@@ -256,7 +226,6 @@
 		>
 	</div>
 {/if}
-
 {#if $error}
 	<div class="alert alert-error">
 		❌ {$error}
@@ -266,7 +235,6 @@
 		>
 	</div>
 {/if}
-
 <!-- Loading indicator -->
 {#if $loading}
 	<div class="loading-container">
@@ -319,7 +287,6 @@
 					</button>
 				</div>
 			</div>
-
 			<div class="table-container">
 				<table>
 					<thead>
@@ -407,13 +374,11 @@
 				</table>
 			</div>
 		</div>
-
 		<!-- Panel de Agrupaciones -->
 		<div class="panel-agrupaciones">
 			<div class="panel-header">
 				<h2>👥 Gestión de Agrupaciones</h2>
 			</div>
-
 			<!-- Estadísticas de Agrupaciones -->
 			{#if $agrupacionesFiltradas && $agrupacionesFiltradas.length > 0}
 				<div class="panel-stats">
@@ -437,7 +402,6 @@
 					</div>
 				</div>
 			{/if}
-
 			<!-- Filtros de agrupaciones -->
 			<div class="filtros-container">
 				<div class="filtro-group">
@@ -463,7 +427,6 @@
 					</button>
 				</div>
 			</div>
-
 			<div class="table-container">
 				<table>
 					<thead>
@@ -571,7 +534,6 @@
 	</div>
 {/if}
 </div>
-
 <!-- Componentes Modales -->
 <ModalArea
 	isOpen={$modalArea.isOpen}
@@ -581,7 +543,6 @@
 	on:cerrar={() =>
 		parametrosController.modalArea.update((m) => ({ ...m, isOpen: false }))}
 />
-
 <ModalAgrupacion
 	isOpen={$modalAgrupacion.isOpen}
 	isSaving={$modalAgrupacion.isSaving}
@@ -593,7 +554,6 @@
 			isOpen: false,
 		}))}
 />
-
 <ModalHorarios
 	isOpen={$modalSchedule.isOpen}
 	isSaving={$modalSchedule.isSaving}
@@ -614,7 +574,6 @@
 			isOpen: false,
 		}))}
 />
-
 <ModalEliminar
 	isOpen={$modalDelete.isOpen}
 	isDeleting={$modalDelete.isDeleting}
@@ -627,14 +586,12 @@
 			isOpen: false,
 		}))}
 />
-
 <ModalHorarioGlobal
 	isOpen={modalHorarioGlobal}
 	isSaving={guardandoHorarioGlobal}
 	on:guardar={guardarHorarioGlobal}
 	on:cerrar={cerrarModalHorarioGlobal}
 />
-
 <ModalAlert
 	bind:show={$modalAlert.show}
 	type={$modalAlert.type}
@@ -647,7 +604,6 @@
 	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
 	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
-
 <style>
 	.page-container {
 		 width: 100%;
@@ -655,7 +611,6 @@
     margin: 0 auto;
     padding: 1.5rem 1rem;
 	}
-
 	.page-header {
 		display: flex;
 		justify-content: space-between;
@@ -663,7 +618,6 @@
 		margin-bottom: 0.5rem;
 		padding-bottom: 5px;
 	}
-
 	.page-header-title {
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		position: relative;
@@ -681,21 +635,18 @@
 		box-sizing: border-box;
 		width: 100%;
 	}
-
 	@media (min-width: 640px) {
 		.page-header-title {
 			padding: 20px 24px;
 			border-radius: 20px;
 		}
 	}
-
 	@media (min-width: 768px) {
 		.page-header-title {
 			padding: 25px 32px;
 			border-radius: 24px;
 		}
 	}
-
 	@media (min-width: 1024px) {
 		.page-header-title {
 			padding: 30px 40px;
@@ -703,7 +654,6 @@
 			border-radius: 28px;
 		}
 	}
-
 	.page-header-title::before {
 		content: "";
 		position: absolute;
@@ -720,7 +670,6 @@
 		background-size: 50px 50px;
 		animation: moveLines 20s linear infinite;
 	}
-
 	.page-header-title h1 {
 		margin: 10px;
 		font-weight: 800;
@@ -742,31 +691,26 @@
 		overflow: hidden;
 		display: block;
 	}
-
 	@media (min-width: 480px) {
 		.page-header-title h1 {
 			font-size: 22px;
 		}
 	}
-
 	@media (min-width: 640px) {
 		.page-header-title h1 {
 			font-size: 26px;
 		}
 	}
-
 	@media (min-width: 640px) {
 		.page-header-title h1 {
 			display: inline-block;
 		}
 	}
-
 	@media (min-width: 768px) {
 		.page-header-title h1 {
 			font-size: 30px;
 		}
 	}
-
 	.page-header-title h1::after {
 		content: "";
 		position: absolute;
@@ -782,7 +726,6 @@
 		);
 		animation: moveLine 2s linear infinite;
 	}
-
 	@keyframes moveLine {
 		0% {
 			left: -40%;
@@ -791,12 +734,10 @@
 			left: 100%;
 		}
 	}
-
 	.header-actions {
 		display: flex;
 		gap: 10px;
 	}
-
 	.btn-primary,
 	.btn-secondary,
 	.btn-horario-global {
@@ -813,40 +754,32 @@
 		gap: 10px;
 		font-size: 16px;
 	}
-
 	.btn-horario-global {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 		margin-left: 10px;
 	}
-
 	.btn-horario-global:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 	}
-
 	.btn-primary {
 		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
 		color: white;
 	}
-
 	.btn-primary:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
 	}
-
 	.btn-secondary {
 		background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
 		color: white;
 	}
-
 	.btn-secondary:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
 	}
-
-	/* Alertas */
 	.alert {
 		padding: 15px 20px;
 		border-radius: 8px;
@@ -856,7 +789,6 @@
 		justify-content: space-between;
 		animation: slideIn 0.3s ease-out;
 	}
-
 	@keyframes slideIn {
 		from {
 			opacity: 0;
@@ -867,19 +799,16 @@
 			transform: translateY(0);
 		}
 	}
-
 	.alert-success {
 		background: #e8f5e9;
 		color: #2e7d32;
 		border-left: 4px solid #4caf50;
 	}
-
 	.alert-error {
 		background: #ffebee;
 		color: #c62828;
 		border-left: 4px solid #f44336;
 	}
-
 	.btn-close {
 		background: none;
 		border: none;
@@ -888,11 +817,9 @@
 		opacity: 0.6;
 		transition: opacity 0.2s;
 	}
-
 	.btn-close:hover {
 		opacity: 1;
 	}
-
 	.btn-close {
 		background: none;
 		border: none;
@@ -901,17 +828,13 @@
 		opacity: 0.6;
 		transition: opacity 0.3s ease;
 	}
-
 	.btn-close:hover {
 		opacity: 1;
 	}
-
-	/* Loading */
 	.loading-container {
 		text-align: center;
 		padding: 60px 20px;
 	}
-
 	.loading-spinner {
 		width: 40px;
 		height: 40px;
@@ -921,7 +844,6 @@
 		animation: spin 1s linear infinite;
 		margin: 0 auto 20px;
 	}
-
 	@keyframes spin {
 		0% {
 			transform: rotate(0deg);
@@ -930,21 +852,17 @@
 			transform: rotate(360deg);
 		}
 	}
-
-	/* Grid de contenido */
 	.content-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 20px;
 		margin: 15px 0;
 	}
-
 	@media (max-width: 1024px) {
 		.content-grid {
 			grid-template-columns: 1fr;
 		}
 	}
-
 	.panel-stats {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -953,7 +871,6 @@
 		background: #f8f9fa;
 		border-bottom: 1px solid #dee2e6;
 	}
-
 	.stat-card {
 		background: white;
 		padding: 20px;
@@ -963,11 +880,9 @@
 		border-top: 4px solid #3498db;
 		transition: transform 0.3s ease;
 	}
-
 	.stat-card:hover {
 		transform: translateY(-5px);
 	}
-
 	.stat-card h3 {
 		margin: 0 0 10px;
 		color: #555;
@@ -975,15 +890,12 @@
 		font-weight: 600;
 		text-transform: uppercase;
 	}
-
 	.stat-number {
 		font-size: 2.2rem;
 		font-weight: 700;
 		color: #3498db;
 		margin: 0;
 	}
-
-	/* Paneles */
 	.panel-areas,
 	.panel-agrupaciones {
 		background: white;
@@ -992,21 +904,17 @@
 		overflow: hidden;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.panel-header {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 		padding: 20px 25px;
 		text-align: center;
 	}
-
 	.panel-header h2 {
 		margin: 0;
 		font-size: 1.4rem;
 		font-weight: 600;
 	}
-
-	/* Filtros */
 	.filtros-container {
 		padding: 20px 25px;
 		background: #f8f9fa;
@@ -1017,13 +925,11 @@
 		gap: 15px;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.filtro-group {
 		flex: 1 1 250px;
 		min-width: 200px;
 		max-width: 100%;
 	}
-
 	.filtro-group label {
 		display: block;
 		font-weight: 600;
@@ -1031,7 +937,6 @@
 		color: #555;
 		font-size: 0.9rem;
 	}
-
 	.input-busqueda {
 		width: 100%;
 		padding: 10px 15px;
@@ -1041,20 +946,17 @@
 		transition: all 0.3s ease;
 		box-sizing: border-box;
 	}
-
 	.input-busqueda:focus {
 		outline: none;
 		border-color: #3498db;
 		box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 	}
-
 	.filtro-actions {
 		display: flex;
 		gap: 10px;
 		flex-shrink: 0;
 		align-self: flex-end;
 	}
-
 	.btn-limpiar {
 		padding: 10px 25px;
 		background: #6c757d;
@@ -1067,13 +969,10 @@
 		white-space: nowrap;
 		height: 42px;
 	}
-
 	.btn-limpiar:hover {
 		background: #5a6268;
 		transform: translateY(-1px);
 	}
-
-	/* Tablas */
 	.table-container {
 		overflow-x: auto;
 		max-height: 500px;
@@ -1083,33 +982,27 @@
 		scrollbar-width: thin;
 		scrollbar-color: #c1c7cd #f1f3f4;
 	}
-
 	.table-container::-webkit-scrollbar {
 		width: 8px;
 		height: 8px;
 	}
-
 	.table-container::-webkit-scrollbar-track {
 		background: #f1f3f4;
 		border-radius: 10px;
 	}
-
 	.table-container::-webkit-scrollbar-thumb {
 		background: #c1c7cd;
 		border-radius: 10px;
 		transition: background 0.3s ease;
 	}
-
 	.table-container::-webkit-scrollbar-thumb:hover {
 		background: #a8aeb4;
 	}
-
 	table {
 		width: 100%;
 		border-collapse: collapse;
 		background: white;
 	}
-
 	thead {
 		background: #f8f9fa;
 		position: sticky;
@@ -1117,7 +1010,6 @@
 		z-index: 10;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
-
 	th {
 		padding: 15px 20px;
 		text-align: left;
@@ -1130,41 +1022,31 @@
 		background: #f8f9fa;
         white-space: nowrap;
 	}
-
-    /* Column distribution */
     th:first-child, td:first-child {
-        min-width: 200px; /* Name column */
+        min-width: 200px; 
     }
-
     th:last-child, td:last-child {
-        width: 1%; /* Actions column - shrink to fit */
+        width: 1%; 
         white-space: nowrap;
     }
-
 	td {
 		padding: 15px 20px;
 		border-bottom: 1px solid #f1f3f4;
 		vertical-align: middle;
 	}
-
 	tbody tr {
 		transition: all 0.3s ease;
 	}
-
 	tbody tr:hover {
 		background-color: #f8f9fa;
 		transform: scale(1.01);
 	}
-
 	.panel-areas .table-container {
 		max-height: 450px;
 	}
-
 	.panel-agrupaciones .table-container {
 		max-height: 450px;
 	}
-
-	/* Badges */
 	.badge {
 		padding: 6px 12px;
 		border-radius: 20px;
@@ -1174,29 +1056,23 @@
 		letter-spacing: 0.5px;
 		white-space: nowrap;
 	}
-
 	.badge-success {
 		background: #d4edda;
 		color: #155724;
 	}
-
 	.badge-inactive {
 		background: #f8d7da;
 		color: #721c24;
 	}
-
 	.badge-info {
 		background: #d1ecf1;
 		color: #0c5460;
 	}
-
-	/* Acciones en tabla */
 	.actions {
 		display: flex;
 		gap: 8px;
 		align-items: center;
 	}
-
 	.btn-icon,
 	.btn-icon-danger {
 		padding: 8px 12px;
@@ -1207,28 +1083,22 @@
 		transition: all 0.3s ease;
 		background: #68686836;
 	}
-
 	.btn-icon:hover {
 		background: #68686836;
 		transform: translateY(-3px);
 	}
-
 	.btn-icon-danger {
 		background: #da414eb7;
 	}
-
 	.btn-icon-danger:hover {
 		background: #ff001994;
 		transform: translateY(-3px);
 	}
-
-	/* Información de agrupación */
 	.agrupacion-info {
 		display: flex;
 		align-items: center;
 		gap: 10px;
 	}
-
 	.color-indicator {
 		width: 20px;
 		height: 20px;
@@ -1236,8 +1106,6 @@
 		border: 2px solid white;
 		box-shadow: 0 0 0 1px #ddd;
 	}
-
-	/* Enlaces */
 	.btn-link {
 		background: none;
 		border: none;
@@ -1246,11 +1114,9 @@
 		text-decoration: underline;
 		font-size: 0.9rem;
 	}
-
 	.btn-link:hover {
 		color: #2980b9;
 	}
-
 	@keyframes modalSlide {
 		from {
 			opacity: 0;
@@ -1261,8 +1127,6 @@
 			transform: translateY(0) scale(1);
 		}
 	}
-
-	/* Ajustes específicos para móviles */
 	@media (max-width: 768px) {
 		.page-container {
 			padding-left: 45px !important; 
@@ -1274,7 +1138,6 @@
             box-sizing: border-box !important;
             display: block;
 		}
-
 		.page-header {
 			flex-direction: column;
 			gap: 10px;
@@ -1282,14 +1145,12 @@
 			align-items: stretch;
             margin-bottom: 0.5rem;
 		}
-
 		.header-actions {
 			display: flex;
 			flex-direction: column;
 			gap: 8px;
 			width: 100%;
 		}
-
 		.btn-primary,
 		.btn-secondary,
 		.btn-horario-global {
@@ -1298,53 +1159,42 @@
 			justify-content: center;
             padding: 12px 20px;
 		}
-
-
 		.panel-stats {
 			padding: 10px 15px;
             gap: 10px; 
 		}
-
 		.stat-card {
 			padding: 15px; 
             margin-bottom: 0;
 		}
-
 		.panel-header {
 			padding: 15px;
 		}
-        
         .panel-header h2 {
 			font-size: 1.1rem;
 		}
-
 		.filtros-container {
 			flex-direction: column;
 			align-items: stretch;
 			padding: 10px 15px;
             gap: 5px;
 		}
-
 		.filtro-group {
 			width: 100%;
 			min-width: auto;
 			flex: none;
 		}
-
 		.filtro-actions {
 			width: 100%;
 			margin-top: 0;
 		}
-
 		.btn-limpiar {
 			width: 100%;
             height: 38px;
 		}
-        
         .panel-areas, .panel-agrupaciones {
             margin-bottom: 15px; 
         }
-
 		th,
 		td {
 			padding: 5px 4px;
@@ -1352,43 +1202,35 @@
             white-space: nowrap;
             line-height: 1.2;
 		}
-
 		.badge {
 			padding: 4px 6px;
 			font-size: 0.7rem;
 		}
-
 		.panel-header h2 {
 			font-size: 1.1rem;
 		}
-
 		.actions {
-			flex-wrap: nowrap; /* Keep actions in one line if possible */
+			flex-wrap: nowrap; 
 			justify-content: flex-start;
             gap: 8px;
 		}
-
         .btn-icon,
         .btn-icon-danger {
-            padding: 8px 10px; /* Restored larger padding for touch targets */
-            font-size: 16px; /* Larger icon */
+            padding: 8px 10px; 
+            font-size: 16px; 
         }
 	}
-
 	@media (max-width: 480px) {
         .page-container {
             padding-left: 15px !important;
             padding-right: 15px !important;
         }
-
 		.page-header-title {
 			padding: 15px;
 		}
-
 		.page-header-title h1 {
 			font-size: 1.1rem;
 		}
-        
         .panel-stats {
             grid-template-columns: 1fr;
         }

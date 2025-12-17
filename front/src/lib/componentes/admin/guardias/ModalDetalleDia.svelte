@@ -2,29 +2,22 @@
   import { createEventDispatcher } from "svelte";
   import { guardiasMainController } from "$lib/paneladmin/controllers/index.js";
   import { slide } from "svelte/transition";
-
   export let fecha;
   export let guardias = [];
-
   const dispatch = createEventDispatcher();
-
   // Estado para controlar qué grupos están expandidos
   let expandedGroups = {};
-
   function cerrar() {
     dispatch("close");
   }
-
   function toggleGroup(grupoKey) {
     expandedGroups[grupoKey] = !expandedGroups[grupoKey];
   }
-
   // Agrupar guardias si hay datos
   $: guardiasPorAreaHora =
     guardias.length > 0
       ? guardiasMainController.agruparGuardiasPorAreaHora(guardias)
       : {};
-
   // Inicializar todos los grupos como "cerrados" o "abiertos" según preferencia.
   // Aquí los dejamos cerrados por defecto, o podríamos abrirlos al cambiar guardias.
   $: {
@@ -34,7 +27,6 @@
       // if (primerGrupo) expandedGroups[primerGrupo] = true;
     }
   }
-
   // Helper para extraer datos limpios del primer elemento del grupo
   function getGroupInfo(guardiasGrupo) {
     if (!guardiasGrupo || guardiasGrupo.length === 0) return { area: "", start: "", end: "" };
@@ -46,7 +38,6 @@
     };
   }
 </script>
-
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="modal-overlay" on:click={cerrar}>
@@ -59,14 +50,12 @@
       </h3>
       <button class="close-button" on:click={cerrar}>&times;</button>
     </div>
-    
     <div class="modal-body">
       {#if guardias.length > 0}
         <div class="guardias-lista">
           {#each Object.entries(guardiasPorAreaHora) as [grupoKey, guardiasGrupo]}
             {@const info = getGroupInfo(guardiasGrupo)}
             {@const isExpanded = expandedGroups[grupoKey]}
-            
             <div class="grupo-container">
               <!-- Encabezado del Grupo (Click para toggle) -->
               <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -85,12 +74,10 @@
                     <span class="horario-texto">{info.start} - {info.end} hs</span>
                   </div>
                 </div>
-                
                 <button class="btn-toggle">
                   <span class="chevron {isExpanded ? 'rotated' : ''}">▼</span>
                 </button>
               </div>
-
               <!-- Lista de Agentes (Colapsable) -->
               {#if isExpanded}
                 <div class="agentes-wrapper" transition:slide|local={{ duration: 300 }}>
@@ -123,9 +110,7 @@
     </div>
   </div>
 </div>
-
 <style>
-  /* Modal Overlay & Content */
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -140,7 +125,6 @@
     z-index: 1000;
     padding: 1rem;
   }
-
   .modal-content {
     background: white;
     border-radius: 16px;
@@ -156,8 +140,6 @@
     -ms-overflow-style: none;
   }
   .modal-content::-webkit-scrollbar { display: none; }
-
-  /* Header */
   .modal-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -168,14 +150,12 @@
     align-items: center;
     border-bottom: none;
   }
-
   .modal-header h3 {
     margin: 0;
-    color: white; /* Ensure text is white */
+    color: white; 
     font-size: 1.3rem;
     font-weight: 700;
   }
-
   .close-button {
     background: none;
     border: none;
@@ -195,21 +175,16 @@
     background: rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
   }
-
-  /* Body */
   .modal-body {
     padding: 1.5rem;
     background: #f8f9fa;
     min-height: 200px;
   }
-
   .guardias-lista {
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
-
-  /* Grupo Accordion */
   .grupo-container {
     background: white;
     border-radius: 12px;
@@ -221,7 +196,6 @@
   .grupo-container:hover {
     box-shadow: 0 4px 8px rgba(0,0,0,0.08);
   }
-
   .grupo-header {
     padding: 1rem 1.25rem;
     display: flex;
@@ -239,13 +213,11 @@
     background: #eef2ff;
     border-bottom: 1px solid #e2e8f0;
   }
-
   .grupo-info {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
-
   .grupo-area {
     display: flex;
     align-items: center;
@@ -257,7 +229,6 @@
     font-size: 1.05rem;
   }
   .icon-area { font-size: 1.1rem; }
-
   .grupo-horario {
     display: flex;
     align-items: center;
@@ -268,8 +239,6 @@
   }
   .icon-time { font-size: 0.9rem; }
   .horario-texto { font-weight: 500; }
-
-  /* Toggle Button */
   .btn-toggle {
     background: none;
     border: none;
@@ -287,8 +256,6 @@
   .chevron.rotated {
     transform: rotate(180deg);
   }
-
-  /* Agentes List */
   .agentes-wrapper {
     background: #f8fafc;
   }
@@ -298,7 +265,6 @@
     flex-direction: column;
     gap: 0.75rem;
   }
-
   .guardia-card {
     background: white;
     border-radius: 8px;
@@ -310,13 +276,11 @@
     flex-wrap: wrap;
     gap: 0.5rem;
   }
-
   .agente-info {
     display: flex;
     align-items: center;
     gap: 0.75rem;
   }
-  
   .avatar-placeholder {
     width: 36px;
     height: 36px;
@@ -331,18 +295,14 @@
     box-shadow: 0 2px 4px rgba(118, 75, 162, 0.3);
     flex-shrink: 0;
   }
-
   .agente-info strong {
     color: #334155;
     font-weight: 600;
   }
-
   .guardia-detalles {
     display: flex;
     gap: 0.5rem;
   }
-
-  /* Badges */
   .tipo, .estado {
     padding: 0.25rem 0.6rem;
     border-radius: 6px;
@@ -351,17 +311,14 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-
   .tipo-regular { background: #dbeafe; color: #1e40af; }
   .tipo-especial { background: #d1fae5; color: #065f46; }
   .tipo-feriado { background: #fee2e2; color: #991b1b; }
   .tipo-emergencia { background: #fed7aa; color: #9a3412; }
-
   .estado-planificada { background: #f1f5f9; color: #475569; }
   .estado-confirmada { background: #e0f2fe; color: #0284c7; }
   .estado-completada { background: #dcfce7; color: #16a34a; }
   .estado-cancelada { background: #fee2e2; color: #dc2626; }
-
   .empty-state {
     text-align: center;
     padding: 2rem;

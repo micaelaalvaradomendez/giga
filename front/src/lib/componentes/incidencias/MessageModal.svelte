@@ -5,7 +5,6 @@
 	export let message = "";
 	export let onClose = () => {};
 </script>
-
 {#if show}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -52,11 +51,9 @@
 				</div>
 				<h3>{title}</h3>
 			</div>
-
 			<div class="mensaje-contenido">
 				<p>{message}</p>
 			</div>
-
 			<div class="mensaje-acciones">
 				<button class="btn-mensaje" on:click={onClose}>
 					Aceptar
@@ -65,7 +62,6 @@
 		</div>
 	</div>
 {/if}
-
 <style>
 	.modal-overlay {
 		position: fixed;
@@ -82,11 +78,9 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-
 	.modal-overlay::-webkit-scrollbar {
 		display: none;
 	}
-
 	.mensaje-modal {
 		max-width: 450px;
 		width: 90%;
@@ -96,7 +90,6 @@
 		overflow: hidden;
 		animation: slideIn 0.3s ease-out;
 	}
-
 	.mensaje-header {
 		display: flex;
 		align-items: center;
@@ -104,25 +97,21 @@
 		padding: 1.5rem;
 		border-bottom: 1px solid #e5e7eb;
 	}
-
 	.mensaje-header.success {
 		background: linear-gradient(135deg, #10b981, #059669);
 		color: white;
 		border-bottom: none;
 	}
-
 	.mensaje-header.error {
 		background: linear-gradient(135deg, #ef4444, #dc2626);
 		color: white;
 		border-bottom: none;
 	}
-
 	.mensaje-header.warning {
 		background: linear-gradient(135deg, #f59e0b, #d97706);
 		color: white;
 		border-bottom: none;
 	}
-
 	.mensaje-icono {
 		display: flex;
 		align-items: center;
@@ -132,18 +121,15 @@
 		border-radius: 50%;
 		background: rgba(255, 255, 255, 0.2);
 	}
-
 	.mensaje-header h3 {
 		margin: 0;
 		font-size: 1.25rem;
 		font-weight: 500;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.mensaje-contenido {
 		padding: 1.5rem;
 	}
-
 	.mensaje-contenido p {
 		margin: 0;
 		font-size: 1rem;
@@ -152,14 +138,12 @@
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		font-weight: 400;
 	}
-
 	.mensaje-acciones {
 		display: flex;
 		justify-content: flex-end;
 		padding: 1rem 1.5rem 1.5rem;
 		gap: 0.5rem;
 	}
-
 	.btn-mensaje {
 		background: #3b82f6;
 		color: white;
@@ -172,15 +156,12 @@
 		font-size: 1rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.btn-mensaje:hover {
 		background: #2563eb;
 	}
-
 	.btn-mensaje:active {
 		transform: translateY(0);
 	}
-
 	@keyframes slideIn {
 		from {
 			opacity: 0;
@@ -191,50 +172,39 @@
 			transform: scale(1) translateY(0);
 		}
 	}
-
-	/* Responsive */
 	@media (max-width: 768px) {
 		.mensaje-modal {
 			width: 95%;
 			margin: 1rem;
 		}
-
 		.mensaje-header {
 			padding: 1.25rem;
 		}
-
 		.mensaje-contenido,
 		.mensaje-acciones {
 			padding: 1rem;
 		}
-
 		.btn-mensaje {
 			padding: 0.65rem 1.5rem;
 		}
 	}
-
 	@media (max-width: 480px) {
 		.mensaje-modal {
 			width: 90%;
 		}
-
 		.mensaje-header {
 			padding: 1rem;
 			flex-wrap: wrap;
 		}
-
 		.mensaje-header h3 {
 			font-size: 1.1rem;
 		}
-
 		.mensaje-contenido {
 			padding: 1rem;
 		}
-
 		.mensaje-acciones {
 			padding: 0.75rem 1rem 1rem;
 		}
-
 		.btn-mensaje {
 			width: 100%;
 			padding: 0.75rem;

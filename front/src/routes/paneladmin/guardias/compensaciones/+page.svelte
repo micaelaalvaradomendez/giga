@@ -3,31 +3,25 @@
   import { onMount } from "svelte";
   import ModalDetalleCompensacion from "$lib/componentes/admin/compensaciones/ModalDetalleCompensacion.svelte";
   import ModalNuevaCompensacion from "$lib/componentes/admin/compensaciones/ModalNuevaCompensacion.svelte";
-
   // Estado del componente
   let compensaciones = [];
   let cargando = false;
   let error = null;
   let mostrandoFormulario = false;
   let token = null;
-
   // Debug: verificar que el script se esté ejecutando
   console.log("Script de compensaciones inicializado");
-
   // Datos para el formulario de nueva compensación
   let areas = [];
   let agentes = {};
   let cargandoAreas = false;
-
   // Filtros para la lista de compensaciones
   let filtroAreaLista = "";
   let filtroEstadoLista = "";
   let busqueda = "";
-
   // Modal de detalles
   let mostrandoDetalles = false;
   let compensacionSeleccionada = null;
-
   // Variables para modal de confirmación
   let mostrandoConfirmacion = false;
   let tituloConfirmacion = "";
@@ -41,7 +35,6 @@
     areaId: 0,
     estado: "",
   };
-
   onMount(async () => {
     // Obtener token de sesión
     token = localStorage.getItem("token");
@@ -49,14 +42,12 @@
     await cargarAreas();
     await getAgentes();
   });
-
   async function cargarCompensaciones() {
     cargando = true;
     error = null;
     try {
       const response = await guardiasService.getCompensaciones("", token);
       console.log("Respuesta completa compensaciones:", response);
-
       let datos = [];
       if (response.data?.data?.results) {
         datos = response.data.data.results;
@@ -73,7 +64,6 @@
       } else {
         datos = [];
       }
-
       compensaciones = datos;
     } catch (err) {
       error =
@@ -84,13 +74,11 @@
       cargando = false;
     }
   }
-
   async function cargarAreas() {
     cargandoAreas = true;
     try {
       const response = await personasService.getAreas(token);
       console.log("Respuesta completa de áreas:", response);
-
       // Manejar diferentes estructuras de respuesta (incluyendo response.data.data.results)
       let datos = [];
       if (response.data?.data?.results) {
@@ -108,7 +96,6 @@
       } else {
         datos = [];
       }
-
       areas = datos;
     } catch (err) {
       areas = [];
@@ -116,12 +103,10 @@
       cargandoAreas = false;
     }
   }
-
   async function getAgentes() {
     const { data } = await personasService.getAgentes(token);
     agentes = data.results;
   }
-
   // Compensaciones filtradas
   $: compensacionesFiltradas = compensaciones.filter((comp) => {
     // Filtro por búsqueda
@@ -135,10 +120,8 @@
         comp.agente_email?.toLowerCase().includes(searchTerm) ||
         comp.agente_legajo?.toString().includes(searchTerm) ||
         comp.descripcion_motivo?.toLowerCase().includes(searchTerm);
-
       if (!matchesSearch) return false;
     }
-
     // Filtro por área - necesitamos buscar el área de la guardia
     if (filtroAreaLista && comp.id_area !== parseInt(filtroAreaLista)) {
       return false;
@@ -149,17 +132,14 @@
     }
     return true;
   });
-
   function formatearFecha(fecha) {
     if (!fecha) return "-";
     return new Date(fecha).toLocaleDateString("es-AR");
   }
-
   function formatearHora(hora) {
     if (!hora) return "-";
     return hora.slice(0, 5); // HH:MM
   }
-
   function limpiarFiltros() {
     busqueda = "";
     filtroAreaLista = "";
@@ -170,56 +150,43 @@
     };
     filtroEstadoLista = "";
   }
-
   function buildQuery() {
     const params = new URLSearchParams();
-
     if (filtrosBusqueda.agenteId && filtrosBusqueda.agenteId !== 0) {
       params.append("agente_id", filtrosBusqueda.agenteId);
     }
-
     if (filtrosBusqueda.areaId && filtrosBusqueda.areaId !== 0) {
       params.append("area_id", filtrosBusqueda.areaId);
     }
-
     if (filtrosBusqueda.estado && filtrosBusqueda.estado !== "") {
       params.append("estado", filtrosBusqueda.estado);
     }
-
     const query = params.toString();
     return query ? `?${query}` : "";
   }
-
   async function buscarCompensaciones() {
     const query = buildQuery();
     const { data } = await guardiasService.getCompensaciones(query, token);
-
     console.log(data.results, "response filter");
     compensaciones = data.results;
   }
-
   function verDetalles(compensacion) {
     compensacionSeleccionada = compensacion;
     mostrandoDetalles = true;
     console.log("Ver detalles de compensación:", compensacion);
   }
-
   function cerrarDetalles() {
     mostrandoDetalles = false;
     compensacionSeleccionada = null;
   }
-
   async function aprobarCompensacion(compensacion) {
     if (!(await confirmar("¿Está seguro de aprobar esta compensación?"))) {
       return;
     }
-
     try {
       cargando = true;
       error = null;
-
       console.log("Compensación a aprobar:", compensacion);
-
       // Identificar el ID correcto de la compensación
       const compensacionId =
         compensacion.id_hora_compensacion ||
@@ -227,17 +194,14 @@
         compensacion.id ||
         compensacion.pk;
       console.log("ID de compensación:", compensacionId);
-
       if (!compensacionId) {
         throw new Error("No se pudo identificar el ID de la compensación");
       }
-
       const response = await guardiasService.aprobarCompensacion(
         compensacionId,
         { aprobado_por: 1 }, // TODO: Obtener del agente actual
         token
       );
-
       await cargarCompensaciones();
       mostrarConfirmacion(
         "¡Aprobada!",
@@ -259,7 +223,6 @@
       cargando = false;
     }
   }
-
   async function rechazarCompensacion(compensacion) {
     const motivo = await confirmar(
       "¿Seguro de rechazar?",
@@ -270,13 +233,10 @@
     if (!motivo || !motivo.trim()) {
       return;
     }
-
     try {
       cargando = true;
       error = null;
-
       console.log("Compensación a rechazar:", compensacion);
-
       // Identificar el ID correcto de la compensación
       const compensacionId =
         compensacion.id_hora_compensacion ||
@@ -284,11 +244,9 @@
         compensacion.id ||
         compensacion.pk;
       console.log("ID de compensación:", compensacionId);
-
       if (!compensacionId) {
         throw new Error("No se pudo identificar el ID de la compensación");
       }
-
       const response = await guardiasService.rechazarCompensacion(
         compensacionId,
         {
@@ -297,7 +255,6 @@
         },
         token
       );
-
       await cargarCompensaciones();
       mostrarConfirmacion(
         "Rechazada",
@@ -319,7 +276,6 @@
       cargando = false;
     }
   }
-
   function mostrarConfirmacion(titulo, mensaje, tipo = "success") {
     tituloConfirmacion = titulo;
     mensajeConfirmacion = mensaje;
@@ -327,31 +283,23 @@
     tipoConfirmacion = tiposValidos.includes(tipo) ? tipo : "success";
     mostrandoConfirmacion = true;
   }
-
   function cerrarConfirmacion() {
     mostrandoConfirmacion = false;
   }
-
   function confirmar(titulo, mensaje = "", tipo = "success", conInput = false) {
     tituloConfirmacion = titulo;
     mensajeConfirmacion = mensaje;
-
     const tiposValidos = ["success", "error", "warning"];
     tipoConfirmacion = tiposValidos.includes(tipo) ? tipo : "success";
-
     pedirInput = conInput;
     valorInput = "";
-
     mostrandoConfirmacion = true;
-
     return new Promise((resolve) => {
       resolverConfirmacion = resolve;
     });
   }
-
   function aceptarConfirmacion() {
     mostrandoConfirmacion = false;
-
     if (resolverConfirmacion) {
       if (pedirInput) {
         resolverConfirmacion(valorInput.trim());
@@ -359,45 +307,36 @@
         resolverConfirmacion(true);
       }
     }
-
     // Reset state
     pedirInput = false;
     valorInput = "";
     resolverConfirmacion = null;
   }
-
   function cancelarConfirmacion() {
     mostrandoConfirmacion = false;
-
     if (resolverConfirmacion) {
       resolverConfirmacion(null);
     }
-
     // Reset state
     pedirInput = false;
     valorInput = "";
     resolverConfirmacion = null;
   }
 </script>
-
 <svelte:head>
   <title>Compensaciones por Horas Extra - GIGA</title>
 </svelte:head>
-
 <div class="compensaciones-container">
   <div class="header-compensaciones">
     <div class="titulo-compensaciones">⏱️ Compensaciones por Horas Extra</div>
-
     <button class="btn-nueva-compensacion"> ➕ Nueva Compensación </button>
   </div>
-
   <!-- Errores -->
   {#if error}
     <div class="alert alert-error">
       ⚠️ {error}
     </div>
   {/if}
-
   <!-- Formulario nueva compensación -->
   {#if mostrandoFormulario}
     <ModalNuevaCompensacion
@@ -410,7 +349,6 @@
       }}
     />
   {/if}
-
   <!-- Filtros para la lista -->
   <div class="filtros-lista">
     <div class="filtro-row">
@@ -434,7 +372,6 @@
           {/each}
         </select>
       </div>
-
       <div class="filtro-group">
         <label for="filtro-estado-lista">🚦Estado:</label>
         <select id="filtro-estado-lista" bind:value={filtrosBusqueda.estado}>
@@ -444,7 +381,6 @@
           <option value="rechazada">Rechazada</option>
         </select>
       </div>
-
       <button
         class="btn-limpiar"
         on:click={limpiarFiltros}
@@ -452,7 +388,6 @@
       >
         🗑️ Limpiar filtros
       </button>
-
       <button
         class="btn-limpiar"
         on:click={buscarCompensaciones}
@@ -463,7 +398,6 @@
     </div>
   </div>
 </div>
-
 <!-- Lista de compensaciones -->
 <div class="lista-compensaciones">
   <div class="lista-container">
@@ -584,7 +518,6 @@
     {/if}
   </div>
 </div>
-
 <!-- Modal de detalles de compensación -->
 {#if mostrandoDetalles && compensacionSeleccionada}
   <ModalDetalleCompensacion
@@ -595,7 +528,6 @@
     on:rechazar={({ detail }) => rechazarCompensacion(detail)}
   />
 {/if}
-
 {#if mostrandoConfirmacion}
   <div class="modal-confirmacion">
     <div class="modal-confirmacion-contenido {tipoConfirmacion}">
@@ -631,29 +563,19 @@
     </div>
   </div>
 {/if}
-
 <style>
-  /* =========================
-   LAYOUT BASE
-========================= */
 .compensaciones-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
-
-/* Hacer que el bloque de lista tenga mismo ancho y centrado */
 .lista-compensaciones {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 20px;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
-
-/* =========================
-   HEADER (título + botón)
-========================= */
 .header-compensaciones {
   display: flex;
   align-items: center;
@@ -661,8 +583,6 @@
   gap: 16px;
   margin-bottom: 16px;
 }
-
-/* Card azul */
 .titulo-compensaciones {
   position: relative;
   flex: 1;
@@ -677,8 +597,6 @@
     0 0 0 1px rgba(255, 255, 255, 0.12) inset,
     0 16px 50px rgba(30, 64, 175, 0.25);
 }
-
-/* Botón naranja */
 .btn-nueva-compensacion {
   background: linear-gradient(135deg, #f5a43a, #f0932b);
   color: #fff;
@@ -691,29 +609,21 @@
   white-space: nowrap;
   box-shadow: 0 10px 25px rgba(240, 147, 43, 0.25);
 }
-
 .btn-nueva-compensacion:hover {
   transform: translateY(-1px);
   opacity: 0.95;
 }
-
-/* Mobile: uno abajo del otro + espacio */
 @media (max-width: 768px) {
   .header-compensaciones {
     flex-direction: column;
     align-items: stretch;
     gap: 14px;
   }
-
   .btn-nueva-compensacion {
     width: 100%;
     text-align: center;
   }
 }
-
-/* =========================
-   ALERTAS
-========================= */
 .alert {
   padding: 14px 18px;
   border-radius: 10px;
@@ -725,10 +635,6 @@
   color: #991b1b;
   border: 1px solid #fecaca;
 }
-
-/* =========================
-   FILTROS
-========================= */
 .filtros-lista {
   background: #fff;
   padding: 14px;
@@ -736,25 +642,21 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   margin-bottom: 18px;
 }
-
 .filtro-row {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
 }
-
 .filtro-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-
 .filtro-group label {
   font-size: 0.9rem;
   font-weight: 700;
   color: #495057;
 }
-
 .filtro-group select {
   height: 44px;
   padding: 0 12px;
@@ -765,14 +667,11 @@
   width: 100%;
   box-sizing: border-box;
 }
-
 .filtro-group select:focus {
   outline: none;
   border-color: #407bff;
   box-shadow: 0 0 0 3px rgba(64, 123, 255, 0.15);
 }
-
-/* Botones filtros */
 .btn-limpiar {
   height: 44px;
   padding: 0 14px;
@@ -783,30 +682,23 @@
   font-weight: 800;
   white-space: nowrap;
 }
-
 .btn-limpiar:first-of-type {
   background: #e9ecef;
   color: #495057;
 }
-
 .btn-limpiar:last-of-type {
   background: #007bff;
   color: #fff;
 }
-
 .btn-limpiar:hover {
   opacity: 0.92;
 }
-
-/* Desktop: 3 selects + 2 botones en la misma fila */
 @media (min-width: 900px) {
   .filtro-row {
     grid-template-columns: 1.6fr 1.2fr 1fr auto auto;
     align-items: end;
   }
 }
-
-/* Tablet: 2 columnas */
 @media (max-width: 900px) and (min-width: 601px) {
   .filtro-row {
     grid-template-columns: 1fr 1fr;
@@ -820,27 +712,19 @@
     width: min(320px, 100%);
   }
 }
-
-/* Mobile: todo full width */
 @media (max-width: 600px) {
   .btn-limpiar {
     width: 100%;
     text-align: center;
   }
 }
-
-/* =========================
-   LISTA / TABLA
-========================= */
 .lista-container {
   background: transparent;
   padding: 0;
 }
-
 .lista-header {
   margin-bottom: 18px;
 }
-
 .lista-header h2 {
   color: #1e293b;
   margin: 0;
@@ -850,7 +734,6 @@
   padding-bottom: 10px;
   position: relative;
 }
-
 .lista-header h2::after {
   content: "";
   position: absolute;
@@ -861,12 +744,10 @@
   background: linear-gradient(90deg, transparent, #000, transparent);
   animation: moveLine 2s linear infinite;
 }
-
 @keyframes moveLine {
   0% { left: -100%; }
   100% { left: 100%; }
 }
-
 .table-container {
   overflow-x: auto;
   border: 1px solid #e5e7eb;
@@ -874,13 +755,11 @@
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
-
 .compensaciones-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px; /* para que no se rompa en desktop si hay muchas cols */
+  min-width: 900px; 
 }
-
 .compensaciones-table th {
   padding: 16px 18px;
   text-align: left;
@@ -891,24 +770,19 @@
   letter-spacing: 0.5px;
   border-bottom: 3px solid #3b82f6;
 }
-
 .compensaciones-table td {
   padding: 16px 18px;
   font-size: 14px;
   color: #374151;
   vertical-align: middle;
 }
-
 .compensaciones-table tbody tr {
   border-bottom: 1px solid #e5e7eb;
   transition: all 0.2s ease;
 }
-
 .compensaciones-table tbody tr:hover {
   background: linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 100%);
 }
-
-/* Badges */
 .horas-badge {
   display: inline-block;
   background: linear-gradient(135deg, #dbeafe, #bfdbfe);
@@ -918,7 +792,6 @@
   font-weight: 800;
   font-size: 12px;
 }
-
 .motivo-badge {
   display: inline-block;
   background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
@@ -929,7 +802,6 @@
   font-weight: 700;
   border: 1px solid #d1d5db;
 }
-
 .estado-badge {
   display: inline-block;
   padding: 7px 12px;
@@ -938,33 +810,27 @@
   font-weight: 800;
   text-transform: capitalize;
 }
-
 .estado-pendiente {
   background: linear-gradient(135deg, #fef3c7, #fde68a);
   color: #92400e;
   border: 1px solid #fcd34d;
 }
-
 .estado-aprobada {
   background: linear-gradient(135deg, #d1fae5, #a7f3d0);
   color: #065f46;
   border: 1px solid #6ee7b7;
 }
-
 .estado-rechazada {
   background: linear-gradient(135deg, #fee2e2, #fecaca);
   color: #991b1b;
   border: 1px solid #fca5a5;
 }
-
-/* Botones acciones */
 .acciones-grupo {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
 }
-
 .btn-small {
   padding: 8px 14px;
   border: none;
@@ -974,7 +840,6 @@
   cursor: pointer;
   transition: all 0.15s ease;
 }
-
 .btn-ver {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: #fff;
@@ -987,13 +852,10 @@
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: #fff;
 }
-
 .btn-small:hover {
   transform: translateY(-1px);
   opacity: 0.95;
 }
-
-/* Estados */
 .loading {
   display: flex;
   align-items: center;
@@ -1005,7 +867,6 @@
   background: #fff;
   border-radius: 12px;
 }
-
 .spinner {
   width: 32px;
   height: 32px;
@@ -1014,12 +875,10 @@
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-
 .empty-state {
   text-align: center;
   padding: 70px 30px;
@@ -1028,27 +887,20 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
-
 .empty-icon {
   font-size: 64px;
   margin-bottom: 14px;
 }
-
 .empty-state h3 {
   margin: 0 0 10px 0;
   color: #374151;
   font-size: 20px;
   font-weight: 800;
 }
-
 .empty-state p {
   margin: 0;
   font-size: 14px;
 }
-
-/* =========================
-   MODAL CONFIRMACIÓN
-========================= */
 .modal-confirmacion {
   position: fixed;
   inset: 0;
@@ -1060,7 +912,6 @@
   backdrop-filter: blur(4px);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
-
 .modal-confirmacion-contenido {
   background: #ffffff;
   padding: 28px;
@@ -1069,40 +920,33 @@
   text-align: center;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
 }
-
 .modal-confirmacion-contenido.success {
   background: #d4edda;
   border: 4px solid #28a745;
 }
-
 .modal-confirmacion-contenido.error {
   background: #f8d7da;
   border: 4px solid #dc3545;
 }
-
 .modal-confirmacion-contenido.warning {
   background: #fff3cd;
   border: 4px solid #ffc107;
 }
-
 .modal-confirmacion-icono {
   font-size: 3rem;
   font-weight: bold;
 }
-
 .modal-confirmacion-titulo {
   font-size: 20px;
   font-weight: 900;
   color: #1e293b;
   margin: 8px 0;
 }
-
 .modal-confirmacion-mensaje {
   font-size: 14px;
   color: #475569;
   margin-bottom: 18px;
 }
-
 .modal-input {
   width: 100%;
   padding: 10px 14px;
@@ -1114,13 +958,11 @@
   margin-bottom: 18px;
   outline: none;
 }
-
 .modal-confirmacion-botones {
   display: flex;
   justify-content: center;
   gap: 10px;
 }
-
 .btn-cancelar {
   padding: 10px 22px;
   background: #e2e8f0;
@@ -1131,7 +973,6 @@
   color: #475569;
   cursor: pointer;
 }
-
 .modal-confirmacion-boton {
   padding: 10px 28px;
   background: #3b82f6;
@@ -1142,26 +983,20 @@
   font-weight: 800;
   cursor: pointer;
 }
-
-/* Mobile: acciones en columna (tabla) */
 @media (max-width: 768px) {
   .lista-compensaciones {
     padding: 0 10px;
   }
-
   .compensaciones-table {
     min-width: 780px;
   }
-
   .acciones-grupo {
     flex-direction: column;
     align-items: stretch;
   }
-
   .btn-small {
     width: 100%;
     text-align: center;
   }
 }
-
 </style>

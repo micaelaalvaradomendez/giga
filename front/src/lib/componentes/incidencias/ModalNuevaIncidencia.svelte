@@ -1,6 +1,5 @@
 <script>
 	import FormModal from "./FormModal.svelte";
-
 	export let show = false;
 	export let userRole = "";
 	export let nuevaIncidencia = {};
@@ -10,7 +9,6 @@
 	export let onClose = () => {};
 	export let onSubmit = () => {};
 </script>
-
 <FormModal
 	{show}
 	title="Nueva Incidencia"
@@ -30,7 +28,6 @@
 			disabled={creandoIncidencia}
 		/>
 	</div>
-
 	<div class="form-group">
 		<label for="descripcion">Descripción *</label>
 		<textarea
@@ -42,7 +39,6 @@
 			disabled={creandoIncidencia}
 		></textarea>
 	</div>
-
 	<div class="form-group">
 		<label for="prioridad">Prioridad *</label>
 		<select
@@ -57,7 +53,6 @@
 			<option value="critica">Crítica</option>
 		</select>
 	</div>
-
 	<!-- Selector de jefe -->
 	<div class="form-group">
 		<label for="asignado_a">
@@ -91,7 +86,6 @@
 		{/if}
 	</div>
 </FormModal>
-
 <style>
 	.loading-jefes {
 		padding: 0.75rem;
@@ -102,7 +96,6 @@
 		border-radius: 8px;
 		background: #f9fafb;
 	}
-
 	.no-jefes {
 		padding: 0.75rem;
 		text-align: center;
@@ -112,8 +105,6 @@
 		background: #fee2e2;
 		font-weight: 500;
 	}
-
-	/* Responsive */
 	@media (max-width: 480px) {
 		.loading-jefes,
 		.no-jefes {

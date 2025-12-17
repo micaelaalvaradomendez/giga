@@ -4,7 +4,6 @@
   import { aprobacionesGuardiasController } from "$lib/paneladmin/controllers";
   import ModalDetalleGuardia from "$lib/componentes/admin/guardias/ModalDetalleGuardia.svelte";
   import ModalRechazoCronograma from "$lib/componentes/admin/guardias/ModalRechazoCronograma.svelte";
-
   // Obtener stores del controller
   const {
     loading,
@@ -29,14 +28,12 @@
     cronogramasPendientesFiltrados,
     cronogramasAprobadasFiltradas,
   } = aprobacionesGuardiasController;
-
   onMount(async () => {
     console.log(
       "🔄 Componente de aprobaciones montado, iniciando controller...",
     );
     await aprobacionesGuardiasController.init();
     console.log("✅ Controller de aprobaciones inicializado");
-
     // Recargar cuando la página vuelve a ser visible
     if (browser) {
       const handleVisibilityChange = () => {
@@ -44,14 +41,11 @@
           aprobacionesGuardiasController.cargarDatos();
         }
       };
-
       const handleFocus = () => {
         aprobacionesGuardiasController.cargarDatos();
       };
-
       document.addEventListener("visibilitychange", handleVisibilityChange);
       window.addEventListener("focus", handleFocus);
-
       return () => {
         document.removeEventListener(
           "visibilitychange",
@@ -61,57 +55,44 @@
       };
     }
   });
-
   // Handlers delegados al controller
   async function handleVerDetalles(cronograma) {
     await aprobacionesGuardiasController.verDetalles(cronograma);
   }
-
   async function handleAprobar(cronograma) {
     await aprobacionesGuardiasController.aprobar(cronograma);
   }
-
   function handleIniciarRechazo(cronograma) {
     aprobacionesGuardiasController.iniciarRechazo(cronograma);
   }
-
   async function handleConfirmarRechazo() {
     await aprobacionesGuardiasController.confirmarRechazo();
   }
-
   async function handlePublicar(cronograma) {
     await aprobacionesGuardiasController.publicar(cronograma);
   }
-
   function handleCerrarModal() {
     aprobacionesGuardiasController.cerrarModal();
   }
-
   async function handleEditarCronograma(cronograma) {
     await aprobacionesGuardiasController.editarCronograma(cronograma);
   }
-
   async function handleEliminarGuardia(guardia) {
     await aprobacionesGuardiasController.eliminarGuardia(guardia);
   }
-
   async function handleEliminarCronograma(cronograma) {
     await aprobacionesGuardiasController.eliminarCronograma(cronograma);
   }
-
   function handleCambiarTab(tab) {
     aprobacionesGuardiasController.cambiarTab(tab);
   }
-
   async function handleDespublicar(cronograma) {
     await aprobacionesGuardiasController.despublicar(cronograma);
   }
-
   async function handleEliminar(cronograma) {
     await aprobacionesGuardiasController.eliminar(cronograma);
   }
 </script>
-
 <section class="aprobaciones-wrap">
   <header class="head">
     <h1>Aprobaciones de Guardias</h1>
@@ -122,7 +103,6 @@
       </div>
     {/if}
   </header>
-
   <!-- Filtros -->
   <div class="filtros-section">
     <div class="filtros-grid">
@@ -135,7 +115,6 @@
           {/each}
         </select>
       </div>
-
       <div class="filtro-item">
         <label for="filtro-tipo">Tipo:</label>
         <select id="filtro-tipo" bind:value={$filtroTipo}>
@@ -146,7 +125,6 @@
           <option value="emergencia">Emergencia</option>
         </select>
       </div>
-
       <div class="filtro-item">
         <label for="filtro-estado">Estado:</label>
         <select id="filtro-estado" bind:value={$filtroEstado}>
@@ -157,7 +135,6 @@
           <option value="rechazada">Rechazada</option>
         </select>
       </div>
-
       <div class="filtro-item">
         <label for="filtro-busqueda">Buscar:</label>
         <input
@@ -167,7 +144,6 @@
           bind:value={$busqueda}
         />
       </div>
-
       <div class="filtro-item filtro-actions">
         <button
           class="btn-limpiar"
@@ -178,7 +154,6 @@
       </div>
     </div>
   </div>
-
   <!-- Tabs -->
   <div class="tabs">
     <button
@@ -196,11 +171,9 @@
       Publicadas ({$cronogramasAprobadasFiltradas.length})
     </button>
   </div>
-
   {#if $error}
     <div class="alert alert-error">{$error}</div>
   {/if}
-
   {#if $loading}
     <div class="loading-container">
       <div class="loading-spinner"></div>
@@ -231,7 +204,6 @@
                 <span class="badge badge-pendiente">{cronograma.estado}</span>
               </div>
             </div>
-
             <div class="cronograma-body">
               <div class="info-row">
                 <span class="label">Creado por:</span>
@@ -248,7 +220,6 @@
                   {/if}
                 </span>
               </div>
-
               <div class="info-row">
                 <span class="label">Fecha creación:</span>
                 <span class="value"
@@ -257,7 +228,6 @@
                   )}</span
                 >
               </div>
-
               <div class="info-row">
                 <span class="label">Horario:</span>
                 <span class="value">
@@ -268,12 +238,10 @@
                   )}
                 </span>
               </div>
-
               <div class="info-row">
                 <span class="label">Guardias:</span>
                 <span class="value">{cronograma.total_guardias || 0}</span>
               </div>
-
               {#if cronograma.puede_aprobar_rol && cronograma.puede_aprobar_rol.length > 0}
                 <div class="info-row">
                   <span class="label">Puede aprobar:</span>
@@ -283,7 +251,6 @@
                 </div>
               {/if}
             </div>
-
             <div class="cronograma-actions">
               <button
                 class="btn btn-secondary"
@@ -344,7 +311,6 @@
                 >
               </div>
             </div>
-
             <div class="cronograma-body">
               <div class="info-row">
                 <span class="label">Creado:</span>
@@ -354,7 +320,6 @@
                   )}</span
                 >
               </div>
-
               {#if cronograma.fecha_aprobacion}
                 <div class="info-row">
                   <span class="label">Publicado:</span>
@@ -365,13 +330,11 @@
                   >
                 </div>
               {/if}
-
               <div class="info-row">
                 <span class="label">Guardias:</span>
                 <span class="value">{cronograma.total_guardias || 0}</span>
               </div>
             </div>
-
             <div class="cronograma-actions">
               <button
                 class="btn btn-secondary"
@@ -404,7 +367,6 @@
     </div>
   {/if}
 </section>
-
 <!-- Modal de detalles -->
 {#if $mostrarModal && $cronogramaSeleccionado}
   <ModalDetalleGuardia
@@ -416,7 +378,6 @@
     on:eliminarCronograma={({ detail }) => handleEliminarCronograma(detail)}
   />
 {/if}
-
 <!-- Modal de rechazo -->
 {#if $mostrarModalRechazo && $cronogramaARechazar}
   <ModalRechazoCronograma
@@ -427,7 +388,6 @@
     on:confirmar={handleConfirmarRechazo}
   />
 {/if}
-
 <style>
   .aprobaciones-wrap {
     max-width: 1200px;
@@ -435,12 +395,10 @@
     padding: 1.5rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-
   .head {
     text-align: center;
     margin-bottom: 2rem;
   }
-
   .head h1 {
     font-size: 1.2rem;
     margin: 0 0 0.5rem 0;
@@ -448,31 +406,26 @@
     max-width: 100%;
     word-wrap: break-word;
   }
-
   @media (min-width: 480px) {
     .head h1 {
       font-size: 1.4rem;
     }
   }
-
   @media (min-width: 640px) {
     .head h1 {
       font-size: 1.6rem;
     }
   }
-
   @media (min-width: 768px) {
     .head h1 {
       font-size: 1.8rem;
     }
   }
-
   .head p {
     margin: 0 0 1rem 0;
     color: #64748b;
     font-size: 1rem;
   }
-
   .search-section {
     margin-bottom: 1.5rem;
     background-color: #fff;
@@ -483,12 +436,10 @@
     display: flex;
     gap: 1rem;
   }
-
   .search-label {
     font-weight: 600;
     color: #495057;
   }
-
   .search-input {
     flex: 1;
     padding: 0.75rem 1rem;
@@ -499,13 +450,11 @@
       border-color 0.2s,
       box-shadow 0.2s;
   }
-
   .search-input:focus {
     outline: none;
     border-color: #e79043;
     box-shadow: 0 0 0 3px rgba(231, 144, 67, 0.3);
   }
-
   .rol-badge {
     display: inline-block;
     padding: 0.5rem 1rem;
@@ -518,14 +467,12 @@
     color: #1e40af;
     font-size: 0.9rem;
   }
-
   .tabs {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 2rem;
     border-bottom: 2px solid #e5e7eb;
   }
-
   .tab {
     padding: 0.75rem 1.5rem;
     background: none;
@@ -537,22 +484,18 @@
     cursor: pointer;
     transition: all 0.2s ease;
   }
-
   .tab:hover {
     color: #1e40af;
     background: rgba(142, 182, 228, 0.1);
   }
-
   .tab.active {
     color: #1e40af;
     border-bottom-color: #1e40af;
   }
-
   .cronogramas-lista {
     display: grid;
     gap: 1rem;
   }
-
   .cronograma-card {
     background: white;
     border: 1px solid #e5e7eb;
@@ -560,39 +503,32 @@
     padding: 1.5rem;
     transition: box-shadow 0.2s ease;
   }
-
   .cronograma-card:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
-
   .cronograma-card.pendiente {
     border-left: 4px solid #f59e0b;
   }
-
   .cronograma-card.aprobada {
     border-left: 4px solid #10b981;
   }
-
   .cronograma-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 1rem;
   }
-
   .cronograma-info h3 {
     margin: 0 0 0.25rem 0;
     color: #1e40af;
     font-size: 1.2rem;
   }
-
   .cronograma-info .tipo {
     margin: 0;
     color: #64748b;
     font-size: 0.9rem;
     text-transform: uppercase;
   }
-
   .badge {
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
@@ -600,82 +536,67 @@
     font-weight: 600;
     text-transform: capitalize;
   }
-
   .badge-pendiente {
     background: #fef3c7;
     color: #92400e;
   }
-
   .badge-aprobada {
     background: #d1fae5;
     color: #065f46;
   }
-
   .badge-publicada {
     background: #dbeafe;
     color: #1e40af;
   }
-
   .badge-generada {
     background: #fef3c7;
     color: #92400e;
   }
-
   .badge-rechazada {
     background: #fee2e2;
     color: #991b1b;
   }
-
   .cronograma-body {
     margin-bottom: 1rem;
   }
-
   .info-row {
     display: flex;
     padding: 0.5rem 0;
     border-bottom: 1px solid #f3f4f6;
   }
-
   .info-row:last-child {
     border-bottom: none;
   }
-
   .info-row .label {
     color: #64748b;
     font-size: 0.9rem;
     margin-right: 10px;
     font-weight: 600;
   }
-
   .info-row .value {
     color: #111827;
     font-size: 0.9rem;
   }
-
   .rol-mini {
     color: #64748b;
     font-size: 0.85rem;
     font-style: italic;
   }
-
   .sin-creador {
     color: #94a3b8;
     font-style: italic;
     font-size: 0.9rem;
   }
-
   .roles-permitidos {
     text-transform: capitalize;
     color: #059669;
     font-weight: 600;
   }
-
   .cronograma-actions {
     display: flex;
     gap: 0.75rem;
     margin-top: 1rem;
   }
-
   .btn {
     padding: 0.5rem 1rem;
     border: none;
@@ -685,57 +606,45 @@
     cursor: pointer;
     transition: all 0.2s ease;
   }
-
   .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-
   .btn-primary {
     background: #3b82f6;
     color: white;
   }
-
   .btn-primary:hover:not(:disabled) {
     background: #2563eb;
   }
-
   .btn-secondary {
     background: #e5e7eb;
     color: #374151;
   }
-
   .btn-secondary:hover:not(:disabled) {
     background: #d1d5db;
   }
-
   .btn-info {
     background: #3b82f6;
     color: white;
   }
-
   .btn-info:hover:not(:disabled) {
     background: #2563eb;
   }
-
   .btn-success {
     background: #10b981;
     color: white;
   }
-
   .btn-success:hover:not(:disabled) {
     background: #059669;
   }
-
   .btn-danger {
     background: #ef4444;
     color: white;
   }
-
   .btn-danger:hover:not(:disabled) {
     background: #dc2626;
   }
-
   .btn-icon {
     padding: 0.4rem 0.6rem;
     font-size: 1rem;
@@ -745,40 +654,32 @@
     transition: all 0.2s ease;
     background: transparent;
   }
-
   .btn-icon:hover:not(:disabled) {
     transform: scale(1.1);
   }
-
   .btn-danger-icon {
     color: #ef4444;
   }
-
   .btn-danger-icon:hover:not(:disabled) {
     background: #fee2e2;
   }
-
   .btn-icon:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
-
   .empty-state {
     text-align: center;
     padding: 3rem 1rem;
     color: #64748b;
   }
-
   .empty-state p {
     font-size: 1.1rem;
     margin: 0;
   }
-
   .loading-container {
     text-align: center;
     padding: 3rem 1rem;
   }
-
   .loading-spinner {
     border: 4px solid #f3f4f6;
     border-top: 4px solid #3b82f6;
@@ -788,7 +689,6 @@
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem;
   }
-
   @keyframes spin {
     0% {
       transform: rotate(0deg);
@@ -797,20 +697,16 @@
       transform: rotate(360deg);
     }
   }
-
   .alert {
     padding: 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
   }
-
   .alert-error {
     background: #fee2e2;
     color: #991b1b;
     border: 1px solid #fecaca;
   }
-
-  /* Estilos para filtros */
   .filtros-section {
     background: #f1f4f8;
     border: 1px solid #e5e9eeb2;
@@ -818,7 +714,6 @@
     padding: 1.5rem;
     margin-bottom: 2rem;
   }
-
   .filtros-grid {
     display: grid;
     grid-template-columns: 1fr auto auto;
@@ -826,19 +721,16 @@
     align-items: end;
     margin-bottom: 1rem;
   }
-
   .filtro-item {
     display: flex;
     flex-direction: column;
     gap: 5px;
   }
-
   .filtro-item label {
     font-weight: 600;
     color: #374151;
     font-size: 0.9rem;
   }
-
   .filtro-item select,
   .filtro-item input {
     padding: 0.5rem 0.75rem;
@@ -847,14 +739,12 @@
     font-size: 0.9rem;
     background: white;
   }
-
   .filtro-item select:focus,
   .filtro-item input:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   }
-
   .btn-limpiar {
     padding: 10px 25px;
     background: #6c757d;
@@ -867,23 +757,19 @@
     white-space: nowrap;
     height: 42px;
   }
-
   .btn-limpiar:hover {
     background: #5a6268;
     transform: translateY(-1px);
   }
-
   .btn-warning {
     background: #f59e0b;
     color: white;
     border: 1px solid #d97706;
   }
-
   .btn-warning:hover:not(:disabled) {
     background: #d97706;
     border-color: #b45309;
   }
-
   .btn-warning:disabled {
     opacity: 0.6;
     cursor: not-allowed;

@@ -6,7 +6,6 @@
 	export let getNodeColor;
 	export let detectarTipoArea;
 </script>
-
 {#if node}
 	<div class="node-container">
 		<!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -41,7 +40,6 @@
 				{/if}
 			</div>
 		</div>
-
 		{#if node.children?.length && expandedNodes.has(node.id)}
 			<div class="children-container">
 				{#each node.children as child (child.id)}
@@ -58,13 +56,11 @@
 		{/if}
 	</div>
 {/if}
-
 <style>
 	.node-container {
 		margin: 0.5rem 0;
 		width: 100%;
 	}
-
 	.node {
 		background: white;
 		border: 2px solid;
@@ -77,27 +73,22 @@
 		box-sizing: border-box;
 		max-width: 100%;
 	}
-
 	.node:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 	}
-
 	.node-header {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
 	}
-
 	.node-icon {
 		font-size: 1.5rem;
 		flex-shrink: 0;
 	}
-
 	.node-content {
 		flex: 1;
 	}
-
 	.node-title {
 		font-size: 1.1rem;
 		font-weight: 600;
@@ -105,73 +96,58 @@
 		margin: 0 0 0.25rem 0;
 		line-height: 1.4;
 	}
-
 	.node-description {
 		font-size: 0.9rem;
 		color: #64748b;
 		margin: 0 0 0.25rem 0;
 		line-height: 1.3;
 	}
-
 	.node-titular {
 		font-size: 0.85rem;
 		color: #059669;
 		font-weight: 500;
 		margin: 0 0 0.25rem 0;
 	}
-
 	.node-contact {
 		font-size: 0.8rem;
 		color: #6366f1;
 		margin: 0 0 0.25rem 0;
 	}
-
 	.node-agents {
 		font-size: 0.8rem;
 		color: #7c3aed;
 		font-weight: 500;
 		margin: 0 0 0.25rem 0;
 	}
-
 	.expand-icon {
 		font-size: 0.8rem;
 		color: #64748b;
 		transition: transform 0.3s ease;
 	}
-
 	.expand-icon.expanded {
 		transform: rotate(180deg);
 	}
-
 	.children-container {
 		margin-left: 2rem;
 		padding-left: 2rem;
 		border-left: 2px dashed #cbd5e1;
 		margin-top: 1rem;
 	}
-
-	/* Estilos específicos por nivel */
 	.nivel-0 {
 		font-size: 1.1em;
 	}
-
 	.nivel-1 {
 		font-size: 1.05em;
 	}
-
 	.nivel-2 {
 		font-size: 1em;
 	}
-
 	.nivel-3 {
 		font-size: 0.95em;
 	}
-
 	.nivel-4, .nivel-5, .nivel-6 {
 		font-size: 0.9em;
 	}
-
-	/* Colores por tipo de nodo */
 	.border-blue-600 { border-color: #2563eb; }
 	.bg-blue-50 { background-color: #eff6ff; }
 	.border-blue-500 { border-color: #3b82f6; }
@@ -188,35 +164,29 @@
 	.bg-purple-40 { background-color: #e9d5ff; }
 	.border-gray-500 { border-color: #6b7280; }
 	.bg-gray-40 { background-color: #f3f4f6; }
-
-	/* Responsive */
 	@media (max-width: 640px) {
 		.node {
 			padding: 0.75rem;
-			margin: 0.5rem 0; /* Sin margen horizontal */
+			margin: 0.5rem 0; 
 			box-sizing: border-box;
 			width: 100%;
 		}
-
 		.node-container {
 			width: 100%;
 			margin: 0;
 			padding: 0;
 			box-sizing: border-box;
 		}
-
 		.children-container {
 			margin-left: 0.25rem;
 			padding-left: 0.25rem;
 			border-left-width: 1px;
 		}
-		
 		.node-title {
 			font-size: 0.95rem;
 			word-break: break-word;
 			overflow-wrap: break-word;
 		}
-		
 		.node-description,
 		.node-titular,
 		.node-contact,

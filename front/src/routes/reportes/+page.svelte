@@ -2,18 +2,15 @@
   import { onMount } from "svelte";
   import { guardiasService, personasService } from "$lib/services.js";
   import MultiSelect from "./MultiSelect.svelte";
-
   const hoy = new Date();
   const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0, 10);
   const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().slice(0, 10);
-
   const ROLES = {
     ADMIN: "administrador",
     DIRECTOR: "director",
     JEFATURA: "jefatura",
     AGENTE: "agente",
   };
-
   let tipoReporte = "individual";
   let fecha_desde = inicioMes;
   let fecha_hasta = finMes;
@@ -22,7 +19,6 @@
   let agente = "";
   let agentesSeleccionados = [];
   let tipo_guardia = "";
-
   let areas = [];
   let agentes = [];
   let resultado = null;
@@ -30,10 +26,8 @@
   let exportando = false;
   let error = "";
   let mensaje = "";
-
   let rolActual = "";
   let areaUsuario = "";
-
   onMount(async () => {
     try {
       const claves = ["user", "usuario", "currentUser"];
@@ -49,7 +43,6 @@
     } catch (e) {
       console.warn("No se pudo leer el usuario de localStorage:", e);
     }
-
     try {
       const [areasRes, agentesRes] = await Promise.all([
         personasService.getAreas(),
@@ -60,7 +53,6 @@
     } catch (e) {
       console.warn("No se pudieron cargar áreas/agentes:", e);
     }
-
     if ([ROLES.JEFATURA, ROLES.DIRECTOR].includes(rolActual)) {
       area = areaUsuario || "";
     }
@@ -68,7 +60,6 @@
       tipoReporte = "individual";
     }
   });
-
   function setTipoReporte(valor) {
     tipoReporte = valor;
     mensaje = "";
@@ -78,12 +69,10 @@
       agente = "";
     }
   }
-
   function toInt(v) {
     const n = Number(v);
     return Number.isFinite(n) ? n : undefined;
   }
-
   function _buildAreas() {
     if (tipoReporte === "general" && (rolActual === ROLES.ADMIN || rolActual === ROLES.DIRECTOR)) {
       const arr = (areaSeleccionadas || []).map((a) => toInt(a)).filter(Boolean);
@@ -93,7 +82,6 @@
     const val = toInt(single);
     return val ? [val] : undefined;
   }
-
   function _buildAgentes() {
     if (tipoReporte === "general") {
       let arr = (agentesSeleccionados || []).map((a) => toInt(a)).filter(Boolean);
@@ -112,7 +100,6 @@
     const val = toInt(agente);
     return val ? [val] : undefined;
   }
-
   function _puedeMostrarAgente(ag) {
     if (tipoReporte === "general" && (rolActual === ROLES.ADMIN || rolActual === ROLES.DIRECTOR)) {
       if (areaSeleccionadas && areaSeleccionadas.length) {
@@ -126,7 +113,6 @@
     const areaSel = toInt(area);
     return !areaSel || (ag.id_area || ag.id_area_id) === areaSel;
   }
-
   async function generar() {
     if (tipoReporte === "individual" && !_buildAgentes()) {
       error = "Selecciona un agente para el reporte individual";
@@ -136,7 +122,6 @@
     error = "";
     mensaje = "";
     resultado = null;
-
     const body = {
       fecha_desde,
       fecha_hasta,
@@ -144,7 +129,6 @@
       agente: _buildAgentes(),
       tipo_guardia: tipo_guardia || undefined,
     };
-
     if (rolActual === ROLES.AGENTE) {
       body.area = undefined;
       body.agente = undefined;
@@ -153,7 +137,6 @@
     } else if (rolActual === ROLES.DIRECTOR) {
       body.area = area || areaUsuario;
     }
-
     try {
       if (tipoReporte === "individual") {
         const res = await guardiasService.getReporteIndividual(body);
@@ -170,7 +153,6 @@
       cargando = false;
     }
   }
-
   async function exportar(formato) {
     exportando = true;
     error = "";
@@ -216,17 +198,14 @@
       exportando = false;
     }
   }
-
   $: optionsAreas = (areas || []).map((a) => ({ value: a.id_area || a.id, label: a.nombre }));
   $: optionsAgentes = (agentes || [])
     .filter((ag) => _puedeMostrarAgente(ag))
     .map((ag) => ({ value: ag.id_agente || ag.id, label: `${ag.nombre} ${ag.apellido}` }));
 </script>
-
 <svelte:head>
   <title>Reportes | GIGA</title>
 </svelte:head>
-
 <div class="wrapper">
   <header>
     <div>
@@ -240,14 +219,12 @@
       <button class="primary" on:click={() => exportar("pdf")} disabled={exportando || cargando}>Exportar PDF</button>
     </div>
   </header>
-
   {#if mensaje}
     <div class="alert success">{mensaje}</div>
   {/if}
   {#if error}
     <div class="alert error">{error}</div>
   {/if}
-
   <section class="card">
     <div class="form-grid">
       <div class="field">
@@ -267,7 +244,6 @@
         <label>Fecha hasta</label>
         <input type="date" bind:value={fecha_hasta} />
       </div>
-
       {#if rolActual !== ROLES.AGENTE}
         <div class="field">
           <label>Área {rolActual === ROLES.JEFATURA ? "(fija)" : "(opcional)"} {tipoReporte === "general" && (rolActual === ROLES.ADMIN || rolActual === ROLES.DIRECTOR) ? "(múltiple)" : ""}</label>
@@ -298,7 +274,6 @@
           {/if}
         </div>
       {/if}
-
       <div class="field" style="grid-column: 1 / -1;">
         <label>Tipo de guardia (opcional)</label>
         <input type="text" placeholder="Ej: nocturna" bind:value={tipo_guardia} />
@@ -311,7 +286,6 @@
       </button>
     </div>
   </section>
-
   {#if resultado}
     <section class="card">
       <h3>Vista previa</h3>
@@ -393,7 +367,6 @@
     </section>
   {/if}
 </div>
-
 <style>
   .wrapper { max-width: 1180px; margin: 0 auto; padding: 32px 24px 48px; display: flex; flex-direction: column; gap: 20px; }
   header { display: flex; justify-content: space-between; gap: 16px; align-items: center; flex-wrap: wrap; }
@@ -401,7 +374,6 @@
   .eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; color: #6b7280; }
   h1 { margin: 6px 0; font-size: 26px; color: #0f172a; }
   .muted { color: #6b7280; }
-
   .card { background: #fff; border: 1px solid #dde3ed; border-radius: 12px; padding: 20px; box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06); }
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 18px; align-items: flex-start; }
   .field { display: flex; flex-direction: column; gap: 6px; }
@@ -410,32 +382,25 @@
   .field input:focus, .field select:focus, .multiselect-trigger:focus { outline: 2px solid #2f6fed; outline-offset: 1px; border-color: #2f6fed; background: #fff; }
   .radio-row { display: flex; gap: 18px; align-items: center; }
   .form-actions { margin-top: 16px; display: flex; justify-content: flex-end; }
-
   .primary, .secondary { padding: 11px 16px; border-radius: 10px; border: none; cursor: pointer; font-weight: 700; transition: transform 0.05s ease, box-shadow 0.1s ease, background 0.1s ease; }
   .primary { background: #2f6fed; color: #fff; box-shadow: 0 8px 16px rgba(47, 111, 237, 0.25); }
   .primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(47, 111, 237, 0.28); }
   .secondary { background: #eef1f5; color: #0f172a; border: 1px solid #e1e5ed; }
   .secondary:hover:not(:disabled) { background: #e2e8f0; transform: translateY(-1px); }
   .primary:disabled, .secondary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
-
   .alert { padding: 12px 14px; border-radius: 10px; }
   .alert.success { background: #ecfdf3; color: #166534; border: 1px solid #bbf7d0; }
   .alert.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecdd3; }
-
   .table { width: 100%; border-collapse: collapse; margin-top: 12px; }
   .table th, .table td { border: 1px solid #e5e7eb; padding: 10px; font-size: 14px; }
   .table th { background: #f8fafc; text-align: left; font-weight: 700; }
   .table-scroll { overflow-x: auto; }
-
-  /* Vista previa simple */
   .preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px; }
   .mini-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; background: #f9fafb; }
   .mini-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 4px; }
   .mini-card .value { font-weight: 700; color: #0f172a; }
   .list-preview ul { list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-direction: column; gap: 8px; }
   .list-preview li { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; display: flex; flex-direction: column; gap: 4px; }
-
-  /* Multiselect styles */
   .multiselect { position: relative; width: 100%; }
   .multiselect-trigger { border: 1px solid #d6dce7; border-radius: 10px; background: #f9fafb; cursor: pointer; padding: 10px 12px; display: flex; align-items: flex-start; gap: 6px; width: 100%; min-height: 44px; }
   .multiselect-trigger:disabled { cursor: not-allowed; opacity: 0.6; }

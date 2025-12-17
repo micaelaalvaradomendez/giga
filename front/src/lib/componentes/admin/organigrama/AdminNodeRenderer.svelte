@@ -9,7 +9,6 @@
 	export let openEditModal;
 	export let openDeleteModal;
 </script>
-
 {#if node}
 	<div class="admin-node-container">
 		<div class="admin-node {getNodeColor(detectarTipoArea ? detectarTipoArea(node.nombre, node.nivel) : node.tipo)} nivel-{node.nivel}">
@@ -48,7 +47,6 @@
 						</div>
 					{/if}
 				</div>
-
 				<div class="node-actions">
 					<button 
 						class="action-btn add-btn" 
@@ -74,7 +72,6 @@
 				</div>
 			</div>
 		</div>
-
 		{#if node.children?.length && expandedNodes.has(node.id)}
 			<div class="children-container">
 				{#each node.children as child (child.id)}
@@ -94,13 +91,11 @@
 		{/if}
 	</div>
 {/if}
-
 <style>
 	.admin-node-container {
 		margin: 0.5rem 0;
 		width: 100%;
 	}
-
 	.admin-node {
 		background: white;
 		border: 2px solid;
@@ -110,19 +105,16 @@
 		transition: all 0.3s ease;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
-
 	.admin-node:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 	}
-
 	.node-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
 	}
-
 	.node-main {
 		display: flex;
 		align-items: center;
@@ -130,16 +122,13 @@
 		flex: 1;
 		cursor: pointer;
 	}
-
 	.node-icon {
 		font-size: 1.5rem;
 		flex-shrink: 0;
 	}
-
 	.node-content {
 		flex: 1;
 	}
-
 	.node-title {
 		font-size: 1.1rem;
 		font-weight: 600;
@@ -147,51 +136,43 @@
 		margin: 0 0 0.25rem 0;
 		line-height: 1.4;
 	}
-
 	.node-description {
 		font-size: 0.9rem;
 		color: #64748b;
 		margin: 0 0 0.25rem 0;
 		line-height: 1.3;
 	}
-
 	.node-titular {
 		font-size: 0.85rem;
 		color: #059669;
 		font-weight: 500;
 		margin: 0 0 0.25rem 0;
 	}
-
 	.node-contact {
 		font-size: 0.8rem;
 		color: #6366f1;
 		margin: 0 0 0.25rem 0;
 	}
-
 	.node-agents {
 		font-size: 0.8rem;
 		color: #7c3aed;
 		font-weight: 500;
 		margin: 0 0 0.25rem 0;
 	}
-
 	.expand-icon {
 		font-size: 0.8rem;
 		color: #64748b;
 		transition: transform 0.3s ease;
 		margin-right: 0.5rem;
 	}
-
 	.expand-icon.expanded {
 		transform: rotate(180deg);
 	}
-
 	.node-actions {
 		display: flex;
 		gap: 0.5rem;
 		flex-shrink: 0;
 	}
-
 	.action-btn {
 		width: 32px;
 		height: 32px;
@@ -204,66 +185,51 @@
 		font-size: 0.9rem;
 		transition: all 0.2s;
 	}
-
 	.add-btn {
 		background: #10b981;
 		color: white;
 	}
-
 	.add-btn:hover {
 		background: #059669;
 		transform: scale(1.1);
 	}
-
 	.edit-btn {
 		background: #f59e0b;
 		color: white;
 	}
-
 	.edit-btn:hover {
 		background: #d97706;
 		transform: scale(1.1);
 	}
-
 	.delete-btn {
 		background: #ef4444;
 		color: white;
 	}
-
 	.delete-btn:hover {
 		background: #dc2626;
 		transform: scale(1.1);
 	}
-
 	.children-container {
 		margin-left: 2rem;
 		padding-left: 2rem;
 		border-left: 2px dashed #cbd5e1;
 		margin-top: 1rem;
 	}
-
-	/* Estilos específicos por nivel */
 	.nivel-0 {
 		font-size: 1.1em;
 	}
-
 	.nivel-1 {
 		font-size: 1.05em;
 	}
-
 	.nivel-2 {
 		font-size: 1em;
 	}
-
 	.nivel-3 {
 		font-size: 0.95em;
 	}
-
 	.nivel-4, .nivel-5, .nivel-6 {
 		font-size: 0.9em;
 	}
-
-	/* Colores por tipo de nodo */
 	.border-blue-600 { border-color: #2563eb; }
 	.bg-blue-50 { background-color: #eff6ff; }
 	.border-blue-500 { border-color: #3b82f6; }
@@ -280,87 +246,70 @@
 	.bg-purple-40 { background-color: #e9d5ff; }
 	.border-gray-500 { border-color: #6b7280; }
 	.bg-gray-40 { background-color: #f3f4f6; }
-
-	/* Responsive */
 	@media (max-width: 768px) {
 		.admin-node-container {
 			max-width: 100%;
 			overflow: hidden;
 		}
-
 		.admin-node {
 			padding: 0.75rem;
 			margin: 0.25rem 0;
 			max-width: 100%;
 			box-sizing: border-box;
 		}
-
 		.node-header {
 			flex-direction: column;
 			align-items: flex-start;
 			gap: 0.5rem;
 		}
-
 		.node-main {
 			width: 100%;
 			flex-wrap: wrap;
 		}
-
 		.node-content {
 			max-width: calc(100% - 50px);
 			word-wrap: break-word;
 			overflow-wrap: break-word;
 		}
-
 		.node-title {
 			font-size: 1rem;
 			word-wrap: break-word;
 		}
-
 		.node-description {
 			font-size: 0.8rem;
 		}
-
 		.node-contact {
 			font-size: 0.75rem;
 			word-break: break-all;
 		}
-
 		.node-actions {
 			width: 100%;
 			justify-content: center;
 			margin-top: 0.5rem;
 		}
-
 		.action-btn {
 			width: 36px;
 			height: 36px;
 		}
-
 		.children-container {
 			margin-left: 0.5rem;
 			padding-left: 0.75rem;
 		}
 	}
-
 	@media (max-width: 480px) {
 		.admin-node {
 			padding: 0.6rem;
 		}
-
 		.node-icon {
 			font-size: 1.25rem;
 		}
-
 		.node-title {
 			font-size: 0.95rem;
 		}
-
 		.node-titular,
 		.node-agents {
 			font-size: 0.75rem;
 		}
-
 		.children-container {
 			margin-left: 0.25rem;
 			padding-left: 0.5rem;

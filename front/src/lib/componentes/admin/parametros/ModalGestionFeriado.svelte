@@ -1,7 +1,6 @@
 <script>
 	import { createEventDispatcher } from "svelte";
 	import { showAlert, showConfirm } from "$lib/stores/modalAlertStore.js";
-
 	export let isOpen = false;
 	export let feriado = null;
 	export let selectedDate = null;
@@ -9,7 +8,6 @@
 	export let isDeleting = false;
 	export let feriadosController;
 	export let existingFeriados = []; // Lista de feriados existentes en la fecha
-
 	let nombreFeriado = "";
 	let descripcionFeriado = "";
 	let fechaInicio = "";
@@ -21,9 +19,7 @@
 	let repetirAnualmente = false;
 	let modoEdicion = false;
 	let modalInitialized = false;
-
 	const dispatch = createEventDispatcher();
-
 	// Solo inicializar cuando el modal se abre por primera vez
 	$: if (isOpen && !modalInitialized) {
 		modalInitialized = true;
@@ -53,39 +49,32 @@
 			repetirAnualmente = false;
 		}
 	}
-
 	// Resetear flag cuando el modal se cierra
 	$: if (!isOpen) {
 		modalInitialized = false;
 	}
-
 	// Función para manejar el cambio del checkbox esMultiplesDias
 	function handleMultipleDaysToggle() {
 		if (!esMultiplesDias) {
 			fechaFin = fechaInicio;
 		}
 	}
-
 	function closeModal() {
 		dispatch("close");
 	}
-
 	async function handleSave() {
 		if (!nombreFeriado.trim()) {
 			showAlert("Por favor ingresa un nombre para el feriado", "warning", "Advertencia");
 			return;
 		}
-
 		if (!fechaInicio || !fechaFin) {
 			showAlert("Por favor selecciona las fechas", "warning", "Advertencia");
 			return;
 		}
-
 		if (new Date(fechaFin) < new Date(fechaInicio)) {
 			showAlert("La fecha fin debe ser mayor o igual a la fecha inicio", "warning", "Advertencia");
 			return;
 		}
-
 		try {
 			await feriadosController.saveFeriado({
 				id_feriado: feriado?.id_feriado || null,
@@ -103,14 +92,11 @@
 			console.error("Error guardando feriado:", error);
 		}
 	}
-
 	async function handleDelete() {
 		if (!feriado?.id_feriado) return;
-
 		if (!await showConfirm("¿Estás seguro de que deseas eliminar este feriado?", "Confirmar Eliminación", "Eliminar", "Cancelar")) {
 			return;
 		}
-
 		try {
 			await ferladosController.deleteFeriadoFromModal(feriado.id_feriado);
 		} catch (error) {
@@ -118,7 +104,6 @@
 			console.error("Error eliminando feriado:", error);
 		}
 	}
-
 	function editarFeriadoExistente(feriadoExistente) {
 		// Cambiar a modo edición con el feriado seleccionado
 		modoEdicion = true;
@@ -130,11 +115,9 @@
 		esProvincial = feriadoExistente.es_provincial || false;
 		esLocal = feriadoExistente.es_local || false;
 		esMultiplesDias = fechaInicio && fechaFin && fechaInicio !== fechaFin;
-
 		// Establecer el feriado para edición
 		feriado = feriadoExistente;
 	}
-
 	async function eliminarFeriadoExistente(feriadoExistente) {
 		if (
 			!await showConfirm(
@@ -146,7 +129,6 @@
 		) {
 			return;
 		}
-
 		try {
 			await feriadosController.deleteFeriadoFromModal(
 				feriadoExistente.id_feriado,
@@ -157,7 +139,6 @@
 		}
 	}
 </script>
-
 {#if isOpen}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -230,7 +211,6 @@
 						</div>
 					</div>
 				{/if}
-
 				<!-- Campos del formulario -->
 				<div class="form-group">
 					<label for="nombre">Nombre del Feriado</label>
@@ -243,7 +223,6 @@
 						required
 					/>
 				</div>
-
 				<div class="form-group">
 					<label for="descripcion">Descripción (opcional)</label>
 					<textarea
@@ -253,7 +232,6 @@
 						disabled={isSaving || isDeleting}
 					></textarea>
 				</div>
-
 				<!-- Tipo de feriado -->
 				<div class="form-group">
 					<label for="tipo">Tipo de Feriado</label>
@@ -284,7 +262,6 @@
 						</label>
 					</div>
 				</div>
-
 				<!-- Opciones de fecha -->
 				<div class="form-group">
 					<label class="checkbox-label">
@@ -297,7 +274,6 @@
 						Feriado de múltiples días
 					</label>
 				</div>
-
 				<!-- Fechas -->
 				<div class="form-row">
 					<div class="form-group">
@@ -326,7 +302,6 @@
 						</div>
 					{/if}
 				</div>
-
 				{#if esMultiplesDias && fechaInicio && fechaFin}
 					{@const duracion =
 						Math.ceil(
@@ -341,7 +316,6 @@
 						>
 					</div>
 				{/if}
-
 				<!-- Opción de repetir anualmente (solo para feriados nuevos) -->
 				{#if !modoEdicion}
 					<div class="form-group">
@@ -374,7 +348,6 @@
 						{isDeleting ? "Eliminando..." : "Eliminar"}
 					</button>
 				{/if}
-
 				<div class="save-actions">
 					<button
 						type="button"
@@ -397,9 +370,7 @@
 		</div>
 	</div>
 {/if}
-
 <style>
-	/* Modal Overlay & Content */
 	.modal-overlay {
 		position: fixed;
 		top: 0;
@@ -415,7 +386,6 @@
 		padding: 1rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.modal-content {
 		background: white;
 		border-radius: 16px;
@@ -427,12 +397,9 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-
 	.modal-content::-webkit-scrollbar {
 		display: none;
 	}
-
-	/* Header */
 	.modal-header {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
@@ -442,21 +409,18 @@
 		justify-content: space-between;
 		align-items: center;
 	}
-
 	.modal-header h2 {
 		margin: 0;
 		color: white;
 		font-size: 1.5rem;
 		font-weight: 600;
 	}
-
 	.existing-count {
 		font-size: 0.9rem;
 		opacity: 0.9;
 		font-weight: normal;
 		margin-left: 0.5rem;
 	}
-
 	.btn-close {
 		background: rgba(255, 255, 255, 0.2);
 		border: none;
@@ -474,22 +438,16 @@
 		justify-content: center;
 		line-height: 1;
 	}
-
 	.btn-close:hover {
 		background: rgba(255, 255, 255, 0.3);
 		transform: scale(1.1);
 	}
-
-	/* Modal Body */
 	.modal-body {
 		padding: 2rem;
 	}
-
-	/* Form Groups */
 	.form-group {
 		margin-bottom: 1rem;
 	}
-
 	.form-group label {
 		display: block;
 		margin-bottom: 0.5rem;
@@ -497,7 +455,6 @@
 		color: #374151;
 		font-size: 0.95rem;
 	}
-
 	.form-group input[type="text"],
 	.form-group input[type="date"],
 	.form-group textarea {
@@ -510,31 +467,26 @@
 		transition: all 0.2s;
 		box-sizing: border-box;
 	}
-
 	.form-group input:focus,
 	.form-group textarea:focus {
 		outline: none;
 		border-color: #667eea;
 		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 	}
-
 	.form-group textarea {
 		min-height: 80px;
 		resize: vertical;
 	}
-
 	.form-row {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1rem;
 	}
-
 	.checkbox-group {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 1rem;
 	}
-
 	.checkbox-label {
 		display: flex;
 		align-items: center;
@@ -544,14 +496,12 @@
 		cursor: pointer;
 		font-weight: 500;
 	}
-
 	.checkbox-label input[type="checkbox"] {
 		width: 18px;
 		height: 18px;
 		cursor: pointer;
 		accent-color: #667eea;
 	}
-
 	.duration-info {
 		background-color: #f0fdf4;
 		border: 1px solid #bbf7d0;
@@ -561,13 +511,11 @@
 		display: flex;
 		align-items: center;
 	}
-
 	.duration-text {
 		color: #15803d;
 		font-weight: 600;
 		font-size: 0.9rem;
 	}
-
 	.help-text {
 		color: #64748b;
 		font-size: 0.85rem;
@@ -578,11 +526,9 @@
 		border-left: 3px solid #3b82f6;
 		line-height: 1.4;
 	}
-
-	/* Modal Footer */
 	.modal-footer {
 		display: flex;
-		justify-content: space-between; /* To separate delete button from save actions */
+		justify-content: space-between; 
 		align-items: center;
 		padding: 1.5rem 2rem;
 		border-top: 1px solid #e2e8f0;
@@ -591,14 +537,11 @@
 		flex-wrap: wrap;
 		gap: 1rem;
 	}
-
 	.save-actions {
 		display: flex;
 		gap: 0.75rem;
-		margin-left: auto; /* Push to right if delete button exists */
+		margin-left: auto; 
 	}
-
-	/* Buttons */
 	.modal-footer button {
 		padding: 0.75rem 1.25rem;
 		border: none;
@@ -609,43 +552,34 @@
 		transition: all 0.2s ease;
 		font-family: inherit;
 	}
-
 	.btn-cancelar {
 		background: linear-gradient(135deg, #6b7280, #4b5563);
 		color: white;
 	}
-
 	.btn-cancelar:hover {
 		background: linear-gradient(135deg, #4b5563, #374151);
 		transform: translateY(-2px);
 	}
-
 	.btn-marcar-salida {
 		background: linear-gradient(135deg, #3b82f6, #2563eb);
 		color: white;
 	}
-
 	.btn-marcar-salida:hover:not(:disabled) {
 		background: linear-gradient(135deg, #2563eb, #1d4ed8);
 		transform: translateY(-2px);
 	}
-
 	.btn-marcar-salida:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
-
 	.btn-marcar-ausente {
 		background: linear-gradient(135deg, #ef4444, #dc2626);
 		color: white;
 	}
-
 	.btn-marcar-ausente:hover:not(:disabled) {
 		background: linear-gradient(135deg, #dc2626, #b91c1c);
 		transform: translateY(-2px);
 	}
-
-	/* Feriados existentes */
 	.existing-feriados {
 		background-color: #f8fafc;
 		border: 1px solid #e2e8f0;
@@ -653,19 +587,16 @@
 		padding: 1rem;
 		margin-bottom: 1.5rem;
 	}
-
 	.existing-feriados h4 {
 		margin: 0 0 0.75rem 0;
 		font-size: 1rem;
 		color: #475569;
 	}
-
 	.existing-list {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
 	}
-
 	.existing-item {
 		display: flex;
 		align-items: center;
@@ -676,7 +607,6 @@
 		border-left: 4px solid #3b82f6;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 	}
-
 	.existing-info {
 		display: flex;
 		align-items: center;
@@ -684,12 +614,10 @@
 		flex: 1;
 		flex-wrap: wrap;
 	}
-
 	.existing-name {
 		font-weight: 600;
 		color: #1e293b;
 	}
-
 	.existing-type {
 		background-color: #eff6ff;
 		color: #2563eb;
@@ -698,18 +626,15 @@
 		font-size: 0.75rem;
 		font-weight: 500;
 	}
-
 	.existing-duration {
 		color: #64748b;
 		font-size: 0.85rem;
 		font-style: italic;
 	}
-
 	.existing-actions {
 		display: flex;
 		gap: 0.5rem;
 	}
-
 	.btn-edit-existing,
 	.btn-delete-existing {
 		background: #f1f5f9;
@@ -724,49 +649,38 @@
 		font-size: 1rem;
 		transition: all 0.2s ease;
 	}
-
 	.btn-edit-existing:hover {
 		background-color: #e0f2fe;
 		color: #0284c7;
 	}
-
 	.btn-delete-existing:hover {
 		background-color: #fee2e2;
 		color: #dc2626;
 	}
-
-	/* Responsive */
 	@media (max-width: 768px) {
 		.modal-overlay {
 			padding: 1rem;
 		}
-
 		.modal-content {
 			max-width: 100%;
 			max-height: 90vh;
 		}
-
 		.modal-header {
 			padding: 1.25rem 1rem;
 		}
-
 		.modal-header h2 {
 			font-size: 1.2rem;
 		}
-
 		.modal-body {
 			padding: 1.25rem;
 		}
-
 		.form-row {
 			grid-template-columns: 1fr;
 		}
-
 		.modal-footer {
 			padding: 1rem;
 			flex-wrap: wrap;
 		}
-
 		.modal-footer button {
 			padding: 0.6rem 1rem;
 			font-size: 0.9rem;

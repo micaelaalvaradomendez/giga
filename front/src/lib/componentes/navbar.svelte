@@ -12,7 +12,6 @@
     </div>
   </div>
 </nav>
-
 <style>
   .navbar {
     width: 100%;
@@ -34,7 +33,6 @@
     overflow-x: hidden;
     box-sizing: border-box;
   }
-
   .navbar-container {
     max-width: 100%;
     width: 100%;
@@ -46,14 +44,12 @@
     gap: 1rem;
     box-sizing: border-box;
   }
-
   @media (min-width: 768px) {
     .navbar-container {
       padding: 0 2rem;
       gap: 1.5rem;
     }
   }
-
   @media (min-width: 1024px) {
     .navbar-container {
       max-width: 1400px;
@@ -61,7 +57,6 @@
       gap: 1.5rem;
     }
   }
-
   .navbar-left {
     display: flex;
     flex-direction: column;
@@ -82,14 +77,12 @@
     flex-shrink: 1;
     min-width: 0;
   }
-
   @media (min-width: 768px) {
     .navbar-left {
       padding: 12px 24px;
       border-radius: 20px;
     }
   }
-
   .navbar-left:hover {
     box-shadow:
       0 6px 20px rgba(0, 0, 0, 0.2),
@@ -98,13 +91,11 @@
       inset 0 -1px 2px rgba(0, 0, 0, 0.15);
     transform: translateY(-1px);
   }
-
   .logo-title-wrapper {
     position: relative;
     display: inline-block;
     overflow: hidden;
   }
-
   .logo-title {
     font-size: 20px;
     font-weight: 800;
@@ -117,21 +108,18 @@
     display: inline-block;
     white-space: nowrap;
   }
-
   @media (min-width: 640px) {
     .logo-title {
       font-size: 24px;
       letter-spacing: 0.8px;
     }
   }
-
   @media (min-width: 1024px) {
     .logo-title {
       font-size: 30px;
       letter-spacing: 1px;
     }
   }
-
   .logo-title-wrapper::after {
     content: "";
     position: absolute;
@@ -148,12 +136,10 @@
     opacity: 0;
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-
   .navbar-left:hover .logo-title-wrapper::after {
     opacity: 1;
     animation: moveLine 2s linear infinite;
   }
-
   @keyframes moveLine {
     0% {
       left: -35%;
@@ -162,7 +148,6 @@
       left: 100%;
     }
   }
-
   .logo-subtitle {
     font-size: 9px;
     font-weight: 600;
@@ -177,21 +162,18 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
   @media (min-width: 640px) {
     .logo-subtitle {
       font-size: 11px;
       letter-spacing: 0.4px;
     }
   }
-
   @media (min-width: 1024px) {
     .logo-subtitle {
       font-size: 15px;
       letter-spacing: 0.5px;
     }
   }
-
   .navbar-right {
     display: flex;
     align-items: center;
@@ -199,14 +181,12 @@
     padding: 8px 12px;
     flex-shrink: 0;
   }
-
   @media (min-width: 768px) {
     .navbar-right {
       gap: 16px;
       padding: 12px 24px;
     }
   }
-
   .organization-name {
     font-size: 11px;
     font-weight: 700;
@@ -220,14 +200,12 @@
     text-overflow: ellipsis;
     max-width: 150px;
   }
-
   @media (min-width: 640px) {
     .organization-name {
       font-size: 13px;
       max-width: 200px;
     }
   }
-
   @media (min-width: 1024px) {
     .organization-name {
       font-size: 20px;
@@ -235,67 +213,54 @@
       max-width: none;
     }
   }
-
   .SsSV {
     height: 40px;
     width: auto;
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3)) brightness(1.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-
   @media (min-width: 640px) {
     .SsSV {
       height: 48px;
     }
   }
-
   @media (min-width: 1024px) {
     .SsSV {
       height: 56px;
     }
   }
-
   @media (max-width: 480px) {
     .organization-name {
       display: none;
     }
   }
-
-  /* Aggressive mobile optimization for navbar */
   @media (max-width: 640px) {
     .navbar {
       padding: 4px 0;
       position: relative;
     }
-
     .navbar-container {
       padding: 0 0.5rem;
       gap: 0.5rem;
     }
-
     .navbar-left {
       padding: 4px 8px;
       gap: 2px;
     }
-
     .logo-title {
       font-size: 16px;
       letter-spacing: 0.3px;
     }
-
     .logo-subtitle {
       font-size: 8px;
       letter-spacing: 0.2px;
     }
-
     .navbar-right {
       padding: 4px 6px;
       gap: 6px;
     }
-
     .SsSV {
       height: 32px;
     }
   }
-
 </style>

@@ -1,6 +1,5 @@
 <script>
     import { page } from "$app/stores";
-
     // Mapeo de rutas a nombres amigables
     const routeNames = {
         inicio: "Inicio",
@@ -17,19 +16,16 @@
         roles: "Roles",
         convenio: "Convenio CCT",
     };
-
     $: crumbs = $page.url.pathname
         .split("/")
         .filter(Boolean)
         .map((part, i, arr) => {
             const path = "/" + arr.slice(0, i + 1).join("/");
             let label = routeNames[part] || part;
-
             // Capitalizar si no está en el mapa
             if (!routeNames[part]) {
                 label = part.charAt(0).toUpperCase() + part.slice(1);
             }
-
             return {
                 label,
                 href: path,
@@ -37,7 +33,6 @@
             };
         });
 </script>
-
 {#if crumbs.length > 0 && $page.url.pathname !== "/"}
     <div class="breadcrumbs-container">
         <nav aria-label="Breadcrumb">
@@ -62,7 +57,6 @@
         </nav>
     </div>
 {/if}
-
 <style>
     .breadcrumbs-container {
         padding: 16px 24px;
@@ -81,7 +75,6 @@
             inset 0 1px 2px rgba(255, 255, 255, 0.8);
         width: fit-content;
     }
-
     ol {
         display: flex;
         flex-wrap: wrap;
@@ -93,14 +86,12 @@
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         font-size: 14px;
     }
-
     li {
         display: flex;
         align-items: center;
         gap: 8px;
         color: #64748b;
     }
-
     a {
         text-decoration: none;
         color: #407bff;
@@ -109,18 +100,15 @@
         padding: 4px 8px;
         border-radius: 8px;
     }
-
     a:hover {
         background: rgba(64, 123, 255, 0.1);
         color: #2c57c7;
     }
-
     .separator {
         color: #94a3b8;
         font-size: 12px;
         margin: 0 4px;
     }
-
     .active span {
         color: #1e293b;
         font-weight: 700;
@@ -129,8 +117,6 @@
         border-radius: 8px;
         border: 1px solid rgba(64, 123, 255, 0.1);
     }
-
-    /* Ajustes para móvil */
     @media (max-width: 768px) {
         .breadcrumbs-container {
             margin: 16px auto 0;
@@ -139,11 +125,10 @@
             max-width: 100%;
             overflow-x: visible;
         }
-
         ol {
             font-size: 13px;
-            flex-wrap: wrap; /* Permitir que baje de línea */
-            justify-content: center; /* Centrar si es necesario, o flex-start */
+            flex-wrap: wrap; 
+            justify-content: center; 
         }
     }
 </style>

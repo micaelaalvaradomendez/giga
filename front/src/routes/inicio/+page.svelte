@@ -9,7 +9,6 @@
 	import CalendarioBase from "$lib/componentes/calendarioBase.svelte";
 	import { guardiasService } from "$lib/services.js";
     import Notificaciones from "$lib/componentes/notificaciones/Notificaciones.svelte";
-
 	let user = null;
 	let isLoading = true;
 	let errorMessage = "";
@@ -22,18 +21,15 @@
 	let loadingGuardias = false;
 	let asistenciaHoy = null;
 	let loadingAsistencia = false;
-
 	onMount(async () => {
 		try {
 			// Use getCurrentUser from localStorage first (checkSession already called in +layout.svelte)
 			user = AuthService.getCurrentUser();
-
 			if (user) {
 				// Check password change requirement from localStorage
 				if (AuthService.requiresPasswordChange()) {
 					showMandatoryPasswordChange = true;
 				}
-
 				await Promise.all([
 					cargarFeriados(),
 					cargarGuardias(),
@@ -51,7 +47,6 @@
 			isLoading = false;
 		}
 	});
-
 	async function cargarFeriados() {
 		try {
 			loadingFeriados = true;
@@ -64,10 +59,8 @@
 			loadingFeriados = false;
 		}
 	}
-
 	async function cargarGuardias() {
 		if (!user || !user.id) return;
-
 		try {
 			loadingGuardias = true;
 			const response = await guardiasService.getGuardiasAgente(user.id);
@@ -79,7 +72,6 @@
 			loadingGuardias = false;
 		}
 	}
-
 	async function cargarEstadoAsistencia() {
 		try {
 			loadingAsistencia = true;
@@ -96,7 +88,6 @@
 			loadingAsistencia = false;
 		}
 	}
-
 	async function handleLogout() {
 		try {
 			await AuthService.logout();
@@ -106,34 +97,27 @@
 			goto("/");
 		}
 	}
-
 	function toggleModalUsuario() {
 		showModalUsuario = !showModalUsuario;
 	}
-
 	function handleEditarPerfil() {
 		showModalUsuario = false;
 		showEditProfile = true;
 	}
-
 	function handleCerrarSesion() {
 		showModalUsuario = false;
 		handleLogout();
 	}
-
 	function closeEditProfile() {
 		showEditProfile = false;
 	}
-
 	function handleUserUpdated(event) {
 		user = { ...user, ...event.detail };
 	}
-
 	function getProximasGuardias() {
 		if (!guardias || guardias.length === 0) return [];
 		const hoy = new Date();
 		hoy.setHours(0, 0, 0, 0);
-
 		return guardias
 			.filter((g) => {
 				const fechaGuardia = new Date(g.fecha + "T00:00:00");
@@ -143,7 +127,6 @@
 			.sort((a, b) => new Date(a.fecha + "T00:00:00") - new Date(b.fecha + "T00:00:00"))
 			.slice(0, 3);
 	}
-
 	function formatearFecha(fecha) {
 		if (!fecha) return "";
 		const d = new Date(fecha);
@@ -153,19 +136,16 @@
 			year: "numeric",
 		});
 	}
-
 	function formatearHora(hora) {
 		if (!hora) return "";
 		return hora.slice(0, 5);
 	}
-
 	function esAdministrador() {
 		if (!user || !user.roles) return false;
 		return user.roles.some((r) =>
 			["Administrador", "Director", "Jefatura"].includes(r.nombre),
 		);
 	}
-
 	function getIniciales() {
 		if (!user) return "";
 		const first = user.first_name?.charAt(0).toUpperCase() || "";
@@ -173,7 +153,6 @@
 		return first + last;
 	}
 </script>
-
 {#if showMandatoryPasswordChange}
 	<CambioContrasenaObligatorio
 		bind:showModal={showMandatoryPasswordChange}
@@ -182,7 +161,6 @@
 		}}
 	/>
 {/if}
-
 {#if showEditProfile && user}
 	<EditarPerfil
 		bind:showModal={showEditProfile}
@@ -191,7 +169,6 @@
 		on:userUpdated={handleUserUpdated}
 	/>
 {/if}
-
 <ModalUsuario
 	bind:isOpen={showModalUsuario}
 	{user}
@@ -199,7 +176,6 @@
 	on:editarPerfil={handleEditarPerfil}
 	on:cerrarSesion={handleCerrarSesion}
 />
-
 {#if isLoading}
 	<div class="loading-container">
 		<div class="loading-spinner"></div>
@@ -219,7 +195,6 @@
 				<h1 class="dashboard-title">
 					¡Bienvenido/a, {user.first_name}!
 				</h1>
-
 				<div class="header-actions">
                     <!-- Avatar clickeable -->
                     <button class="user-avatar" on:click={toggleModalUsuario}>
@@ -229,12 +204,10 @@
                         <span class="avatar-name">{user.first_name}</span>
                         <span class="avatar-icon">▼</span>
                     </button>
-
                     <Notificaciones />
                 </div>
 			</div>
 		</header>
-
 		<!-- Layout principal: 2 columnas -->
 		<div class="dashboard-layout">
 			<!-- Columna izquierda: Tarjetas funcionales -->
@@ -300,7 +273,6 @@
 						{/if}
 					</div>
 				</div>
-
 				<!-- Tarjeta de Asistencia -->
 				<div class="dashboard-card asistencia-card">
 					<div class="card-header">
@@ -390,7 +362,6 @@
 						{/if}
 					</div>
 				</div>
-
 				<!-- Botones de acceso rápido -->
 				<div class="dashboard-card accesos-card">
 					<div class="card-header">
@@ -436,7 +407,6 @@
 					</div>
 				</div>
 			</div>
-
 			<!-- Columna derecha: Calendario -->
 			<div class="right-column">
 				<div class="dashboard-card calendario-card">
@@ -451,13 +421,11 @@
 		</div>
 	</div>
 {/if}
-
 <style>
 	:global(*) {
 		color-scheme: light only !important;
 		-webkit-color-scheme: light !important;
 	}
-
 	.loading-container,
 	.error-container {
 		display: flex;
@@ -468,7 +436,6 @@
 		padding: 2rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.loading-spinner {
 		border: 4px solid #f3f3f3;
 		border-top: 4px solid #667eea;
@@ -478,7 +445,6 @@
 		animation: spin 1s linear infinite;
 		margin-bottom: 1rem;
 	}
-
 	@keyframes spin {
 		0% {
 			transform: rotate(0deg);
@@ -487,7 +453,6 @@
 			transform: rotate(360deg);
 		}
 	}
-
 	.dashboard-container {
 		padding: 1rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -499,23 +464,19 @@
 		color: #1a1a1a !important;
 		color-scheme: light only !important;
 	}
-
 	@media (min-width: 768px) {
 		.dashboard-container {
 			padding: 2rem;
 		}
 	}
-
 	.dashboard-header {
 		margin-bottom: 1.5rem;
 		width: 100%;
 		max-width: 100%;
 		box-sizing: border-box;
-		/* overflow-x: hidden; REMOVED to allow dropdown overflow */
         position: relative;
         z-index: 100;
 	}
-
 	.header-content {
 		display: flex;
 		justify-content: space-between;
@@ -526,21 +487,17 @@
 		gap: 0.5rem;
 		flex-wrap: wrap;
 		box-sizing: border-box;
-		/* overflow-x: hidden; REMOVED to allow dropdown overflow */
 	}
-
     .header-actions {
         display: flex;
         align-items: center;
         gap: 1rem;
     }
-
 	@media (min-width: 1024px) {
 		.header-content {
 			max-width: 1400px;
 		}
 	}
-
 	.dashboard-title {
 		font-size: 1.5rem;
 		font-weight: 700;
@@ -557,19 +514,16 @@
 		word-wrap: break-word;
 		box-sizing: border-box;
 	}
-
 	@media (min-width: 640px) {
 		.dashboard-title {
 			font-size: 32px;
 		}
 	}
-
 	@media (min-width: 1024px) {
 		.dashboard-title {
 			font-size: 40px;
 		}
 	}
-
 	.dashboard-title::after {
 		content: "";
 		position: absolute;
@@ -581,7 +535,6 @@
 		border-radius: 2px;
 		animation: moveLine 2.2s linear infinite;
 	}
-
 	@keyframes moveLine {
 		0% {
 			left: -40%;
@@ -590,7 +543,6 @@
 			left: 100%;
 		}
 	}
-
 	.user-avatar {
 		display: flex;
 		align-items: center;
@@ -608,21 +560,18 @@
 		max-width: 100%;
 		overflow: hidden;
 	}
-
 	@media (min-width: 640px) {
 		.user-avatar {
 			gap: 0.75rem;
 			padding: 0.5rem 1rem;
 		}
 	}
-
 	.user-avatar:hover {
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 		transform: translateY(-2px);
 		border-color: #667eea;
 		background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
 	}
-
 	.avatar-circle {
 		width: 36px;
 		height: 36px;
@@ -636,7 +585,6 @@
 		color: white !important;
 		flex-shrink: 0;
 	}
-
 	@media (min-width: 640px) {
 		.avatar-circle {
 			width: 40px;
@@ -644,7 +592,6 @@
 			font-size: 1rem;
 		}
 	}
-
 	.avatar-name {
 		font-weight: 600;
 		font-size: 0.875rem;
@@ -656,19 +603,16 @@
 		max-width: 120px;
 		display: none;
 	}
-
 	@media (min-width: 640px) {
 		.avatar-name {
 			display: block;
 			font-size: 16px;
 		}
 	}
-
 	.avatar-icon {
 		font-size: 0.7rem;
 		color: #6c757d;
 	}
-
 	.dashboard-layout {
 		max-width: 100%;
 		width: 100%;
@@ -679,7 +623,6 @@
 		box-sizing: border-box;
 		overflow-x: hidden;
 	}
-
 	@media (min-width: 1024px) {
 		.dashboard-layout {
 			max-width: 1400px;
@@ -687,7 +630,6 @@
 			gap: 2rem;
 		}
 	}
-
 	.left-column {
 		display: flex;
 		flex-direction: column;
@@ -697,13 +639,11 @@
 		box-sizing: border-box;
 		overflow-x: hidden;
 	}
-
 	@media (min-width: 768px) {
 		.left-column {
 			gap: 1.5rem;
 		}
 	}
-
 	.right-column {
 		display: flex;
 		flex-direction: column;
@@ -712,7 +652,6 @@
 		box-sizing: border-box;
 		overflow-x: hidden;
 	}
-
 	.dashboard-card {
 		background: white !important;
 		background-color: #ffffff !important;
@@ -729,13 +668,11 @@
 		margin: 0;
 		min-width: 0;
 	}
-
 	@media (min-width: 768px) {
 		.dashboard-card {
 			border-radius: 16px;
 		}
 	}
-
 	.dashboard-card::before {
 		content: "";
 		position: absolute;
@@ -745,25 +682,20 @@
 		height: 4px;
 		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
 	}
-
 	.guardias-card::before {
 		background: linear-gradient(90deg, #ffc107 0%, #ff9800 100%);
 	}
-
 	.asistencia-card::before {
 		background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
 	}
-
 	.accesos-card::before {
 		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
 	}
-
 	.dashboard-card:hover {
 		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 		transform: translateY(-4px);
 		border-color: #667eeabd;
 	}
-
 	.card-header {
 		padding: 0.75rem;
 		border-bottom: 2px solid #f1f3f5;
@@ -775,13 +707,11 @@
 		flex-wrap: wrap;
 		box-sizing: border-box;
 	}
-
 	@media (min-width: 768px) {
 		.card-header {
 			padding: 1.5rem;
 		}
 	}
-
 	.card-header h2 {
 		margin: 0;
 		font-size: 1rem;
@@ -791,19 +721,16 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-
 	@media (min-width: 640px) {
 		.card-header h2 {
 			font-size: 1.1rem;
 		}
 	}
-
 	@media (min-width: 1024px) {
 		.card-header h2 {
 			font-size: 1.25rem;
 		}
 	}
-
 	.btn-ir {
 		padding: 0.35rem 0.6rem;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -817,25 +744,21 @@
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
-
 	@media (min-width: 640px) {
 		.btn-ir {
 			padding: 0.5rem 1rem;
 			font-size: 0.85rem;
 		}
 	}
-
 	@media (min-width: 1024px) {
 		.btn-ir {
 			font-size: 0.9rem;
 		}
 	}
-
 	.btn-ir:hover {
 		transform: translateX(4px);
 		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 	}
-
 	.card-body {
 		padding: 0.75rem;
 		box-sizing: border-box;
@@ -844,13 +767,11 @@
 		overflow-x: hidden;
 		min-width: 0;
 	}
-
 	@media (min-width: 768px) {
 		.card-body {
 			padding: 1.5rem;
 		}
 	}
-
 	.card-loading {
 		display: flex;
 		align-items: center;
@@ -859,7 +780,6 @@
 		padding: 2rem;
 		color: #6c757d;
 	}
-
 	.loading-spinner-small {
 		border: 3px solid #f3f3f3;
 		border-top: 3px solid #667eea;
@@ -868,26 +788,21 @@
 		height: 24px;
 		animation: spin 1s linear infinite;
 	}
-
 	.empty-state {
 		text-align: center;
 		padding: 2rem;
 		color: #6c757d;
 	}
-
 	.empty-icon {
 		font-size: 3rem;
 		display: block;
 		margin-bottom: 1rem;
 	}
-
-	/* Guardias */
 	.guardias-list {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
 	}
-
 	.guardia-item {
 		display: flex;
 		align-items: center;
@@ -904,7 +819,6 @@
 		width: 100%;
 		max-width: 100%;
 	}
-
 	@media (min-width: 640px) {
 		.guardia-item {
 			gap: 1rem;
@@ -912,7 +826,6 @@
 			border-radius: 12px;
 		}
 	}
-
 	.guardia-fecha {
 		display: flex;
 		flex-direction: column;
@@ -925,39 +838,33 @@
 		max-width: 60px;
 		flex-shrink: 0;
 	}
-
 	@media (min-width: 640px) {
 		.guardia-fecha {
 			padding: 0.75rem;
 			min-width: 60px;
 		}
 	}
-
 	.fecha-dia {
 		font-size: 1.25rem;
 		font-weight: 700;
 		color: #1a1a1a !important;
 		line-height: 1;
 	}
-
 	@media (min-width: 640px) {
 		.fecha-dia {
 			font-size: 1.5rem;
 		}
 	}
-
 	.fecha-mes {
 		font-size: 0.65rem;
 		color: #6c757d !important;
 		text-transform: uppercase;
 	}
-
 	@media (min-width: 640px) {
 		.fecha-mes {
 			font-size: 0.75rem;
 		}
 	}
-
 	.guardia-info {
 		display: flex;
 		flex-direction: column;
@@ -966,7 +873,6 @@
 		min-width: 0;
 		overflow: hidden;
 	}
-
 	.guardia-turno {
 		font-weight: 600;
 		color: #1a1a1a !important;
@@ -975,39 +881,32 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-
 	@media (min-width: 640px) {
 		.guardia-turno {
 			font-size: 1rem;
 		}
 	}
-
 	.guardia-detalle {
 		font-size: 0.75rem;
 		color: #6c757d !important;
 	}
-
 	@media (min-width: 640px) {
 		.guardia-detalle {
 			font-size: 0.875rem;
 		}
 	}
-
-	/* Asistencia */
 	.asistencia-estado {
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
 		width: 100%;
 	}
-
 	@media (min-width: 640px) {
 		.asistencia-estado {
 			flex-direction: row;
 			gap: 1rem;
 		}
 	}
-
 	.estado-item {
 		flex: 1;
 		display: flex;
@@ -1020,7 +919,6 @@
 		width: 100%;
 		min-width: 0;
 	}
-
 	@media (min-width: 640px) {
 		.estado-item {
 			gap: 1rem;
@@ -1028,7 +926,6 @@
 			border-radius: 12px;
 		}
 	}
-
 	.estado-item.marcado {
 		background: linear-gradient(
 			135deg,
@@ -1037,7 +934,6 @@
 		) !important;
 		border-color: #28a745 !important;
 	}
-
 	.estado-item.pendiente {
 		background: linear-gradient(
 			135deg,
@@ -1046,27 +942,22 @@
 		) !important;
 		border-color: #dc3545 !important;
 	}
-
 	.estado-icon {
 		font-size: 1.25rem;
 		font-weight: bold;
 		flex-shrink: 0;
 	}
-
 	@media (min-width: 640px) {
 		.estado-icon {
 			font-size: 1.5rem;
 		}
 	}
-
 	.estado-item.marcado .estado-icon {
 		color: #28a745 !important;
 	}
-
 	.estado-item.pendiente .estado-icon {
 		color: #dc3545 !important;
 	}
-
 	.estado-info {
 		display: flex;
 		flex-direction: column;
@@ -1074,33 +965,27 @@
 		flex: 1;
 		min-width: 0;
 	}
-
 	.estado-label {
 		font-size: 0.65rem;
 		color: #6c757d !important;
 		text-transform: uppercase;
 		font-weight: 600;
 	}
-
 	@media (min-width: 640px) {
 		.estado-label {
 			font-size: 0.75rem;
 		}
 	}
-
 	.estado-hora {
 		font-weight: 600;
 		font-size: 0.9rem;
 		color: #1a1a1a !important;
 	}
-
 	@media (min-width: 640px) {
 		.estado-hora {
 			font-size: 1rem;
 		}
 	}
-
-	/* Accesos rápidos */
 	.accesos-grid {
 		display: grid;
 		grid-template-columns: 1fr;
@@ -1110,21 +995,17 @@
 		box-sizing: border-box;
 		overflow-x: hidden;
 	}
-
 	@media (min-width: 640px) {
 		.accesos-grid {
 			gap: 1rem;
 		}
 	}
-
-	/* Desktop: 2x2 grid */
 	@media (min-width: 1024px) {
 		.accesos-grid {
 			grid-template-columns: 1fr 1fr;
 			gap: 1.5rem;
 		}
 	}
-
 	.acceso-btn {
 		display: flex;
 		flex-direction: column;
@@ -1144,7 +1025,6 @@
 		max-width: 100%;
 		min-width: 0;
 	}
-
 	@media (min-width: 640px) {
 		.acceso-btn {
 			gap: 0.5rem;
@@ -1152,13 +1032,11 @@
 			border-radius: 12px;
 		}
 	}
-
 	.acceso-btn:hover {
 		transform: translateY(-4px);
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 		border-color: #667eea;
 	}
-
 	.acceso-btn.admin {
 		background: linear-gradient(
 			135deg,
@@ -1167,35 +1045,28 @@
 		) !important;
 		border-color: #ffc107 !important;
 	}
-
 	.acceso-icon {
 		font-size: 1.5rem;
 	}
-
 	@media (min-width: 640px) {
 		.acceso-icon {
 			font-size: 2rem;
 		}
 	}
-
 	.acceso-label {
 		font-size: 0.75rem;
 		color: #1a1a1a !important;
 		text-align: center;
 		word-wrap: break-word;
 	}
-
 	@media (min-width: 640px) {
 		.acceso-label {
 			font-size: 0.9rem;
 		}
 	}
-
-	/* Calendario */
 	.calendario-card::before {
 		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
 	}
-
 	.calendario-body {
 		padding: 0.5rem !important;
 		overflow-x: auto;
@@ -1205,26 +1076,21 @@
 		box-sizing: border-box;
 		min-width: 0;
 	}
-
 	.calendario-body :global(.calendar-container) {
 		width: 100%;
 		max-width: 100%;
 		box-sizing: border-box;
 		min-width: 0;
 	}
-
 	.calendario-body :global(.calendar-grid) {
 		width: 100%;
 		max-width: 100%;
 		box-sizing: border-box;
 	}
-
 	.calendario-body :global(.calendar-day) {
 		min-width: 0;
 		box-sizing: border-box;
 	}
-
-	/* Asegurar que el calendario no cause overflow */
 	.calendario-card {
 		overflow: hidden;
 		width: 100%;
@@ -1232,24 +1098,19 @@
 		box-sizing: border-box;
 		min-width: 0;
 	}
-
 	@media (min-width: 640px) {
 		.calendario-body {
 			padding: 1rem !important;
 		}
 	}
-
 	@media (max-width: 480px) {
 		.accesos-grid {
 			grid-template-columns: 1fr;
 		}
-
 		.dashboard-header {
 			margin-bottom: 1rem;
 		}
 	}
-
-	/* Día no laborable styles */
 	.dia-no-laborable {
 		text-align: center;
 		padding: 1.5rem;
@@ -1257,30 +1118,25 @@
 		border-radius: 12px;
 		border: 2px solid #4caf50;
 	}
-
 	.icono-no-laborable {
 		font-size: 3rem;
 		margin-bottom: 0.5rem;
 	}
-
 	.dia-no-laborable h3 {
 		color: #2e7d32;
 		margin: 0 0 0.5rem 0;
 		font-size: 1.1rem;
 		font-weight: 600;
 	}
-
 	.motivo-no-laborable {
 		font-size: 1rem;
 		margin-bottom: 0.25rem;
 		color: #2e7d32;
 	}
-
 	.motivo-no-laborable strong {
 		color: #1b5e20;
 		font-weight: 600;
 	}
-
 	.info-no-laborable {
 		font-size: 0.9rem;
 		color: #558b2f;

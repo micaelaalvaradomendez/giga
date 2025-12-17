@@ -1,6 +1,5 @@
 <script>
 	import { createEventDispatcher, onMount } from "svelte";
-
 	export let isOpen = false;
 	export let isSaving = false;
 	export let formData = {
@@ -12,29 +11,23 @@
 		agentes_asignados: [],
 		activo: true,
 	};
-
 	const dispatch = createEventDispatcher();
-
 	let areas = [];
 	let agentes = [];
 	let loadingAreas = false;
 	let loadingAgentes = false;
-
 	// Cargar datos cuando se abre el modal
 	$: if (isOpen) {
 		cargarAreas();
 		cargarAgentes();
 	}
-
 	async function cargarAreas() {
 		if (loadingAreas) return;
-
 		try {
 			loadingAreas = true;
 			const response = await fetch("/api/personas/catalogs/areas/", {
 				credentials: "include",
 			});
-
 			if (response.ok) {
 				const result = await response.json();
 				areas = result.success ? result.data?.results || [] : [];
@@ -52,16 +45,13 @@
 			loadingAreas = false;
 		}
 	}
-
 	async function cargarAgentes() {
 		if (loadingAgentes) return;
-
 		try {
 			loadingAgentes = true;
 			const response = await fetch("/api/personas/agentes/", {
 				credentials: "include",
 			});
-
 			if (response.ok) {
 				const result = await response.json();
 				agentes = result.success ? result.data?.results || [] : [];
@@ -73,24 +63,20 @@
 			loadingAgentes = false;
 		}
 	}
-
 	function cerrarModal() {
 		if (!isSaving) {
 			dispatch("cerrar");
 		}
 	}
-
 	function guardar() {
 		if (formData.nombre.trim() && !isSaving) {
 			dispatch("guardar", formData);
 		}
 	}
-
 	function toggleAgenteAsignado(agenteId) {
 		if (!formData.agentes_asignados) {
 			formData.agentes_asignados = [];
 		}
-
 		const index = formData.agentes_asignados.indexOf(agenteId);
 		if (index > -1) {
 			formData.agentes_asignados.splice(index, 1);
@@ -100,7 +86,6 @@
 		formData.agentes_asignados = formData.agentes_asignados; // Trigger reactivity
 	}
 </script>
-
 {#if isOpen}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -128,7 +113,6 @@
 						disabled={isSaving}
 					/>
 				</div>
-
 				<div class="form-group">
 					<label for="areaDescripcion">Descripción</label>
 					<textarea
@@ -139,7 +123,6 @@
 						disabled={isSaving}
 					></textarea>
 				</div>
-
 				<div class="form-group">
 					<label for="areaPadre">Área Padre (opcional)</label>
 					{#if loadingAreas}
@@ -165,7 +148,6 @@
 						organizacional
 					</small>
 				</div>
-
 				<div class="form-group">
 					<label for="jefeArea">Jefe del Área (opcional)</label>
 					{#if loadingAgentes}
@@ -190,7 +172,6 @@
 						Seleccione el agente que será jefe de esta área
 					</small>
 				</div>
-
 				<div class="form-group">
 					<label for="asignados">Agentes a Asignar (opcional)</label>
 					{#if loadingAgentes}
@@ -234,7 +215,6 @@
 						Seleccione los agentes que pertenecerán a esta área
 					</small>
 				</div>
-
 				<div class="checkbox-group">
 					<label class="checkbox-label">
 						<input
@@ -266,7 +246,6 @@
 		</div>
 	</div>
 {/if}
-
 <style>
 	.modal-overlay {
 		position: fixed;
@@ -281,7 +260,6 @@
 		z-index: 1000;
 		backdrop-filter: blur(5px);
 	}
-
 	.modal-content {
 		background: white;
 		border-radius: 12px;
@@ -295,11 +273,9 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-
 	.modal-content::-webkit-scrollbar {
 		display: none;
 	}
-
 	@keyframes modalSlide {
 		from {
 			opacity: 0;
@@ -310,7 +286,6 @@
 			transform: translateY(0) scale(1);
 		}
 	}
-
 	.modal-header {
 		padding: 20px 25px;
 		border-bottom: 1px solid #e9ecef;
@@ -320,13 +295,11 @@
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 	}
-
 	.modal-header h2 {
 		margin: 0;
 		font-size: 1.3rem;
 		font-weight: 600;
 	}
-
 	.modal-close {
 		background: none;
 		border: none;
@@ -342,15 +315,12 @@
 		border-radius: 50%;
 		transition: all 0.3s ease;
 	}
-
 	.modal-close:hover {
 		background: rgba(255, 255, 255, 0.2);
 	}
-
 	.modal-body {
 		padding: 25px;
 	}
-
 	.modal-footer {
 		padding: 20px 25px;
 		border-top: 1px solid #e9ecef;
@@ -359,18 +329,15 @@
 		gap: 10px;
 		background: #f8f9fa;
 	}
-
 	.form-group {
 		margin-bottom: 20px;
 	}
-
 	.form-group label {
 		display: block;
 		margin-bottom: 8px;
 		font-weight: 600;
 		color: #495057;
 	}
-
 	.form-group input {
 		width: 93%;
 		padding: 12px 15px;
@@ -380,24 +347,20 @@
 		transition: all 0.3s ease;
 		font-family: inherit;
 	}
-
 	.form-group input:focus {
 		outline: none;
 		border-color: #3498db;
 		box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 	}
-
 	.form-group input:disabled {
 		background-color: #e9ecef;
 		cursor: not-allowed;
 	}
-
 	.checkbox-group {
 		display: flex;
 		align-items: center;
 		margin: 15px 0;
 	}
-
 	.checkbox-label {
 		display: flex;
 		align-items: center;
@@ -405,11 +368,9 @@
 		font-weight: 600;
 		color: #495057;
 	}
-
 	.checkbox-label input[type="checkbox"] {
 		display: none;
 	}
-
 	.checkbox-custom {
 		width: 20px;
 		height: 20px;
@@ -419,12 +380,10 @@
 		position: relative;
 		transition: all 0.3s ease;
 	}
-
 	.checkbox-label input:checked + .checkbox-custom {
 		background: #3498db;
 		border-color: #3498db;
 	}
-
 	.checkbox-label input:checked + .checkbox-custom::after {
 		content: "✓";
 		position: absolute;
@@ -435,7 +394,6 @@
 		font-weight: bold;
 		font-size: 12px;
 	}
-
 	.btn-cancel,
 	.btn-save {
 		padding: 12px 24px;
@@ -447,35 +405,28 @@
 		font-size: 16px;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.btn-cancel {
 		background: #6c757d;
 		color: white;
 	}
-
 	.btn-cancel:hover:not(:disabled) {
 		background: #5a6268;
 		transform: translateY(-2px);
 	}
-
 	.btn-save {
 		background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
 		color: white;
 	}
-
 	.btn-save:hover:not(:disabled) {
 		transform: translateY(-2px);
 		box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
 	}
-
 	.btn-save:disabled,
 	.btn-cancel:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
 		transform: none;
 	}
-
-	/* Estilos para los nuevos campos */
 	.form-group textarea {
 		width: 93%;
 		padding: 12px 15px;
@@ -487,18 +438,15 @@
 		resize: vertical;
 		min-height: 80px;
 	}
-
 	.form-group textarea:focus {
 		outline: none;
 		border-color: #3498db;
 		box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 	}
-
 	.form-group textarea:disabled {
 		background-color: #e9ecef;
 		cursor: not-allowed;
 	}
-
 	.form-group select {
 		width: 100%;
 		padding: 12px 15px;
@@ -509,18 +457,15 @@
 		font-family: inherit;
 		background-color: rgba(170, 178, 180, 0.253);
 	}
-
 	.form-group select:focus {
 		outline: none;
 		border-color: #3498db;
 		box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 	}
-
 	.form-group select:disabled {
 		background-color: #e9ecefb0;
 		cursor: not-allowed;
 	}
-
 	.form-help {
 		display: block;
 		margin-top: 0.25rem;
@@ -529,7 +474,6 @@
 		line-height: 1.3;
 		font-weight: 400;
 	}
-
 	.loading-select {
 		padding: 12px 15px;
 		color: #6c757d;
@@ -538,7 +482,6 @@
 		border-radius: 8px;
 		text-align: center;
 	}
-
 	.agentes-list {
 		max-height: 300px;
 		overflow-y: auto;
@@ -547,7 +490,6 @@
 		padding: 0.5rem;
 		background-color: #f8f9fa;
 	}
-
 	.agente-checkbox {
 		display: flex;
 		align-items: flex-start;
@@ -559,37 +501,30 @@
 		background-color: white;
 		border: 1px solid #e9ecef;
 	}
-
 	.agente-checkbox:hover {
 		background-color: #e9ecef;
 		border-color: #3498db;
 	}
-
 	.agente-checkbox:last-child {
 		margin-bottom: 0;
 	}
-
 	.agente-info {
 		display: flex;
 		flex-direction: column;
 		gap: 0.125rem;
 	}
-
 	.agente-info strong {
 		font-size: 0.9rem;
 		color: #333;
 	}
-
 	.agente-info small {
 		font-size: 0.8rem;
 		color: #6c757d;
 	}
-
 	.agente-info .area-actual {
 		color: #007bff;
 		font-weight: 500;
 	}
-
 	.no-agentes {
 		text-align: center;
 		padding: 2rem;

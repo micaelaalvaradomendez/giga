@@ -11,7 +11,6 @@
   import ModalVerDetalles from "$lib/componentes/incidencias/ModalVerDetalles.svelte";
   import ModalAlert from "$lib/componentes/ModalAlert.svelte";
   import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
-
   let loading = true;
   let currentUser = null;
   let userRole = null;
@@ -23,12 +22,10 @@
   let busqueda = "";
   let incluirCerradas = false;
   let incidenciasFiltradas = [];
-
   // Modal para ver detalles
   let showDetalleModal = false;
   let incidenciaSeleccionada = null;
   let cargandoDetalle = false;
-
   // Modal para cambiar estado
   let showCambiarEstadoModal = false;
   let cambiandoEstado = false;
@@ -41,11 +38,9 @@
     { value: "resuelta", label: "Resuelta" },
     { value: "cerrada", label: "Cerrada" },
   ];
-
   // Modal para crear incidencia
   let showModal = false;
   let creandoIncidencia = false;
-
   // Modal para mensajes
   let showMensajeModal = false;
   let mensajeModal = { titulo: "", mensaje: "", tipo: "success" };
@@ -57,9 +52,7 @@
     prioridad: "media",
     asignado_a_id: null,
   };
-
   const incidenciasService = new IncidenciasService();
-
   onMount(async () => {
     try {
       // Use getCurrentUser from localStorage (checkSession already called in +layout.svelte)
@@ -68,7 +61,6 @@
         goto("/");
         return;
       }
-
       // Determinar si es agente (para simplicar lógica de UI)
       const esAgente = !currentUser?.roles?.some((r) =>
         ["Administrador", "Director", "Jefe de Área", "Jefatura"].includes(
@@ -76,12 +68,10 @@
         ),
       );
       userRole = esAgente ? "Agente" : "Supervisor";
-
       // Para agentes, mostrar primero sus incidencias
       if (esAgente) {
         tabActiva = "mias";
       }
-
       await cargarDatos();
     } catch (error) {
       console.error("Error inicializando página:", error);
@@ -90,7 +80,6 @@
       loading = false;
     }
   });
-
   async function cargarDatos() {
     try {
       // Cargar datos en paralelo
@@ -99,10 +88,8 @@
         incidenciasService.obtenerMisIncidencias(),
         incidenciasService.obtenerIncidenciasAsignadas(),
       ];
-
       const [todasIncidencias, misIncidenciasData, asignadasData] =
         await Promise.all(promesas);
-
       // Asignar datos recibidos
       incidencias = Array.isArray(todasIncidencias) ? todasIncidencias : [];
       misIncidencias = Array.isArray(misIncidenciasData)
@@ -114,11 +101,9 @@
       error = err.message;
     }
   }
-
   function cambiarTab(nuevaTab) {
     tabActiva = nuevaTab;
   }
-
   // Contadores reactivos que respetan el filtro de cerradas
   $: todasCount = incluirCerradas
     ? incidencias.length
@@ -129,11 +114,9 @@
   $: asignadasCount = incluirCerradas
     ? incidenciasAsignadas.length
     : incidenciasAsignadas.filter((inc) => inc.estado !== "cerrada").length;
-
   // Función reactiva para obtener incidencias según tab activa, búsqueda y filtro de cerradas
   $: incidenciasFiltradas = (() => {
     let incidenciasBase = [];
-
     switch (tabActiva) {
       case "mias":
         incidenciasBase = misIncidencias || [];
@@ -144,24 +127,20 @@
       default: // 'todas'
         incidenciasBase = incidencias || [];
     }
-
     // Filtrar incidencias cerradas si no están incluidas
     if (!incluirCerradas) {
       incidenciasBase = incidenciasBase.filter(
         (incidencia) => incidencia && incidencia.estado !== "cerrada",
       );
     }
-
     // Si no hay búsqueda, devolver incidencias base filtradas
     if (!busqueda || !busqueda.trim()) {
       return incidenciasBase;
     }
-
     // Aplicar filtro de búsqueda
     const busquedaLower = busqueda.toLowerCase().trim();
     return incidenciasBase.filter((incidencia) => {
       if (!incidencia) return false;
-
       return (
         (incidencia.titulo &&
           incidencia.titulo.toLowerCase().includes(busquedaLower)) ||
@@ -176,12 +155,10 @@
       );
     });
   })();
-
   async function crearNuevaIncidencia() {
     showModal = true;
     await cargarJefesArea();
   }
-
   async function cargarJefesArea() {
     cargandoJefes = true;
     try {
@@ -201,7 +178,6 @@
       cargandoJefes = false;
     }
   }
-
   function cerrarModal() {
     showModal = false;
     nuevaIncidencia = {
@@ -212,29 +188,23 @@
     };
     jefesArea = [];
   }
-
   async function guardarIncidencia() {
     if (!nuevaIncidencia.titulo.trim() || !nuevaIncidencia.descripcion.trim()) {
       await showAlert("Por favor complete todos los campos obligatorios", "warning", "Advertencia");
       return;
     }
-
     if (!nuevaIncidencia.asignado_a_id) {
       await showAlert("Debe seleccionar un destinatario para asignar la incidencia", "warning", "Advertencia");
       return;
     }
-
     creandoIncidencia = true;
     try {
       await incidenciasService.crearIncidencia(nuevaIncidencia);
-
       // Recargar datos
       await cargarDatos();
-
       // Cerrar modal y mostrar mensaje
       cerrarModal();
       mostrarMensaje("¡Éxito!", "Incidencia creada exitosamente", "success");
-
       // Cambiar a la tab de "mis incidencias" para mostrar la nueva
       tabActiva = "mias";
     } catch (err) {
@@ -248,12 +218,10 @@
       creandoIncidencia = false;
     }
   }
-
   // Funciones para modal de detalles
   async function verDetalles(incidencia) {
     cargandoDetalle = true;
     showDetalleModal = true;
-
     try {
       // Obtener detalles completos de la incidencia
       const detallesCompletos = await incidenciasService.obtenerIncidencia(
@@ -267,44 +235,36 @@
       cargandoDetalle = false;
     }
   }
-
   function cerrarDetalleModal() {
     showDetalleModal = false;
     incidenciaSeleccionada = null;
   }
-
   function mostrarMensaje(titulo, mensaje, tipo = "success") {
     mensajeModal = { titulo, mensaje, tipo };
     showMensajeModal = true;
   }
-
   function cerrarMensajeModal() {
     showMensajeModal = false;
   }
-
   function abrirCambiarEstadoModal() {
     showCambiarEstadoModal = true;
     nuevoEstado = incidenciaSeleccionada.estado || "abierta";
     comentarioEstado = "";
   }
-
   function cerrarCambiarEstadoModal() {
     showCambiarEstadoModal = false;
     nuevoEstado = "";
     comentarioEstado = "";
   }
-
   async function guardarCambioEstado() {
     if (!nuevoEstado) {
       await showAlert("Debe seleccionar un nuevo estado", "warning", "Advertencia");
       return;
     }
-
     if (nuevoEstado === incidenciaSeleccionada.estado) {
       await showAlert("Debe seleccionar un estado diferente al actual", "warning", "Advertencia");
       return;
     }
-
     cambiandoEstado = true;
     try {
       // Cambiar estado
@@ -313,13 +273,10 @@
         nuevoEstado,
         comentarioEstado,
       );
-
       // Actualizar la incidencia seleccionada
       incidenciaSeleccionada = incidenciaActualizada;
-
       // Recargar datos
       await cargarDatos();
-
       // Cerrar modal y mostrar mensaje
       cerrarCambiarEstadoModal();
       mostrarMensaje(
@@ -339,11 +296,9 @@
     }
   }
 </script>
-
 <svelte:head>
   <title>Incidencias - GIGA</title>
 </svelte:head>
-
 <div class="incidencias-container">
   {#if loading}
     <div class="loading-container">
@@ -355,7 +310,6 @@
     <div class="header">
       <h1>Incidencias</h1>
     </div>
-
     <!-- Contenido principal -->
     <div class="content">
       {#if error}
@@ -387,14 +341,12 @@
                 Asignadas a Mí ({asignadasCount})
               </button>
             </div>
-
             <button class="btn-crear" on:click={crearNuevaIncidencia}>
               + {userRole === "Agente"
                 ? "Contactar Jefatura"
                 : "Contactar Agente"}
             </button>
           </div>
-
           <div class="controls">
             <div class="search-container">
               <input
@@ -413,7 +365,6 @@
                 />
               </svg>
             </div>
-
             <div class="filter-container">
               <label class="checkbox-container">
                 <input
@@ -426,7 +377,6 @@
             </div>
           </div>
         </div>
-
         <!-- Lista de incidencias -->
         <div class="incidencias-list">
           {#each incidenciasFiltradas as incidencia (incidencia?.id || incidencia?.numero || Math.random())}
@@ -450,10 +400,8 @@
                   {/if}
                 </div>
               </div>
-
               <h3 class="incidencia-titulo">{incidencia.titulo}</h3>
               <p class="incidencia-descripcion">{incidencia.descripcion}</p>
-
               <div class="incidencia-footer">
                 <div class="incidencia-meta">
                   <div class="meta-item">
@@ -479,7 +427,6 @@
                     </div>
                   {/if}
                 </div>
-
                 <div class="incidencia-actions">
                   <button
                     class="btn-secondary"
@@ -507,7 +454,6 @@
     </div>
   {/if}
 </div>
-
 <!-- Modal para crear nueva incidencia -->
 <ModalNuevaIncidencia
   show={showModal}
@@ -519,7 +465,6 @@
   onClose={cerrarModal}
   onSubmit={guardarIncidencia}
 />
-
 <!-- Modal para ver detalles de incidencia -->
 <ModalVerDetalles
   show={showDetalleModal && incidenciaSeleccionada}
@@ -528,7 +473,6 @@
   onClose={cerrarDetalleModal}
   onCambiarEstado={abrirCambiarEstadoModal}
 />
-
 <!-- Modal de Mensajes -->
 <MessageModal
   show={showMensajeModal}
@@ -537,7 +481,6 @@
   message={mensajeModal.mensaje}
   onClose={cerrarMensajeModal}
 />
-
 <!-- Modal para cambiar estado -->
 <ModalCambiarEstado
   show={showCambiarEstadoModal && incidenciaSeleccionada}
@@ -549,7 +492,6 @@
   onClose={cerrarCambiarEstadoModal}
   onSubmit={guardarCambioEstado}
 />
-
 <!-- Modal de alertas -->
 <ModalAlert
   bind:show={$modalAlert.show}
@@ -563,7 +505,6 @@
   on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
   on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
-
 <style>
   .incidencias-container {
     width: 100%;
@@ -572,7 +513,6 @@
     padding: 1.5rem 1rem 1.5rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-
   @media (max-width: 640px) {
     .incidencias-container {
       padding: 1rem 0.75rem 1.5rem;
@@ -581,18 +521,15 @@
       overflow-x: hidden;
     }
   }
-
   :global(html),
   :global(body) {
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-
   :global(html::-webkit-scrollbar),
   :global(body::-webkit-scrollbar) {
     display: none;
   }
-
   .loading-container {
     display: flex;
     flex-direction: column;
@@ -601,7 +538,6 @@
     min-height: 400px;
     gap: 1rem;
   }
-
   .spinner {
     width: 40px;
     height: 40px;
@@ -610,7 +546,6 @@
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
-
   @keyframes spin {
     0% {
       transform: rotate(0deg);
@@ -619,7 +554,6 @@
       transform: rotate(360deg);
     }
   }
-
   .header {
     position: relative;
     background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
@@ -637,21 +571,18 @@
     height: auto;
     width: 100%;
   }
-
   @media (max-width: 640px) {
     .header {
       padding: 12px 8px;
       margin-bottom: 1rem;
     }
   }
-
   @media (min-width: 640px) {
     .header {
       padding: 18px 20px;
       border-radius: 14px;
     }
   }
-
   @media (min-width: 768px) {
     .header {
       padding: 20px 30px;
@@ -659,7 +590,6 @@
       margin-bottom: 2rem;
     }
   }
-
   .header::before {
     content: "";
     position: absolute;
@@ -676,7 +606,6 @@
     background-size: 50px 50px;
     animation: moveLines 20s linear infinite;
   }
-
   @keyframes moveLines {
     0% {
       transform: translateX(0) translateY(0);
@@ -685,7 +614,6 @@
       transform: translateX(50px) translateY(50px);
     }
   }
-
   .header h1 {
     margin: 10px;
     font-weight: 800;
@@ -697,31 +625,27 @@
     display: block;
     max-width: 100%;
     word-wrap: break-word;
-    word-break: break-word; /* Ensure long words break */
+    word-break: break-word; 
     white-space: normal;
     height: auto;
     line-height: 1.3;
   }
-
   @media (min-width: 480px) {
     .header h1 {
       font-size: 24px;
     }
   }
-
   @media (min-width: 640px) {
     .header h1 {
       font-size: 28px;
       display: inline-block;
     }
   }
-
   @media (min-width: 768px) {
     .header h1 {
       font-size: 32px;
     }
   }
-
   .header h1::after {
     content: "";
     position: absolute;
@@ -737,7 +661,6 @@
     );
     animation: moveLine 2s linear infinite;
   }
-
   @keyframes moveLine {
     0% {
       left: -40%;
@@ -746,11 +669,9 @@
       left: 100%;
     }
   }
-
   .content {
     padding: 0;
   }
-
   .error-banner {
     background: #fee2e2;
     color: #dc2626;
@@ -762,7 +683,6 @@
     align-items: center;
     border: 1px solid #fecaca;
   }
-
   .error-banner button {
     background: linear-gradient(135deg, #dc2626, #b91c1c);
     color: white;
@@ -774,13 +694,11 @@
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
   }
-
   .error-banner button:hover {
     background: linear-gradient(135deg, #b91c1c, #991b1b);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(220, 38, 38, 0.4);
   }
-
   .tabs-header {
     display: flex;
     justify-content: space-between;
@@ -792,21 +710,18 @@
     flex-wrap: wrap;
     min-width: 0;
   }
-
   @media (max-width: 768px) {
     .tabs-header {
       flex-direction: column;
       align-items: stretch;
     }
   }
-
   .tabs-container {
     display: flex;
     flex-direction: column;
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
-
   .tabs-row {
     display: flex;
     justify-content: space-between;
@@ -814,14 +729,12 @@
     gap: 1rem;
     flex-wrap: wrap;
   }
-
   .tabs {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     flex-wrap: nowrap;
   }
-
   .controls {
     display: flex;
     align-items: center;
@@ -829,7 +742,6 @@
     flex-shrink: 0;
     flex-wrap: wrap;
   }
-
   @media (max-width: 768px) {
     .tabs-row {
       flex-direction: column;
@@ -837,7 +749,6 @@
       overflow-x: hidden;
       white-space: normal;
     }
-
     .tabs {
       flex-direction: column;
       align-items: stretch;
@@ -846,19 +757,16 @@
       padding-bottom: 0;
       height: auto;
     }
-
     .tab {
       width: 100%;
       text-align: center;
       margin-bottom: 0.5rem;
     }
-
     .controls {
       width: 100%;
       flex-direction: column;
     }
   }
-
   .tab {
     background: none;
     border: none;
@@ -873,25 +781,21 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
-
   .tab:hover {
     background: #f3f4f6;
     color: #374151;
     transform: translateY(-2px);
   }
-
   .tab.active {
     background: linear-gradient(135deg, #4c51bf 0%, #5b21b6 100%);
     color: white;
     box-shadow: 0 4px 15px rgba(76, 81, 191, 0.3);
   }
-
   .search-container {
     position: relative;
     display: flex;
     align-items: center;
   }
-
   .search-input {
     padding: 0.75rem 2.5rem 0.75rem 1rem;
     border: 2px solid #e5e7eb;
@@ -903,23 +807,19 @@
     background: white;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-
   @media (max-width: 768px) {
     .search-input {
       width: 100%;
     }
   }
-
   .search-input:focus {
     outline: none;
     border-color: #4c51bf;
     box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
   }
-
   .search-input::placeholder {
     color: #9ca3af;
   }
-
   .search-icon {
     position: absolute;
     right: 0.75rem;
@@ -928,13 +828,11 @@
     fill: #9ca3af;
     pointer-events: none;
   }
-
   .filter-container {
     display: flex;
     align-items: center;
     margin-left: 1rem;
   }
-
   .checkbox-container {
     display: flex;
     align-items: center;
@@ -942,7 +840,6 @@
     user-select: none;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-
   .checkbox-input {
     appearance: none;
     width: 18px;
@@ -955,12 +852,10 @@
     position: relative;
     transition: all 0.2s;
   }
-
   .checkbox-input:checked {
     background: #4c51bf;
     border-color: #4c51bf;
   }
-
   .checkbox-input:checked::before {
     content: "✓";
     position: absolute;
@@ -971,22 +866,18 @@
     font-size: 12px;
     font-weight: bold;
   }
-
   .checkbox-input:hover {
     border-color: #9ca3af;
   }
-
   .checkbox-input:checked:hover {
     background: #5b21b6;
     border-color: #5b21b6;
   }
-
   .checkbox-label {
     font-size: 0.875rem;
     color: #374151;
     font-weight: 600;
   }
-
   .btn-crear {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
@@ -1000,14 +891,11 @@
     font-size: 0.875rem;
     box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
   }
-
   .btn-crear:hover {
     background: linear-gradient(135deg, #059669, #047857);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
   }
-
-  /* Lista de incidencias */
   .incidencias-list {
     display: flex;
     flex-direction: column;
@@ -1016,7 +904,6 @@
     overflow-y: auto;
     padding-right: 0.5rem;
   }
-
   .incidencia-card {
     background: white;
     border: 1px solid #e5e7eb;
@@ -1025,19 +912,16 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
   }
-
   .incidencia-card:hover {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     transform: translateY(-4px);
     border-color: #cbd5e1;
   }
-
   @media (max-width: 640px) {
     .incidencia-card {
       padding: 1rem;
     }
   }
-
   .incidencia-header {
     display: flex;
     justify-content: space-between;
@@ -1046,7 +930,6 @@
     flex-wrap: wrap;
     gap: 0.5rem;
   }
-
   .incidencia-numero {
     font-family: "Courier New", monospace;
     font-weight: bold;
@@ -1056,12 +939,10 @@
     padding: 0.25rem 0.75rem;
     border-radius: 6px;
   }
-
   .incidencia-badges {
     display: flex;
     gap: 0.5rem;
   }
-
   .badge {
     padding: 0.35rem 0.85rem;
     border-radius: 20px;
@@ -1071,64 +952,50 @@
     letter-spacing: 0.5px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
-
   .badge-resuelto {
     background: linear-gradient(135deg, #10b981, #059669);
     color: white;
   }
-
   .badge-pendiente {
     background: linear-gradient(135deg, #f59e0b, #d97706);
     color: white;
   }
-
-  /* Estados específicos */
   .badge-abierta {
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
   }
-
   .badge-en_proceso {
     background: linear-gradient(135deg, #f59e0b, #d97706);
     color: white;
   }
-
   .badge-pendiente_informacion {
     background: linear-gradient(135deg, #eab308, #ca8a04);
     color: white;
   }
-
   .badge-resuelta {
     background: linear-gradient(135deg, #10b981, #059669);
     color: white;
   }
-
   .badge-cerrada {
     background: linear-gradient(135deg, #6b7280, #4b5563);
     color: white;
   }
-
-  /* Prioridades */
   .badge-prioridad-baja {
     background: linear-gradient(135deg, #10b981, #059669);
     color: white;
   }
-
   .badge-prioridad-media {
     background: linear-gradient(135deg, #f59e0b, #d97706);
     color: white;
   }
-
   .badge-prioridad-alta {
     background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
   }
-
   .badge-prioridad-critica {
     background: linear-gradient(135deg, #991b1b, #7f1d1d);
     color: white;
   }
-
   .incidencia-titulo {
     margin: 0 0 0.5rem 0;
     font-size: 1.125rem;
@@ -1137,13 +1004,11 @@
     word-wrap: break-word;
     word-break: break-word;
   }
-
   .incidencia-descripcion {
     color: #6b7280;
     margin-bottom: 1rem;
     line-height: 1.6;
   }
-
   .incidencia-footer {
     display: flex;
     justify-content: space-between;
@@ -1151,39 +1016,32 @@
     gap: 1rem;
     flex-wrap: wrap;
   }
-
   @media (max-width: 768px) {
     .incidencia-header {
       flex-direction: column;
       align-items: flex-start;
       gap: 0.75rem;
     }
-    
     .incidencia-badges {
       flex-wrap: wrap;
     }
-
     .incidencia-footer {
       flex-direction: column;
       align-items: stretch;
       gap: 1.5rem;
     }
-
     .incidencia-meta {
       width: 100%;
       flex-direction: column;
       gap: 0.5rem;
     }
-    
     .incidencia-actions {
       width: 100%;
     }
-    
     .btn-secondary {
       width: 100%;
     }
   }
-
   .incidencia-meta {
     display: flex;
     flex-wrap: wrap;
@@ -1192,22 +1050,18 @@
     flex: 1;
     width: 100%;
   }
-
   .meta-item {
     font-size: 0.875rem;
     color: #6b7280;
   }
-
   .meta-item strong {
     color: #374151;
     font-weight: 600;
   }
-
   .incidencia-actions {
     display: flex;
     gap: 0.5rem;
   }
-
   .btn-secondary {
     background: linear-gradient(135deg, #4c51bf, #5b21b6);
     color: #ffffff;
@@ -1221,32 +1075,26 @@
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     box-shadow: 0 2px 8px rgba(76, 81, 191, 0.3);
   }
-
   .btn-secondary:hover {
     background: linear-gradient(135deg, #5b21b6, #6d28d9);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(76, 81, 191, 0.4);
   }
-
   .empty-state {
     text-align: center;
     padding: 4rem 2rem;
     color: #6b7280;
   }
-
   .empty-state h3 {
     margin-bottom: 0.5rem;
     color: #374151;
     font-size: 1.5rem;
     font-weight: 700;
   }
-
   .empty-state p {
     font-size: 1rem;
     margin-bottom: 1rem;
   }
-
-  /* Solo ajustes mínimos para evitar overflow */
   @media (max-width: 1024px) {
     .incidencias-container {
       max-width: 100%;

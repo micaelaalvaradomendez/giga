@@ -2,16 +2,13 @@
     import { onMount, createEventDispatcher } from "svelte";
     import { fly, fade, slide } from "svelte/transition";
     import { notificacionesService } from "$lib/services";
-
     const dispatch = createEventDispatcher();
-
     let notificaciones = [];
     let loading = true;
     let isOpen = false;
     let unreadCount = 0;
     let dropdownRef;
     let buttonRef;
-
     const icons = {
         GUARDIA: "🛡️",
         HORA_EXTRA: "💰",
@@ -26,7 +23,6 @@
         CRONOGRAMA: "🗓️",
         GENERICO: "🔔",
     };
-
     onMount(async () => {
         await cargarNotificaciones();
         document.addEventListener("click", handleClickOutside);
@@ -34,7 +30,6 @@
             document.removeEventListener("click", handleClickOutside);
         };
     });
-
     function handleClickOutside(event) {
         if (
             isOpen &&
@@ -45,7 +40,6 @@
             isOpen = false;
         }
     }
-
     async function cargarNotificaciones() {
         try {
             loading = true;
@@ -53,7 +47,6 @@
             let data = response.data?.results || response.data || [];
             notificaciones = data.filter((n) => !n.leida);
         } catch (e) {
-
             console.error("Error cargando notificaciones:", e);
             if (e.response && e.response.data) {
                 console.error("Detalle del error:", e.response.data);
@@ -64,11 +57,9 @@
             actualizarContador();
         }
     }
-
     function actualizarContador() {
         unreadCount = notificaciones.length;
     }
-
     async function marcarLeida(id, event) {
         if (event) event.stopPropagation();
         try {
@@ -81,7 +72,6 @@
             actualizarContador();
         }
     }
-
     async function marcarTodas() {
         try {
             await notificacionesService.marcarTodasLeidas();
@@ -93,11 +83,9 @@
             actualizarContador();
         }
     }
-
     function toggleDropdown() {
         isOpen = !isOpen;
     }
-
     function timeAgo(dateString) {
         const date = new Date(dateString);
         const now = new Date();
@@ -110,7 +98,6 @@
         return date.toLocaleDateString();
     }
 </script>
-
 <div class="notifications-container">
     <button
         class="bell-btn {unreadCount > 0 ? 'has-notifications' : ''}"
@@ -125,7 +112,6 @@
             >
         {/if}
     </button>
-
     {#if isOpen}
         <div
             class="dropdown-menu"
@@ -140,7 +126,6 @@
                     </button>
                 {/if}
             </div>
-
             <div class="dropdown-body">
                 {#if loading}
                     <div class="loading-state"><div class="spinner"></div></div>
@@ -188,14 +173,12 @@
         </div>
     {/if}
 </div>
-
 <style>
     .notifications-container {
         position: relative;
         display: inline-block;
         font-family: "Segoe UI", system-ui, sans-serif;
     }
-
     .bell-btn {
         background: white;
         border: none;
@@ -211,18 +194,15 @@
         transition: all 0.2s;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     }
-
     .bell-btn:hover,
     .bell-btn.active {
         background-color: #f8f9fa;
         transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
-
     .bell-icon {
         font-size: 1.2rem;
     }
-
     .badge {
         position: absolute;
         top: -2px;
@@ -237,7 +217,6 @@
         min-width: 18px;
         text-align: center;
     }
-
     .dropdown-menu {
         position: absolute;
         top: 120%;
@@ -251,7 +230,6 @@
         border: 1px solid rgba(0, 0, 0, 0.08);
         transform-origin: top right;
     }
-
     @media (max-width: 640px) {
         .dropdown-menu {
             position: fixed;
@@ -263,7 +241,6 @@
             transform-origin: top center;
         }
     }
-
     .dropdown-header {
         padding: 1rem;
         border-bottom: 1px solid #f0f0f0;
@@ -272,14 +249,12 @@
         align-items: center;
         background: #fff;
     }
-
     .dropdown-header h3 {
         margin: 0;
         font-size: 1rem;
         font-weight: 700;
         color: #333;
     }
-
     .btn-clean {
         background: none;
         border: none;
@@ -289,17 +264,14 @@
         padding: 4px 8px;
         border-radius: 4px;
     }
-
     .btn-clean:hover {
         background: #eef5ff;
     }
-
     .dropdown-body {
         max-height: 400px;
         overflow-y: auto;
         overscroll-behavior: contain;
     }
-
     .notif-item {
         display: flex;
         padding: 12px 16px;
@@ -309,19 +281,15 @@
         transition: background 0.2s;
         position: relative;
     }
-
     .notif-item:hover {
         background-color: #f8f9fa;
     }
-
     .notif-item.unread {
         background-color: #f0f7ff;
     }
-
     .notif-item.unread:hover {
         background-color: #e6f2ff;
     }
-
     .notif-icon {
         width: 36px;
         height: 36px;
@@ -334,7 +302,6 @@
         flex-shrink: 0;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
-
     .notif-item.guardia .notif-icon {
         background: #e3f2fd;
     }
@@ -347,38 +314,32 @@
     .notif-item.licencia .notif-icon {
         background: #e0f7fa;
     }
-
     .notif-content {
         flex: 1;
         min-width: 0;
     }
-
     .notif-top {
         display: flex;
         justify-content: space-between;
         margin-bottom: 4px;
         align-items: center;
     }
-
     .notif-title {
         font-weight: 600;
         font-size: 0.9rem;
         color: #333;
     }
-
     .notif-time {
         font-size: 0.7rem;
         color: #888;
         white-space: nowrap;
     }
-
     .notif-msg {
         margin: 0;
         font-size: 0.85rem;
         color: #666;
         line-height: 1.3;
     }
-
     .unread-indicator {
         width: 8px;
         height: 8px;
@@ -389,21 +350,17 @@
         top: 50%;
         transform: translateY(-50%);
     }
-
     .empty-state {
         padding: 3rem 1rem;
         text-align: center;
         color: #888;
     }
-
     .empty-icon {
         font-size: 2rem;
         display: block;
         margin-bottom: 0.5rem;
         opacity: 0.5;
     }
-
-    /* Scrollbar styling */
     .dropdown-body::-webkit-scrollbar {
         width: 6px;
     }

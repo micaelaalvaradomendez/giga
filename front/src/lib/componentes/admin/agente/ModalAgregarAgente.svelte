@@ -1,14 +1,11 @@
 <script>
 	import { createEventDispatcher, onMount } from "svelte";
 	import { personasService } from "$lib/services.js";
-
 	export let isOpen = false;
 	export let isSaving = false;
 	export let areasDisponibles = []; // Recibir áreas como prop desde el controlador
 	export let rolesDisponibles = []; // Recibir roles como prop desde el controlador
-
 	const dispatch = createEventDispatcher();
-
 	// Datos del formulario para nuevo agente
 	let formData = {
 		// Usuario
@@ -36,28 +33,22 @@
 		horario_salida: "16:00",
 		activo: true,
 	};
-
 	let activeTab = "personal";
 	let validateTimeout;
 	let isFormValid = false;
-
 	// Ya no necesitamos cargar roles - vienen como props
-
 	function setActiveTab(tab) {
 		activeTab = tab;
 	}
-
 	function validateForm() {
 		// La contraseña se genera automáticamente del DNI
 		if (formData.dni) {
 			formData.password = formData.dni;
 		}
-
 		// Generar legajo automático si no existe y tenemos DNI
 		if (!formData.legajo && formData.dni) {
 			formData.legajo = `LEG-${formData.dni}`;
 		}
-
 		isFormValid = !!(
 			(
 				formData.email &&
@@ -72,20 +63,17 @@
 			) // Asegurar que el legajo existe
 		);
 	}
-
 	function handleInputChange(event) {
 		// Si se cambia el DNI, actualizar automáticamente la contraseña
 		if (event.target.id === "dni") {
 			formData.password = formData.dni;
 		}
-
 		if (validateTimeout) clearTimeout(validateTimeout);
 		validateTimeout = setTimeout(() => {
 			validateForm();
 			formData = { ...formData };
 		}, 150);
 	}
-
 	function cerrarModal() {
 		if (!isSaving) {
 			isOpen = false;
@@ -116,7 +104,6 @@
 			dispatch("cerrar");
 		}
 	}
-
 	function guardarAgente() {
 		if (isFormValid && !isSaving) {
 			console.log("💾 Guardando agente con datos:", formData);
@@ -130,7 +117,6 @@
 			console.warn("⚠️ No se puede guardar:", { isFormValid, isSaving });
 		}
 	}
-
 	// Validaciones por pestaña
 	function getTabValidation(tab) {
 		switch (tab) {
@@ -158,7 +144,6 @@
 		}
 	}
 </script>
-
 {#if isOpen}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -172,7 +157,6 @@
 					<button class="btn-close" on:click={cerrarModal}>×</button>
 				{/if}
 			</div>
-
 			<div class="modal-body">
 				<!-- Pestañas de navegación -->
 				<div class="tabs">
@@ -235,14 +219,12 @@
 						{/if}
 					</button>
 				</div>
-
 				<form on:submit|preventDefault={guardarAgente}>
 					<div class="form-content">
 						<!-- Información Personal -->
 						{#if activeTab === "personal"}
 							<div class="form-section">
 								<h3>👤 Información Personal</h3>
-
 								<div class="form-row">
 									<div class="form-group">
 										<label for="nombre">Nombre *</label>
@@ -275,7 +257,6 @@
 										>
 									</div>
 								</div>
-
 								<div class="form-row">
 									<div class="form-group">
 										<label for="dni">DNI *</label>
@@ -314,7 +295,6 @@
 										>
 									</div>
 								</div>
-
 								<div class="form-row">
 									<div class="form-group">
 										<label for="email">Email *</label>
@@ -349,7 +329,6 @@
 										>
 									</div>
 								</div>
-
 								<div class="form-group">
 									<label for="telefono">Teléfono *</label>
 									<input
@@ -366,12 +345,10 @@
 								</div>
 							</div>
 						{/if}
-
 						<!-- Usuario y Acceso -->
 						{#if activeTab === "usuario"}
 							<div class="form-section">
 								<h3>🔑 Datos de Usuario</h3>
-
 								<div class="form-row">
 									<div class="form-group">
 										<label for="password"
@@ -384,7 +361,6 @@
 										>
 									</div>
 								</div>
-
 								<div class="form-group">
 									<label for="rol_id">Rol del Usuario *</label
 									>
@@ -413,12 +389,10 @@
 								</div>
 							</div>
 						{/if}
-
 						<!-- Información Laboral -->
 						{#if activeTab === "laboral"}
 							<div class="form-section">
 								<h3>💼 Información Laboral</h3>
-
 								<div class="form-row">
 									<div class="form-group">
 										<label for="agrupacion"
@@ -471,7 +445,6 @@
 										>
 									</div>
 								</div>
-
 								<div class="form-row">
 									<div class="form-group">
 										<label for="area_id">Área *</label>
@@ -495,7 +468,6 @@
 										>
 									</div>
 								</div>
-
 								<div class="form-row">
 									<div class="form-group">
 										<label for="horario_entrada"
@@ -528,7 +500,6 @@
 										>
 									</div>
 								</div>
-
 								<div class="form-group">
 									<label class="checkbox-label">
 										<input
@@ -545,12 +516,10 @@
 								</div>
 							</div>
 						{/if}
-
 						<!-- Dirección -->
 						{#if activeTab === "direccion"}
 							<div class="form-section">
 								<h3>🏠 Dirección</h3>
-
 								<div class="form-row">
 									<div class="form-group">
 										<label for="calle">Calle *</label>
@@ -579,7 +548,6 @@
 										>
 									</div>
 								</div>
-
 								<div class="form-row">
 									<div class="form-group">
 										<label for="ciudad">Ciudad *</label>
@@ -615,7 +583,6 @@
 					</div>
 				</form>
 			</div>
-
 			<div class="modal-footer">
 				<button
 					class="btn btn-secondary"
@@ -640,7 +607,6 @@
 		</div>
 	</div>
 {/if}
-
 <style>
 	.modal-overlay {
 		position: fixed;
@@ -655,7 +621,6 @@
 		z-index: 1000;
 		padding: 2rem;
 	}
-
 	.modal-content {
 		background: white;
 		border-radius: 8px;
@@ -667,11 +632,9 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-
 	.modal-content::-webkit-scrollbar {
 		display: none;
 	}
-
 	.modal-header {
 		display: flex;
 		justify-content: space-between;
@@ -682,12 +645,10 @@
 		color: white;
 		border-radius: 8px 8px 0 0;
 	}
-
 	.modal-header h2 {
 		margin: 0;
 		font-size: 1.5rem;
 	}
-
 	.btn-close {
 		background: none;
 		border: none;
@@ -698,21 +659,17 @@
 		border-radius: 4px;
 		transition: background-color 0.2s;
 	}
-
 	.btn-close:hover {
 		background-color: rgba(255, 255, 255, 0.1);
 	}
-
 	.modal-body {
 		padding: 0;
 	}
-
 	.tabs {
 		display: flex;
 		border-bottom: 1px solid #e9ecef;
 		background: #f8f9fa;
 	}
-
 	.tab-button {
 		background: none;
 		border: none;
@@ -723,27 +680,22 @@
 		transition: all 0.2s;
 		border-bottom: 3px solid transparent;
 	}
-
 	.tab-button:hover:not(:disabled) {
 		background: #e9ecef;
 		color: #495057;
 	}
-
 	.tab-button.active {
 		color: #28a745;
 		border-bottom-color: #28a745;
 		background: white;
 	}
-
 	.tab-button:disabled {
 		cursor: not-allowed;
 		opacity: 0.6;
 	}
-
 	.tab-button.invalid {
 		position: relative;
 	}
-
 	.tab-indicator {
 		display: inline-flex;
 		align-items: center;
@@ -756,19 +708,16 @@
 		font-size: 0.75rem;
 		margin-left: 0.5rem;
 	}
-
 	.form-content {
 		padding: 1.5rem;
 		min-height: 400px;
 	}
-
 	.form-section {
 		border: 1px solid #e9ecef;
 		border-radius: 8px;
 		padding: 1rem;
 		background: #f8f9fa;
 	}
-
 	.form-section h3 {
 		margin: 0 0 1rem 0;
 		color: #2c3e50;
@@ -776,31 +725,26 @@
 		padding-bottom: 0.5rem;
 		border-bottom: 2px solid #28a745;
 	}
-
 	.form-row {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1rem;
 		margin-bottom: 1rem;
 	}
-
 	.form-group {
 		display: flex;
 		flex-direction: column;
 		margin-bottom: 1rem;
 	}
-
 	.form-group:last-child {
 		margin-bottom: 0;
 	}
-
 	label {
 		font-weight: 500;
 		color: #495057;
 		margin-bottom: 0.25rem;
 		font-size: 0.9rem;
 	}
-
 	input,
 	select {
 		padding: 0.5rem;
@@ -811,20 +755,17 @@
 			border-color 0.2s,
 			box-shadow 0.2s;
 	}
-
 	input:focus,
 	select:focus {
 		outline: none;
 		border-color: #28a745;
 		box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
 	}
-
 	input:disabled,
 	select:disabled {
 		background-color: #e9ecef;
 		cursor: not-allowed;
 	}
-
 	.checkbox-label {
 		display: flex;
 		align-items: center;
@@ -832,12 +773,10 @@
 		cursor: pointer;
 		margin-bottom: 0;
 	}
-
 	.checkbox-label input[type="checkbox"] {
 		width: auto;
 		margin: 0;
 	}
-
 	.help-text {
 		display: block;
 		font-size: 0.75rem;
@@ -845,7 +784,6 @@
 		margin-top: 0.25rem;
 		line-height: 1.3;
 	}
-
 	.modal-footer {
 		padding: 1rem 1.5rem;
 		border-top: 1px solid #e9ecef;
@@ -853,7 +791,6 @@
 		justify-content: flex-end;
 		gap: 0.5rem;
 	}
-
 	.btn {
 		padding: 0.5rem 1rem;
 		border: none;
@@ -865,31 +802,25 @@
 		align-items: center;
 		gap: 0.5rem;
 	}
-
 	.btn:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
 	}
-
 	.btn-secondary {
 		background-color: #6c757d;
 		color: white;
 	}
-
 	.btn-secondary:hover:not(:disabled) {
 		background-color: #5a6268;
 	}
-
 	.btn-primary {
 		background: linear-gradient(135deg, #28a745, #20c997);
 		color: white;
 	}
-
 	.btn-primary:hover:not(:disabled) {
 		transform: translateY(-1px);
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 	}
-
 	.spinner {
 		width: 16px;
 		height: 16px;
@@ -898,49 +829,39 @@
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
 	}
-
 	@keyframes spin {
 		to {
 			transform: rotate(360deg);
 		}
 	}
-
-	/* Responsive */
 	@media (max-width: 768px) {
 		.form-row {
 			grid-template-columns: 1fr;
 		}
-
 		.modal-overlay {
 			padding: 0.5rem;
-			align-items: flex-start; /* Better for tall modals on mobile */
+			align-items: flex-start; 
 		}
-
 		.modal-content {
 			max-height: 95vh;
 			display: flex;
 			flex-direction: column;
 		}
-
 		.modal-header {
 			padding: 1rem;
 		}
-
 		.modal-header h2 {
-			font-size: 1.1rem; /* Smaller title */
+			font-size: 1.1rem; 
 		}
-
 		.tabs {
-			overflow-x: auto; /* Scrollable tabs */
+			overflow-x: auto; 
 			white-space: nowrap;
 			-webkit-overflow-scrolling: touch;
 		}
-		
 		.tab-button {
 			padding: 0.75rem 1rem;
 			font-size: 0.85rem;
 		}
-
 		.form-content {
 			padding: 1rem;
 		}

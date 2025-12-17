@@ -1,35 +1,27 @@
 <script>
   import { createEventDispatcher } from "svelte";
   import { fade, scale } from "svelte/transition";
-
   export let compensacion;
   export let loading = false;
-
   const dispatch = createEventDispatcher();
-
   function cerrar() {
     dispatch("close");
   }
-
   function aprobar() {
     dispatch("aprobar", compensacion);
   }
-
   function rechazar() {
     dispatch("rechazar", compensacion);
   }
-
   function formatearFecha(fecha) {
     if (!fecha) return "-";
     return new Date(fecha).toLocaleDateString("es-AR");
   }
-
   function formatearHora(hora) {
     if (!hora) return "-";
     return hora.slice(0, 5); // HH:MM
   }
 </script>
-
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="modal-overlay" on:click={cerrar} transition:fade={{ duration: 200 }}>
@@ -44,7 +36,6 @@
       <h3>Detalles de Compensación</h3>
       <button class="close-button" on:click={cerrar}>&times;</button>
     </div>
-
     <div class="modal-body">
       <div class="detalle-seccion">
         <h4>Información General</h4>
@@ -80,7 +71,6 @@
           </div>
         </div>
       </div>
-
       <div class="detalle-seccion">
         <h4>Detalles de la Guardia</h4>
         <div class="detalle-grid">
@@ -110,7 +100,6 @@
           </div>
         </div>
       </div>
-
       <div class="detalle-seccion">
         <h4>Motivo y Justificación</h4>
         <div class="detalle-grid">
@@ -132,7 +121,6 @@
           {/if}
         </div>
       </div>
-
       <div class="detalle-seccion">
         <h4>Cálculo de Horas</h4>
         <div class="detalle-grid">
@@ -152,7 +140,6 @@
           {/if}
         </div>
       </div>
-
       {#if compensacion.estado !== "pendiente"}
         <div class="detalle-seccion">
           <h4>Estado de Aprobación</h4>
@@ -182,10 +169,8 @@
           </div>
         </div>
       {/if}
-
       <div class="modal-footer">
         <button class="btn btn-secondary" on:click={cerrar}>Cerrar</button>
-
         {#if compensacion.estado === "pendiente"}
           <button
             class="btn btn-danger"
@@ -206,9 +191,7 @@
     </div>
   </div>
 </div>
-
 <style>
-  /* Modal Overlay & Content */
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -223,7 +206,6 @@
     z-index: 1000;
     padding: 1rem;
   }
-
   .modal-content {
     background: white;
     border-radius: 16px;
@@ -237,12 +219,9 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-
   .modal-content::-webkit-scrollbar {
     display: none;
   }
-
-  /* Header */
   .modal-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -253,14 +232,12 @@
     align-items: center;
     border-bottom: none;
   }
-
   .modal-header h3 {
     margin: 0;
     color: white;
     font-size: 1.3rem;
     font-weight: 700;
   }
-
   .close-button {
     background: none;
     border: none;
@@ -276,17 +253,13 @@
     border-radius: 50%;
     transition: all 0.3s ease;
   }
-
   .close-button:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
   }
-
-  /* Body */
   .modal-body {
     padding: 2rem;
   }
-
   .detalle-seccion {
     margin-bottom: 2rem;
     padding: 1.25rem;
@@ -294,7 +267,6 @@
     border-radius: 12px;
     border: 1px solid #e5e7eb;
   }
-
   .detalle-seccion h4 {
     margin: 0 0 1rem 0;
     color: #374151;
@@ -303,35 +275,29 @@
     border-bottom: 2px solid #e5e7eb;
     padding-bottom: 0.5rem;
   }
-
   .detalle-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
   }
-
   .detalle-item {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
-
   .detalle-full {
     grid-column: 1 / -1;
   }
-
   .detalle-item label {
     font-size: 0.85rem;
     color: #64748b;
     font-weight: 600;
   }
-
   .detalle-item span {
     font-size: 1rem;
     color: #1e293b;
     font-weight: 500;
   }
-
   .descripcion-texto {
     background: white;
     padding: 0.75rem;
@@ -341,14 +307,11 @@
     line-height: 1.5;
     color: #334155;
   }
-
   .descripcion-texto.rechazo {
     background: #fef2f2;
     border-color: #fecaca;
     color: #991b1b;
   }
-
-  /* Badges */
   .estado-badge {
     display: inline-flex;
     padding: 4px 12px;
@@ -358,22 +321,18 @@
     text-transform: capitalize;
     width: fit-content;
   }
-
   .estado-pendiente {
     background-color: #fef3c7;
     color: #92400e;
   }
-
   .estado-aprobada {
     background-color: #d1fae5;
     color: #065f46;
   }
-
   .estado-rechazada {
     background-color: #fee2e2;
     color: #991b1b;
   }
-
   .motivo-badge {
     background-color: #e0f2fe;
     color: #0369a1;
@@ -383,7 +342,6 @@
     font-weight: 600;
     width: fit-content;
   }
-
   .horas-badge {
     background-color: #f3e8ff;
     color: #7e22ce;
@@ -392,7 +350,6 @@
     font-weight: 700;
     width: fit-content;
   }
-
   .monto-badge {
     background-color: #dcfce7;
     color: #15803d;
@@ -403,8 +360,6 @@
     font-size: 1.1rem;
     width: fit-content;
   }
-
-  /* Footer & Buttons */
   .modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -413,7 +368,6 @@
     padding-top: 1rem;
     border-top: 1px solid #e5e7eb;
   }
-
   .btn {
     padding: 10px 20px;
     border: none;
@@ -424,38 +378,31 @@
     transition: all 0.3s ease;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-
   .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
   }
-
   .btn-secondary {
     background: #6c757d;
     color: white;
   }
-
   .btn-secondary:hover:not(:disabled) {
     background: #5a6268;
     transform: translateY(-2px);
   }
-
   .btn-success {
     background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
   }
-
   .btn-success:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
   }
-
   .btn-danger {
     background: #ef4444;
     color: white;
   }
-
   .btn-danger:hover:not(:disabled) {
     background: #dc2626;
     transform: translateY(-2px);

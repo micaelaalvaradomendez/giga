@@ -1,12 +1,9 @@
 <script>
 	import { auditoriaController } from "$lib/paneladmin/controllers";
-
 	// Stores del controlador
 	const { filtros, registros } = auditoriaController;
-
 	// Usar stores derivados en lugar de variables reactivas para evitar problemas de SSR
 	import { derived } from 'svelte/store';
-	
 	const modulosUnicos = derived(registros, ($registros) => {
 		if (!$registros || !Array.isArray($registros)) return [];
 		return $registros
@@ -18,7 +15,6 @@
 				label: auditoriaController.formatearNombreModulo(modulo)
 			}));
 	});
-
 	const accionesUnicas = derived(registros, ($registros) => {
 		if (!$registros || !Array.isArray($registros)) return [];
 		return $registros
@@ -30,7 +26,6 @@
 				label: auditoriaController.traducirAccion(accion)
 			}));
 	});
-
 	const usuariosUnicos = derived(registros, ($registros) => {
 		if (!$registros || !Array.isArray($registros)) return [];
 		return $registros
@@ -42,7 +37,6 @@
 				label: usuario
 			}));
 	});
-
 	// Categorías predefinidas
 	const categorias = [
 		{ value: '', label: 'Todas las categorías' },
@@ -56,7 +50,6 @@
 		{ value: 'aprobacion', label: '✅ Aprobaciones' },
 		{ value: 'rechazo', label: '❌ Rechazos' }
 	];
-
 	// Funciones para manejar cambios en filtros
 	function handleFechaDesdeChange(e) {
 		// Si la nueva fecha desde es posterior a la fecha hasta, limpiar fecha hasta
@@ -65,30 +58,24 @@
 		}
 		actualizarFiltro('fechaDesde', e.target.value);
 	}
-
 	function actualizarFiltro(campo, valor) {
 		auditoriaController.actualizarFiltros({ [campo]: valor });
 	}
-
 	function limpiarFiltros() {
 		auditoriaController.limpiarFiltros();
 	}
-
 	async function refrescarDatos() {
 		await auditoriaController.recargar();
 	}
-
 	// Función para obtener fecha formateada para input date
 	function formatearFechaParaInput(fecha) {
 		if (!fecha) return '';
 		return new Date(fecha).toISOString().split('T')[0];
 	}
-
 	// Presets de fechas
 	function aplicarPresetFecha(tipo) {
 		const hoy = new Date();
 		let fechaDesde, fechaHasta;
-		
 		switch(tipo) {
 			case 'hoy':
 				fechaDesde = fechaHasta = hoy;
@@ -105,18 +92,15 @@
 				fechaHasta = hoy;
 				break;
 		}
-		
 		auditoriaController.actualizarFiltros({
 			fechaDesde: formatearFechaParaInput(fechaDesde),
 			fechaHasta: formatearFechaParaInput(fechaHasta)
 		});
 	}
-
 	// Computed para verificar si hay filtros activos
 	$: hayFiltrosActivos = $filtros.modulo || $filtros.accion || $filtros.usuario || 
 		$filtros.fechaDesde || $filtros.fechaHasta || $filtros.categoria;
 </script>
-
 <div class="filtros-container">
 	<div class="filtros-header">
 		<h3>🔧 Filtros Avanzados</h3>
@@ -131,7 +115,6 @@
 			{/if}
 		</div>
 	</div>
-
 	<div class="filtros-grid">
 		<!-- Filtro por Módulo/Tabla -->
 		<div class="filtro-group">
@@ -147,7 +130,6 @@
 				{/each}
 			</select>
 		</div>
-
 		<!-- Filtro por Categoría -->
 		<div class="filtro-group">
 			<label for="categoria">🏷️ Categoría</label>
@@ -161,7 +143,6 @@
 				{/each}
 			</select>
 		</div>
-
 		<!-- Filtro por Acción específica -->
 		<div class="filtro-group">
 			<label for="accion">⚡ Acción</label>
@@ -176,7 +157,6 @@
 				{/each}
 			</select>
 		</div>
-
 		<!-- Filtro por Usuario -->
 		<div class="filtro-group">
 			<label for="usuario">👤 Usuario</label>
@@ -191,7 +171,6 @@
 				{/each}
 			</select>
 		</div>
-
 		<!-- Filtros de Fecha -->
 		<div class="filtro-group">
 			<label for="fechaDesde">📅 Fecha desde</label>
@@ -202,7 +181,6 @@
 				on:change={handleFechaDesdeChange}
 			/>
 		</div>
-
 		<div class="filtro-group">
 			<label for="fechaHasta">📅 Fecha hasta</label>
 			<input 
@@ -214,7 +192,6 @@
 			/>
 		</div>
 	</div>
-
 	<!-- Presets de fechas -->
 	<div class="presets-fechas">
 		<span class="presets-label">⏰ Rangos rápidos:</span>
@@ -231,7 +208,6 @@
 			Último mes
 		</button>
 	</div>
-
 	<!-- Indicador de filtros activos -->
 	{#if hayFiltrosActivos}
 		<div class="filtros-activos">
@@ -271,7 +247,6 @@
 		</div>
 	{/if}
 </div>
-
 <style>
 	.filtros-container {
 		background: white;
@@ -283,26 +258,22 @@
 		width: 100%;
 		box-sizing: border-box;
 	}
-
 	.filtros-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		padding: 20px 25px 0;
 	}
-
 	.filtros-header h3 {
 		margin: 0;
 		font-size: 1.2rem;
 		color: #374151;
 		font-weight: 600;
 	}
-
 	.filtros-actions {
 		display: flex;
 		gap: 10px;
 	}
-
 	.btn-refrescar {
 		background: #667eea;
 		color: white;
@@ -314,12 +285,10 @@
 		font-weight: 500;
 		transition: all 0.2s ease;
 	}
-
 	.btn-refrescar:hover {
 		background: #5568d3;
 		transform: translateY(-1px);
 	}
-
 	.btn-clear-all {
 		background: #ef4444;
 		color: white;
@@ -331,31 +300,26 @@
 		font-weight: 500;
 		transition: all 0.2s ease;
 	}
-
 	.btn-clear-all:hover {
 		background: #dc2626;
 		transform: translateY(-1px);
 	}
-
 	.filtros-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 		gap: 20px;
 		padding: 20px 25px;
 	}
-
 	.filtro-group {
 		display: flex;
 		flex-direction: column;
 	}
-
 	.filtro-group label {
 		font-weight: 600;
 		color: #374151;
 		margin-bottom: 8px;
 		font-size: 0.9rem;
 	}
-
 	.filtro-group select,
 	.filtro-group input {
 		padding: 10px 12px;
@@ -365,14 +329,12 @@
 		transition: all 0.3s ease;
 		background: white;
 	}
-
 	.filtro-group select:focus,
 	.filtro-group input:focus {
 		outline: none;
 		border-color: #667eea;
 		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 	}
-
 	.presets-fechas {
 		display: flex;
 		align-items: center;
@@ -380,13 +342,11 @@
 		padding: 0 25px 20px;
 		flex-wrap: wrap;
 	}
-
 	.presets-label {
 		font-size: 0.9rem;
 		color: #6b7280;
 		font-weight: 500;
 	}
-
 	.preset-btn {
 		background: #f3f4f6;
 		border: 1px solid #d1d5db;
@@ -397,18 +357,15 @@
 		font-size: 0.85rem;
 		transition: all 0.2s ease;
 	}
-
 	.preset-btn:hover {
 		background: #e5e7eb;
 		border-color: #9ca3af;
 	}
-
 	.filtros-activos {
 		background: #f8fafc;
 		border-top: 1px solid #e5e7eb;
 		padding: 15px 25px;
 	}
-
 	.filtros-activos-label {
 		font-size: 0.9rem;
 		color: #374151;
@@ -416,13 +373,11 @@
 		display: block;
 		margin-bottom: 10px;
 	}
-
 	.filtros-activos-tags {
 		display: flex;
 		gap: 8px;
 		flex-wrap: wrap;
 	}
-
 	.tag {
 		display: inline-flex;
 		align-items: center;
@@ -434,7 +389,6 @@
 		font-size: 0.8rem;
 		font-weight: 500;
 	}
-
 	.tag button {
 		background: rgba(255, 255, 255, 0.3);
 		border: none;
@@ -449,33 +403,26 @@
 		font-size: 12px;
 		line-height: 1;
 	}
-
 	.tag button:hover {
 		background: rgba(255, 255, 255, 0.5);
 	}
-
 	.tag-categoria { background: #10b981; }
 	.tag-accion { background: #f59e0b; }
 	.tag-usuario { background: #8b5cf6; }
 	.tag-fecha { background: #ef4444; }
 	.tag-modulo { background: #06b6d4; }
-
-	/* Responsive */
 	@media (max-width: 768px) {
 		.filtros-grid {
 			grid-template-columns: 1fr;
 		}
-
 		.filtros-header {
 			flex-direction: column;
 			align-items: stretch;
 			gap: 15px;
 		}
-
 		.presets-fechas {
 			justify-content: center;
 		}
-
 		.filtros-activos-tags {
 			justify-content: center;
 		}

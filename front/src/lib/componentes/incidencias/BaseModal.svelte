@@ -3,12 +3,10 @@
 	export let title = "";
 	export let maxWidth = "600px";
 	export let onClose = () => {};
-
 	function handleOverlayClick() {
 		onClose();
 	}
 </script>
-
 {#if show}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -24,7 +22,6 @@
 		</div>
 	</div>
 {/if}
-
 <style>
 	.modal-overlay {
 		position: fixed;
@@ -43,11 +40,9 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-
 	.modal-overlay::-webkit-scrollbar {
 		display: none;
 	}
-
 	.modal {
 		background: white;
 		border-radius: 16px;
@@ -59,7 +54,6 @@
 		animation: modalAppear 0.3s ease-out;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	@keyframes modalAppear {
 		from {
 			opacity: 0;
@@ -70,7 +64,6 @@
 			transform: scale(1) translateY(0);
 		}
 	}
-
 	.modal-header {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
@@ -81,7 +74,6 @@
 		align-items: center;
 		gap: 1rem;
 	}
-
 	.modal-header h2 {
 		margin: 0;
 		color: white;
@@ -91,7 +83,6 @@
 		word-break: break-word;
 		line-height: 1.3;
 	}
-
 	.close-btn {
 		background: none;
 		border: none;
@@ -108,12 +99,9 @@
 		padding: 0;
 		line-height: 1;
 	}
-
 	.close-btn:hover {
 		background: rgba(255, 255, 255, 0.2);
 	}
-
-	/* Responsive */
 	@media (max-width: 768px) {
 		.modal {
 			width: 95vw;
@@ -121,11 +109,9 @@
 			max-height: 95vh;
 			margin: 0.5rem;
 		}
-
 		.modal-header {
 			padding: 1rem 1.25rem;
 		}
-
 		.modal-header h2 {
 			font-size: 1.25rem;
 		}

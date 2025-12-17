@@ -13,7 +13,6 @@
     showAlert,
     showConfirm,
   } from "$lib/stores/modalAlertStore.js";
-
   let organigramaData = null;
   let loading = true;
   let showModal = false;
@@ -28,9 +27,7 @@
   let showUnsavedWarning = false; // Indicar si hay cambios pendientes de guardar
   let showDeleteModal = false;
   let nodeToDelete = null;
-
   const agentes = organigramaController.agentes;
-
   // Datos del formulario
   let formData = {
     nombre: "",
@@ -40,7 +37,6 @@
     email: "",
     telefono: "",
   };
-
   const tiposNodo = [
     { value: "secretaria", label: "Secretaría" },
     { value: "subsecretaria", label: "Subsecretaría" },
@@ -50,7 +46,6 @@
     { value: "departamento", label: "Departamento" },
     { value: "division", label: "División" },
   ];
-
   onMount(async () => {
     if (browser) {
       try {
@@ -58,18 +53,13 @@
       } catch (e) {
         console.error("Error init organigramaController:", e);
       }
-
       await loadOrganigrama();
-
       const handleVisibilityChange = () => {
         if (document.visibilityState === "visible") {
           loadOrganigrama();
         }
       };
-
-
       document.addEventListener("visibilitychange", handleVisibilityChange);
-      
       return () => {
         document.removeEventListener(
           "visibilitychange",
@@ -78,24 +68,19 @@
       };
     }
   });
-
   async function loadOrganigrama() {
     try {
       loading = true;
       console.log("🔄 Cargando organigrama desde API...");
-
       // CARGAR DESDE API DEL BACKEND
       const response = await fetch(`${API_BASE_URL}/personas/organigrama/`, {
         method: "GET",
         credentials: "include",
       });
-
       console.log("📡 Response status:", response.status);
-
       if (response.ok) {
         const result = await response.json();
         console.log("📥 API Response:", result);
-
         if (result.success) {
           // Convertir estructura de la API al formato esperado por el frontend
           organigramaData = {
@@ -104,7 +89,6 @@
             updatedBy: result.data.creado_por,
             organigrama: result.data.estructura,
           };
-
           console.log("✅ Organigrama cargado:", organigramaData);
           console.log("✅ Estructura length:", result.data.estructura?.length);
         } else {
@@ -119,14 +103,11 @@
         );
         throw new Error("Error de conexión con el servidor");
       }
-
       // Actualizar lista de nodos para el selector
       updateNodesList();
-
       console.log("✅ Lista de nodos actualizada:", allNodes.length, "nodos");
     } catch (error) {
       console.error("❌ Error cargando organigrama:", error);
-
       // Datos de fallback básicos para mostrar algo en caso de error
       organigramaData = {
         version: "1.0.0",
@@ -152,24 +133,19 @@
       loading = false;
     }
   }
-
   async function sincronizarConAreas() {
     if (!browser) return;
-
     const confirmado = await showConfirm(
       "¿Sincronizar el organigrama con la estructura actual de áreas? Esto reemplazará el organigrama actual.",
       "Sincronizar con Áreas",
       "Sincronizar",
       "Cancelar",
     );
-
     if (!confirmado) {
       return;
     }
-
     try {
       loading = true;
-
       const response = await fetch(
         `${API_BASE_URL}/personas/organigrama/sincronizar/`,
         {
@@ -180,7 +156,6 @@
           },
         },
       );
-
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
@@ -190,7 +165,6 @@
             "success",
             "Éxito",
           );
-
           // Recargar el organigrama
           await loadOrganigrama();
           return true;
@@ -212,10 +186,8 @@
       loading = false;
     }
   }
-
   async function saveOrganigrama() {
     if (!browser || !organigramaData) return;
-
     try {
       loading = true;
       // GUARDAR EN LA API DEL BACKEND
@@ -235,17 +207,14 @@
           }),
         },
       );
-
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
           console.log("✅ Organigrama guardado correctamente");
-
           // Actualizar datos locales con la respuesta del servidor
           organigramaData.lastUpdated = result.data.actualizado_en;
           organigramaData.updatedBy = result.data.creado_por;
           showUnsavedWarning = false;
-
           updateNodesList();
           return true;
         } else {
@@ -266,7 +235,6 @@
       loading = false;
     }
   }
-
   const agentesParaSelect = derived(agentes, ($ag) =>
     ($ag || [])
       .map((a) => ({
@@ -280,13 +248,11 @@
       .filter((a) => !Number.isNaN(a.id))
       .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo)),
   );
-
   const agenteById = derived(agentesParaSelect, ($list) => {
     const m = new Map();
     $list.forEach((a) => m.set(a.id, a));
     return m;
   });
-
   function updateNodesList() {
     allNodes = [];
     if (organigramaData?.organigrama) {
@@ -301,12 +267,10 @@
           path: currentPath,
           node: node,
         });
-
         if (node.children) {
           node.children.forEach((child) => flattenNodes(child, currentPath));
         }
       }
-
       if (Array.isArray(organigramaData.organigrama)) {
         organigramaData.organigrama.forEach((root) => flattenNodes(root));
       } else {
@@ -314,11 +278,9 @@
       }
     }
   }
-
   function generateId() {
     return "node_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
   }
-
   function openAddModal(parent = null) {
     modalType = "add";
     selectedParent = parent;
@@ -326,14 +288,11 @@
     resetForm();
     showModal = true;
   }
-
   function openEditModal(node) {
     modalType = "edit";
     selectedNode = node;
-
     const tipoDetectado = detectarTipoArea(node.nombre, node.nivel);
     const tiposValidos = tiposNodo.map((t) => t.value);
-
     formData = {
       nombre: node.nombre ?? "",
       nombreAgente: node.jefe.nombre ?? "",
@@ -345,20 +304,16 @@
       email: node.jefe?.email ?? node.email ?? "",
       telefono: node.telefono ?? "",
     };
-
     showModal = true;
   }
-
   function openDeleteModal(node) {
     nodeToDelete = node;
     showDeleteModal = true;
   }
-
   function closeDeleteModal() {
     showDeleteModal = false;
     nodeToDelete = null;
   }
-
   function resetForm() {
     formData = {
       nombre: "",
@@ -369,7 +324,6 @@
       telefono: "",
     };
   }
-
   function closeModal() {
     showModal = false;
     selectedNode = null;
@@ -377,7 +331,6 @@
     showParentSelector = false;
     resetForm();
   }
-
   function findNodeById(root, id) {
     if (root.id === id) return root;
     if (root.children) {
@@ -388,7 +341,6 @@
     }
     return null;
   }
-
   function findNodeParent(root, targetId, parent = null) {
     if (root.id === targetId) return parent;
     if (root.children) {
@@ -399,7 +351,6 @@
     }
     return null;
   }
-
   function removeNodeById(root, targetId) {
     if (root.children) {
       root.children = root.children.filter((child) => {
@@ -411,13 +362,11 @@
       });
     }
   }
-
   async function handleSubmit() {
     if (!formData.nombre.trim()) {
       await showAlert("El nombre es obligatorio", "warning", "Advertencia");
       return;
     }
-
     if (modalType === "add") {
       const newNode = {
         id: generateId(),
@@ -430,7 +379,6 @@
         telefono: formData.telefono.trim(),
         children: [],
       };
-
       if (selectedParent) {
         // Agregar como hijo del nodo seleccionado
         if (!selectedParent.children) {
@@ -442,7 +390,6 @@
         if (!organigramaData.organigrama) {
           organigramaData.organigrama = [];
         }
-
         if (Array.isArray(organigramaData.organigrama)) {
           organigramaData.organigrama.push(newNode);
         } else {
@@ -452,7 +399,6 @@
         }
       }
     } else if (modalType === "edit" && selectedNode) {
-
       console.log(selectedNode, "SELECTED NODE")
       console.log(formData, "FORM DATA")  
       selectedNode.nombre = formData.nombre;
@@ -464,14 +410,11 @@
       selectedNode.email = formData.email;
       selectedNode.telefono = formData.telefono;
     }
-
     organigramaData = { ...organigramaData }; 
     updateNodesList();
     closeModal();
-
     showUnsavedWarning = true;
   }
-
   async function handleDelete() {
     if (nodeToDelete) {
       if (Array.isArray(organigramaData.organigrama)) {
@@ -491,7 +434,6 @@
           removeNodeById(organigramaData.organigrama, nodeToDelete.id);
         }
       }
-
       // SOLO ACTUALIZAR LOCALMENTE
       organigramaData = { ...organigramaData }; // Trigger reactivity
       updateNodesList();
@@ -499,7 +441,6 @@
       closeDeleteModal();
     }
   }
-
   function exportData() {
     const dataStr = JSON.stringify(organigramaData, null, 2);
     const dataBlob = new Blob([dataStr], { type: "application/json" });
@@ -510,7 +451,6 @@
     link.click();
     URL.revokeObjectURL(url);
   }
-
   async function importData(event) {
     const file = event.target.files[0];
     if (file) {
@@ -520,7 +460,6 @@
           const importedData = JSON.parse(e.target.result);
           if (importedData.organigrama) {
             organigramaData = importedData;
-
             // GUARDAR CON PERSISTENCIA REAL
             const saved = await saveOrganigrama();
             if (saved) {
@@ -546,7 +485,6 @@
     }
     event.target.value = ""; // Reset file input
   }
-
   // Funciones para la vista del organigrama
   function toggleNode(nodeId) {
     if (expandedNodes.has(nodeId)) {
@@ -556,48 +494,38 @@
     }
     expandedNodes = expandedNodes;
   }
-
   // Nueva función para detectar tipo automáticamente basado en el nombre y nivel
   function detectarTipoArea(nombre, nivel = 0) {
     if (!nombre) return "area";
-
     const nombreLower = nombre.toLowerCase();
-
     // Secretarías (nivel 1 generalmente)
     if (nombreLower.includes("secretaría")) {
       return "secretaria";
     }
-
     // Subsecretarías (nivel 2 generalmente)
     if (nombreLower.includes("subsecretaría")) {
       return "subsecretaria";
     }
-
     // Direcciones Generales (nivel 4 generalmente)
     if (nombreLower.includes("dirección general")) {
       return "direccion_general";
     }
-
     // Direcciones (nivel 3-4 generalmente)
     if (nombreLower.includes("dirección")) {
       return "direccion";
     }
-
     // Subdirecciones (nivel 5 generalmente)
     if (nombreLower.includes("subdirección")) {
       return "subdireccion";
     }
-
     // Departamentos (nivel 5-6 generalmente)
     if (nombreLower.includes("departamento")) {
       return "departamento";
     }
-
     // Divisiones (nivel 6-7 generalmente)
     if (nombreLower.includes("división")) {
       return "division";
     }
-
     // Detección por nivel si no hay palabra clave específica
     switch (nivel) {
       case 1:
@@ -616,7 +544,6 @@
         return "area";
     }
   }
-
   function getNodeIcon(tipo) {
     const icons = {
       secretaria: "🏛️",
@@ -629,7 +556,6 @@
     };
     return icons[tipo] || "📋";
   }
-
   function getNodeColor(tipo) {
     const colors = {
       secretaria: "border-blue-600 bg-blue-50",
@@ -643,11 +569,9 @@
     return colors[tipo] || "border-gray-500 bg-gray-40";
   }
 </script>
-
 <svelte:head>
   <title>Administrar Organigrama - GIGA</title>
 </svelte:head>
-
 <div class="admin-container">
   <div class="admin-header">
     <div class="admin-header-title">
@@ -659,7 +583,6 @@
         para persistir en el sistema
       </div>
     {/if}
-
     <div class="admin-actions">
       <button class="btn btn-primary" on:click={() => openAddModal()}>
         ➕ Agregar
@@ -689,7 +612,6 @@
       />
     </div>
   </div>
-
   {#if loading}
     <div class="loading">
       <div class="spinner"></div>
@@ -739,7 +661,6 @@
     </div>
   {/if}
 </div>
-
 <ModalEliminar
   isOpen={showDeleteModal}
   isDeleting={false}
@@ -748,7 +669,6 @@
   on:cerrar={closeDeleteModal}
   on:confirmar={handleDelete}
 />
-
 <!-- Modal de alertas -->
 <ModalAlert
   bind:show={$modalAlert.show}
@@ -762,7 +682,6 @@
   on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
   on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
-
 <!-- Modal -->
 {#if showModal}
   <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -788,7 +707,6 @@
           ✕
         </button>
       </div>
-
       <form on:submit|preventDefault={handleSubmit}>
         <div class="modal-body">
           {#if showParentSelector}
@@ -816,7 +734,6 @@
               </div>
             </div>
           {/if}
-
           <div class="form-group">
             <label for="nombre">Nombre *</label>
             <input
@@ -827,7 +744,6 @@
               placeholder="Nombre del área/departamento"
             />
           </div>
-
           <div class="form-group">
             <label for="tipo">Tipo</label>
             <select id="tipo" bind:value={formData.tipo}>
@@ -836,7 +752,6 @@
               {/each}
             </select>
           </div>
-
           <div class="form-group">
             <label for="descripcion">Descripción</label>
             <textarea
@@ -846,7 +761,6 @@
               rows="3"
             ></textarea>
           </div>
-
           <div class="form-group">
             <label for="titular">Titular</label>
             <select
@@ -864,7 +778,6 @@
               }}
             >
               <option value="">-- Seleccionar titular --</option>
-
               {#each $agentesParaSelect as a}
                 <option value={a.id}>
                   {a.nombre_completo}{a.legajo ? ` (Leg: ${a.legajo})` : ""}
@@ -872,7 +785,6 @@
               {/each}
             </select>
           </div>
-
           <div class="form-group">
             <label for="email">Email</label>
             <input
@@ -882,7 +794,6 @@
               placeholder="correo@ejemplo.com"
             />
           </div>
-
           <div class="form-group">
             <label for="telefono">Teléfono</label>
             <input
@@ -893,7 +804,6 @@
             />
           </div>
         </div>
-
         <div class="modal-footer">
           <button type="button" class="btn-cancel" on:click={closeModal}>
             Cancelar
@@ -906,9 +816,7 @@
     </div>
   </div>
 {/if}
-
 <!-- El componente AdminNodeRenderer se importa al inicio -->
-
 <style>
   .admin-container {
     width: 100%;
@@ -918,7 +826,6 @@
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     box-sizing: border-box;
   }
-
   .admin-header {
     display: flex;
     justify-content: space-between;
@@ -928,7 +835,6 @@
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     gap: 2rem;
   }
-
   .admin-header-title {
     position: relative;
     background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
@@ -943,7 +849,6 @@
       0 0 0 1px rgba(255, 255, 255, 0.1) inset,
       0 10px 30px rgba(30, 64, 175, 0.4);
   }
-
   .admin-header-title ::before {
     content: "";
     position: absolute;
@@ -960,7 +865,6 @@
     background-size: 50px 50px;
     animation: moveLines 20s linear infinite;
   }
-
   .admin-header h1 {
     margin: 10px;
     font-weight: 800;
@@ -980,7 +884,6 @@
     overflow: hidden;
     display: inline-block;
   }
-
   .admin-header-title h1::after {
     content: "";
     position: absolute;
@@ -996,7 +899,6 @@
     );
     animation: moveLine 2s linear infinite;
   }
-
   @keyframes moveLine {
     0% {
       left: -40%;
@@ -1005,7 +907,6 @@
       left: 100%;
     }
   }
-
   .unsaved-warning {
     background: #fef3c7;
     border: 2px solid #f59e0b;
@@ -1017,7 +918,6 @@
     font-weight: 500;
     animation: pulse 2s infinite;
   }
-
   @keyframes pulse {
     0% {
       opacity: 1;
@@ -1029,12 +929,10 @@
       opacity: 1;
     }
   }
-
   .admin-actions {
     display: flex;
     gap: 1rem;
   }
-
   .admin-content {
     background: white;
     border-radius: 8px;
@@ -1043,32 +941,25 @@
     width: 100%;
     box-sizing: border-box;
   }
-
   .organigrama-admin {
     width: 100%;
   }
-
   .root-node-container {
     width: 100%;
   }
-
-  /* Hacer que los nodos admin ocupen todo el ancho */
   .organigrama-admin :global(.admin-node-container) {
     width: 100%;
     max-width: none;
   }
-
   .organigrama-admin :global(.admin-node) {
     width: 100%;
     box-sizing: border-box;
   }
-
   .loading {
     text-align: center;
     padding: 4rem 2rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-
   .spinner {
     width: 40px;
     height: 40px;
@@ -1078,7 +969,6 @@
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem;
   }
-
   @keyframes spin {
     0% {
       transform: rotate(0deg);
@@ -1087,14 +977,11 @@
       transform: rotate(360deg);
     }
   }
-
   .no-data {
     text-align: center;
     padding: 4rem 2rem;
     color: #64748b;
   }
-
-  /* Modal styles */
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -1107,7 +994,6 @@
     justify-content: center;
     z-index: 1000;
   }
-
   .modal-content {
     background: white;
     border-radius: 8px;
@@ -1120,11 +1006,9 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-
   .modal-content::-webkit-scrollbar {
     display: none;
   }
-
   .modal-header {
     padding: 20px 25px;
     border-bottom: 1px solid #e9ecef;
@@ -1134,12 +1018,10 @@
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
   }
-
   .modal-header h2 {
     margin: 0;
     color: #ffffff;
   }
-
   .modal-close {
     background: none;
     border: none;
@@ -1155,14 +1037,12 @@
     border-radius: 50%;
     transition: all 0.3s ease;
   }
-
   .modal-close:hover {
     background: rgba(255, 255, 255, 0.2);
   }
   .modal-body {
     padding: 1.25rem 1.5rem 0.75rem 1.5rem;
   }
-
   .modal-footer {
     padding: 1.5rem;
     border-top: 1px solid #e5e7eb;
@@ -1170,18 +1050,15 @@
     justify-content: flex-end;
     gap: 1rem;
   }
-
   .form-group {
     margin-bottom: auto;
   }
-
   .form-group label {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
     color: #495057;
   }
-
   .form-group input,
   .form-group select,
   .form-group textarea {
@@ -1194,7 +1071,6 @@
     font-size: 1rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-
   .form-group input:focus,
   .form-group select:focus,
   .form-group textarea:focus {
@@ -1202,7 +1078,6 @@
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   }
-
   .form-help {
     color: #6b7280;
     font-size: 0.875rem;
@@ -1210,7 +1085,6 @@
     display: block;
     margin-bottom: 10px;
   }
-
   .selected-parent {
     margin-top: 5px;
     padding: 0.5rem;
@@ -1220,7 +1094,6 @@
     font-weight: 500;
     margin-bottom: 10px;
   }
-
   .root-node-container {
     margin-bottom: 2rem;
     padding: 1rem;
@@ -1228,12 +1101,9 @@
     border-radius: 8px;
     background: rgba(163, 163, 163, 0.226);
   }
-
   .root-node-container:first-child {
     margin-top: 0;
   }
-
-  /* Button styles */
   .btn {
     padding: 15px 20px;
     border: none;
@@ -1250,36 +1120,29 @@
     min-width: 140px;
     justify-content: center;
   }
-
   .btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.247);
   }
-
   .btn-primary {
     margin: 0 0 0 15px;
     background: #2563eb;
     color: white;
   }
-
   .btn-primary:hover {
     background: #1d4ed8;
   }
-
   .btn-success {
     background: #10b981;
     color: white;
   }
-
   .btn-success:hover {
     background: #059669;
   }
-
   .btn-success:disabled {
     background: #9ca3af;
     cursor: not-allowed;
   }
-
   .btn-cancel,
   .btn-save {
     padding: 12px 24px;
@@ -1291,50 +1154,41 @@
     font-size: 16px;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-
   .btn-cancel {
     background: #6c757d;
     color: white;
   }
-
   .btn-cancel:hover:not(:disabled) {
     background: #5a6268;
     transform: translateY(-2px);
   }
-
   .btn-save {
     background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
   }
-
   .btn-save:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
   }
-
   .btn-save:disabled,
   .btn-cancel:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
   }
-
-  /* Responsive */
   @media (max-width: 768px) {
     .admin-container {
       padding: 1rem;
       overflow-x: hidden;
     }
-
     .admin-header {
       flex-direction: column;
       gap: 1rem;
-      align-items: center; /* Centrar todo el header */
+      align-items: center; 
       margin: 0 0 1.5rem 0;
-      padding: 0; /* Override desktop padding */
+      padding: 0; 
       width: 100%;
     }
-
     .admin-header-title {
       padding: 1.5rem 1rem;
       margin: 0;
@@ -1343,20 +1197,17 @@
       text-align: center;
       box-sizing: border-box;
     }
-
     .admin-header-title h1 {
       font-size: 1.5rem;
       margin: 0;
       width: 100%;
     }
-
     .admin-actions {
       flex-direction: column;
       gap: 0.75rem;
       width: 100%;
       align-items: center;
     }
-
     .admin-actions .btn {
       width: 100%;
       font-size: 1rem;
@@ -1366,26 +1217,22 @@
       margin: 0 !important;
       border-radius: 10px;
     }
-
     .admin-content {
       padding: 1rem;
       border-radius: 12px;
       width: 100%;
       box-sizing: border-box;
     }
-
     .organigrama-admin {
       overflow-x: auto;
       width: 100%;
     }
-
     .root-node-container {
       padding: 0.5rem;
       margin-bottom: 1rem;
       width: 100%;
       box-sizing: border-box;
     }
-
     .unsaved-warning {
       font-size: 0.9rem;
       padding: 1rem;
@@ -1393,11 +1240,9 @@
       width: 100%;
       box-sizing: border-box;
     }
-
     .modal-overlay {
       padding: 0.5rem;
     }
-
     .modal-content {
       width: 100%;
       max-width: 100%;
@@ -1405,59 +1250,47 @@
       max-height: 90vh;
       border-radius: 12px;
     }
-
     .modal-header {
       padding: 1rem;
     }
-
     .modal-header h2 {
       font-size: 1.2rem;
     }
-
     .modal-body {
       padding: 1rem;
     }
-
     .modal-footer {
       padding: 1rem;
       flex-direction: column;
       gap: 0.5rem;
     }
-
     .btn-cancel,
     .btn-save {
       width: 100%;
       padding: 12px;
     }
   }
-
   @media (max-width: 480px) {
     .admin-container {
       padding: 0.5rem;
     }
-
     .admin-header-title {
       padding: 16px 12px;
       border-radius: 14px;
     }
-
     .admin-header-title h1 {
       font-size: 18px;
     }
-
     .admin-actions .btn {
       flex: 1 1 100%;
       font-size: 0.8rem;
     }
-
     .admin-content {
       padding: 0.75rem;
     }
-
     .form-group label {
       font-size: 0.9rem;
     }
-
     .form-group input,
     .form-group select,
     .form-group textarea {

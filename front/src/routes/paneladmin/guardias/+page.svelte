@@ -3,9 +3,7 @@
   import { browser } from "$app/environment";
   import CalendarioBase from "$lib/componentes/calendarioBase.svelte";
   import { guardiasMainController } from "$lib/paneladmin/controllers/index.js";
-
   import ModalDetalleDia from "$lib/componentes/admin/guardias/ModalDetalleDia.svelte";
-
   // Items de navegación
   const items = [
     {
@@ -27,7 +25,6 @@
       emoji: "📝",
     },
   ];
-
   // Obtener stores del controller
   const {
     loading,
@@ -39,12 +36,10 @@
     mostrarModal,
     estadisticas,
   } = guardiasMainController;
-
   onMount(async () => {
     console.log("🔄 Componente de guardias montado, iniciando controller...");
     await guardiasMainController.init();
     console.log("✅ Controller de guardias inicializado");
-
     // Recargar cuando la página vuelve a ser visible
     if (browser) {
       const handleVisibilityChange = () => {
@@ -52,14 +47,11 @@
           guardiasMainController.recargar();
         }
       };
-
       const handleFocus = () => {
         guardiasMainController.recargar();
       };
-
       document.addEventListener("visibilitychange", handleVisibilityChange);
       window.addEventListener("focus", handleFocus);
-
       return () => {
         document.removeEventListener(
           "visibilitychange",
@@ -69,18 +61,15 @@
       };
     }
   });
-
   // Handlers delegados al controller
   function handleDayClick(event) {
     const { date, guardias: guardiasDelDia } = event.detail;
     guardiasMainController.handleDayClick(date, guardiasDelDia);
   }
-
   function handleCerrarModal() {
     guardiasMainController.cerrarModal();
   }
 </script>
-
 <section class="guardias-wrap">
   <header class="head">
     <h1>Planificación de Guardias</h1>
@@ -97,7 +86,6 @@
           <div class="chev">→</div>
         </a>
       {/each}
-
       <!-- Estadísticas de guardias -->
       {#if $estadisticas.total > 0}
         <div class="estadisticas">
@@ -116,7 +104,6 @@
         </div>
       {/if}
     </div>
-
     <!-- Calendario de guardias -->
     <div class="right">
       <div class="calendario-section">
@@ -126,7 +113,6 @@
         {#if $error}
           <div class="alert alert-error">{$error}</div>
         {/if}
-
         <div class="calendario-container">
           {#if $loading}
             <div class="loading-container">
@@ -145,7 +131,6 @@
     </div>
   </div>
 </section>
-
 <!-- Modal para mostrar guardias de una fecha -->
 {#if $mostrarModal}
   <ModalDetalleDia
@@ -154,7 +139,6 @@
     on:close={handleCerrarModal}
   />
 {/if}
-
 <style>
   .guardias-wrap {
     width: 100%;
@@ -164,11 +148,9 @@
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     box-sizing: border-box;
   }
-
   .guardias-wrap * {
     box-sizing: border-box;
   }
-
   .head {
     position: relative;
     background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
@@ -188,7 +170,6 @@
     align-items: center;
     gap: 2px;
   }
-
   .head::before {
     content: "";
     position: absolute;
@@ -205,7 +186,6 @@
     background-size: 50px 50px;
     animation: moveLines 20s linear infinite;
   }
-
   .head h1 {
     margin: 10px;
     font-weight: 800;
@@ -218,26 +198,22 @@
     max-width: 100%;
     word-wrap: break-word;
   }
-
   @media (min-width: 480px) {
     .head h1 {
       font-size: 22px;
     }
   }
-
   @media (min-width: 640px) {
     .head h1 {
       font-size: 26px;
       display: inline-block;
     }
   }
-
   @media (min-width: 768px) {
     .head h1 {
       font-size: 30px;
     }
   }
-
   .head h1::after {
     content: "";
     position: absolute;
@@ -253,7 +229,6 @@
     );
     animation: moveLine 2s linear infinite;
   }
-
   @keyframes moveLine {
     0% {
       left: -40%;
@@ -262,24 +237,20 @@
       left: 100%;
     }
   }
-
   .grid-general {
     display: grid;
     grid-template-columns: 400px 1fr;
     gap: 2rem;
     align-items: start;
   }
-
   .left, .right {
       min-width: 0;
   }
-
   .left {
     display: flex;
     gap: 1rem;
     flex-direction: column;
   }
-
   .card {
     display: grid;
     grid-template-columns: 64px 1fr 24px;
@@ -304,12 +275,10 @@
   .card:active {
     transform: translateY(1px);
   }
-
   .icon {
     font-size: 28px;
     text-align: center;
   }
-
   .body h2 {
     margin: 0 0 4px 0;
     font-size: 1.05rem;
@@ -320,21 +289,17 @@
     font-size: 0.9rem;
     color: #64748b;
   }
-
   .chev {
     color: #001e4bb4;
     font-weight: 700;
     font-size: 2rem;
   }
-
-  /* Estadísticas */
   .estadisticas {
     display: flex;
     flex-direction: column;
     gap: 1rem;
     margin-bottom: 1rem;
   }
-
   .stat-card {
     background: white;
     padding: 20px;
@@ -345,18 +310,15 @@
     border-bottom: 2px solid #4949491e;
     transition: transform 0.3s ease;
   }
-
   .stat-card:hover {
     transform: translateY(-5px);
   }
-
   .stat-number {
     font-size: 2.2rem;
     font-weight: 700;
     color: #2372a7;
     margin: 0;
   }
-
   .stat-label {
     margin: 0 0 10px;
     color: #000000;
@@ -364,24 +326,19 @@
     font-weight: 600;
     text-transform: uppercase;
   }
-
-  /* Calendario */
   .right {
     width: 100%;
   }
-
   .calendario-section {
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     padding: 1.5rem;
   }
-
   .titulo-wrapper {
     text-align: center;
     margin-bottom: 1.5rem;
   }
-
   .calendario-section h2 {
     font-size: 30px;
     color: #1e40af;
@@ -392,7 +349,6 @@
     display: inline-block;
     overflow: hidden;
   }
-
   .calendario-section h2::after {
     content: "";
     position: absolute;
@@ -404,17 +360,14 @@
     background: linear-gradient(90deg, transparent, #1e40af, transparent);
     animation: moveLine 2s linear infinite;
   }
-
   .calendario-container {
     margin-bottom: 0;
   }
-
   .loading-container {
     text-align: center;
     padding: 4rem 2rem;
     color: #64748b;
   }
-
   .loading-spinner {
     border: 3px solid #f3f4f6;
     border-top: 3px solid #3b82f6;
@@ -424,7 +377,6 @@
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem auto;
   }
-
   @keyframes spin {
     0% {
       transform: rotate(0deg);
@@ -433,78 +385,63 @@
       transform: rotate(360deg);
     }
   }
-
   .alert {
     padding: 1rem 1.25rem;
     border-radius: 8px;
     margin-bottom: 1.5rem;
     font-size: 0.9rem;
   }
-
   .alert-error {
     background: #fef2f2;
     color: #b91c1c;
     border: 1px solid #fecaca;
   }
-
   @media (max-width: 900px) {
     .estadisticas {
       grid-template-columns: 1fr;
     }
   }
-
   @media (max-width: 1024px) {
     .grid-general {
       grid-template-columns: 1fr;
     }
   }
-
   @media (max-width: 768px) {
     .guardias-wrap {
       padding: 1rem 1rem 1rem 1.5rem;
     }
-
     .head {
       padding: 20px;
       border-radius: 20px;
       margin-bottom: 20px;
     }
-
     .head h1 {
         font-size: 1.5rem;
     }
-
     .titulo-wrapper h2 {
         font-size: 1.5rem;
         padding-left: 2.5rem; 
     }
-
     .card {
         padding: 1rem;
         gap: 0.5rem;
         grid-template-columns: 50px 1fr 20px;
     }
-
     .icon {
         font-size: 1.5rem;
     }
-
     .chev {
         font-size: 1.5rem;
     }
-    
     .loading-container {
         padding: 2rem 1rem;
     }
-    
     .grid-general {
         gap: 1.5rem;
     }
-
     .titulo-wrapper {
         margin-bottom: 1rem;
     }
-
     .calendario-section {
         padding: 1rem;
         overflow-x: auto; 

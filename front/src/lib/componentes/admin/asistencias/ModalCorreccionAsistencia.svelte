@@ -1,44 +1,34 @@
 <script>
 	import { createEventDispatcher } from "svelte";
-
 	export let show = false;
 	export let asistencia = null;
 	export let observacion = "";
 	export let horaEntrada = "";
 	export let horaSalida = "";
 	export let usarHoraEspecifica = false;
-
 	const dispatch = createEventDispatcher();
-
 	function cerrar() {
 		dispatch("cerrar");
 	}
-
 	function marcarEntrada() {
 		dispatch("marcarEntrada");
 	}
-
 	function marcarSalida() {
 		dispatch("marcarSalida");
 	}
-
 	function corregir() {
 		dispatch("corregir");
 	}
-
 	function marcarAusente() {
 		dispatch("marcarAusente");
 	}
-
 	function toggleHoraEspecifica() {
 		dispatch("toggleHoraEspecifica");
 	}
-
 	function formatDate(fecha) {
 		if (!fecha) return "-";
 		return new Date(fecha).toLocaleDateString("es-AR");
 	}
-
 	function formatTime(hora) {
 		if (!hora) return "--:--";
 		if (typeof hora === "string") {
@@ -47,7 +37,6 @@
 		return "--:--";
 	}
 </script>
-
 {#if show && asistencia}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -65,14 +54,12 @@
 				</h2>
 				<button class="btn-close" on:click={cerrar}>×</button>
 			</div>
-
 			<div class="modal-body">
 				<p class="agente-info">
 					<strong>{asistencia.agente_nombre}</strong><br />
 					<span class="dni-info">DNI: {asistencia.agente_dni}</span><br />
 					<span class="fecha-info">{formatDate(asistencia.fecha)}</span>
 				</p>
-
 				{#if asistencia.horario_esperado_entrada || asistencia.horario_esperado_salida}
 					<div class="horario-esperado">
 						<h3>📅 Horario Esperado</h3>
@@ -96,7 +83,6 @@
 						</div>
 					</div>
 				{/if}
-
 				<div class="estado-actual">
 					<h3>✅ Estado Actual</h3>
 					<div class="estado-grid">
@@ -126,7 +112,6 @@
 						</div>
 					</div>
 				</div>
-
 				{#if asistencia.hora_entrada || asistencia.hora_salida}
 					<div class="info-correccion">
 						<div class="info-header">
@@ -143,7 +128,6 @@
 						</p>
 					</div>
 				{/if}
-
 				<div class="form-group">
 					<label for="observacion_edit">
 						Observación
@@ -172,7 +156,6 @@
 						</small>
 					{/if}
 				</div>
-
 				<!-- Sección para especificar hora -->
 				<div class="hora-especifica-section">
 					<div class="checkbox-group">
@@ -193,7 +176,6 @@
 							</small>
 						</label>
 					</div>
-
 					{#if usarHoraEspecifica}
 						<div class="horas-grid">
 							<div class="form-group">
@@ -219,7 +201,6 @@
 									{/if}
 								</small>
 							</div>
-
 							<div class="form-group">
 								<label for="hora_salida_input">
 									🕔 Hora de salida
@@ -247,10 +228,8 @@
 					{/if}
 				</div>
 			</div>
-
 			<div class="modal-footer">
 				<button class="btn-cancelar" on:click={cerrar}> Cancelar </button>
-
 				{#if usarHoraEspecifica}
 					<!-- Modo corrección con horas específicas -->
 					<button
@@ -275,7 +254,6 @@
 							🕐 Marcar Entrada
 						</button>
 					{/if}
-
 					{#if !asistencia.hora_salida}
 						<button
 							class="btn-marcar-salida"
@@ -285,7 +263,6 @@
 							🕐 Marcar Salida
 						</button>
 					{/if}
-
 					<!-- Botón para re-marcar si ya existe -->
 					{#if asistencia.hora_entrada}
 						<button
@@ -296,7 +273,6 @@
 							🔄 Re-marcar Entrada
 						</button>
 					{/if}
-
 					{#if asistencia.hora_salida}
 						<button
 							class="btn-remarcar-salida"
@@ -306,7 +282,6 @@
 							🔄 Re-marcar Salida
 						</button>
 					{/if}
-
 					<!-- Botón para marcar como ausente -->
 					{#if asistencia.hora_entrada || asistencia.hora_salida}
 						<button
@@ -322,9 +297,7 @@
 		</div>
 	</div>
 {/if}
-
 <style>
-	/* Modal Overlay & Content */
 	.modal-overlay {
 		position: fixed;
 		top: 0;
@@ -340,7 +313,6 @@
 		padding: 1rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.modal-content {
 		background: white;
 		border-radius: 16px;
@@ -352,12 +324,9 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-
 	.modal-content::-webkit-scrollbar {
 		display: none;
 	}
-
-	/* Header */
 	.modal-header {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
@@ -367,14 +336,12 @@
 		justify-content: space-between;
 		align-items: center;
 	}
-
 	.modal-header h2 {
 		margin: 0;
 		color: white;
 		font-size: 1.5rem;
 		font-weight: 600;
 	}
-
 	.btn-close {
 		background: rgba(255, 255, 255, 0.2);
 		border: none;
@@ -392,17 +359,13 @@
 		justify-content: center;
 		line-height: 1;
 	}
-
 	.btn-close:hover {
 		background: rgba(255, 255, 255, 0.3);
 		transform: scale(1.1);
 	}
-
-	/* Modal Body */
 	.modal-body {
 		padding: 2rem;
 	}
-
 	.agente-info {
 		background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
 		padding: 1rem;
@@ -410,19 +373,15 @@
 		margin-bottom: 1.5rem;
 		border-left: 4px solid #667eea;
 	}
-
 	.agente-info strong {
 		font-size: 1.1rem;
 		color: #1e293b;
 	}
-
 	.dni-info,
 	.fecha-info {
 		color: #64748b;
 		font-size: 0.9rem;
 	}
-
-	/* Horario Esperado */
 	.horario-esperado {
 		background: #f8fafc;
 		padding: 1rem;
@@ -430,42 +389,34 @@
 		margin-bottom: 1rem;
 		border: 1px solid #e2e8f0;
 	}
-
 	.horario-esperado h3 {
 		margin: 0 0 0.75rem 0;
 		font-size: 1rem;
 		color: #475569;
 	}
-
 	.horario-grid {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: 1rem;
 	}
-
 	.horario-item {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
 	}
-
 	.horario-label {
 		font-size: 0.85rem;
 		color: #64748b;
 		font-weight: 500;
 	}
-
 	.horario-valor {
 		font-size: 1.1rem;
 		font-weight: 600;
 		color: #1e293b;
 	}
-
 	.horario-valor.esperado {
 		color: #3b82f6;
 	}
-
-	/* Estado Actual */
 	.estado-actual {
 		background: #f0fdf4;
 		padding: 1rem;
@@ -473,46 +424,37 @@
 		margin-bottom: 1rem;
 		border: 1px solid #bbf7d0;
 	}
-
 	.estado-actual h3 {
 		margin: 0 0 0.75rem 0;
 		font-size: 1rem;
 		color: #166534;
 	}
-
 	.estado-grid {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: 1rem;
 	}
-
 	.estado-item {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
 	}
-
 	.estado-label {
 		font-size: 0.85rem;
 		color: #15803d;
 		font-weight: 500;
 	}
-
 	.estado-valor {
 		font-size: 1.1rem;
 		font-weight: 600;
 	}
-
 	.estado-valor.marcado {
 		color: #16a34a;
 	}
-
 	.estado-valor.sin-marcar {
 		color: #dc2626;
 		font-style: italic;
 	}
-
-	/* Info Corrección */
 	.info-correccion {
 		background: #fef3c7;
 		padding: 1rem;
@@ -520,29 +462,23 @@
 		margin-bottom: 1rem;
 		border-left: 4px solid #f59e0b;
 	}
-
 	.info-header {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		margin-bottom: 0.5rem;
 	}
-
 	.info-icon {
 		font-size: 1.25rem;
 	}
-
 	.info-correccion p {
 		margin: 0.5rem 0;
 		font-size: 0.9rem;
 		color: #78350f;
 	}
-
-	/* Form Groups */
 	.form-group {
 		margin-bottom: 1rem;
 	}
-
 	.form-group label {
 		display: block;
 		margin-bottom: 0.5rem;
@@ -550,13 +486,11 @@
 		color: #374151;
 		font-size: 0.95rem;
 	}
-
 	.requerido {
 		color: #dc2626;
 		font-size: 0.85rem;
 		font-weight: 500;
 	}
-
 	.form-group textarea,
 	.form-group input[type="time"] {
 		width: 100%;
@@ -568,61 +502,51 @@
 		transition: all 0.2s;
 		box-sizing: border-box;
 	}
-
 	.form-group textarea:focus,
 	.form-group input[type="time"]:focus {
 		outline: none;
 		border-color: #667eea;
 		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 	}
-
 	textarea.campo-requerido {
 		border-color: #fca5a5;
 		background: #fef2f2;
 	}
-
 	.error-text {
 		color: #dc2626;
 		font-size: 0.85rem;
 		margin-top: 0.25rem;
 		display: block;
 	}
-
 	.help-text {
 		color: #64748b;
 		font-size: 0.85rem;
 		margin-top: 0.25rem;
 		display: block;
 	}
-
 	.actual-time {
 		color: #3b82f6;
 		font-size: 0.85rem;
 		font-weight: normal;
 	}
-
-	/* Checkbox Group */
 	.checkbox-group {
 		display: flex;
 		align-items: flex-start;
 		gap: 0.75rem;
 		margin-bottom: 1rem;
 	}
-
 	.checkbox-group input[type="checkbox"] {
 		margin-top: 0.25rem;
 		width: 18px;
 		height: 18px;
 		cursor: pointer;
 	}
-
 	.checkbox-group label {
 		flex: 1;
 		font-weight: 600;
 		color: #1e293b;
 		cursor: pointer;
 	}
-
 	.checkbox-help {
 		display: block;
 		font-weight: normal;
@@ -630,15 +554,12 @@
 		font-size: 0.85rem;
 		margin-top: 0.25rem;
 	}
-
 	.horas-grid {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: 1rem;
 		margin-top: 1rem;
 	}
-
-	/* Modal Footer */
 	.modal-footer {
 		display: flex;
 		justify-content: flex-end;
@@ -649,8 +570,6 @@
 		border-radius: 0 0 16px 16px;
 		flex-wrap: wrap;
 	}
-
-	/* Buttons */
 	.modal-footer button {
 		padding: 0.75rem 1.25rem;
 		border: none;
@@ -661,83 +580,67 @@
 		transition: all 0.2s ease;
 		font-family: inherit;
 	}
-
 	.btn-cancelar {
 		background: linear-gradient(135deg, #6b7280, #4b5563);
 		color: white;
 	}
-
 	.btn-cancelar:hover {
 		background: linear-gradient(135deg, #4b5563, #374151);
 		transform: translateY(-2px);
 	}
-
 	.btn-corregir {
 		background: linear-gradient(135deg, #f59e0b, #d97706);
 		color: white;
 	}
-
 	.btn-corregir:hover:not(:disabled) {
 		background: linear-gradient(135deg, #d97706, #b45309);
 		transform: translateY(-2px);
 	}
-
 	.btn-corregir:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
-
 	.btn-marcar-entrada,
 	.btn-remarcar-entrada {
 		background: linear-gradient(135deg, #10b981, #059669);
 		color: white;
 	}
-
 	.btn-marcar-entrada:hover,
 	.btn-remarcar-entrada:hover {
 		background: linear-gradient(135deg, #059669, #047857);
 		transform: translateY(-2px);
 	}
-
 	.btn-marcar-salida,
 	.btn-remarcar-salida {
 		background: linear-gradient(135deg, #3b82f6, #2563eb);
 		color: white;
 	}
-
 	.btn-marcar-salida:hover:not(:disabled),
 	.btn-remarcar-salida:hover {
 		background: linear-gradient(135deg, #2563eb, #1d4ed8);
 		transform: translateY(-2px);
 	}
-
 	.btn-marcar-salida:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
-
 	.btn-marcar-ausente {
 		background: linear-gradient(135deg, #ef4444, #dc2626);
 		color: white;
 	}
-
 	.btn-marcar-ausente:hover {
 		background: linear-gradient(135deg, #dc2626, #b91c1c);
 		transform: translateY(-2px);
 	}
-
-	/* Responsive */
 	@media (max-width: 640px) {
 		.horario-grid,
 		.estado-grid,
 		.horas-grid {
 			grid-template-columns: 1fr;
 		}
-
 		.modal-footer {
 			flex-direction: column;
 		}
-
 		.modal-footer button {
 			width: 100%;
 		}

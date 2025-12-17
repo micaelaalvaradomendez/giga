@@ -1,11 +1,9 @@
 <script>
 	import { convenioIaService } from "$lib/services.js";
-
 	let pregunta = "";
 	let respuesta = "";
 	let loading = false;
 	let error = "";
-
 	async function consultar() {
 		error = "";
 		respuesta = "";
@@ -25,11 +23,9 @@
 		}
 	}
 </script>
-
 <svelte:head>
 	<title>Consultas al Convenio Colectivo de Trabajo - Sistema GIGA</title>
 </svelte:head>
-
 <div class="page">
 	<section class="hero">
 		<div class="hero-inner">
@@ -39,7 +35,6 @@
 			</div>
 		</div>
 	</section>
-
 	<div class="page-wrapper">
 		<section class="container-pregunta">
 			<div class="card">
@@ -54,7 +49,6 @@
 						e.key === "Enter" &&
 						consultar()}
 				></textarea>
-
 				<div class="actions">
 					<button
 						class="button"
@@ -95,14 +89,12 @@
 						<span class="text_button">Consultar</span>
 					</button>
 				</div>
-
 				{#if error}
 					<div class="alert alert-error" role="alert">{error}</div>
 				{/if}
 			</div>
 		</section>
 	</div>
-
 	{#if loading && !respuesta}
 		<section class="container">
 			<div class="loader-container">
@@ -130,7 +122,6 @@
 		</section>
 	{/if}
 </div>
-
 <style>
 	.hero {
 		position: relative;
@@ -146,13 +137,11 @@
 			0 20px 60px rgba(30, 64, 175, 0.4);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	@media (min-width: 768px) {
 		.hero {
 			margin: 20px auto;
 		}
 	}
-
 	.hero::before {
 		content: "";
 		position: absolute;
@@ -169,7 +158,6 @@
 		background-size: 50px 50px;
 		animation: moveLines 20s linear infinite;
 	}
-
 	.hero-inner {
 		position: relative;
 		z-index: 1;
@@ -179,7 +167,6 @@
 		align-items: center;
 		gap: 16px;
 	}
-
 	.hero h1 {
 		margin: 0;
 		font-weight: 800;
@@ -201,26 +188,22 @@
 		max-width: 100%;
 		word-wrap: break-word;
 	}
-
 	@media (min-width: 480px) {
 		.hero h1 {
 			font-size: 22px;
 		}
 	}
-
 	@media (min-width: 640px) {
 		.hero h1 {
 			font-size: 26px;
 			display: inline-block;
 		}
 	}
-
 	@media (min-width: 768px) {
 		.hero h1 {
 			font-size: 30px;
 		}
 	}
-
 	.hero h1::after {
 		content: "";
 		position: absolute;
@@ -236,7 +219,6 @@
 		);
 		animation: moveLine 2s linear infinite;
 	}
-
 	.hero p {
 		margin: 6px 0 0;
 		opacity: 0.95;
@@ -247,24 +229,20 @@
 		align-items: center;
 		margin-top: 60px;
 	}
-
 	.container-pregunta {
 		max-width: 95%;
 		width: 100%;
 	}
-
 	@media (min-width: 768px) {
 		.container-pregunta {
 			max-width: 60%;
 		}
 	}
-
 	.container-pregunta .card {
 		background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
 		border-radius: 16px;
 		overflow: hidden;
 	}
-
 	.textarea {
 		width: 97%;
 		max-width: 100%;
@@ -289,12 +267,10 @@
 			Arial,
 			sans-serif;
 	}
-
 	.textarea:focus {
 		border: 2px solid #9ac8d2;
 		box-shadow: 0 0 0 4px var(--ring);
 	}
-
 	.actions {
 		width: 97%;
 		display: flex;
@@ -302,7 +278,6 @@
 		align-items: flex-end;
 		padding: 15px;
 	}
-
 	.actions .button {
 		position: relative;
 		cursor: pointer;
@@ -322,14 +297,12 @@
 			transform 0.18s cubic-bezier(0.4, 0, 0.2, 1),
 			box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 	}
-
 	.button:is(:hover, :focus-visible) {
 		--active: 1;
 	}
 	.button:active {
 		transform: scale(1);
 	}
-
 	.button .sparkle {
 		position: relative;
 		z-index: 10;
@@ -339,17 +312,14 @@
 		align-items: center;
 		justify-content: center;
 	}
-
 	.button .sparkle .path {
 		fill: #fff;
 		stroke: #fff;
 		transform-origin: center;
 	}
-
 	.button:is(:hover, :focus) .sparkle .path {
 		animation: path 1.5s linear 0.5s infinite;
 	}
-
 	.sparkle .path:nth-child(1) {
 		--scale_path_1: 1.2;
 	}
@@ -359,7 +329,6 @@
 	.sparkle .path:nth-child(3) {
 		--scale_path_3: 1.2;
 	}
-
 	@keyframes path {
 		0%,
 		34%,
@@ -377,7 +346,6 @@
 			transform: scale(var(--scale_path_3, 1));
 		}
 	}
-
 	.button .text_button {
 		position: relative;
 		z-index: 10;
@@ -394,7 +362,6 @@
 			Arial,
 			sans-serif;
 	}
-
 	.alert {
 		margin-top: 14px;
 		padding: 10px 12px;
@@ -407,26 +374,22 @@
 		color: var(--error);
 		border-color: #fecaca;
 	}
-
 	.container {
 		max-width: 95%;
 		width: 100%;
 		margin: 40px auto 0;
 	}
-
 	@media (min-width: 768px) {
 		.container {
 			max-width: 60%;
 		}
 	}
-
 	.loader-container {
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		padding: 60px 20px;
 	}
-
 	.wave-menu {
 		border: 4px solid #3b82f6;
 		border-radius: 50px;
@@ -441,7 +404,6 @@
 		background: #fff;
 		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 	}
-
 	.wave-menu li {
 		list-style: none;
 		height: 30px;
@@ -456,63 +418,52 @@
 		animation-direction: alternate;
 		transition: ease 0.2s;
 	}
-
 	.wave-menu li:nth-child(1) {
 		background: #1e40af;
 	}
-
 	.wave-menu li:nth-child(2) {
 		animation-name: wave2;
 		animation-delay: 0.2s;
 		background: #2563eb;
 	}
-
 	.wave-menu li:nth-child(3) {
 		animation-name: wave3;
 		animation-delay: 0.23s;
 		animation-duration: 0.4s;
 		background: #3b82f6;
 	}
-
 	.wave-menu li:nth-child(4) {
 		animation-name: wave4;
 		animation-delay: 0.1s;
 		animation-duration: 0.3s;
 		background: #60a5fa;
 	}
-
 	.wave-menu li:nth-child(5) {
 		animation-delay: 0.5s;
 		background: #3b82f6;
 	}
-
 	.wave-menu li:nth-child(6) {
 		animation-name: wave2;
 		animation-duration: 0.5s;
 		background: #2563eb;
 	}
-
 	.wave-menu li:nth-child(7) {
 		background: #3b82f6;
 	}
-
 	.wave-menu li:nth-child(8) {
 		animation-name: wave4;
 		animation-delay: 0.4s;
 		animation-duration: 0.25s;
 		background: #60a5fa;
 	}
-
 	.wave-menu li:nth-child(9) {
 		animation-name: wave3;
 		animation-delay: 0.15s;
 		background: #2563eb;
 	}
-
 	.wave-menu li:nth-child(10) {
 		background: #1e40af;
 	}
-
 	@keyframes wave1 {
 		from {
 			transform: scaleY(1);
@@ -521,7 +472,6 @@
 			transform: scaleY(0.5);
 		}
 	}
-
 	@keyframes wave2 {
 		from {
 			transform: scaleY(0.3);
@@ -530,7 +480,6 @@
 			transform: scaleY(0.6);
 		}
 	}
-
 	@keyframes wave3 {
 		from {
 			transform: scaleY(0.6);
@@ -539,7 +488,6 @@
 			transform: scaleY(0.8);
 		}
 	}
-
 	@keyframes wave4 {
 		from {
 			transform: scaleY(0.2);
@@ -548,7 +496,6 @@
 			transform: scaleY(0.5);
 		}
 	}
-
 	.container {
 		width: 100%;
 		margin: 0 auto;
@@ -558,11 +505,9 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-
 	.container::-webkit-scrollbar {
 		display: none;
 	}
-
 	.container .card {
 		background: #ffffff;
 		border-radius: 16px;
@@ -570,7 +515,6 @@
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 		border: 2px solid #93c5fd;
 	}
-
 	.section-title {
 		font-size: 16px;
 		margin: 0 0 12px;
@@ -593,20 +537,17 @@
 		max-width: 100%;
 		word-wrap: break-word;
 	}
-
 	@media (min-width: 480px) {
 		.section-title {
 			font-size: 17px;
 		}
 	}
-
 	@media (min-width: 640px) {
 		.section-title {
 			font-size: 18px;
 			display: inline-block;
 		}
 	}
-
 	.section-title::after {
 		content: "";
 		position: absolute;
@@ -617,7 +558,6 @@
 		background: linear-gradient(90deg, transparent, #3b82f6, transparent);
 		animation: moveLine 2s linear infinite;
 	}
-
 	.answer {
 		background: #f0f9ff;
 		border-radius: 10px;
@@ -629,7 +569,6 @@
 		max-height: 600px;
 		overflow-y: auto;
 	}
-
 	@media (min-width: 768px) {
 		.answer {
 			padding: 16px;
@@ -637,8 +576,6 @@
 			line-height: 1.7;
 		}
 	}
-
-	/* Estilos para el HTML renderizado en las respuestas */
 	.answer :global(h3) {
 		color: #1e293b;
 		font-size: 17px;
@@ -647,13 +584,11 @@
 		padding-top: 12px;
 		border-top: 2px solid #e0f2fe;
 	}
-
 	.answer :global(h3:first-child) {
 		margin-top: 0;
 		padding-top: 0;
 		border-top: none;
 	}
-
 	.answer :global(strong) {
 		color: #1e293b;
 		font-weight: 600;
@@ -661,37 +596,30 @@
 		padding: 2px 4px;
 		border-radius: 3px;
 	}
-
 	.answer :global(ul),
 	.answer :global(ol) {
 		margin: 12px 0;
 		padding-left: 24px;
 		line-height: 1.8;
 	}
-
 	.answer :global(li) {
 		margin: 8px 0;
 		padding-left: 4px;
 	}
-
 	.answer :global(li strong) {
 		display: inline-block;
 		margin-bottom: 4px;
 	}
-
 	.answer :global(p) {
 		margin: 12px 0;
 		line-height: 1.8;
 	}
-
 	.answer :global(p:first-child) {
 		margin-top: 0;
 	}
-
 	.answer :global(p:last-child) {
 		margin-bottom: 0;
 	}
-
 	.answer :global(code) {
 		background: #f1f5f9;
 		padding: 2px 6px;
@@ -700,13 +628,11 @@
 		color: #1e40af;
 		font-family: "Courier New", monospace;
 	}
-
 	.answer :global(hr) {
 		border: none;
 		border-top: 2px solid #e0f2fe;
 		margin: 20px 0;
 	}
-
 	@keyframes moveLine {
 		0% {
 			left: -40%;
@@ -715,19 +641,16 @@
 			left: 100%;
 		}
 	}
-
 	@media (max-width: 768px) {
 		.hero-inner {
 			flex-direction: column;
 			text-align: center;
 			gap: 12px;
 		}
-
 		.container {
 			padding: 12px;
 			width: 90%;
 		}
-
 		.card {
 			padding: 16px;
 		}

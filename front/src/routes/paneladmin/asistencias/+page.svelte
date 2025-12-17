@@ -5,7 +5,6 @@
     import ModalCorreccionAsistencia from "$lib/componentes/admin/asistencias/ModalCorreccionAsistencia.svelte";
     import ModalAlert from "$lib/componentes/ModalAlert.svelte";
     import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
-
     // Obtener stores del controlador
     const {
         loading,
@@ -23,7 +22,6 @@
         horaSalida,
         usarHoraEspecifica,
     } = asistenciasController;
-
     onMount(async () => {
         console.log(
             "🔄 Componente de asistencias montado, iniciando controlador...",
@@ -43,13 +41,11 @@
                 const handleFocus = () => {
                     asistenciasController.recargar();
                 };
-
                 document.addEventListener(
                     "visibilitychange",
                     handleVisibilityChange,
                 );
                 window.addEventListener("focus", handleFocus);
-
                 return () => {
                     document.removeEventListener(
                         "visibilitychange",
@@ -66,11 +62,9 @@
             }
         }
     });
-
     function limpiarFiltros() {
         asistenciasController.limpiarFiltros();
     }
-
     // Funciones delegadas al controlador
     async function handleMarcarEntrada() {
         const result = await asistenciasController.marcarEntrada();
@@ -80,7 +74,6 @@
             await showAlert(result.message, tipo, titulo);
         }
     }
-
     async function handleMarcarSalida() {
         const result = await asistenciasController.marcarSalida();
         if (result.message) {
@@ -89,7 +82,6 @@
             await showAlert(result.message, tipo, titulo);
         }
     }
-
     async function handleCorregirAsistencia() {
         const result = await asistenciasController.corregirAsistencia();
         if (result.message) {
@@ -98,7 +90,6 @@
             await showAlert(result.message, tipo, titulo);
         }
     }
-
     async function handleMarcarAusente() {
         const result = await asistenciasController.marcarComoAusente();
         if (result.message) {
@@ -107,21 +98,17 @@
             await showAlert(result.message, tipo, titulo);
         }
     }
-
     function handleCheckboxChange() {
         asistenciasController.toggleHoraEspecifica();
     }
 </script>
-
 <svelte:head>
     <title>Gestión de Asistencias - Admin</title>
 </svelte:head>
-
 <div class="admin-container">
     <div class="header">
         <h1>Gestión de Asistencias</h1>
     </div>
-
     <!-- Resumen -->
     {#if $resumen}
         <div class="resumen-grid">
@@ -147,7 +134,6 @@
             </div>
         </div>
     {/if}
-
     <!-- Filtros -->
     <div class="filtros-card">
         <div class="filtros-grid">
@@ -161,7 +147,6 @@
                         asistenciasController.setFecha($fechaSeleccionada)}
                 />
             </div>
-
             <div class="form-group">
                 <label for="area">📍 Filtrar por área</label>
                 <select
@@ -190,7 +175,6 @@
             </div>
         </div>
     </div>
-
     <!-- Tabs -->
     <div class="tabs">
         <button
@@ -230,7 +214,6 @@
             Licencias
         </button>
     </div>
-
     <!-- Contenido -->
     {#if $loading}
         <div class="loading">Cargando...</div>
@@ -377,7 +360,6 @@
         </div>
     {/if}
 </div>
-
 <!-- Modal de Corrección -->
 <ModalCorreccionAsistencia
     show={$modalCorreccion}
@@ -393,7 +375,6 @@
     on:marcarAusente={handleMarcarAusente}
     on:toggleHoraEspecifica={handleCheckboxChange}
 />
-
 <!-- Modal de alertas -->
 <ModalAlert
     bind:show={$modalAlert.show}
@@ -407,7 +388,6 @@
     on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
     on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
-
 <style>
     .admin-container {
         width: 100%;
@@ -416,7 +396,6 @@
         padding: 1rem;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
-
     .header {
         position: relative;
         background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
@@ -430,13 +409,11 @@
             0 0 0 1px rgba(255, 255, 255, 0.1) inset,
             0 10px 30px rgba(30, 64, 175, 0.4);
     }
-
     @media (min-width: 768px) {
         .header {
             padding: 30px 40px;
         }
     }
-
     .header::before {
         content: "";
         position: absolute;
@@ -453,7 +430,6 @@
         background-size: 50px 50px;
         animation: moveLines 20s linear infinite;
     }
-
     .header h1 {
         margin: 10px;
         font-weight: 800;
@@ -466,26 +442,22 @@
         max-width: 100%;
         word-wrap: break-word;
     }
-
     @media (min-width: 480px) {
         .header h1 {
             font-size: 22px;
         }
     }
-
     @media (min-width: 640px) {
         .header h1 {
             font-size: 26px;
             display: inline-block;
         }
     }
-
     @media (min-width: 768px) {
         .header h1 {
             font-size: 30px;
         }
     }
-
     .header h1::after {
         content: "";
         position: absolute;
@@ -501,7 +473,6 @@
         );
         animation: moveLine 2s linear infinite;
     }
-
     @keyframes moveLine {
         0% {
             left: -40%;
@@ -510,8 +481,6 @@
             left: 100%;
         }
     }
-
-    /* Filtros */
     .filtros-card {
         background: white;
         border-radius: 12px;
@@ -520,7 +489,6 @@
         margin-bottom: 1.5rem;
         border: 1px solid #e9ecef;
     }
-
     .filtros-grid {
         display: grid;
         grid-template-columns: 1fr;
@@ -528,25 +496,21 @@
         align-items: stretch;
         margin-bottom: 1rem;
     }
-
     @media (min-width: 768px) {
         .filtros-grid {
             grid-template-columns: 1fr auto auto;
             align-items: end;
         }
     }
-
     .form-group {
         display: flex;
         flex-direction: column;
     }
-
     .form-group label {
         font-weight: 600;
         margin-bottom: 0.9rem;
         color: #555;
     }
-
     .form-group input,
     .form-group select {
         padding: 0.75rem;
@@ -554,19 +518,16 @@
         border-radius: 8px;
         font-size: 1rem;
     }
-
     .filtro-actions {
         display: flex;
         gap: 10px;
         flex-shrink: 0;
     }
-
     .form-group input:focus,
     .form-group select:focus {
         outline: none;
         border-color: #667eea;
     }
-
     .btn-limpiar {
         padding: 10px 25px;
         background: #6c757d;
@@ -579,20 +540,16 @@
         white-space: nowrap;
         height: 42px;
     }
-
     .btn-limpiar:hover {
         background: #5a6268;
         transform: translateY(-1px);
     }
-
-    /* Resumen */
     .resumen-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 1rem;
         margin-bottom: 2rem;
     }
-
     .resumen-card {
         background: white;
         padding: 20px;
@@ -602,61 +559,47 @@
         border-top: 4px solid #4c51bf;
         transition: transform 0.3s ease;
     }
-
     .resumen-card:hover {
         transform: translateY(-5px);
     }
-
     .numero {
         font-size: 2.2rem;
         font-weight: 700;
         color: #4c51bf;
     }
-
     .resumen-card.total {
         border-top-color: #667eea;
     }
-
     .resumen-card.presentes {
         border-top-color: #28a745;
     }
-
     .resumen-card.ausentes {
         border-top-color: #dc3545;
     }
-
     .resumen-card.sin-salida {
         border-top-color: #ffc107;
     }
-
     .resumen-card.automaticas {
         border-top-color: #17a2b8;
     }
-
     .resumen-card.presentes .numero {
         color: #28a745;
     }
-
     .resumen-card.ausentes .numero {
         color: #dc3545;
     }
-
     .resumen-card.sin-salida .numero {
         color: #ffc107;
     }
-
     .resumen-card.automaticas .numero {
         color: #17a2b8;
     }
-
     .resumen-card .label {
         font-size: 16px;
         color: #222222e0;
         margin-top: 0.5rem;
         font-weight: 600;
     }
-
-    /* Tabs */
     .tabs {
         display: flex;
         gap: 0.75rem;
@@ -668,7 +611,6 @@
         border-radius: 14px;
         box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
     }
-
     .tabs button {
         padding: 0.875rem 1.75rem;
         background: transparent;
@@ -682,7 +624,6 @@
         position: relative;
         overflow: hidden;
     }
-
     .tabs button::before {
         content: "";
         position: absolute;
@@ -696,30 +637,24 @@
         transition: opacity 0.3s ease;
         z-index: -1;
     }
-
     .tabs button:hover::before {
         opacity: 1;
     }
-
     .tabs button:hover {
         color: #667eea;
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(102, 126, 234, 0.12);
     }
-
     .tabs button.active {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         box-shadow: 0 4px 16px rgba(102, 126, 234, 0.35);
         transform: translateY(-1px);
     }
-
     .tabs button.active:hover {
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         color: #5771e4;
     }
-
-    /* Tabla */
     .table-container {
         overflow-x: auto;
         max-height: 600px;
@@ -731,7 +666,6 @@
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
-
     .table-container::-webkit-scrollbar {
         display: none;
     }
@@ -739,28 +673,23 @@
         width: 8px;
         height: 8px;
     }
-
     .table-container::-webkit-scrollbar-track {
         background: #f1f3f4;
         border-radius: 10px;
     }
-
     .table-container::-webkit-scrollbar-thumb {
         background: #c1c7cd;
         border-radius: 10px;
         transition: background 0.3s ease;
     }
-
     .table-container::-webkit-scrollbar-thumb:hover {
         background: #a8aeb4;
     }
-
     table {
         width: 100%;
         border-collapse: collapse;
         background: white;
     }
-
     thead {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -769,7 +698,6 @@
         z-index: 10;
         box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
-
     th {
         padding: 15px 20px;
         text-align: left;
@@ -781,36 +709,30 @@
         letter-spacing: 0.5px;
         background: transparent;
     }
-
     td {
         padding: 15px 20px;
         border-bottom: 1px solid #f1f3f4;
         vertical-align: middle;
         font-size: 0.95rem;
     }
-
     tbody tr {
         transition: all 0.3s ease;
     }
-
     tbody tr:hover {
         background-color: #f8f9fa;
         transform: scale(1.01);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
-
     .empty {
         text-align: center;
         color: #999;
         font-style: italic;
         padding: 3rem !important;
     }
-
     .hora {
         font-family: "Courier New", monospace;
         font-weight: 600;
     }
-
     .badge {
         padding: 6px 12px;
         border-radius: 20px;
@@ -820,22 +742,18 @@
         letter-spacing: 0.5px;
         white-space: nowrap;
     }
-
     .badge-success {
         background: #d4edda;
         color: #155724;
     }
-
     .badge-warning {
         background: #fff3cd;
         color: #856404;
     }
-
     .badge-error {
         background: #f8d7da;
         color: #721c24;
     }
-
     .badge-auto {
         background: #17a2b8;
         color: white;
@@ -844,12 +762,10 @@
         font-size: 0.7rem;
         margin-left: 0.5rem;
     }
-
     .badge-correccion {
         margin-left: 0.5rem;
         cursor: help;
     }
-
     .btn-editar {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -860,43 +776,34 @@
         font-weight: 600;
         transition: transform 0.2s ease;
     }
-
     .btn-editar:hover {
         transform: translateY(-2px);
     }
-
     .loading {
         text-align: center;
         padding: 3rem;
         color: #666;
         font-size: 1.2rem;
     }
-
     @media (max-width: 768px) {
         .admin-container {
             padding: 1rem;
         }
-
         .filtros-grid {
             grid-template-columns: 1fr;
         }
-
         .resumen-grid {
             grid-template-columns: repeat(2, 1fr);
         }
-
         .tabs {
             flex-direction: column;
         }
-
         .tabs button {
             width: 100%;
         }
-
         .table-container {
             overflow-x: auto;
         }
-
         table {
             min-width: 800px;
         }

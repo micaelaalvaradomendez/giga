@@ -7,11 +7,9 @@
     import { feriadosController } from "$lib/paneladmin/controllers";
     import ModalAlert from "$lib/componentes/ModalAlert.svelte";
     import { modalAlert } from "$lib/stores/modalAlertStore.js";
-
     // Stores del controlador
     const { feriados, loading, error, success, modalGestionFeriado } =
         feriadosController;
-
     // Inicializar el controlador
     onMount(async () => {
         console.log(
@@ -20,7 +18,6 @@
         try {
             await feriadosController.init();
             console.log("✅ Controlador de feriados inicializado exitosamente");
-
             // Recargar cuando la página vuelve a ser visible
             if (browser) {
                 const handleVisibilityChange = () => {
@@ -28,17 +25,14 @@
                         feriadosController.init();
                     }
                 };
-
                 const handleFocus = () => {
                     feriadosController.init();
                 };
-
                 document.addEventListener(
                     "visibilitychange",
                     handleVisibilityChange,
                 );
                 window.addEventListener("focus", handleFocus);
-
                 return () => {
                     document.removeEventListener(
                         "visibilitychange",
@@ -58,25 +52,20 @@
             }
         }
     });
-
     function handleDayClick(event) {
         const { date, isFeriado, feriados } = event.detail;
         const selectedDate = date.toISOString().split("T")[0];
-
         // Obtener feriados existentes en la fecha
         const feriadosEnFecha =
             feriados || feriadosController.getFeriadosByDate(selectedDate);
-
         // Siempre abrir modal en modo creación para permitir múltiples feriados
         // El modal mostrará los feriados existentes como información
         feriadosController.openModal(selectedDate, null);
     }
-
     function closeModal() {
         feriadosController.closeModal();
     }
 </script>
-
 <div class="admin-page-container">
     <div class="page-header">
         <h1>Gestión de Feriados</h1>
@@ -87,7 +76,6 @@
             <div class="success-message">{$success}</div>
         {/if}
     </div>
-
     <div class="calendar-wrapper">
         {#if $loading}
             <div class="loading">Cargando feriados...</div>
@@ -96,7 +84,6 @@
         {/if}
     </div>
 </div>
-
 <ModalGestionFeriado
     bind:isOpen={$modalGestionFeriado.isOpen}
     feriado={$modalGestionFeriado.feriado}
@@ -107,7 +94,6 @@
     {feriadosController}
     on:close={closeModal}
 />
-
 <ModalAlert
 	bind:show={$modalAlert.show}
 	type={$modalAlert.type}
@@ -120,7 +106,6 @@
 	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
 	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
-
 <style>
     .admin-page-container {
         max-width: 1200px;
@@ -128,7 +113,6 @@
         padding: 2rem;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
-
     .page-header {
         position: relative;
         background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
@@ -142,7 +126,6 @@
             0 0 0 1px rgba(255, 255, 255, 0.1) inset,
             0 10px 30px rgba(30, 64, 175, 0.4);
     }
-
     .page-header::before {
         content: "";
         position: absolute;
@@ -159,7 +142,6 @@
         background-size: 50px 50px;
         animation: moveLines 20s linear infinite;
     }
-
     .error-message {
         background-color: #fee;
         color: #c33;
@@ -169,7 +151,6 @@
         margin-top: 0.5rem;
         width: 100%;
     }
-
     .success-message {
         background-color: #efe;
         color: #363;
@@ -179,14 +160,12 @@
         margin-top: 0.5rem;
         width: 100%;
     }
-
     .loading {
         text-align: center;
         padding: 2rem;
         font-style: italic;
         color: #666;
     }
-
     .page-header h1 {
         margin: 10px;
         font-weight: 800;
@@ -208,26 +187,22 @@
         max-width: 100%;
         word-wrap: break-word;
     }
-
     @media (min-width: 480px) {
         .page-header h1 {
             font-size: 22px;
         }
     }
-
     @media (min-width: 640px) {
         .page-header h1 {
             font-size: 26px;
             display: inline-block;
         }
     }
-
     @media (min-width: 768px) {
         .page-header h1 {
             font-size: 30px;
         }
     }
-
     .page-header h1::after {
         content: "";
         position: absolute;
@@ -243,7 +218,6 @@
         );
         animation: moveLine 2s linear infinite;
     }
-
     @keyframes moveLine {
         0% {
             left: -40%;
@@ -252,48 +226,39 @@
             left: 100%;
         }
     }
-
     .calendar-wrapper {
         width: 100%;
         margin-top: 20px;
         box-sizing: border-box;
         overflow-x: hidden;
     }
-
-    /* Responsive styles */
     @media (max-width: 768px) {
         .admin-page-container {
             padding: 0.75rem;
             max-width: 100%;
             overflow-x: hidden;
         }
-
         .page-header {
             padding: 20px 15px;
             margin: 0 0 15px 0;
             border-radius: 16px;
         }
-
         .page-header h1 {
             font-size: 16px;
         }
-
         .calendar-wrapper {
             margin-top: 10px;
             padding: 0;
         }
     }
-
     @media (max-width: 480px) {
         .admin-page-container {
             padding: 0.5rem;
         }
-
         .page-header {
             padding: 16px 12px;
             border-radius: 14px;
         }
-
         .page-header h1 {
             font-size: 14px;
         }

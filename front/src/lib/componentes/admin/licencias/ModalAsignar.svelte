@@ -6,19 +6,15 @@
 	} from "$lib/paneladmin/controllers/licenciasController.js";
 	import { personasService } from "$lib/services.js";
 	import AuthService from "$lib/login/authService.js";
-
 	// Props
 	export let show = false;
 	export let tiposLicencia = [];
 	export let areas = [];
 	export let userRol = null;
 	export let userArea = null;
-
 	let userInfo = null;
-
 	import { createEventDispatcher } from "svelte";
 	const dispatch = createEventDispatcher();
-
 	let formLicencia = {
 		id_agente: "",
 		id_tipo_licencia: "",
@@ -27,19 +23,16 @@
 		observaciones: "",
 		justificacion: "",
 	};
-
 	let areaSeleccionada = "";
 	let agentesDelArea = [];
 	let cargandoAgentes = false;
 	let enviando = false;
 	let areasDisponibles = [];
-
 	let mostrandoConfirmacion = false;
 	let tituloConfirmacion = "";
 	let mensajeConfirmacion = "";
 	let tipoConfirmacion = "success";
 	let resolverConfirmacion = null;
-
 	// filtra áreas según el rol del usuario
 	$: {
 		if (userRol) {
@@ -71,18 +64,15 @@
 			areasDisponibles = areas;
 		}
 	}
-
 	$: if (show && !userInfo) {
 		cargarUsuarioActual();
 	}
-
 	function handleFechaDesdeChange() {
 		// Si la nueva fecha desde es posterior a la fecha hasta, limpiar fecha hasta
 		if (formLicencia.fecha_desde && formLicencia.fecha_hasta && formLicencia.fecha_desde > formLicencia.fecha_hasta) {
 			formLicencia.fecha_hasta = '';
 		}
 	}
-
 	$: if (!show) {
 		formLicencia = {
 			id_agente: "",
@@ -98,7 +88,6 @@
 		enviando = false;
 		userInfo = null;
 	}
-
 	async function cargarUsuarioActual() {
 		try {
 			const userResponse = await AuthService.getCurrentUserData();
@@ -110,12 +99,10 @@
 			console.error("Error cargando usuario en modal:", err);
 		}
 	}
-
 	function cerrarModal() {
 		show = false;
 		dispatch("close");
 	}
-
 	async function cargarAgentesPorArea(areaId) {
 		console.log("🔄 Cargando agentes para área:", areaId);
 		console.log(
@@ -128,13 +115,11 @@
 			agentesDelArea = [];
 			return;
 		}
-
 		try {
 			cargandoAgentes = true;
 			console.log("🌐 Haciendo request para área:", areaId);
 			const response = await personasService.getAgentesByArea(areaId);
 			console.log("📋 Respuesta completa agentes por área:", response);
-
 			let agentesCompletos = [];
 			if (response?.data) {
 				if (response.data.results) {
@@ -160,10 +145,8 @@
 				console.warn("⚠️ No hay data en la respuesta:", response);
 				agentesCompletos = [];
 			}
-
 			if (userRol) {
 				console.log("🔍 Filtrando agentes para rol:", userRol);
-
 				agentesDelArea = agentesCompletos.filter((agente) => {
 					const puedeAsignar = puedeAsignarAAgente(
 						agente.rol?.nombre || agente.rol_nombre || "Agente",
@@ -177,7 +160,6 @@
 					);
 					return puedeAsignar;
 				});
-
 				console.log(
 					`✅ Agentes filtrados: ${agentesDelArea.length} de ${agentesCompletos.length} totales`,
 				);
@@ -191,7 +173,6 @@
 			cargandoAgentes = false;
 		}
 	}
-
 	$: if (areaSeleccionada && show && areas.length > 0) {
 		console.log(
 			"🔄 Reactivo: área seleccionada cambió a:",
@@ -199,15 +180,11 @@
 		);
 		cargarAgentesPorArea(areaSeleccionada);
 	}
-
 	async function handleAsignarLicencia() {
 		try {
 			enviando = true;
-
 			console.log("📝 Asignando licencia:", formLicencia);
-
 			const resultado = await asignarLicencia(formLicencia);
-
 			if (resultado.success) {
 				cerrarModal();
 				dispatch("assigned", resultado.data);
@@ -227,7 +204,6 @@
 			enviando = false;
 		}
 	}
-
 	function mostrarConfirmacion(titulo, mensaje, tipo = "success") {
 		tituloConfirmacion = titulo;
 		mensajeConfirmacion = mensaje;
@@ -235,35 +211,27 @@
 		tipoConfirmacion = tiposValidos.includes(tipo) ? tipo : "success";
 		mostrandoConfirmacion = true;
 	}
-
 	function cerrarConfirmacion() {
 		mostrandoConfirmacion = false;
 	}
-
 	function confirmar(titulo, mensaje = "", tipo = "success") {
 		tituloConfirmacion = titulo;
 		mensajeConfirmacion = mensaje;
-
 		const tiposValidos = ["success", "error", "warning"];
 		tipoConfirmacion = tiposValidos.includes(tipo) ? tipo : "success";
-
 		mostrandoConfirmacion = true;
-
 		return new Promise((resolve) => {
 			resolverConfirmacion = resolve;
 		});
 	}
-
 	function aceptarConfirmacion() {
 		mostrandoConfirmacion = false;
-
 		if (resolverConfirmacion) {
 			resolverConfirmacion(true);
 		}
 		resolverConfirmacion = null;
 	}
 </script>
-
 {#if show}
 	<div class="modal-backdrop">
 		<div class="modal-contenido">
@@ -294,7 +262,6 @@
 							{/each}
 						</select>
 					</div>
-
 					{#if areaSeleccionada}
 						<div class="form-group">
 							<label for="agente_asignar">Agente *</label>
@@ -325,7 +292,6 @@
 							{/if}
 						</div>
 					{/if}
-
 					<div class="form-group">
 						<label for="tipo_licencia_asignar"
 							>Tipo de Licencia *</label
@@ -344,7 +310,6 @@
 							{/each}
 						</select>
 					</div>
-
 					<div class="form-group">
 						<label for="fecha_desde_asignar"
 							>Fecha de Inicio *</label
@@ -357,7 +322,6 @@
 							required
 						/>
 					</div>
-
 					<div class="form-group">
 						<label for="fecha_hasta_asignar">Fecha de Fin *</label>
 						<input
@@ -368,7 +332,6 @@
 							required
 						/>
 					</div>
-
 					<div class="form-group">
 						<label for="justificacion_asignar"
 							>Justificación *</label
@@ -381,7 +344,6 @@
 							required
 						></textarea>
 					</div>
-
 					<div class="form-group">
 						<label for="observaciones_asignar">Observaciones</label>
 						<textarea
@@ -391,7 +353,6 @@
 							rows="2"
 						></textarea>
 					</div>
-
 					<div class="modal-footer">
 						<button
 							type="button"
@@ -416,7 +377,6 @@
 		</div>
 	</div>
 {/if}
-
 {#if mostrandoConfirmacion}
 	<div class="modal-confirmacion">
 		<div class="modal-confirmacion-contenido {tipoConfirmacion}">
@@ -433,7 +393,6 @@
 			</div>
 			<h3 class="modal-confirmacion-titulo">{tituloConfirmacion}</h3>
 			<p class="modal-confirmacion-mensaje">{mensajeConfirmacion}</p>
-
 			<div class="modal-confirmacion-botones">
 				<button
 					class="modal-confirmacion-boton"
@@ -445,7 +404,6 @@
 		</div>
 	</div>
 {/if}
-
 <style>
 	.modal-backdrop {
 		position: fixed;
@@ -460,7 +418,6 @@
 		z-index: 1000;
 		backdrop-filter: blur(4px);
 	}
-
 	.modal-contenido {
 		background: white;
 		border-radius: 16px;
@@ -473,11 +430,9 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-
 	.modal-contenido::-webkit-scrollbar {
 		display: none;
 	}
-
 	.modal-header {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
@@ -487,12 +442,10 @@
 		justify-content: space-between;
 		align-items: center;
 	}
-
 	.modal-header h5 {
 		margin: 0;
 		font-size: 1.5rem;
 	}
-
 	.btn-close {
 		background: none;
 		border: none;
@@ -508,22 +461,18 @@
 		border-radius: 50%;
 		transition: all 0.3s ease;
 	}
-
 	.modal-body {
 		padding: 2rem;
 	}
-
 	.form-group {
 		margin-bottom: 1rem;
 	}
-
 	.form-group label {
 		display: block;
 		margin-bottom: 5px;
 		font-weight: 600;
 		color: #313131;
 	}
-
 	.form-group input,
 	.form-group select,
 	.form-group textarea {
@@ -535,19 +484,15 @@
 		font-family: inherit;
 		resize: vertical;
 	}
-
 	.form-group input {
 		width: 94%;
 	}
-
 	.form-group select {
 		width: 100%;
 	}
-
 	.form-group textarea {
 		width: 94%;
 	}
-
 	.loading-small {
 		padding: 0.5rem;
 		text-align: center;
@@ -556,7 +501,6 @@
 		border-radius: 4px;
 		color: #666;
 	}
-
 	.no-agentes {
 		padding: 0.5rem;
 		text-align: center;
@@ -565,14 +509,12 @@
 		border-radius: 4px;
 		color: #856404;
 	}
-
 	.modal-footer {
 		display: flex;
 		justify-content: flex-end;
 		gap: 0.5rem;
 		margin-top: 1.5rem;
 	}
-
 	.btn-secondary,
 	.btn-primary {
 		padding: 10px 20px;
@@ -584,35 +526,28 @@
 		font-size: 16px;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.btn-primary {
 		background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
 		color: white;
 	}
-
 	.btn-primary:hover:not(:disabled) {
 		transform: translateY(-2px);
 		box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
 	}
-
 	.btn-secondary {
 		background: #6c757d;
 		color: white;
 	}
-
 	.btn-secondary:hover:not(:disabled) {
 		background: #5a6268;
 		transform: translateY(-2px);
 	}
-
 	.btn-primary:disabled,
 	.btn-secondary:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
 		transform: none;
 	}
-
-	/* Modal de confirmación/alerta */
 	.modal-confirmacion {
 		position: fixed;
 		top: 0;
@@ -627,7 +562,6 @@
 		backdrop-filter: blur(4px);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.modal-confirmacion-contenido {
 		background: #ffffff;
 		padding: 32px;
@@ -636,22 +570,18 @@
 		text-align: center;
 		box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
 	}
-
 	.modal-confirmacion-contenido.success {
 		background: #d4edda;
 		border: 4px solid #28a745;
 	}
-
 	.modal-confirmacion-contenido.error {
 		background: #f8d7da;
 		border: 4px solid #dc3545;
 	}
-
 	.modal-confirmacion-contenido.warning {
 		background: #fff3cd;
 		border: 4px solid #ffc107;
 	}
-
 	.modal-confirmacion-icono {
 		font-size: 3rem;
 		font-weight: bold;
@@ -660,26 +590,22 @@
 		align-items: center;
 		justify-content: center;
 	}
-
 	.modal-confirmacion-titulo {
 		font-size: 20px;
 		font-weight: 700;
 		color: #1e293b;
 		margin-bottom: 8px;
 	}
-
 	.modal-confirmacion-mensaje {
 		font-size: 15px;
 		color: #475569;
 		margin-bottom: 20px;
 	}
-
 	.modal-confirmacion-botones {
 		display: flex;
 		justify-content: center;
 		gap: 10px;
 	}
-
 	.modal-confirmacion-boton {
 		padding: 10px 28px;
 		background: #3b82f6;
@@ -691,7 +617,6 @@
 		transition: all 0.2s;
 		box-shadow: 0 3px 6px rgba(59, 130, 246, 0.3);
 	}
-
 	.modal-confirmacion-boton:hover {
 		background: #2563eb;
 		transform: translateY(-2px);

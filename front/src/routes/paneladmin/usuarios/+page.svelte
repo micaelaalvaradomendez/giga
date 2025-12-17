@@ -8,9 +8,6 @@
 	import ModalAgregarAgente from "$lib/componentes/admin/agente/ModalAgregarAgente.svelte";
 	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
 	import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
-
-	/** @type {import('./$types').PageData} */
-
 	// Obtener referencias a los stores individuales
 	const {
 		agentes,
@@ -28,38 +25,30 @@
 		modalAgregarAgente,
 		usuarioActual,
 	} = usuariosController;
-
 	// Funciones para abrir modales (delegadas al controlador)
 	function verAgente(agente) {
 		usuariosController.verAgente(agente);
 	}
-
 	function editarAgente(agente) {
 		usuariosController.editarAgente(agente);
 	}
-
 	function eliminarAgente(agente) {
 		usuariosController.eliminarAgente(agente);
 	}
-
 	function agregarAgente() {
 		usuariosController.agregarAgente();
 	}
-
 	// Función para limpiar filtros (delegada al controlador)
 	function limpiarFiltros() {
 		usuariosController.limpiarFiltros();
 	}
-
 	// Los filtros ahora usan bind:value directamente con los stores
-
 	// Verificar autenticación y cargar datos al montar el componente
 	onMount(async () => {
 		console.log("🔄 Componente montado, iniciando controlador...");
 		try {
 			await usuariosController.init();
 			console.log("✅ Controlador inicializado exitosamente");
-
 			// Recargar cuando la página vuelve a ser visible
 			if (typeof window !== "undefined") {
 				const handleVisibilityChange = () => {
@@ -67,17 +56,14 @@
 						usuariosController.init();
 					}
 				};
-
 				const handleFocus = () => {
 					usuariosController.init();
 				};
-
 				document.addEventListener(
 					"visibilitychange",
 					handleVisibilityChange,
 				);
 				window.addEventListener("focus", handleFocus);
-
 				return () => {
 					document.removeEventListener(
 						"visibilitychange",
@@ -94,16 +80,13 @@
 			}
 		}
 	});
-
 	// Función para cerrar modales (delegada al controlador)
 	function cerrarModales() {
 		usuariosController.cerrarModales();
 	}
-
 	// Función para guardar cambios del agente (delegada al controlador)
 	async function guardarCambiosAgente(event) {
 		const { agente, formData } = event.detail;
-
 		try {
 			const result = await usuariosController.guardarCambiosAgente(
 				agente,
@@ -116,11 +99,9 @@
 			await showAlert(error.message, "error", "Error");
 		}
 	}
-
 	// Función para confirmar eliminación (delegada al controlador)
 	async function confirmarEliminacionAgente(event) {
 		const { agente } = event.detail;
-
 		try {
 			const result =
 				await usuariosController.confirmarEliminacionAgente(agente);
@@ -131,11 +112,9 @@
 			await showAlert(error.message, "error", "Error");
 		}
 	}
-
 	// Función para crear nuevo agente (delegada al controlador)
 	async function crearNuevoAgente(event) {
 		const { formData } = event.detail;
-
 		try {
 			const result = await usuariosController.crearNuevoAgente(formData);
 			if (result.success) {
@@ -146,15 +125,12 @@
 		}
 	}
 </script>
-
 <svelte:head>
 	<title>Gestión de Agentes - GIGA</title>
 </svelte:head>
-
 <div class="logo">
 	<a href="/paneladmin">Panel de Administración</a>
 </div>
-
 <div class="page-container">
 	<div class="page-header">
 		<div class="page-header-title">
@@ -171,7 +147,6 @@
 			</div>
 		{/if}
 	</div>
-
 	<!-- Controles de filtrado -->
 	<div class="filtros-container">
 		<div class="filtros-row">
@@ -214,7 +189,6 @@
 			</div>
 		</div>
 	</div>
-
 	<div class="table-container">
 		<table>
 			<thead>
@@ -344,14 +318,12 @@
 			</tbody>
 		</table>
 	</div>
-
 	<!-- Modales -->
 	<ModalVerAgente
 		bind:isOpen={$modalVerAgente.isOpen}
 		agente={$modalVerAgente.agente}
 		on:cerrar={cerrarModales}
 	/>
-
 	<ModalEditarAgente
 		bind:isOpen={$modalEditarAgente.isOpen}
 		agente={$modalEditarAgente.agente}
@@ -361,7 +333,6 @@
 		on:cerrar={cerrarModales}
 		on:guardar={guardarCambiosAgente}
 	/>
-
 	<ModalEliminarAgente
 		bind:isOpen={$modalEliminarAgente.isOpen}
 		agente={$modalEliminarAgente.agente}
@@ -369,7 +340,6 @@
 		on:cerrar={cerrarModales}
 		on:confirmar={confirmarEliminacionAgente}
 	/>
-
 	<ModalAgregarAgente
 		bind:isOpen={$modalAgregarAgente.isOpen}
 		bind:isSaving={$modalAgregarAgente.isSaving}
@@ -378,7 +348,6 @@
 		on:cerrar={cerrarModales}
 		on:guardar={crearNuevoAgente}
 	/>
-
 	<!-- Modal de alertas -->
 	<ModalAlert
 		bind:show={$modalAlert.show}
@@ -392,7 +361,6 @@
 		on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 	/>
 </div>
-
 <style>
 	.page-container {
 		width: 1600px;
@@ -400,7 +368,6 @@
 		padding: 0.5rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	@media (max-width: 1650px) {
 		.page-container {
 			width: 100%;
@@ -408,7 +375,6 @@
 			padding: 0.5rem;
 		}
 	}
-
 	@media (max-width: 768px) {
 		.page-container {
 			padding: 0.5rem;
@@ -416,7 +382,6 @@
 			box-sizing: border-box;
 		}
 	}
-
 	:global(body) {
 		margin: 0;
 		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -424,13 +389,11 @@
 		background-color: #f8f9fa;
 		color: #212529;
 	}
-
 	:global(.admin-layout) {
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
 	}
-
 	:global(.admin-header) {
 		display: flex;
 		justify-content: space-between;
@@ -440,7 +403,6 @@
 		background: linear-gradient(135deg, #e79043, #f39c12);
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
-
 	:global(.admin-header .logo a) {
 		font-weight: bold;
 		font-size: 1.3rem;
@@ -448,17 +410,14 @@
 		color: white;
 		transition: opacity 0.2s;
 	}
-
 	:global(.admin-header .logo a:hover) {
 		opacity: 0.9;
 	}
-
 	:global(.admin-main) {
 		display: flex;
 		flex-grow: 1;
 		overflow: hidden;
 	}
-
 	:global(.admin-content-full) {
 		flex-grow: 1;
 		padding: 2rem;
@@ -469,11 +428,9 @@
 		border-radius: 8px;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
-
 	.logo {
-		display: none; /* Ocultar porque ya está en el header */
+		display: none; 
 	}
-
 	.page-header {
 		display: flex;
 		justify-content: space-between;
@@ -481,7 +438,6 @@
 		margin-bottom: 1rem;
 		padding-bottom: 1rem;
 	}
-
 	.page-header-title {
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		position: relative;
@@ -497,14 +453,12 @@
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
 			0 20px 60px rgba(30, 64, 175, 0.4);
 	}
-
 	@media (min-width: 768px) {
 		.page-header-title {
 			padding: 30px 40px;
 			max-width: 1000px;
 		}
 	}
-
 	.page-header-title::before {
 		content: "";
 		position: absolute;
@@ -521,7 +475,6 @@
 		background-size: 50px 50px;
 		animation: moveLines 20s linear infinite;
 	}
-
 	.page-header h1 {
 		margin: 10px;
 		font-weight: 800;
@@ -543,26 +496,22 @@
 		max-width: 100%;
 		word-wrap: break-word;
 	}
-
 	@media (min-width: 480px) {
 		.page-header h1 {
 			font-size: 22px;
 		}
 	}
-
 	@media (min-width: 640px) {
 		.page-header h1 {
 			font-size: 26px;
 			display: inline-block;
 		}
 	}
-
 	@media (min-width: 768px) {
 		.page-header h1 {
 			font-size: 30px;
 		}
 	}
-
 	.page-header-title h1::after {
 		content: "";
 		position: absolute;
@@ -578,7 +527,6 @@
 		);
 		animation: moveLine 2s linear infinite;
 	}
-
 	@keyframes moveLine {
 		0% {
 			left: -40%;
@@ -587,8 +535,6 @@
 			left: 100%;
 		}
 	}
-
-	/* Estilos para filtros */
 	.filtros-container {
 		background: white;
 		border: 1px solid #e9ecef;
@@ -597,7 +543,6 @@
 		margin-bottom: 1.5rem;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
-
 	.filtros-row {
 		display: grid;
 		grid-template-columns: 1fr;
@@ -605,26 +550,22 @@
 		align-items: stretch;
 		margin-bottom: 1rem;
 	}
-
 	@media (min-width: 768px) {
 		.filtros-row {
 			grid-template-columns: 1fr auto auto;
 			align-items: end;
 		}
 	}
-
 	.filtro-group {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
 	}
-
 	.filtro-group label {
 		font-weight: 600;
 		color: #495057;
 		font-size: 0.9rem;
 	}
-
 	.input-busqueda,
 	.select-area {
 		padding: 0.75rem;
@@ -637,7 +578,6 @@
 		min-width: 0;
 		width: 100%;
 	}
-
 	@media (min-width: 768px) {
 		.input-busqueda,
 		.select-area {
@@ -645,20 +585,17 @@
 			width: auto;
 		}
 	}
-
 	.input-busqueda:focus,
 	.select-area:focus {
 		outline: none;
 		border-color: #e79043;
 		box-shadow: 0 0 0 2px rgba(231, 144, 67, 0.25);
 	}
-
 	.filtro-actions {
 		display: flex;
 		gap: 10px;
 		flex-shrink: 0;
 	}
-
 	.btn-limpiar {
 		padding: 10px 25px;
 		background: #6c757d;
@@ -671,30 +608,25 @@
 		white-space: nowrap;
 		height: 42px;
 	}
-
 	.btn-limpiar:hover {
 		background: #5a6268;
 		transform: translateY(-1px);
 	}
-
 	.filtros-resumen {
 		padding: 0.75rem 1rem;
 		background: #f8f9fa;
 		border-radius: 6px;
 		border-left: 4px solid #e79043;
 	}
-
 	.filtros-activos {
 		color: #e79043;
 		font-weight: 500;
 		font-size: 0.9rem;
 	}
-
 	.filtros-inactivos {
 		color: #6c757d;
 		font-size: 0.9rem;
 	}
-
 	.btn-link {
 		background: none;
 		border: none;
@@ -705,11 +637,9 @@
 		padding: 0;
 		margin-top: 0.5rem;
 	}
-
 	.btn-link:hover {
 		color: #d68a3b;
 	}
-
 	.btn-primary {
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		padding: 16px 32px;
@@ -727,12 +657,10 @@
 		color: white;
 		box-shadow: 0 2px 4px rgba(237, 160, 93, 0.756);
 	}
-
 	.btn-primary:hover {
 		transform: translateY(-1px);
 		box-shadow: 0 4px 8px rgba(237, 160, 93, 0.756);
 	}
-
 	.table-container {
 		overflow-x: auto;
 		max-height: 600px;
@@ -746,27 +674,22 @@
 		margin-bottom: 2rem;
 		-ms-overflow-style: auto;
 	}
-
 	.table-container::-webkit-scrollbar {
 		width: 8px;
 		height: 8px;
 	}
-
 	.table-container::-webkit-scrollbar-track {
 		background: #f1f3f4;
 		border-radius: 10px;
 	}
-
 	.table-container::-webkit-scrollbar-thumb {
 		background: #c1c7cd;
 		border-radius: 10px;
 		transition: background 0.3s ease;
 	}
-
 	.table-container::-webkit-scrollbar-thumb:hover {
 		background: #a8aeb4;
 	}
-
 	table {
 		width: 100%;
 		min-width: 800px;
@@ -774,7 +697,6 @@
 		background: white;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	thead {
 		background: linear-gradient(135deg, #4865e9 0%, #527ab6d0 100%);
 		position: sticky;
@@ -782,7 +704,6 @@
 		z-index: 10;
 		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 	}
-
 	th {
 		padding: 15px 20px;
 		text-align: left;
@@ -794,30 +715,25 @@
 		letter-spacing: 0.5px;
 		background: transparent;
 	}
-
 	td {
 		padding: 15px 20px;
 		border-bottom: 1px solid #f1f3f4;
 		vertical-align: middle;
 		font-size: 0.95rem;
 	}
-
 	tbody tr {
 		transition: all 0.3s ease;
 	}
-
 	tbody tr:hover {
 		background-color: #f8f9fa;
 		transform: scale(1.01);
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 	}
-
 	.actions {
 		display: flex;
 		gap: 0.5rem;
 		align-items: center;
 	}
-
 	.btn-icon,
 	.btn-icon-danger {
 		padding: 8px 12px;
@@ -828,23 +744,19 @@
 		transition: all 0.3s ease;
 		background: #75757528;
 	}
-
 	.btn-icon:hover {
 		background: #61616134;
 		transform: translateY(-3px);
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 	}
-
 	.btn-icon-danger {
 		background: #e46570d8;
 	}
-
 	.btn-icon-danger:hover {
 		background: #be3b48;
 		transform: translateY(-2px);
 		box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
 	}
-
 	.btn-icon-disabled {
 		padding: 8px 12px;
 		border: none;
@@ -855,8 +767,6 @@
 		cursor: not-allowed;
 		opacity: 0.5;
 	}
-
-	/* Estilos para badges */
 	.badge {
 		padding: 6px 12px;
 		border-radius: 20px;
@@ -867,31 +777,26 @@
 		white-space: nowrap;
 		display: inline-block;
 	}
-
 	.badge-area {
 		background: #d1ecf1;
 		color: #0c5460;
 		border: 1px solid #bee5eb;
 	}
-
 	.badge-sin-area {
 		background: #f8d7da;
 		color: #721c24;
 		border: 1px solid #f5c6cb;
 	}
-
 	.badge-role {
 		background: #cff4fc;
 		color: #055160;
 		border: 1px solid #b6effb;
 	}
-
 	.badge-sin-rol {
 		background: #f8d7da;
 		color: #721c24;
 		border: 1px solid #f5c6cb;
 	}
-
 	.badge-secondary {
 		background: #6c757d;
 		color: white;
@@ -899,7 +804,6 @@
 		margin-left: 0.25rem;
 		padding: 4px 8px;
 	}
-
 	.badge-current-user {
 		background: linear-gradient(135deg, #e79043, #f39c12);
 		color: white;
@@ -909,42 +813,35 @@
 		padding: 4px 10px;
 		box-shadow: 0 2px 4px rgba(231, 144, 67, 0.3);
 	}
-
 	.badge-epu {
 		background-color: #d4edda;
 		color: #155724;
 		border: 1px solid #c3e6cb;
 	}
-
 	.badge-pomys {
 		background-color: #d1ecf1;
 		color: #0c5460;
 		border: 1px solid #bee5eb;
 	}
-
 	.badge-payt {
 		background-color: #fff3cd;
 		color: #856404;
 		border: 1px solid #ffeaa7;
 	}
-
 	.badge-jefe {
 		background-color: #f8d7da;
 		color: #721c24;
 		border: 1px solid #f5c6cb;
 	}
-
 	.badge-agente {
 		background-color: #e2e3e5;
 		color: #383d41;
 		border: 1px solid #d6d8db;
 	}
-
 	.current-user {
 		background-color: #fff8e1 !important;
 		border-left: 4px solid #e79043;
 	}
-
 	.current-user:hover {
 		background-color: #ffecb3 !important;
 	}
@@ -953,34 +850,27 @@
 		flex-direction: column;
 		gap: 0.25rem;
 	}
-
 	.role-item {
 		display: flex;
 		align-items: center;
 		gap: 0.25rem;
 	}
-
 	.area-text {
 		color: #6c757d;
 		font-style: italic;
 	}
-
-	/* Responsive Design */
 	@media (max-width: 1200px) {
 		.stats-container {
 			grid-template-columns: repeat(3, 1fr);
 		}
-
 		table {
 			font-size: 0.85rem;
 		}
-
 		th,
 		td {
 			padding: 0.75rem 0.5rem;
 		}
 	}
-
 	@media (max-width: 768px) {
 		:global(.admin-content-full) {
 			padding: 0.5rem;
@@ -988,7 +878,6 @@
 			width: calc(100% - 1rem);
 			box-sizing: border-box;
 		}
-
 		.page-header {
 			flex-direction: column;
 			gap: 1rem;
@@ -996,12 +885,10 @@
 			padding: 0;
 			margin-bottom: 15px;
 		}
-
 		.page-header-title {
 			padding: 0.75rem;
 			border-radius: 16px;
 		}
-
 		.btn-primary {
 			width: 100%;
 			padding: 12px 20px;
@@ -1010,37 +897,30 @@
 			display: flex;
 			justify-content: center;
 		}
-
 		.stats-container {
 			grid-template-columns: repeat(2, 1fr);
 		}
-
 		.filtros-container {
 			padding: 0.75rem;
 			margin-bottom: 15px;
 		}
-
 		.filtros-row {
 			grid-template-columns: 1fr;
 			gap: 0.75rem;
 		}
-
 		.input-busqueda,
 		.select-area {
 			min-width: unset;
 			width: 100%;
 			box-sizing: border-box;
 		}
-
 		.filtro-actions {
 			justify-content: center;
 			width: 100%;
 		}
-
 		.btn-limpiar {
 			width: 100%;
 		}
-
 		.table-container {
 			display: block;
 			width: auto;
@@ -1049,7 +929,6 @@
 			border-radius: 12px;
 			margin-bottom: 2rem;
 		}
-
 		.info-message {
 			padding: 12px 20px;
 			background: linear-gradient(135deg, #fff8e1, #fff3cd);
@@ -1060,96 +939,75 @@
 			font-size: 14px;
 			box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
 		}
-
 		table {
 			min-width: 800px;
 		}
-
 		th,
 		td {
 			padding: 10px 12px;
 			font-size: 0.85rem;
 		}
-
 		.btn-icon,
 		.btn-icon-danger {
 			padding: 0.5rem;
 		}
 	}
-
 	@media (max-width: 480px) {
 		:global(.admin-content-full) {
 			padding: 0.5rem;
 		}
-
 		.page-header {
 			border-radius: 10px;
 		}
-
 		.stats-container {
 			grid-template-columns: 1fr;
 		}
-
 		.stat-card {
 			padding: 0.75rem;
 		}
-
 		.stat-number {
 			font-size: 1.5rem;
 		}
-
 		.filtros-container {
 			padding: 0.75rem;
 		}
-
 		.input-busqueda,
 		.select-area {
 			padding: 0.6rem;
 			font-size: 0.85rem;
 		}
-
 		.btn-limpiar {
 			padding: 8px 16px;
 			font-size: 0.85rem;
 			height: auto;
 		}
-
 		table {
 			min-width: 700px;
 		}
-
 		th,
 		td {
 			padding: 8px 10px;
 			font-size: 0.8rem;
 		}
 	}
-
 	th:nth-child(4),
 	td:nth-child(4) {
-		/* Email */
 		max-width: 200px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-
 	th:nth-child(6),
 	td:nth-child(6) {
-		/* Dirección */
 		max-width: 180px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-
 	th:nth-child(7),
 	td:nth-child(7) {
-		/* Agrupación */
 		text-align: center;
 	}
-
 	th:nth-child(9),
 	td:nth-child(9) {
-		/* Roles */
 		max-width: 200px;
 	}
 </style>

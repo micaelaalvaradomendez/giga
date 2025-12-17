@@ -28,21 +28,17 @@
 		obtenerColorEstado,
 		obtenerIconoEstado,
 	} from "$lib/paneladmin/controllers/licenciasController.js";
-
 	import ModalAsignar from "$lib/componentes/admin/licencias/ModalAsignar.svelte";
 	import ModalAprobar from "$lib/componentes/admin/licencias/ModalAprobar.svelte";
 	import ModalRechazar from "$lib/componentes/admin/licencias/ModalRechazar.svelte";
 	import ModalSolicitar from "$lib/componentes/licencias/ModalSolicitar.svelte";
 	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
 	import { modalAlert } from "$lib/stores/modalAlertStore.js";
-
 	let vistaActual = "licencias"; // 'licencias' o 'tipos'
-
 	let userInfo = null;
 	let permisos = {};
 	let areas = [];
 	let agentes = [];
-
 	// Modal states
 	let showModalSolicitar = false;
 	let showModalCrear = false;
@@ -50,22 +46,17 @@
 	let showModalAprobar = false;
 	let showModalRechazar = false;
 	let licenciaSeleccionada = null;
-
 	let formAprobacion = {
 		observaciones: "",
 	};
-
 	let formRechazo = {
 		motivo: "",
 	};
-
 	let saving = false;
-
 	let tipos = [];
 	let loadingTipos = false;
 	let errorTipos = null;
 	let searchTerm = "";
-
 	let showForm = false;
 	let isEditing = false;
 	let editingId = null;
@@ -73,16 +64,13 @@
 		codigo: "",
 		descripcion: "",
 	};
-
 	// Modal de confirmación para tipos
 	let showConfirmDelete = false;
 	let tipoAEliminar = null;
-
 	// Modal de confirmación para eliminar licencias
 	let showConfirmDeleteLicencia = false;
 	let licenciaAEliminar = null;
 	let eliminandoLicencia = false;
-
 	let alertConfig = {
 		show: false,
 		type: "info",
@@ -97,11 +85,9 @@
 		onCancel: null,
 		onClose: null,
 	};
-
 	onMount(async () => {
 		await inicializar();
 	});
-
 	function mostrarExito(mensaje, titulo = "Éxito") {
 		mostrarAlerta({
 			title: titulo,
@@ -110,7 +96,6 @@
 			duration: 3000,
 		});
 	}
-
 	function mostrarError(mensaje, titulo = "Error") {
 		mostrarAlerta({
 			title: titulo,
@@ -118,7 +103,6 @@
 			type: "error",
 		});
 	}
-
 	function mostrarConfirmacion(mensaje, titulo = "Confirmar", onConfirm) {
 		mostrarAlerta({
 			title: titulo,
@@ -130,28 +114,24 @@
 			onConfirm: onConfirm,
 		});
 	}
-
 	function handleAlertConfirm() {
 		if (alertConfig.onConfirm) {
 			alertConfig.onConfirm();
 		}
 		alertConfig.show = false;
 	}
-
 	function handleAlertCancel() {
 		if (alertConfig.onCancel) {
 			alertConfig.onCancel();
 		}
 		alertConfig.show = false;
 	}
-
 	function handleAlertClose() {
 		if (alertConfig.onClose) {
 			alertConfig.onClose();
 		}
 		alertConfig.show = false;
 	}
-
 	async function inicializar() {
 		try {
 			// Obtener información del usuario actual
@@ -159,7 +139,6 @@
 			if (userResponse?.success && userResponse.data?.success) {
 				userInfo = userResponse.data.data;
 				usuario.set(userInfo);
-
 				// Obtener el rol del usuario correctamente
 				const rol =
 					userInfo.roles?.[0]?.nombre ||
@@ -174,10 +153,8 @@
 					"| Área:",
 					userInfo.area?.nombre,
 				);
-
 				permisos = obtenerPermisos(rol, userInfo.id_area);
 				console.log("🔑 Permisos calculados:", permisos);
-
 				// Cargar datos iniciales
 				await cargarDatosIniciales();
 			} else {
@@ -189,12 +166,10 @@
 			goto("/");
 		}
 	}
-
 	async function cargarDatosIniciales() {
 		try {
 			// Cargar tipos de licencia
 			await cargarTiposLicencia();
-
 			// Cargar áreas según permisos
 			if (permisos.puedeVerTodasAreas) {
 				// Administrador puede ver todas las áreas
@@ -212,26 +187,22 @@
 					);
 				}
 			}
-
 			// Cargar agentes de su área si puede asignar licencias
 			if (permisos.puedeAsignar) {
 				await cargarAgentesArea();
 			}
-
 			// Cargar licencias con filtros según permisos
 			const parametros = {};
 			if (permisos.soloSuArea && !permisos.puedeVerTodasAreas) {
 				// Filtrar por área para roles que no son administrador
 				parametros.area_id = userInfo.id_area;
 			}
-
 			await cargarLicencias(parametros);
 		} catch (err) {
 			console.error("Error cargando datos iniciales:", err);
 			error.set("Error al cargar datos iniciales");
 		}
 	}
-
 	async function cargarAgentesArea() {
 		try {
 			const params = permisos.soloSuArea
@@ -240,7 +211,6 @@
 			const response = await personasService.getAgentes(params);
 			if (response?.data?.success) {
 				let agentesCompletos = response.data.data || [];
-
 				// Filtrar agentes según el rol del usuario (especialmente para Agente Avanzado)
 				if (permisos.puedeAsignarSoloAgentes) {
 					// Agente Avanzado solo puede ver/asignar a agentes simples
@@ -260,27 +230,22 @@
 			console.error("Error cargando agentes:", err);
 		}
 	}
-
 	function abrirModalCrear() {
 		showModalCrear = true;
 	}
-
 	function abrirModalAsignar() {
 		showModalAsignar = true;
 	}
-
 	function abrirModalAprobar(licencia) {
 		licenciaSeleccionada = licencia;
 		formAprobacion = { observaciones: "" };
 		showModalAprobar = true;
 	}
-
 	function abrirModalRechazar(licencia) {
 		licenciaSeleccionada = licencia;
 		formRechazo = { motivo: "" };
 		showModalRechazar = true;
 	}
-
 	function cerrarModales() {
 		showModalCrear = false;
 		showModalAprobar = false;
@@ -289,7 +254,6 @@
 		licenciaSeleccionada = null;
 		saving = false;
 	}
-
 	function mostrarAlerta(config) {
 		if (typeof config === "string") {
 			config = {
@@ -298,26 +262,22 @@
 				type: "info",
 			};
 		}
-
 		alertConfig = {
 			...alertConfig,
 			...config,
 			show: true,
 		};
 	}
-
 	function handleLicenciaCreada(event) {
 		showModalCrear = false;
 		mostrarExito("Licencia solicitada correctamente. Aguarde aprobación.");
 		cargarLicencias(); // Recargar la lista
 	}
-
 	function handleAsignarEvent(event) {
 		console.log("Asignar licencia event:", event.detail);
 		showModalAsignar = false;
 		mostrarExito("Licencia asignada correctamente");
 	}
-
 	function handleAprobarEvent(event) {
 		if (licenciaSeleccionada) {
 			aprobarLicencia(
@@ -333,7 +293,6 @@
 			});
 		}
 	}
-
 	function handleRechazarEvent(event) {
 		if (licenciaSeleccionada) {
 			rechazarLicencia(
@@ -349,7 +308,6 @@
 			});
 		}
 	}
-
 	// Función para cambiar entre vistas
 	function cambiarVista(vista) {
 		vistaActual = vista;
@@ -357,7 +315,6 @@
 			cargarTipos();
 		}
 	}
-
 	// Función para cargar tipos de licencia
 	async function cargarTipos() {
 		loadingTipos = true;
@@ -380,14 +337,12 @@
 			loadingTipos = false;
 		}
 	}
-
 	function abrirAlta() {
 		isEditing = false;
 		editingId = null;
 		form = { codigo: "", descripcion: "" };
 		showForm = true;
 	}
-
 	function abrirEdicion(tipo) {
 		isEditing = true;
 		editingId = tipo.id_tipo_licencia || tipo.id || null;
@@ -397,7 +352,6 @@
 		};
 		showForm = true;
 	}
-
 	// Función para eliminar tipos
 	function eliminar(tipo) {
 		mostrarConfirmacion(
@@ -407,11 +361,9 @@
 			() => confirmarEliminacionTipo(tipo),
 		);
 	}
-
 	async function confirmarEliminacionTipo(tipo) {
 		const id = tipo.id_tipo_licencia || tipo.id || null;
 		if (!id) return;
-
 		try {
 			await asistenciaService.deleteTipoLicencia(id);
 			tipos = tipos.filter((t) => (t.id_tipo_licencia || t.id) !== id);
@@ -425,7 +377,6 @@
 			mostrarError(msg);
 		}
 	}
-
 	$: tiposFiltrados = tipos.filter((t) => {
 		if (!searchTerm) return true;
 		const s = searchTerm.toLowerCase();
@@ -434,16 +385,13 @@
 			(t.descripcion || "").toLowerCase().includes(s)
 		);
 	});
-
 	async function handleAprobarLicencia() {
 		if (!licenciaSeleccionada) return;
-
 		saving = true;
 		const resultado = await aprobarLicencia(
 			licenciaSeleccionada.id_licencia,
 			formAprobacion.observaciones,
 		);
-
 		if (resultado.success) {
 			cerrarModales();
 			mostrarExito("Licencia aprobada correctamente.");
@@ -452,19 +400,16 @@
 		}
 		saving = false;
 	}
-
 	async function handleRechazarLicencia() {
 		if (!licenciaSeleccionada || !formRechazo.motivo.trim()) {
 			mostrarError("Debe indicar el motivo del rechazo");
 			return;
 		}
-
 		saving = true;
 		const resultado = await rechazarLicencia(
 			licenciaSeleccionada.id_licencia,
 			formRechazo.motivo,
 		);
-
 		if (resultado.success) {
 			cerrarModales();
 			mostrarExito("Licencia rechazada.");
@@ -473,7 +418,6 @@
 		}
 		saving = false;
 	}
-
 	// Funciones para filtros
 	function handleFechaDesdeChange() {
 		// Si la nueva fecha desde es posterior a la fecha hasta, limpiar fecha hasta
@@ -486,18 +430,15 @@
 		}
 		aplicarFiltros();
 	}
-
 	function aplicarFiltros() {
 		// Los filtros se actualizan automáticamente por el binding con $filtros
 		// Solo necesitamos recargar las licencias con los filtros actuales
 		cargarLicencias($filtros);
 	}
-
 	function limpiarTodosFiltros() {
 		limpiarFiltros();
 		cargarLicencias();
 	}
-
 	// Funciones de utilidad
 	function puedeAprobar(licencia) {
 		const rol =
@@ -505,11 +446,9 @@
 		return puedeAprobarLicencia(licencia, rol, userInfo?.id_area);
 	}
 </script>
-
 <svelte:head>
 	<title>Gestión de Licencias - GIGA</title>
 </svelte:head>
-
 <div class="page-container">
 	<div class="page-header">
 		<div class="header-title">
@@ -528,7 +467,6 @@
 			{/if}
 		</div>
 	</div>
-
 	<!-- Estadísticas -->
 	{#if $estadisticas.total > 0}
 		<div class="stats-container">
@@ -550,7 +488,6 @@
 			</div>
 		</div>
 	{/if}
-
 	<!-- Filtros -->
 	<div class="filtros-container">
 		<div class="filtros-row">
@@ -626,7 +563,6 @@
 			</div>
 		</div>
 	</div>
-
 	<!-- Contenido principal -->
 	<div class="page-content">
 		{#if $error}
@@ -638,7 +574,6 @@
 				>
 			</div>
 		{/if}
-
 		{#if $loading}
 			<div class="loading-container">
 				<div class="spinner-large"></div>
@@ -764,7 +699,6 @@
 					</tbody>
 				</table>
 			</div>
-
 			<!-- Vista de tarjetas para móvil -->
 			<div class="cards-container mobile-only">
 				{#each $licenciasFiltradas as licencia (licencia.id_licencia)}
@@ -794,7 +728,6 @@
 								{licencia.estado.toUpperCase()}
 							</span>
 						</div>
-
 						<div class="card-body">
 							<div class="card-row">
 								<span class="card-label">📅 Período:</span>
@@ -820,7 +753,6 @@
 								>
 							</div>
 						</div>
-
 						{#if licencia.estado === "pendiente" && puedeAprobar(licencia)}
 							<div class="card-actions">
 								<button
@@ -838,7 +770,6 @@
 								</button>
 							</div>
 						{/if}
-
 						{#if licencia.observaciones}
 							<div class="card-observaciones">
 								<span class="card-label">💬 Observaciones:</span
@@ -852,7 +783,6 @@
 		{/if}
 	</div>
 </div>
-
 <!-- Modal Crear/Solicitar Licencia -->
 <ModalSolicitar
 	bind:show={showModalCrear}
@@ -861,7 +791,6 @@
 	on:created={handleLicenciaCreada}
 	on:close={() => (showModalCrear = false)}
 />
-
 <!-- Modal de Asignar Licencia -->
 <ModalAsignar
 	bind:show={showModalAsignar}
@@ -870,7 +799,6 @@
 	on:assigned={handleAsignarEvent}
 	on:close={() => (showModalAsignar = false)}
 />
-
 <!-- Modal de Aprobar Licencia -->
 <ModalAprobar
 	bind:show={showModalAprobar}
@@ -878,7 +806,6 @@
 	on:aprobar={handleAprobarEvent}
 	on:cancelar={() => (showModalAprobar = false)}
 />
-
 <!-- Modal de Rechazar Licencia -->
 <ModalRechazar
 	bind:show={showModalRechazar}
@@ -886,7 +813,6 @@
 	on:rechazar={handleRechazarEvent}
 	on:cancelar={() => (showModalRechazar = false)}
 />
-
 <ModalAlert
 	bind:show={alertConfig.show}
 	type={alertConfig.type}
@@ -901,7 +827,6 @@
 	on:cancel={handleAlertCancel}
 	on:close={handleAlertClose}
 />
-
 <!-- ModalAlert para showAlert() del store -->
 <ModalAlert
 	bind:show={$modalAlert.show}
@@ -915,12 +840,10 @@
 	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
 	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
-
 <style>
 	* {
 		box-sizing: border-box;
 	}
-
 	.page-container {
 		max-width: 1600px;
 		margin: 0 auto;
@@ -930,7 +853,6 @@
 		box-sizing: border-box;
 		overflow-x: hidden;
 	}
-
 	.page-header {
 		display: flex;
 		justify-content: space-between;
@@ -938,7 +860,6 @@
 		margin-bottom: 2rem;
 		padding-bottom: 20px;
 	}
-
 	.header-title {
 		position: relative;
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
@@ -953,7 +874,6 @@
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
 			0 20px 60px rgba(30, 64, 175, 0.4);
 	}
-
 	.header-title::before {
 		content: "";
 		position: absolute;
@@ -970,7 +890,6 @@
 		background-size: 50px 50px;
 		animation: moveLines 20s linear infinite;
 	}
-
 	.header-title h1 {
 		margin: 10px;
 		font-weight: 800;
@@ -983,26 +902,22 @@
 		max-width: 100%;
 		word-wrap: break-word;
 	}
-
 	@media (min-width: 480px) {
 		.header-title h1 {
 			font-size: 22px;
 		}
 	}
-
 	@media (min-width: 640px) {
 		.header-title h1 {
 			font-size: 26px;
 			display: inline-block;
 		}
 	}
-
 	@media (min-width: 768px) {
 		.header-title h1 {
 			font-size: 30px;
 		}
 	}
-
 	.header-title h1::after {
 		content: "";
 		position: absolute;
@@ -1018,7 +933,6 @@
 		);
 		animation: moveLine 2s linear infinite;
 	}
-
 	@keyframes moveLine {
 		0% {
 			left: -40%;
@@ -1027,12 +941,10 @@
 			left: 100%;
 		}
 	}
-
 	.header-actions {
 		display: flex;
 		gap: 10px;
 	}
-
 	.btn-primary,
 	.btn-secondary {
 		padding: 16px 32px;
@@ -1048,31 +960,25 @@
 		font-size: 17px;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.btn-primary {
 		background: linear-gradient(135deg, #4c51bf 0%, #5b21b6 100%);
 		color: white;
 		box-shadow: 0 4px 15px rgba(76, 81, 191, 0.3);
 	}
-
 	.btn-primary:hover:not(:disabled) {
 		background: linear-gradient(135deg, #5b21b6, #6d28d9);
 		transform: translateY(-2px);
 		box-shadow: 0 6px 20px rgba(76, 81, 191, 0.4);
 	}
-
 	.btn-secondary {
 		background: linear-gradient(135deg, #b78ef8 0%, #b966d3 100%);
 		color: white;
 		box-shadow: 0 4px 15px rgba(183, 142, 248, 0.3);
 	}
-
 	.btn-secondary:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 6px 20px rgba(215, 111, 241, 0.5);
 	}
-
-	/* Estadísticas */
 	.stats-container {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1080,7 +986,6 @@
 		margin-top: 20px;
 		margin-bottom: 20px;
 	}
-
 	.stat-card {
 		background: white;
 		padding: 20px;
@@ -1090,17 +995,14 @@
 		border-top: 4px solid #4c51bf;
 		transition: transform 0.3s ease;
 	}
-
 	.stat-card:hover {
 		transform: translateY(-5px);
 	}
-
 	.stat-number {
 		font-size: 2.2rem;
 		font-weight: 700;
 		color: #4c51bf;
 	}
-
 	.stat-card.pending .stat-number {
 		color: #ed8936;
 	}
@@ -1110,7 +1012,6 @@
 	.stat-card.rejected .stat-number {
 		color: #e53e3e;
 	}
-
 	.stat-card.pending {
 		border-top: 4px solid #ed8936;
 	}
@@ -1120,15 +1021,12 @@
 	.stat-card.rejected {
 		border-top: 4px solid #e53e3e;
 	}
-
 	.stat-label {
 		font-size: 16px;
 		color: #222222e0;
 		margin-top: 0.5rem;
 		font-weight: 600;
 	}
-
-	/* Filtros */
 	.filtros-container {
 		background: #f3f3f3d8;
 		border: 1px solid #e0e0e09c;
@@ -1136,27 +1034,23 @@
 		padding: 1.5rem;
 		margin-bottom: 2rem;
 	}
-
 	.filtros-row {
 		display: flex;
 		gap: 2rem;
 		align-items: end;
 		flex-wrap: nowrap;
 	}
-
 	.filtro-group {
 		flex: 1 1 200px;
 		min-width: 160px;
 		max-width: 100%;
 	}
-
 	.filtro-group label {
 		color: #1a1a1a;
 		font-weight: 600;
 		color: #374151;
 		font-size: 16px;
 	}
-
 	.filtro-group input,
 	.filtro-group select {
 		margin-top: 10px;
@@ -1168,14 +1062,12 @@
 		background: white;
 		appearance: none;
 	}
-
 	.filtro-group input:focus,
 	.filtro-group select:focus {
 		outline: none;
 		border-color: #4c51bf;
 		box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
 	}
-
 	.btn-clear {
 		padding: 10px 25px;
 		background: #6c757d;
@@ -1188,13 +1080,10 @@
 		white-space: nowrap;
 		height: 42px;
 	}
-
 	.btn-clear:hover {
 		background: #5a6268;
 		transform: translateY(-1px);
 	}
-
-	/* Tabla */
 	.table-container {
 		overflow-x: auto;
 		overflow-y: auto;
@@ -1206,17 +1095,13 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-
 	.table-container::-webkit-scrollbar {
 		display: none;
 	}
-
 	.licencias-table {
 		width: 100%;
 		border-collapse: collapse;
 	}
-
-	/* Header fijo con gradiente */
 	.licencias-table thead {
 		position: sticky;
 		top: 0;
@@ -1224,7 +1109,6 @@
 		background: linear-gradient(135deg, #bad0e6 0%, #a3d3fac0 100%);
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 	}
-
 	.licencias-table th {
 		padding: 18px 20px;
 		text-align: left;
@@ -1235,7 +1119,6 @@
 		letter-spacing: 0.5px;
 		background: transparent;
 	}
-
 	.licencias-table td {
 		padding: 18px 20px;
 		font-size: 14px;
@@ -1243,33 +1126,26 @@
 		vertical-align: middle;
 		border-bottom: 1px solid #e5e7eb;
 	}
-
-	/* Hover effect para la tabla */
 	.licencias-table tbody tr {
 		border-bottom: 1px solid #e5e7eb;
 		transition: all 0.2s ease;
 	}
-
 	.licencias-table tbody tr:hover {
 		background: linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 100%);
 		transform: scale(1.005);
 		box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
 	}
-
 	.licencia-row.pending {
 		background-color: #fef3c7;
 	}
-
 	.agente-info strong {
 		display: block;
 		color: #2d3748;
 	}
-
 	.agente-info small {
 		color: #718096;
 		font-size: 0.75rem;
 	}
-
 	.tipo-badge {
 		background: #edf2f7;
 		color: #4a5568;
@@ -1278,12 +1154,10 @@
 		font-size: 0.75rem;
 		font-weight: 500;
 	}
-
 	.periodo {
 		font-size: 0.875rem;
 		color: #374151;
 	}
-
 	.dias-count {
 		background: #e0f2fe;
 		color: #0369a1;
@@ -1292,7 +1166,6 @@
 		font-size: 0.75rem;
 		font-weight: 600;
 	}
-
 	.estado-badge {
 		display: inline-block;
 		padding: 8px 16px;
@@ -1301,7 +1174,6 @@
 		font-weight: 700;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
-
 	@keyframes pulse {
 		0%,
 		100% {
@@ -1311,13 +1183,11 @@
 			transform: scale(1.05);
 		}
 	}
-
 	.acciones {
 		display: flex;
 		gap: 0.5rem;
 		flex-wrap: wrap;
 	}
-
 	.btn-small {
 		padding: 0.375rem 0.75rem;
 		font-size: 14px;
@@ -1327,48 +1197,39 @@
 		font-weight: 500;
 		transition: all 0.2s;
 	}
-
 	.btn-success {
 		background: linear-gradient(135deg, #10b981, #059669);
 		color: white;
 		box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
 	}
-
 	.btn-success:hover {
 		background: linear-gradient(135deg, #059669, #047857);
 		transform: translateY(-2px);
 		box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
 	}
-
 	.btn-danger {
 		background: linear-gradient(135deg, #ef4444, #dc2626);
 		color: white;
 		box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 	}
-
 	.btn-danger:hover {
 		background: linear-gradient(135deg, #dc2626, #b91c1c);
 		transform: translateY(-2px);
 		box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
 	}
-
 	.btn-info {
 		background: #0ea5e9;
 		color: white;
 	}
-
 	.btn-info:hover {
 		background: #0284c7;
 		transform: translateY(-2px);
 	}
-
-	/* Estados de carga y vacío */
 	.loading-container {
 		text-align: center;
 		padding: 3rem;
 		color: #718096;
 	}
-
 	.loading-container .spinner-large {
 		margin: 0 auto 1rem;
 		width: 2rem;
@@ -1378,23 +1239,18 @@
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
 	}
-
 	.empty-state {
 		text-align: center;
 		padding: 3rem;
 		color: #718096;
 	}
-
 	.empty-state p {
 		margin-bottom: 1rem;
 	}
-
 	.empty-icon {
 		font-size: 3rem;
 		margin-bottom: 1rem;
 	}
-
-	/* Alertas */
 	.alert {
 		padding: 1rem;
 		border-radius: 8px;
@@ -1403,13 +1259,11 @@
 		justify-content: space-between;
 		align-items: center;
 	}
-
 	.alert-error {
 		background: #fed7d7;
 		color: #742a2a;
 		border: 1px solid #feb2b2;
 	}
-
 	.btn-retry {
 		background: linear-gradient(135deg, #4c51bf, #5b21b6);
 		color: white;
@@ -1422,28 +1276,21 @@
 		transition: all 0.2s ease;
 		box-shadow: 0 2px 4px rgba(76, 81, 191, 0.3);
 	}
-
 	.btn-retry:hover {
 		background: linear-gradient(135deg, #5b21b6, #6d28d9);
 		transform: translateY(-2px);
 		box-shadow: 0 4px 8px rgba(76, 81, 191, 0.4);
 	}
-
-	/* Clases para mostrar/ocultar según dispositivo */
 	.mobile-only {
 		display: none !important;
 	}
-
 	.desktop-only {
 		display: block;
 	}
-
-	/* Estilos de tarjetas para móvil */
 	.cards-container {
 		flex-direction: column;
 		gap: 1rem;
 	}
-
 	.licencia-card {
 		background: white;
 		border-radius: 16px;
@@ -1451,12 +1298,10 @@
 		overflow: hidden;
 		border: 1px solid #e5e7eb;
 	}
-
 	.licencia-card.pending {
 		border-left: 4px solid #ed8936;
 		background: linear-gradient(to right, #fffbeb, white);
 	}
-
 	.card-header {
 		display: flex;
 		justify-content: space-between;
@@ -1466,14 +1311,12 @@
 		border-bottom: 1px solid #e5e7eb;
 		gap: 10px;
 	}
-
 	.card-header .estado-badge {
 		font-size: 13px;
 		padding: 8px 14px;
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
-
 	.card-agente {
 		display: flex;
 		flex-direction: column;
@@ -1481,18 +1324,15 @@
 		flex: 1;
 		min-width: 0;
 	}
-
 	.card-agente strong {
 		font-size: 15px;
 		color: #1e293b;
 		font-weight: 700;
 	}
-
 	.card-agente small {
 		font-size: 12px;
 		color: #64748b;
 	}
-
 	.tipo-badge-mobile {
 		display: inline-block;
 		margin-top: 6px;
@@ -1504,7 +1344,6 @@
 		border-radius: 12px;
 		border: 1px solid #a5b4fc;
 	}
-
 	.dias-count-big {
 		background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 		color: white;
@@ -1514,14 +1353,12 @@
 		font-weight: 700;
 		box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
 	}
-
 	.card-body {
 		padding: 8px 14px;
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
 	}
-
 	.card-row {
 		display: flex;
 		justify-content: flex-start;
@@ -1530,20 +1367,17 @@
 		padding: 2px 0;
 		flex-wrap: wrap;
 	}
-
 	.card-label {
 		font-size: 13px;
 		color: #64748b;
 		font-weight: 500;
 		flex-shrink: 0;
 	}
-
 	.card-value {
 		font-size: 13px;
 		color: #1e293b;
 		font-weight: 600;
 	}
-
 	.card-actions {
 		display: flex;
 		gap: 10px;
@@ -1551,7 +1385,6 @@
 		background: #f8fafc;
 		border-top: 1px solid #e5e7eb;
 	}
-
 	.btn-card {
 		flex: 1;
 		padding: 12px 16px;
@@ -1566,89 +1399,71 @@
 		justify-content: center;
 		gap: 6px;
 	}
-
 	.btn-card.btn-success {
 		background: linear-gradient(135deg, #10b981, #059669);
 		color: white;
 		box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
 	}
-
 	.btn-card.btn-success:hover {
 		background: linear-gradient(135deg, #059669, #047857);
 		transform: translateY(-1px);
 	}
-
 	.btn-card.btn-danger {
 		background: linear-gradient(135deg, #ef4444, #dc2626);
 		color: white;
 		box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
 	}
-
 	.btn-card.btn-danger:hover {
 		background: linear-gradient(135deg, #dc2626, #b91c1c);
 		transform: translateY(-1px);
 	}
-
 	.card-observaciones {
 		padding: 12px 16px;
 		background: #fef3c7;
 		border-top: 1px solid #fcd34d;
 	}
-
 	.card-observaciones p {
 		margin: 6px 0 0 0;
 		font-size: 13px;
 		color: #92400e;
 		line-height: 1.4;
 	}
-
-	/* Responsive */
 	@media (max-width: 1200px) {
 		.page-container {
 			padding: 1rem;
 		}
-
 		.header-title {
 			max-width: 100%;
 			padding: 20px 30px;
 		}
-
 		.header-title h1 {
 			font-size: 24px;
 		}
-
 		.filtros-row {
 			flex-wrap: wrap;
 			gap: 1rem;
 		}
-
 		.filtro-group {
 			flex: 1 1 calc(50% - 0.5rem);
 			min-width: 200px;
 		}
-
 		.table-container {
 			font-size: 0.875rem;
 		}
 	}
-
 	@media (max-width: 768px) {
-		/* Mostrar tarjetas, ocultar tabla */
 		.desktop-only {
 			display: none !important;
 		}
-
 		.mobile-only {
 			display: flex !important;
 		}
-
 		.page-container {
 			padding: 0.75rem;
 			max-width: 100vw;
 			overflow-x: hidden;
 			box-sizing: border-box;
 		}
-
 		.page-header {
 			flex-direction: column;
 			gap: 1rem;
@@ -1656,7 +1471,6 @@
 			padding-bottom: 1rem;
 			margin-bottom: 1rem;
 		}
-
 		.header-title {
 			padding: 18px 12px;
 			border-radius: 16px;
@@ -1664,19 +1478,16 @@
 			width: 100%;
 			box-sizing: border-box;
 		}
-
 		.header-title h1 {
 			font-size: 18px;
 			word-break: break-word;
 			line-height: 1.3;
 		}
-
 		.header-actions {
 			flex-direction: column;
 			width: 100%;
 			gap: 8px;
 		}
-
 		.btn-primary,
 		.btn-secondary {
 			width: 100%;
@@ -1686,55 +1497,45 @@
 			font-size: 14px;
 			border-radius: 12px;
 		}
-
 		.stats-container {
 			grid-template-columns: 1fr;
 			gap: 0.75rem;
 			padding: 0;
 		}
-
 		.stat-card {
 			padding: 16px 12px;
 			border-radius: 12px;
 		}
-
 		.stat-number {
 			font-size: 1.75rem;
 		}
-
 		.stat-label {
 			font-size: 14px;
 		}
-
 		.filtros-container {
 			padding: 1rem;
 			border-radius: 10px;
 			margin-bottom: 1rem;
 		}
-
 		.filtros-row {
 			flex-direction: column;
 			gap: 1rem;
 		}
-
 		.filtro-group {
 			flex: 1 1 100%;
 			min-width: 100%;
 		}
-
 		.filtro-group label {
 			font-size: 14px;
 			display: block;
 			margin-bottom: 6px;
 		}
-
 		.filtro-group input,
 		.filtro-group select {
 			padding: 12px;
 			font-size: 14px;
 			border-radius: 10px;
 		}
-
 		.btn-clear {
 			width: 100%;
 			height: auto;
@@ -1743,8 +1544,6 @@
 			border-radius: 10px;
 			margin-top: 0.5rem;
 		}
-
-		/* Tabla responsive */
 		.table-container {
 			border-radius: 10px;
 			max-height: 450px;
@@ -1752,164 +1551,128 @@
 			width: 100%;
 			box-sizing: border-box;
 		}
-
 		.licencias-table th {
 			padding: 12px 8px;
 			font-size: 10px;
 		}
-
 		.licencias-table td {
 			padding: 10px 8px;
 			font-size: 12px;
 		}
-
 		.agente-info strong {
 			font-size: 12px;
 		}
-
 		.agente-info small {
 			font-size: 10px;
 		}
-
 		.tipo-badge {
 			font-size: 9px;
 			padding: 4px 8px;
 		}
-
 		.estado-badge {
 			font-size: 9px;
 			padding: 5px 8px;
 		}
-
 		.dias-count {
 			font-size: 10px;
 			padding: 3px 6px;
 		}
-
 		.acciones {
 			flex-direction: column;
 			gap: 4px;
 		}
-
 		.btn-small {
 			padding: 6px 10px;
 			font-size: 11px;
 		}
-
 		.periodo {
 			font-size: 11px;
 		}
 	}
-
 	@media (max-width: 480px) {
 		.page-container {
 			padding: 8px;
 		}
-
 		.header-title {
 			padding: 15px 10px;
 			border-radius: 14px;
 		}
-
 		.header-title h1 {
 			font-size: 16px;
 		}
-
 		.btn-primary,
 		.btn-secondary {
 			padding: 12px 14px;
 			font-size: 13px;
 		}
-
 		.stats-container {
 			gap: 0.5rem;
 		}
-
 		.stat-card {
 			padding: 14px 10px;
 		}
-
 		.stat-number {
 			font-size: 1.5rem;
 		}
-
 		.stat-label {
 			font-size: 13px;
 		}
-
 		.filtros-container {
 			padding: 0.75rem;
 		}
-
 		.filtro-group label {
 			font-size: 13px;
 		}
-
 		.filtro-group input,
 		.filtro-group select {
 			padding: 10px;
 			font-size: 13px;
 		}
-
-		/* Tabla muy pequeña */
 		.table-container {
 			max-height: 380px;
 			border-radius: 8px;
 		}
-
 		.licencias-table th {
 			padding: 8px 6px;
 			font-size: 9px;
 		}
-
 		.licencias-table td {
 			padding: 8px 6px;
 			font-size: 11px;
 		}
-
 		.agente-info strong {
 			font-size: 11px;
 		}
-
 		.agente-info small {
 			font-size: 9px;
 		}
-
 		.tipo-badge {
 			font-size: 8px;
 			padding: 3px 6px;
 		}
-
 		.estado-badge {
 			font-size: 8px;
 			padding: 4px 6px;
 		}
-
 		.dias-count {
 			font-size: 9px;
 		}
-
 		.periodo {
 			font-size: 10px;
 		}
-
 		.btn-small {
 			padding: 5px 8px;
 			font-size: 10px;
 		}
-
 		.empty-state {
 			padding: 2rem 1rem;
 		}
-
 		.empty-icon {
 			font-size: 2.5rem;
 		}
-
 		.empty-state h3 {
 			font-size: 16px;
 		}
-
 		.empty-state p {
 			font-size: 14px;
 		}

@@ -6,7 +6,6 @@
   import ModalNotaGuardia from "$lib/componentes/usuario/ModalNotaGuardia.svelte";
   import ModalAlert from "$lib/componentes/ModalAlert.svelte";
   import { modalAlert, showAlert, showConfirm } from "$lib/stores/modalAlertStore.js";
-
   let user = null;
   let token = null;
   let guardiasPorHacer = [];
@@ -14,65 +13,51 @@
   let tabActual = "porHacer";
   let cargando = true;
   let error = null;
-
   // Modal de notas
   let modalNotaAbierto = false;
   let guardiaSeleccionada = null;
   let notaTexto = "";
   let notaId = null;
   let guardandoNota = false;
-
   // Filtros por fecha
   let tipoFiltro = "todos"; // 'todos', 'mes', 'año', 'dia'
   let añoSeleccionado = new Date().getFullYear();
   let mesSeleccionado = new Date().getMonth() + 1; // 1-12
   let fechaSeleccionada = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-
   // Variables para guardias filtradas
   let guardiasPorHacerFiltradas = [];
   let guardiasRealizadasFiltradas = [];
-
   // Role-based permissions
   $: userRole = user?.roles?.[0]?.nombre;
   $: isAdmin = userRole === "Administrador";
   $: isDirector = userRole === "Director" || isAdmin;
   $: isJefatura = userRole === "Jefatura" || isDirector;
-
   onMount(async () => {
     try {
       // Use getCurrentUser from localStorage (checkSession already called in +layout.svelte)
       user = AuthService.getCurrentUser();
-
       if (!user) {
         goto("/");
         return;
       }
-
       token = localStorage.getItem("token");
-
       await cargarGuardias();
     } catch (err) {
       console.error("Error verificando sesión:", err);
       goto("/");
     }
   });
-
   async function cargarGuardias() {
     if (!user || !user.id) return;
-
     try {
       cargando = true;
       error = null;
-
       // Obtener guardias del agente
       const response = await guardiasService.getGuardiasAgente(user.id, token);
-
       if (!response || !response.data) {
         throw new Error("Respuesta inválida del servidor");
       }
-
       const todasGuardias = response.data.guardias || [];
-
       // Filtrar solo guardias aprobadas (estado planificada, activa=true, cronograma aprobado/publicado)
       const guardiasAprobadas = todasGuardias.filter(
         (g) =>
@@ -81,19 +66,15 @@
           (g.cronograma_estado === "aprobada" ||
             g.cronograma_estado === "publicada"),
       );
-
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
-
       // Separar por hacer y realizadas
       guardiasPorHacer = guardiasAprobadas
         .filter((g) => new Date(g.fecha) >= hoy)
         .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-
       guardiasRealizadas = guardiasAprobadas
         .filter((g) => new Date(g.fecha) < hoy)
         .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
       console.log("📊 Guardias cargadas:", {
         porHacer: guardiasPorHacer.length,
         realizadas: guardiasRealizadas.length,
@@ -107,7 +88,6 @@
       cargando = false;
     }
   }
-
   function formatearFecha(fecha) {
     const f = new Date(fecha);
     const dias = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -127,10 +107,8 @@
     ];
     return `${dias[f.getDay()]} ${f.getDate()} ${meses[f.getMonth()]} ${f.getFullYear()}`;
   }
-
   function abrirModalNota(guardia) {
     guardiaSeleccionada = guardia;
-
     if (guardia.notas && guardia.notas.length > 0) {
       const miNota = guardia.notas.find((n) => n.id_agente === user.id);
       if (miNota) {
@@ -144,31 +122,25 @@
       notaTexto = "";
       notaId = null;
     }
-
     modalNotaAbierto = true;
   }
-
   function cerrarModalNota() {
     modalNotaAbierto = false;
     guardiaSeleccionada = null;
     notaTexto = "";
     notaId = null;
   }
-
   async function guardarNota() {
     if (!guardiaSeleccionada || !notaTexto.trim()) {
       await showAlert("Debe escribir una nota", "warning", "Advertencia");
       return;
     }
-
     try {
       guardandoNota = true;
-
       const data = {
         id_agente: user.id,
         nota: notaTexto.trim(),
       };
-
       if (notaId) {
         // Actualizar nota existente
         await guardiasService.updateNotaGuardia(notaId, data, token);
@@ -180,10 +152,8 @@
           token,
         );
       }
-
       // Recargar guardias para actualizar notas
       await cargarGuardias();
-
       cerrarModalNota();
     } catch (err) {
       console.error("Error guardando nota:", err);
@@ -196,31 +166,24 @@
       guardandoNota = false;
     }
   }
-
   async function eliminarNota() {
     if (!notaId) {
       return;
     }
-    
     const confirmado = await showConfirm(
       "¿Está seguro de eliminar esta nota?",
       "Eliminar Nota",
       "Eliminar",
       "Cancelar"
     );
-    
     if (!confirmado) {
       return;
     }
-
     try {
       guardandoNota = true;
-
       await guardiasService.deleteNotaGuardia(notaId, user.id, token);
-
       // Recargar guardias
       await cargarGuardias();
-
       cerrarModalNota();
     } catch (err) {
       console.error("Error eliminando nota:", err);
@@ -233,7 +196,6 @@
       guardandoNota = false;
     }
   }
-
   // Función para filtrar guardias por fecha
   function filtrarPorFecha(guardias) {
     console.log("🔍 Filtrando guardias:", {
@@ -243,7 +205,6 @@
       mesSeleccionado,
       fechaSeleccionada,
     });
-
     if (tipoFiltro === "todos") {
       console.log(
         '✅ Filtro "todos" - devolviendo todas las guardias:',
@@ -251,7 +212,6 @@
       );
       return guardias;
     }
-
     const resultado = guardias.filter((guardia) => {
       const fechaGuardia = new Date(guardia.fecha);
       console.log(
@@ -260,7 +220,6 @@
         "-> Objeto Date:",
         fechaGuardia,
       );
-
       switch (tipoFiltro) {
         case "año":
           const añoGuardia = fechaGuardia.getFullYear();
@@ -269,7 +228,6 @@
             `📊 Año guardia: ${añoGuardia} === ${añoSeleccionado}? ${coincideAño}`,
           );
           return coincideAño;
-
         case "mes":
           const añoGuardiaM = fechaGuardia.getFullYear();
           const mesGuardia = fechaGuardia.getMonth() + 1;
@@ -279,7 +237,6 @@
             `📊 Mes guardia: ${añoGuardiaM}/${mesGuardia} === ${añoSeleccionado}/${mesSeleccionado}? ${coincideMes}`,
           );
           return coincideMes;
-
         case "dia":
           const fechaSeleccionadaObj = new Date(fechaSeleccionada);
           const coincideDia =
@@ -288,12 +245,10 @@
             `📊 Día guardia: ${fechaGuardia.toDateString()} === ${fechaSeleccionadaObj.toDateString()}? ${coincideDia}`,
           );
           return coincideDia;
-
         default:
           return true;
       }
     });
-
     console.log(
       "🎯 Resultado filtro:",
       resultado.length,
@@ -303,7 +258,6 @@
     );
     return resultado;
   }
-
   // Guardias filtradas reactivas
   $: {
     console.log("🔄 Variables de filtro cambiaron:", {
@@ -315,7 +269,6 @@
     guardiasPorHacerFiltradas = filtrarPorFecha(guardiasPorHacer);
     guardiasRealizadasFiltradas = filtrarPorFecha(guardiasRealizadas);
   }
-
   // Generar opciones de años (últimos 5 años + próximos 2)
   function generarOpcionesAños() {
     const añoActual = new Date().getFullYear();
@@ -325,7 +278,6 @@
     }
     return años;
   }
-
   // Nombres de los meses
   const nombresMeses = [
     "Enero",
@@ -341,7 +293,6 @@
     "Noviembre",
     "Diciembre",
   ];
-
   // Función para limpiar filtros
   function limpiarFiltros() {
     tipoFiltro = "todos";
@@ -350,7 +301,6 @@
     fechaSeleccionada = new Date().toISOString().split("T")[0];
   }
 </script>
-
 <div class="container">
   <div class="header">
     <div class="header-glass">
@@ -368,7 +318,6 @@
       </div>
     {/if}
   </div>
-
   {#if cargando}
     <div class="loading-glass">
       <div class="spinner"></div>
@@ -393,7 +342,6 @@
             <option value="dia">Por día específico</option>
           </select>
         </div>
-
         {#if tipoFiltro === "año"}
           <div class="filtro-campo">
             <label for="filtro-año-select">Año:</label>
@@ -404,7 +352,6 @@
             </select>
           </div>
         {/if}
-
         {#if tipoFiltro === "mes"}
           <div class="filtro-campo">
             <label for="filtro-año-mes-select">Año:</label>
@@ -423,7 +370,6 @@
             </select>
           </div>
         {/if}
-
         {#if tipoFiltro === "dia"}
           <div class="filtro-campo">
             <label for="filtro-fecha-input">Fecha:</label>
@@ -434,7 +380,6 @@
             />
           </div>
         {/if}
-
         <!-- Botón limpiar filtros -->
         {#if tipoFiltro !== "todos"}
           <div class="filtro-campo">
@@ -445,7 +390,6 @@
         {/if}
       </div>
     </div>
-
     <!-- Tabs -->
     <div class="tabs">
       <button
@@ -461,7 +405,6 @@
         ✅ Realizadas ({guardiasRealizadasFiltradas.length})
       </button>
     </div>
-
     <!-- Contenido según tab -->
     {#if tabActual === "porHacer"}
       {#if guardiasPorHacerFiltradas.length === 0}
@@ -489,7 +432,6 @@
                   >{guardia.hora_inicio} - {guardia.hora_fin}</span
                 >
               </div>
-
               <div class="guardia-body">
                 <div class="info-row">
                   <span class="label">Área:</span>
@@ -506,7 +448,6 @@
                   </div>
                 {/if}
               </div>
-
               <div class="guardia-footer">
                 <button
                   class="btn-nota {guardia.tiene_nota ? 'tiene-nota' : ''}"
@@ -542,7 +483,6 @@
                 >{guardia.hora_inicio} - {guardia.hora_fin}</span
               >
             </div>
-
             <div class="guardia-body">
               <div class="info-row">
                 <span class="label">Área:</span>
@@ -559,7 +499,6 @@
                 </div>
               {/if}
             </div>
-
             <div class="guardia-footer">
               <button
                 class="btn-nota {guardia.tiene_nota ? 'tiene-nota' : ''}"
@@ -574,7 +513,6 @@
     {/if}
   {/if}
 </div>
-
 <ModalNotaGuardia
   bind:show={modalNotaAbierto}
   guardia={guardiaSeleccionada}
@@ -585,7 +523,6 @@
   on:guardar={guardarNota}
   on:eliminar={eliminarNota}
 />
-
 <ModalAlert
   bind:show={$modalAlert.show}
   type={$modalAlert.type}
@@ -598,7 +535,6 @@
   on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
   on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
-
 <style>
   .container {
     width: 100%;
@@ -607,18 +543,15 @@
     padding: 1rem 1rem 2rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-
   @media (min-width: 768px) {
     .container {
       padding: 0 1rem 2rem;
     }
-
     .header {
       margin-bottom: 2rem;
       flex-wrap: nowrap;
     }
   }
-
   .header {
     display: flex;
     align-items: center;
@@ -630,7 +563,6 @@
     max-width: 100%;
     box-sizing: border-box;
   }
-
   .header-glass {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     position: relative;
@@ -648,14 +580,12 @@
       0 20px 60px rgba(30, 64, 175, 0.4);
     box-sizing: border-box;
   }
-
   @media (min-width: 640px) {
     .header-glass {
       padding: 20px 30px;
       border-radius: 20px;
     }
   }
-
   @media (min-width: 768px) {
     .header-glass {
       padding: 25px 60px;
@@ -664,13 +594,11 @@
       width: auto;
     }
   }
-
   @media (min-width: 1024px) {
     .header-glass {
       padding: 25px 140px;
     }
   }
-
   .header-glass::before {
     content: "";
     position: absolute;
@@ -687,7 +615,6 @@
     background-size: 50px 50px;
     animation: moveLines 20s linear infinite;
   }
-
   .header-glass h1 {
     font-weight: 800;
     font-size: 18px;
@@ -701,19 +628,16 @@
     word-wrap: break-word;
     margin: 0 auto;
   }
-
   @media (min-width: 480px) {
     .header-glass h1 {
       font-size: 20px;
     }
   }
-
   @media (min-width: 640px) {
     .header-glass h1 {
       font-size: 24px;
     }
   }
-
   @media (min-width: 768px) {
     .header-glass h1 {
       font-size: 28px;
@@ -721,7 +645,6 @@
       display: inline-block;
     }
   }
-
   .header-glass h1::after {
     content: "";
     position: absolute;
@@ -737,7 +660,6 @@
     );
     animation: moveLine 2s linear infinite;
   }
-
   @keyframes moveLine {
     0% {
       left: -40%;
@@ -746,7 +668,6 @@
       left: 100%;
     }
   }
-
   .tabs-glass {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
@@ -756,7 +677,6 @@
     display: flex;
     gap: 0.5rem;
   }
-
   .tab {
     flex: 1;
     padding: 1rem 2rem;
@@ -770,25 +690,21 @@
     transition: all 0.3s ease;
     margin-bottom: 30px;
   }
-
   .tab:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #000;
     transform: translateY(-3%);
   }
-
   .tab.active {
     background: linear-gradient(135deg, #379bddaf 0%, #2c81e9 100%);
     color: #fff;
     box-shadow: 0 4px 15px rgba(0, 198, 255, 0.3);
   }
-
   .guardias-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(350px, 100%), 1fr));
     gap: 1.5rem;
   }
-
   .guardia-card {
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(10px);
@@ -798,37 +714,31 @@
     transition: all 0.3s ease;
     box-shadow: 0 6px 20px rgba(89, 151, 175, 0.1);
   }
-
   .guardia-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 25px rgba(0, 198, 255, 0.2);
     border-color: rgba(98, 172, 192, 0.479);
   }
-
   .guardia-card.realizada {
     opacity: 0.8;
     border-color: rgba(76, 175, 80, 0.3);
   }
-
   .guardia-header {
     margin-bottom: 1rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
-
   .fecha {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.5rem;
   }
-
   .fecha-label {
     font-size: 1.1rem;
     font-weight: 600;
     color: #1a1a1a;
   }
-
   .tipo-badge {
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
@@ -836,58 +746,48 @@
     font-weight: 500;
     text-transform: uppercase;
   }
-
   .tipo-badge.tipo-diurno {
     background: rgba(255, 193, 7, 0.2);
     color: #1a1a1a;
     border: 1px solid rgba(255, 193, 7, 0.3);
   }
-
   .tipo-badge.tipo-nocturno {
     background: rgba(63, 81, 181, 0.2);
     color: #1a1a1a;
     border: 1px solid rgba(63, 81, 181, 0.3);
   }
-
   .horario {
     color: #1a1a1a;
     font-size: 1.2rem;
     font-weight: 500;
   }
-
   .guardia-body {
     margin-bottom: 1rem;
   }
-
   .info-row {
     display: flex;
     justify-content: left;
     margin-bottom: 0.5rem;
   }
-
   .info-row .label {
     color: #666;
     font-size: 0.9rem;
     margin-right: 5px;
   }
-
   .info-row .value {
     color: #1a1a1a;
     font-weight: 500;
   }
-
   .info-row.observaciones {
     flex-direction: column;
     gap: 0.25rem;
   }
-
   .guardia-footer {
     display: flex;
     justify-content: flex-end;
     padding-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
-
   .btn-nota {
     padding: 0.6rem 1.2rem;
     background: rgba(255, 255, 255, 0.1);
@@ -899,23 +799,19 @@
     cursor: pointer;
     transition: all 0.3s ease;
   }
-
   .btn-nota:hover {
     background: rgba(255, 255, 255, 0.15);
     color: #000;
     transform: scale(1.05);
   }
-
   .btn-nota.tiene-nota {
     background: rgba(255, 152, 0, 0.3);
     border-color: rgba(255, 152, 0, 0.4);
     color: #1a1a1a;
   }
-
   .btn-nota.tiene-nota:hover {
     background: rgba(255, 152, 0, 0.4);
   }
-
   .loading-glass,
   .error-glass,
   .empty-glass {
@@ -927,7 +823,6 @@
     text-align: center;
     color: #1a1a1a;
   }
-
   .spinner {
     width: 50px;
     height: 50px;
@@ -937,13 +832,11 @@
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
-
   @keyframes spin {
     to {
       transform: rotate(360deg);
     }
   }
-
   .btn-primary,
   .btn-secondary,
   .btn-danger {
@@ -955,45 +848,36 @@
     transition: all 0.3s ease;
     border: none;
   }
-
   .btn-primary {
     background: linear-gradient(135deg, #407bff 0%, #0052cc 100%);
     color: #fff;
   }
-
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 5px 20px rgba(64, 123, 255, 0.4);
   }
-
   .btn-primary:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-
   .btn-secondary {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: rgba(255, 255, 255, 0.8);
   }
-
   .btn-secondary:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.15);
     color: #fff;
   }
-
   .btn-danger {
     background: rgba(244, 67, 54, 0.2);
     border: 1px solid rgba(244, 67, 54, 0.4);
     color: #f44336;
   }
-
   .btn-danger:hover:not(:disabled) {
     background: rgba(244, 67, 54, 0.3);
     transform: translateY(-2px);
   }
-
-  /* Admin actions section */
   .admin-actions {
     margin: 2rem 0;
     padding: 1.5rem;
@@ -1001,7 +885,6 @@
     text-align: center;
     backdrop-filter: blur(10px);
   }
-
   .btn-gestionar {
     padding: 0.875rem 2rem;
     border-radius: 12px;
@@ -1014,17 +897,13 @@
     color: #fff;
     box-shadow: 0 4px 15px rgba(64, 123, 255, 0.3);
   }
-
   .btn-gestionar:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 25px rgba(64, 123, 255, 0.5);
   }
-
   .btn-gestionar:active {
     transform: translateY(-1px);
   }
-
-  /* Estilos para filtros */
   .filtros-container {
     background: #f1f4f8;
     border: 1px solid #e5e9eeb2;
@@ -1032,13 +911,11 @@
     padding: 1.5rem;
     margin-bottom: 2rem;
   }
-
   .filtros-glass {
     display: flex;
     gap: 1rem;
     align-items: end;
   }
-
   .filtro-tipo,
   .filtro-campo {
     display: flex;
@@ -1047,14 +924,12 @@
     flex: 1;
     min-width: 160px;
   }
-
   .filtros-glass label {
     color: #1a1a1a;
     font-weight: 600;
     color: #374151;
     font-size: 0.9rem;
   }
-
   .filtros-glass select,
   .filtros-glass input {
     padding: 0.75rem;
@@ -1066,7 +941,6 @@
     font-weight: 500;
     transition: all 0.3s ease;
   }
-
   .filtros-glass select:focus,
   .filtros-glass input:focus {
     outline: none;
@@ -1074,13 +948,11 @@
     box-shadow: 0 0 0 3px rgba(64, 123, 255, 0.15);
     background: rgba(255, 255, 255, 1);
   }
-
   .filtros-glass select:hover,
   .filtros-glass input:hover {
     border-color: rgba(64, 123, 255, 0.5);
     background: rgba(255, 255, 255, 1);
   }
-
   .btn-limpiar {
     padding: 0.75rem 1.2rem;
     background: rgba(255, 87, 34, 0.1);
@@ -1095,52 +967,40 @@
     white-space: nowrap;
     margin-bottom: 0;
   }
-
   .btn-limpiar:hover {
     background: rgba(255, 87, 34, 0.2);
     border-color: rgba(255, 87, 34, 0.5);
     transform: translateY(-2px);
   }
-
   .btn-limpiar:active {
     transform: translateY(0);
   }
-
-  /* Responsive para filtros */
   @media (max-width: 768px) {
     .filtros-glass {
       flex-direction: column;
       align-items: stretch;
     }
-
     .filtro-tipo,
     .filtro-campo {
       min-width: auto;
       width: 100%;
     }
-
     .btn-limpiar {
       margin-top: 0.5rem;
     }
-
-    /* Admin actions más compacto en mobile */
     .admin-actions {
       margin: 0.5rem 0 1rem 0;
       padding: 0;
       width: 100%;
     }
-
     .btn-gestionar {
       width: 100%;
     }
-
-    /* Tabs en fila en mobile */
     .tabs {
       display: flex;
       flex-direction: row;
       gap: 0.5rem;
     }
-
     .tab {
       flex: 1;
       padding: 0.75rem 0.5rem;

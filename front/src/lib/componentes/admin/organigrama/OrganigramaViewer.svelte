@@ -1,11 +1,8 @@
 <script>
 	import { onMount } from "svelte";
 	import NodeRenderer from "./NodeRenderer.svelte";
-
 	export let data = null;
-
 	let expandedNodes = new Set();
-
 	// Expandir automáticamente los primeros 2 niveles
 	onMount(() => {
 		if (data?.organigrama) {
@@ -18,7 +15,6 @@
 			}
 		}
 	});
-
 	function expandAllNodes(node, maxLevel) {
 		if (node.nivel < maxLevel) {
 			expandedNodes.add(node.id);
@@ -30,7 +26,6 @@
 		}
 		expandedNodes = expandedNodes; // Trigger reactivity
 	}
-
 	function toggleNode(nodeId) {
 		if (expandedNodes.has(nodeId)) {
 			expandedNodes.delete(nodeId);
@@ -39,7 +34,6 @@
 		}
 		expandedNodes = expandedNodes; // Trigger reactivity
 	}
-
 	function getNodeIcon(tipo) {
 		const icons = {
 			secretaria: "🏛️",
@@ -52,48 +46,38 @@
 		};
 		return icons[tipo] || "📋";
 	}
-
 	// Nueva función para detectar tipo automáticamente basado en el nombre y nivel
 	function detectarTipoArea(nombre, nivel = 0) {
 		if (!nombre) return "area";
-
 		const nombreLower = nombre.toLowerCase();
-
 		// Secretarías (nivel 1 generalmente)
 		if (nombreLower.includes("secretaría")) {
 			return "secretaria";
 		}
-
 		// Subsecretarías (nivel 2 generalmente)
 		if (nombreLower.includes("subsecretaría")) {
 			return "subsecretaria";
 		}
-
 		// Direcciones Generales (nivel 4 generalmente)
 		if (nombreLower.includes("dirección general")) {
 			return "direccion_general";
 		}
-
 		// Direcciones (nivel 3-4 generalmente)
 		if (nombreLower.includes("dirección")) {
 			return "direccion";
 		}
-
 		// Subdirecciones (nivel 5 generalmente)
 		if (nombreLower.includes("subdirección")) {
 			return "subdireccion";
 		}
-
 		// Departamentos (nivel 5-6 generalmente)
 		if (nombreLower.includes("departamento")) {
 			return "departamento";
 		}
-
 		// Divisiones (nivel 6-7 generalmente)
 		if (nombreLower.includes("división")) {
 			return "division";
 		}
-
 		// Detección por nivel si no hay palabra clave específica
 		switch (nivel) {
 			case 1:
@@ -112,7 +96,6 @@
 				return "area";
 		}
 	}
-
 	function getNodeColor(tipo) {
 		const colors = {
 			secretaria: "border-blue-600 bg-blue-50",
@@ -126,7 +109,6 @@
 		return colors[tipo] || "border-gray-500 bg-gray-40";
 	}
 </script>
-
 {#if data?.organigrama}
 	<div class="container-organigrama">
 		<div class="header-organigrama">
@@ -139,7 +121,6 @@
 				</span>
 			</div>
 		</div>
-
 		<div class="organigrama-container">
 			<div class="organigrama-tree">
 				{#if Array.isArray(data.organigrama)}
@@ -171,7 +152,6 @@
 		<p>No hay datos de organigrama disponibles</p>
 	</div>
 {/if}
-
 <style>
 	.container-organigrama {
 		width: 100%;
@@ -181,7 +161,6 @@
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		box-sizing: border-box;
 	}
-
 	.header-organigrama {
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		position: relative;
@@ -201,7 +180,6 @@
 		align-items: center;
 		gap: 2rem;
 	}
-
 	.header-organigrama::before {
 		content: "";
 		position: absolute;
@@ -218,7 +196,6 @@
 		background-size: 50px 50px;
 		animation: moveLines 20s linear infinite;
 	}
-
 	.header-organigrama h1 {
 		margin: 10px;
 		font-weight: 800;
@@ -233,7 +210,6 @@
 		line-height: 1.2;
 		max-width: 100%;
 	}
-
 	.header-organigrama h1::after {
 		content: "";
 		position: absolute;
@@ -249,7 +225,6 @@
 		);
 		animation: moveLine 2s linear infinite;
 	}
-
 	@keyframes moveLine {
 		0% {
 			left: -40%;
@@ -258,14 +233,12 @@
 			left: 100%;
 		}
 	}
-
 	.info-actualización {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
 		align-items: center;
 	}
-
 	.fecha-actualizacion {
 		display: inline-block;
 		background: #dbeafe;
@@ -275,28 +248,23 @@
 		font-size: 17px;
 		font-weight: 500;
 	}
-
 	.organigrama-container {
 		border-radius: 12px;
 		padding: 2rem;
 		border: none;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.organigrama-tree {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 	}
-
 	.no-data {
 		text-align: center;
 		padding: 4rem 2rem;
 		color: #64748b;
 		font-size: 1.1rem;
 	}
-
-	/* Responsive */
 	@media (max-width: 640px) {
 		.container-organigrama {
 			padding: 1rem 0.75rem 1.5rem;
@@ -304,7 +272,6 @@
 			box-sizing: border-box;
 			overflow-x: hidden;
 		}
-
 		.header-organigrama {
 			padding: 1rem;
 			flex-direction: column;
@@ -314,7 +281,6 @@
 			width: 100%;
 			box-sizing: border-box;
 		}
-
 		.header-organigrama h1 {
 			font-size: 1.75rem; 
 			margin-bottom: 0.5rem;
@@ -323,18 +289,15 @@
 			text-align: center;
 			display: block;
 		}
-
 		.header-organigrama h1::after {
 			left: 50%;
 			transform: translateX(-50%);
 			animation: moveLine 2s linear infinite;
 		}
-
 		.info-actualización {
 			width: 100%;
 			align-items: center;
 		}
-
 		.organigrama-container {
 			padding: 0.5rem;
 		}

@@ -1,22 +1,17 @@
 <script>
   import { createEventDispatcher } from "svelte";
   import { fade, scale } from "svelte/transition";
-
   export let cronograma;
   export let loading = false;
   export let motivoRechazo = "";
-
   const dispatch = createEventDispatcher();
-
   function cerrar() {
     dispatch("close");
   }
-
   function confirmarRechazo() {
     dispatch("confirmar", { motivo: motivoRechazo });
   }
 </script>
-
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="modal-overlay" on:click={cerrar} transition:fade={{ duration: 200 }}>
@@ -31,13 +26,11 @@
       <h3>Rechazar Cronograma</h3>
       <button class="close-button" on:click={cerrar}>&times;</button>
     </div>
-
     <div class="modal-body">
       <p>
         <strong>Cronograma:</strong>
         {cronograma?.area_nombre || ""} - {cronograma?.tipo || ""}
       </p>
-
       <div class="form-group">
         <label for="motivo">Motivo del rechazo *</label>
         <textarea
@@ -60,9 +53,7 @@
     </div>
   </div>
 </div>
-
 <style>
-  /* Modal Overlay & Content */
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -77,7 +68,6 @@
     z-index: 1000;
     padding: 1rem;
   }
-
   .modal-content {
     background: white;
     border-radius: 16px;
@@ -90,16 +80,12 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-
   .modal-content::-webkit-scrollbar {
     display: none;
   }
-
   .modal-rechazo {
     max-width: 500px;
   }
-
-  /* Header */
   .modal-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -110,14 +96,12 @@
     align-items: center;
     border-bottom: none;
   }
-
   .modal-header h3 {
     margin: 0;
     color: white;
     font-size: 1.3rem;
     font-weight: 700;
   }
-
   .close-button {
     background: none;
     border: none;
@@ -133,21 +117,16 @@
     border-radius: 50%;
     transition: all 0.3s ease;
   }
-
   .close-button:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
   }
-
-  /* Body */
   .modal-body {
     padding: 2rem;
   }
-
   .form-group {
     margin-top: 1rem;
   }
-
   .form-group label {
     display: block;
     margin-bottom: 0.5rem;
@@ -155,7 +134,6 @@
     font-weight: 600;
     font-size: 0.9rem;
   }
-
   textarea {
     width: 93%;
     padding: 1rem;
@@ -166,13 +144,11 @@
     resize: vertical;
     transition: all 0.2s ease;
   }
-
   textarea:focus {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-
   .modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -181,8 +157,6 @@
     padding-top: 0;
     border-top: none;
   }
-
-  /* Buttons */
   .btn {
     padding: 10px 20px;
     border: none;
@@ -193,28 +167,23 @@
     transition: all 0.3s ease;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
-
   .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
   }
-
   .btn-secondary {
     background: #6c757d;
     color: white;
   }
-
   .btn-secondary:hover:not(:disabled) {
     background: #5a6268;
     transform: translateY(-2px);
   }
-
   .btn-danger {
     background: #ef4444;
     color: white;
   }
-
   .btn-danger:hover:not(:disabled) {
     background: #dc2626;
     transform: translateY(-2px);

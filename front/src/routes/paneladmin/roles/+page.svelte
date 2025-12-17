@@ -3,7 +3,6 @@
 	import { browser } from "$app/environment";
 	import { rolesController } from "$lib/paneladmin/controllers";
 	import { goto } from "$app/navigation";
-
 	// Obtener referencias a los stores individuales para usar con $
 	const {
 		agentes,
@@ -20,14 +19,12 @@
 		savingRoleId,
 		currentUser,
 	} = rolesController;
-
 	// Verificar autenticación al montar
 	onMount(async () => {
 		try {
 			console.log("🚀 Iniciando controlador de roles...");
 			await rolesController.init();
 			console.log("✅ Controlador de roles inicializado");
-
 			// Recargar cuando la página vuelve a ser visible
 			if (browser) {
 				const handleVisibilityChange = () => {
@@ -35,17 +32,14 @@
 						rolesController.init();
 					}
 				};
-
 				const handleFocus = () => {
 					rolesController.init();
 				};
-
 				document.addEventListener(
 					"visibilitychange",
 					handleVisibilityChange,
 				);
 				window.addEventListener("focus", handleFocus);
-
 				return () => {
 					document.removeEventListener(
 						"visibilitychange",
@@ -66,30 +60,24 @@
 			// El controlador maneja el error automáticamente
 		}
 	});
-
 	// Funciones reactivas para actualizar filtros en el controlador
 	function actualizarBusqueda(event) {
 		rolesController.actualizarBusqueda(event.target.value);
 	}
-
 	function actualizarFiltroArea(event) {
 		rolesController.actualizarFiltroArea(event.target.value);
 	}
-
 	function limpiarFiltros() {
 		rolesController.limpiarFiltros();
 	}
 </script>
-
 <svelte:head>
 	<title>Roles y Permisos - GIGA</title>
 </svelte:head>
-
 <div class="page-container">
 	<div class="page-header">
 		<h1>Gestión de Roles y Permisos</h1>
 	</div>
-
 	<div class="page-content">
 		{#if $error}
 			<div class="alert alert-error">
@@ -103,7 +91,6 @@
 				</button>
 			</div>
 		{/if}
-
 		<!-- Controles de filtrado -->
 		<div class="filtros-container">
 			<div class="filtros-row">
@@ -148,7 +135,6 @@
 				</div>
 			</div>
 		</div>
-
 		{#if $loading}
 			<div class="loading-container">
 				<div class="spinner-large"></div>
@@ -334,7 +320,6 @@
 		{/if}
 	</div>
 </div>
-
 <style>
 	.page-container {
 		width: 1600px;
@@ -342,7 +327,6 @@
 		padding: 2rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.page-header {
 		position: relative;
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
@@ -357,7 +341,6 @@
 			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
 			0 10px 30px rgba(30, 64, 175, 0.4);
 	}
-
 	.page-header::before {
 		content: "";
 		position: absolute;
@@ -374,7 +357,6 @@
 		background-size: 50px 50px;
 		animation: moveLines 20s linear infinite;
 	}
-
 	.page-header h1 {
 		margin: 10px;
 		font-weight: 800;
@@ -387,26 +369,22 @@
 		max-width: 100%;
 		word-wrap: break-word;
 	}
-
 	@media (min-width: 480px) {
 		.page-header h1 {
 			font-size: 22px;
 		}
 	}
-
 	@media (min-width: 640px) {
 		.page-header h1 {
 			font-size: 26px;
 			display: inline-block;
 		}
 	}
-
 	@media (min-width: 768px) {
 		.page-header h1 {
 			font-size: 30px;
 		}
 	}
-
 	.page-header h1::after {
 		content: "";
 		position: absolute;
@@ -422,7 +400,6 @@
 		);
 		animation: moveLine 2s linear infinite;
 	}
-
 	@keyframes moveLine {
 		0% {
 			left: -40%;
@@ -431,7 +408,6 @@
 			left: 100%;
 		}
 	}
-
 	.alert {
 		padding: 1rem;
 		border-radius: 8px;
@@ -440,13 +416,11 @@
 		justify-content: space-between;
 		align-items: center;
 	}
-
 	.alert-error {
 		background: #f8d7da;
 		color: #721c24;
 		border: 1px solid #f5c6cb;
 	}
-
 	.filtros-container {
 		background: white;
 		border: 1px solid #e9ecef;
@@ -457,7 +431,6 @@
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		font-size: 12px;
 	}
-
 	.filtros-row {
 		display: grid;
 		grid-template-columns: 1fr auto auto;
@@ -465,7 +438,6 @@
 		align-items: end;
 		margin-bottom: 1rem;
 	}
-
 	.filtro-group {
 		display: flex;
 		flex-direction: column;
@@ -476,7 +448,6 @@
 		color: #495057;
 		font-size: 0.9rem;
 	}
-
 	.input-busqueda,
 	.select-area {
 		padding: 0.75rem;
@@ -490,25 +461,21 @@
 		max-width: 100%;
 		box-sizing: border-box;
 	}
-
 	.input-busqueda:focus,
 	.select-area:focus {
 		outline: none;
 		border-color: #e79043;
 		box-shadow: 0 0 0 2px rgba(231, 144, 67, 0.25);
 	}
-
 	.filtro-actions {
 		display: flex;
 		align-items: end;
 	}
-
 	.loading-container {
 		text-align: center;
 		padding: 4rem 2rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	.spinner-large {
 		width: 3rem;
 		height: 3rem;
@@ -518,7 +485,6 @@
 		animation: spin 1s linear infinite;
 		margin: 0 auto 1rem;
 	}
-
 	.empty-state {
 		text-align: center;
 		padding: 4rem 2rem;
@@ -526,22 +492,18 @@
 		border-radius: 12px;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
-
 	.empty-icon {
 		font-size: 4rem;
 		margin-bottom: 1rem;
 	}
-
 	.empty-state h3 {
 		margin: 0 0 0.5rem 0;
 		color: #495057;
 	}
-
 	.empty-state p {
 		color: #6c757d;
 		margin-bottom: 2rem;
 	}
-
 	.table-container {
 		overflow-x: auto;
 		max-height: 600px;
@@ -554,49 +516,40 @@
 		scrollbar-color: #c1c7cd #f1f3f4;
 		-webkit-overflow-scrolling: touch;
 	}
-
 	.table-container::-webkit-scrollbar {
 		height: 8px;
 		width: 8px;
 	}
-
 	.table-container::-webkit-scrollbar-track {
 		background: #f1f3f4;
 		border-radius: 10px;
 	}
-
 	.table-container::-webkit-scrollbar-thumb {
 		background: #c1c7cd;
 		border-radius: 10px;
 	}
-
 	.table-container::-webkit-scrollbar {
 		width: 8px;
 		height: 8px;
 	}
-
 	.table-container::-webkit-scrollbar-track {
 		background: #f1f3f4;
 		border-radius: 10px;
 	}
-
 	.table-container::-webkit-scrollbar-thumb {
 		background: #c1c7cd;
 		border-radius: 10px;
 		transition: background 0.3s ease;
 	}
-
 	.table-container::-webkit-scrollbar-thumb:hover {
 		background: #a8aeb4;
 	}
-
 	table {
 		width: 100%;
 		border-collapse: collapse;
 		background: white;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 	}
-
 	thead {
 		background: linear-gradient(135deg, #4865e9 0%, #527ab6d0 100%);
 		position: sticky;
@@ -604,7 +557,6 @@
 		z-index: 10;
 		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 	}
-
 	th {
 		padding: 15px 20px;
 		text-align: left;
@@ -616,24 +568,20 @@
 		letter-spacing: 0.5px;
 		background: transparent;
 	}
-
 	td {
 		padding: 15px 20px;
 		border-bottom: 1px solid #f1f3f4;
 		vertical-align: middle;
 		font-size: 0.95rem;
 	}
-
 	tbody tr {
 		transition: all 0.3s ease;
 	}
-
 	tbody tr:hover {
 		background-color: #f8f9fa;
 		transform: scale(1.01);
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 	}
-
 	.legajo-badge {
 		background: linear-gradient(135deg, #e79043, #f39c12);
 		color: white;
@@ -642,24 +590,20 @@
 		font-weight: 600;
 		font-size: 0.9rem;
 	}
-
 	.nombre-info strong {
 		display: block;
 		color: #2c3e50;
 		margin-bottom: 0.25rem;
 	}
-
 	.nombre-info small {
 		color: #6c757d;
 		font-size: 0.8rem;
 	}
-
 	.dni-text {
 		font-weight: 500;
 		color: #495057;
 		font-family: monospace;
 	}
-
 	.categoria-badge {
 		color: black;
 		padding: 0.25rem 0.5rem;
@@ -667,7 +611,6 @@
 		font-size: 15px;
 		font-weight: 500;
 	}
-
 	.area-badge {
 		background: #17a2b8;
 		color: white;
@@ -681,37 +624,31 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-
 	.rol-display {
 		display: flex;
 		align-items: center;
 	}
-
 	.rol-badge {
 		padding: 0.5rem 0.75rem;
 		border-radius: 6px;
 		font-size: 0.85rem;
 		font-weight: 500;
 	}
-
 	.rol-badge.rol-asignado {
 		background: #d4edda;
 		color: #155724;
 		border: 1px solid #c3e6cb;
 	}
-
 	.rol-badge.sin-rol {
 		background: #f8d7da;
 		color: #721c24;
 		border: 1px solid #f5c6cb;
 	}
-
 	.rol-editor {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 	}
-
 	.rol-select {
 		padding: 0.5rem;
 		border: 2px solid #e79043;
@@ -719,23 +656,19 @@
 		font-size: 0.85rem;
 		min-width: 150px;
 	}
-
 	.rol-select:focus {
 		outline: none;
 		box-shadow: 0 0 0 2px rgba(231, 144, 67, 0.25);
 	}
-
 	.rol-actions {
 		display: flex;
 		gap: 0.25rem;
 	}
-
 	.text-muted {
 		color: #6c757d;
 		font-size: 0.85rem;
 		font-style: italic;
 	}
-
 	.btn-primary {
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 		padding: 8px 12px;
@@ -748,7 +681,6 @@
 		background: linear-gradient(135deg, #e79043, #f39c12);
 		color: white;
 	}
-
 	.btn-limpiar {
 		padding: 10px 25px;
 		background: #6c757d;
@@ -761,12 +693,10 @@
 		white-space: nowrap;
 		height: 42px;
 	}
-
 	.btn-limpiar:hover {
 		background: #5a6268;
 		transform: translateY(-1px);
 	}
-
 	.btn-success {
 		border: none;
 		border-radius: 6px;
@@ -777,12 +707,10 @@
 		cursor: pointer;
 		transition: all 0.2s ease;
 	}
-
 	.btn-success:hover:not(:disabled) {
 		background: #1e7e34;
 		transform: translateY(-1px);
 	}
-
 	.btn-secondary {
 		border: none;
 		border-radius: 6px;
@@ -793,164 +721,132 @@
 		cursor: pointer;
 		transition: all 0.2s ease;
 	}
-
 	.btn-secondary:hover:not(:disabled) {
 		background: #545b62;
 		transform: translateY(-1px);
 	}
-
 	.spinner-sm {
 		width: 0.8rem;
 		height: 0.8rem;
 	}
-
 	@keyframes spin {
 		to {
 			transform: rotate(360deg);
 		}
 	}
-
-	/* Responsive */
 	@media (max-width: 1200px) {
 		.page-container {
 			width: 100%;
 			max-width: 100%;
 		}
-
 		.roles-table {
 			font-size: 0.85rem;
 		}
-
 		.roles-table th,
 		.roles-table td {
 			padding: 0.75rem 0.5rem;
 		}
 	}
-
 	@media (max-width: 768px) {
 		.page-container {
 			padding: 0.75rem;
 			width: 100%;
 			box-sizing: border-box;
 		}
-
 		.page-header {
 			padding: 20px 15px;
 			margin-bottom: 15px;
 			border-radius: 16px;
 		}
-
 		.filtros-container {
 			padding: 1rem;
 		}
-
 		.filtros-row {
 			grid-template-columns: 1fr;
 			gap: 0.75rem;
 		}
-
 		.input-busqueda,
 		.select-area {
 			min-width: unset;
 			width: 100%;
 		}
-
 		.filtro-actions {
 			width: 100%;
 		}
-
 		.btn-limpiar {
 			width: 100%;
 		}
-
 		.table-container {
 			overflow-x: auto;
 			border-radius: 12px;
 		}
-
 		.roles-table {
 			min-width: 800px;
 		}
-
 		th, td {
 			padding: 10px 12px;
 			font-size: 0.85rem;
 		}
-
 		.area-badge {
 			max-width: 100px;
 			font-size: 0.75rem;
 		}
-
 		.rol-editor {
 			flex-direction: column;
 			gap: 0.5rem;
 			align-items: stretch;
 			min-width: 180px;
 		}
-
 		.rol-select {
 			min-width: 100%;
 			padding: 0.6rem;
 			font-size: 0.9rem;
 		}
-
 		.rol-actions {
 			display: flex;
 			justify-content: center;
 			gap: 0.5rem;
 		}
-
 		.rol-actions button {
 			padding: 8px 16px;
 			font-size: 1rem;
 		}
 	}
-
 	@media (max-width: 480px) {
 		.page-container {
 			padding: 0.5rem;
 		}
-
 		.page-header {
 			padding: 16px 12px;
 			border-radius: 14px;
 		}
-
 		.filtros-container {
 			padding: 0.75rem;
 		}
-
 		.filtro-group label {
 			font-size: 0.8rem;
 		}
-
 		.input-busqueda,
 		.select-area {
 			padding: 0.6rem;
 			font-size: 0.85rem;
 		}
-
 		.btn-limpiar {
 			padding: 8px 16px;
 			font-size: 0.85rem;
 			height: auto;
 		}
-
 		.roles-table {
 			min-width: 700px;
 		}
-
 		th, td {
 			padding: 8px 10px;
 			font-size: 0.8rem;
 		}
-
 		.legajo-badge {
 			font-size: 0.75rem;
 			padding: 0.2rem 0.4rem;
 		}
-
 		.btn-primary {
 			padding: 6px 10px;
 			font-size: 12px;

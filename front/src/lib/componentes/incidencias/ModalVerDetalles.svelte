@@ -1,14 +1,12 @@
 <script>
 	import BaseModal from "./BaseModal.svelte";
 	import { IncidenciasService } from "$lib/services/incidencias.js";
-
 	export let show = false;
 	export let incidenciaSeleccionada = null;
 	export let cargandoDetalle = false;
 	export let onClose = () => {};
 	export let onCambiarEstado = () => {};
 </script>
-
 <BaseModal {show} title="Detalle de Incidencia" maxWidth="900px" {onClose}>
 	<div class="modal-detalle-body">
 		<div class="detalle-header-badges">
@@ -18,7 +16,6 @@
 				<span class="badge badge-pendiente"> Pendiente </span>
 			{/if}
 		</div>
-
 		{#if cargandoDetalle}
 			<div class="loading-container">
 				<div class="spinner"></div>
@@ -35,7 +32,6 @@
 						{incidenciaSeleccionada.titulo}
 					</h3>
 				</div>
-
 				<!-- Descripción -->
 				<div class="detalle-section">
 					<h4>Descripción</h4>
@@ -43,7 +39,6 @@
 						{incidenciaSeleccionada.descripcion}
 					</div>
 				</div>
-
 				<!-- Estado y prioridad -->
 				{#if incidenciaSeleccionada.estado || incidenciaSeleccionada.prioridad}
 					<div class="detalle-section">
@@ -82,7 +77,6 @@
 						</div>
 					</div>
 				{/if}
-
 				<!-- Información de gestión -->
 				<div class="detalle-grid">
 					<div class="detalle-item">
@@ -92,7 +86,6 @@
 								"No especificado"}
 						</span>
 					</div>
-
 					<div class="detalle-item">
 						<strong>Fecha de creación:</strong>
 						<span>
@@ -101,7 +94,6 @@
 							)}
 						</span>
 					</div>
-
 					{#if incidenciaSeleccionada.asignado_a_nombre}
 						<div class="detalle-item">
 							<strong>Asignada a:</strong>
@@ -110,7 +102,6 @@
 							>
 						</div>
 					{/if}
-
 					{#if incidenciaSeleccionada.fecha_asignacion}
 						<div class="detalle-item">
 							<strong>Fecha de asignación:</strong>
@@ -121,14 +112,12 @@
 							</span>
 						</div>
 					{/if}
-
 					{#if incidenciaSeleccionada.area_nombre}
 						<div class="detalle-item">
 							<strong>Área involucrada:</strong>
 							<span>{incidenciaSeleccionada.area_nombre}</span>
 						</div>
 					{/if}
-
 					{#if incidenciaSeleccionada.fecha_resolucion}
 						<div class="detalle-item">
 							<strong>Fecha de resolución:</strong>
@@ -140,7 +129,6 @@
 						</div>
 					{/if}
 				</div>
-
 				<!-- Resolución (si existe) -->
 				{#if incidenciaSeleccionada.resolucion}
 					<div class="detalle-section">
@@ -150,7 +138,6 @@
 						</div>
 					</div>
 				{/if}
-
 				<!-- Comentarios de seguimiento (si existen) -->
 				{#if incidenciaSeleccionada.comentarios_seguimiento && incidenciaSeleccionada.comentarios_seguimiento.length > 0}
 					<div class="detalle-section comentarios-section">
@@ -181,7 +168,6 @@
 		{/if}
 	</div>
 </BaseModal>
-
 <style>
 	.modal-detalle-body {
 		max-height: 85vh;
@@ -189,17 +175,14 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-
 	.modal-detalle-body::-webkit-scrollbar {
 		display: none;
 	}
-
 	.detalle-header-badges {
 		padding: 1rem 2rem 0;
 		display: flex;
 		gap: 0.5rem;
 	}
-
 	.detalle-content {
 		padding: 2rem;
 		overflow-y: auto;
@@ -207,11 +190,9 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-
 	.detalle-content::-webkit-scrollbar {
 		display: none;
 	}
-
 	.loading-container {
 		display: flex;
 		flex-direction: column;
@@ -221,7 +202,6 @@
 		gap: 1rem;
 		padding: 2rem;
 	}
-
 	.spinner {
 		width: 40px;
 		height: 40px;
@@ -230,7 +210,6 @@
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
 	}
-
 	@keyframes spin {
 		0% {
 			transform: rotate(0deg);
@@ -239,15 +218,12 @@
 			transform: rotate(360deg);
 		}
 	}
-
 	.detalle-section {
 		margin-bottom: 2rem;
 	}
-
 	.detalle-section:last-child {
 		margin-bottom: 0;
 	}
-
 	.detalle-numero {
 		font-size: 0.9rem;
 		color: #6b7280;
@@ -259,7 +235,6 @@
 		padding: 0.25rem 0.75rem;
 		border-radius: 6px;
 	}
-
 	.detalle-titulo {
 		font-size: 1.5rem;
 		font-weight: 700;
@@ -267,7 +242,6 @@
 		margin: 0 0 1rem 0;
 		line-height: 1.3;
 	}
-
 	.detalle-section h4 {
 		font-size: 1.1rem;
 		font-weight: 700;
@@ -276,7 +250,6 @@
 		border-bottom: 2px solid #e5e7eb;
 		padding-bottom: 0.5rem;
 	}
-
 	.detalle-descripcion,
 	.detalle-resolucion {
 		background: #f9fafb;
@@ -289,13 +262,11 @@
 		word-wrap: break-word;
 		min-height: 60px;
 	}
-
 	.detalle-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 		gap: 1rem;
 	}
-
 	.detalle-item {
 		display: flex;
 		flex-direction: column;
@@ -306,12 +277,10 @@
 		border-left: 4px solid #4c51bf;
 		transition: all 0.2s ease;
 	}
-
 	.detalle-item:hover {
 		transform: translateX(4px);
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
-
 	.detalle-item strong {
 		font-size: 0.75rem;
 		font-weight: 700;
@@ -319,25 +288,21 @@
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 	}
-
 	.detalle-item span {
 		font-size: 1rem;
 		color: #1f2937;
 		font-weight: 600;
 	}
-
 	.comentarios-section {
 		border-top: 2px solid #e5e7eb;
 		padding-top: 2rem;
 		margin-top: 2rem;
 	}
-
 	.comentarios-lista {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
 	}
-
 	.comentario-item {
 		background: #f8fafc;
 		border: 1px solid #e5e7eb;
@@ -346,36 +311,30 @@
 		padding: 1.25rem;
 		transition: all 0.2s ease;
 	}
-
 	.comentario-item:hover {
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 		transform: translateY(-2px);
 	}
-
 	.comentario-meta {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 0.75rem;
 	}
-
 	.comentario-meta strong {
 		color: #374151;
 		font-weight: 600;
 	}
-
 	.comentario-fecha {
 		font-size: 0.875rem;
 		color: #6b7280;
 		font-weight: 400;
 	}
-
 	.comentario-texto {
 		color: #4b5563;
 		line-height: 1.6;
 		font-weight: 400;
 	}
-
 	.estado-prioridad-container {
 		display: flex;
 		flex-wrap: wrap;
@@ -386,21 +345,18 @@
 		border-radius: 12px;
 		border: 1px solid #e5e7eb;
 	}
-
 	.estado-actual,
 	.prioridad-actual {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 	}
-
 	.estado-actual strong,
 	.prioridad-actual strong {
 		font-size: 0.875rem;
 		color: #374151;
 		font-weight: 600;
 	}
-
 	.btn-cambiar-estado {
 		background: linear-gradient(135deg, #4c51bf, #5b21b6);
 		color: white;
@@ -415,14 +371,11 @@
 		box-shadow: 0 2px 8px rgba(76, 81, 191, 0.3);
 		white-space: nowrap;
 	}
-
 	.btn-cambiar-estado:hover {
 		background: linear-gradient(135deg, #5b21b6, #6d28d9);
 		transform: translateY(-2px);
 		box-shadow: 0 4px 12px rgba(76, 81, 191, 0.4);
 	}
-
-	/* Badges */
 	:global(.badge) {
 		padding: 0.35rem 0.85rem;
 		border-radius: 20px;
@@ -432,110 +385,87 @@
 		letter-spacing: 0.5px;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
-
 	:global(.badge-resuelto),
 	:global(.badge-resuelta) {
 		background: linear-gradient(135deg, #10b981, #059669);
 		color: white;
 	}
-
 	:global(.badge-pendiente),
 	:global(.badge-abierta) {
 		background: linear-gradient(135deg, #f59e0b, #d97706);
 		color: white;
 	}
-
 	:global(.badge-en_proceso) {
 		background: linear-gradient(135deg, #3b82f6, #2563eb);
 		color: white;
 	}
-
 	:global(.badge-pendiente_informacion) {
 		background: linear-gradient(135deg, #eab308, #ca8a04);
 		color: white;
 	}
-
 	:global(.badge-cerrada) {
 		background: linear-gradient(135deg, #6b7280, #4b5563);
 		color: white;
 	}
-
-	/* Prioridades */
 	:global(.badge-prioridad-baja) {
 		background: linear-gradient(135deg, #10b981, #059669);
 		color: white;
 	}
-
 	:global(.badge-prioridad-media) {
 		background: linear-gradient(135deg, #f59e0b, #d97706);
 		color: white;
 	}
-
 	:global(.badge-prioridad-alta) {
 		background: linear-gradient(135deg, #ef4444, #dc2626);
 		color: white;
 	}
-
 	:global(.badge-prioridad-critica) {
 		background: linear-gradient(135deg, #991b1b, #7f1d1d);
 		color: white;
 	}
-
-	/* Responsive */
 	@media (max-width: 768px) {
 		.detalle-content {
 			padding: 1.25rem;
 		}
-
 		.detalle-header-badges {
 			padding: 1rem 1.25rem 0;
 		}
-
 		.detalle-grid {
 			grid-template-columns: 1fr;
 		}
-
 		.detalle-descripcion,
 		.detalle-resolucion {
 			padding: 1rem;
 			font-size: 0.95rem;
 		}
-
 		.estado-prioridad-container {
 			gap: 0.75rem;
 		}
-
 		.btn-cambiar-estado {
 			width: 100%;
 			margin-left: 0;
 			margin-top: 0.5rem;
 		}
 	}
-
 	@media (max-width: 480px) {
 		.detalle-content {
 			padding: 1rem;
 		}
-
 		.detalle-header-badges {
 			padding: 0.75rem 1rem 0;
 		}
-
 		.detalle-titulo {
 			font-size: 1.25rem;
 		}
-
 		.detalle-section h4 {
 			font-size: 1rem;
 		}
-
 		.estado-actual,
 		.prioridad-actual {
 			flex-direction: column;
 			align-items: flex-start;
 			gap: 0.25rem;
 		}
-
 		.comentario-meta {
 			flex-direction: column;
 			align-items: flex-start;

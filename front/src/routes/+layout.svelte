@@ -63,6 +63,7 @@
 		color: #000000 !important;
 		color-scheme: light only;
 		-webkit-color-scheme: light;
+		overscroll-behavior-y: contain;
 	}
 
 	.layout-container {
