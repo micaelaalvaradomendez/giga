@@ -916,7 +916,7 @@
     color: white;
     padding: 30px 40px;
     margin: 0;
-    max-width: 1000px;
+    width: 100%;
     border-radius: 28px;
     overflow: hidden;
     text-align: center;
@@ -977,7 +977,8 @@
 
   @media (max-width: 768px) {
     .header-title {
-      padding: 20px 20px;
+      padding: 15px 10px;
+      border-radius: 14px;
     }
   }
 
