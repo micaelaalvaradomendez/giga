@@ -594,8 +594,30 @@ def recover_password(request):
             f"Contraseña reseteada por solicitud del usuario. IP: {request.META.get('REMOTE_ADDR', 'unknown')}"
         )
 
+        # Validar que el agente tenga email configurado
+        if not agente.email:
+            logger.error(f"Agente {agente.dni} (ID: {agente.id_agente}) no tiene email configurado")
+            registrar_auditoria(
+                agente.id_agente,
+                "RECUPERACION_PASSWORD_SIN_EMAIL",
+                f"Contraseña reseteada pero no se pudo enviar email (email no configurado). IP: {request.META.get('REMOTE_ADDR', 'unknown')}"
+            )
+            return Response({
+                'success': True,
+                'message': 'Contraseña restablecida. Sin embargo, no se pudo enviar el email de confirmación. Contacte al administrador.',
+                'email_sent': False
+            })
+
+        # Loguear configuración de email
+        logger.info(f"Configuración de email - Backend: {settings.EMAIL_BACKEND}")
+        logger.info(f"Configuración de email - From: {settings.DEFAULT_FROM_EMAIL}")
+        logger.info(f"RESEND_API_KEY configurado: {'Sí' if settings.RESEND_API_KEY else 'No'}")
+
         # Enviar email
+        email_sent = False
         try:
+            logger.info(f"Intentando enviar email de recuperación a: {agente.email} para agente {agente.dni}")
+            
             send_mail(
                 subject='GIGA - Contraseña Restablecida',
                 message=f"""
@@ -622,9 +644,10 @@ Sistema GIGA - Protección Civil
                 recipient_list=[agente.email],
             )
             email_sent = True
+            logger.info(f"Email de recuperación enviado exitosamente a: {agente.email}")
         except Exception as e:
-            logger.error(f"Error enviando email: {e}")
-            email_sent = False
+            logger.error(f"Error enviando email de recuperación a {agente.email}: {type(e).__name__}: {str(e)}")
+            logger.error(f"Detalles completos del error: {e}", exc_info=True)
 
         return Response({
             'success': True,

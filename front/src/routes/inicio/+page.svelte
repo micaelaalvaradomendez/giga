@@ -157,7 +157,8 @@
 </script>
 {#if showMandatoryPasswordChange}
 	<CambioContrasenaObligatorio
-		bind:showModal={showMandatoryPasswordChange}
+		bind:showAlert={showMandatoryPasswordChange}
+		{user}
 		on:passwordChanged={() => {
 			showMandatoryPasswordChange = false;
 		}}
