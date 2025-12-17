@@ -11,18 +11,21 @@
       desc: "Crear nueva guardia",
       href: "/paneladmin/guardias/planificador",
       emoji: "➕",
+      roles: [1, 2, 3],
     },
     {
       title: "Aprobaciones",
       desc: "Revisar y publicar",
       href: "/paneladmin/guardias/aprobaciones",
       emoji: "📝",
+      roles: [1, 2],
     },
     {
       title: "Compensaciones",
       desc: "Compensaciones horas guardias y extras",
       href: "/paneladmin/guardias/compensaciones",
       emoji: "📝",
+      roles: [1, 2, 3],
     },
   ];
   // Obtener stores del controller
@@ -36,12 +39,18 @@
     mostrarModal,
     estadisticas,
   } = guardiasMainController;
+
+  let rolesIds = [];
+
   onMount(async () => {
-    console.log("🔄 Componente de guardias montado, iniciando controller...");
     await guardiasMainController.init();
-    console.log("✅ Controller de guardias inicializado");
     // Recargar cuando la página vuelve a ser visible
     if (browser) {
+
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      rolesIds = (user?.roles || []).map(r => r.id); 
+
+      console.log(user)
       const handleVisibilityChange = () => {
         if (document.visibilityState === "visible") {
           guardiasMainController.recargar();
@@ -76,7 +85,7 @@
   </header>
   <div class="grid-general">
     <div class="left">
-      {#each items as it}
+      {#each items.filter(it => !it.roles || it.roles.some(rid => rolesIds.includes(rid))) as it}
         <a class="card" href={it.href}>
           <div class="icon">{it.emoji}</div>
           <div class="body">
