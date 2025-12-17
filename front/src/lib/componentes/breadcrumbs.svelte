@@ -1,5 +1,7 @@
 <script>
+    import { browser } from '$app/environment';
     import { page } from "$app/stores";
+    
     // Mapeo de rutas a nombres amigables
     const routeNames = {
         inicio: "Inicio",
@@ -16,24 +18,30 @@
         roles: "Roles",
         convenio: "Convenio CCT",
     };
-    $: crumbs = $page.url.pathname
-        .split("/")
-        .filter(Boolean)
-        .map((part, i, arr) => {
-            const path = "/" + arr.slice(0, i + 1).join("/");
-            let label = routeNames[part] || part;
-            // Capitalizar si no está en el mapa
-            if (!routeNames[part]) {
-                label = part.charAt(0).toUpperCase() + part.slice(1);
-            }
-            return {
-                label,
-                href: path,
-                isLast: i === arr.length - 1,
-            };
-        });
+    
+    let crumbs = [];
+    
+    // Solo calcular breadcrumbs en el cliente
+    $: if (browser && $page) {
+        crumbs = $page.url.pathname
+            .split("/")
+            .filter(Boolean)
+            .map((part, i, arr) => {
+                const path = "/" + arr.slice(0, i + 1).join("/");
+                let label = routeNames[part] || part;
+                if (!routeNames[part]) {
+                    label = part.charAt(0).toUpperCase() + part.slice(1);
+                }
+                return {
+                    label,
+                    href: path,
+                    isLast: i === arr.length - 1,
+                };
+            });
+    }
 </script>
-{#if crumbs.length > 0 && $page.url.pathname !== "/"}
+
+{#if browser && crumbs.length > 0 && $page.url.pathname !== "/"}
     <div class="breadcrumbs-container">
         <nav aria-label="Breadcrumb">
             <ol>

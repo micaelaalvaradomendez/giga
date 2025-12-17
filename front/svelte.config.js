@@ -3,16 +3,18 @@ import adapter from '@sveltejs/adapter-node';
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	kit: {
-		// adapter-node generates a standalone Node.js server
 		adapter: adapter({
-			// default options are shown
 			out: 'build',
 			precompress: false,
 			envPrefix: ''
 		}),
-		// Proxy configuration for API requests
 		alias: {
 			$lib: 'src/lib'
+		},
+		// Configuración para mejorar la compatibilidad SSR
+		ssr: {
+			// No externalizar ningún paquete de $lib
+			noExternal: process.env.NODE_ENV === 'production' ? ['$lib'] : []
 		}
 	},
 	vitePlugin: {
