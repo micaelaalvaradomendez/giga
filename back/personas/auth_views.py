@@ -452,18 +452,24 @@ def logout_view(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET', 'OPTIONS'])
-@permission_classes([IsAuthenticatedGIGA])
+@permission_classes([AllowAny])
 def check_session(request):
     """
     Verificar si el usuario tiene una sesión activa
-    
+    Usa AllowAny para evitar 401 en celular/incógnito sin sesión
     """
     if request.method == 'OPTIONS':
         return Response(status=status.HTTP_200_OK)
 
     try:
+        # Debug temporal
+        print(f"[CHECK_SESSION] Cookies recibidas: {request.COOKIES.keys()}")
+        print(f"[CHECK_SESSION] Session key: {request.session.session_key}")
+        
         user_id = request.session.get('user_id')
         is_authenticated = request.session.get('is_authenticated', False)
+        
+        print(f"[CHECK_SESSION] user_id={user_id}, is_authenticated={is_authenticated}")
 
         if not user_id or not is_authenticated:
             return Response({
