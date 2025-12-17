@@ -64,21 +64,25 @@ class AuditoriaController {
 
 				// Optimize date filtering: parse filter dates once outside the loop
 				if ($filtros.fechaDesde) {
-					const fechaDesdeTs = new Date($filtros.fechaDesde).getTime();
-					registrosFiltrados = registrosFiltrados.filter(registro => 
-						// Use precomputed timestamp if available
-						(registro._ts_creado_en || new Date(registro.creado_en).getTime()) >= fechaDesdeTs
-					);
+					// Parse as local date, not UTC
+					const [year, month, day] = $filtros.fechaDesde.split('-').map(Number);
+					const fechaDesde = new Date(year, month - 1, day, 0, 0, 0, 0);
+					const fechaDesdeTs = fechaDesde.getTime();
+					registrosFiltrados = registrosFiltrados.filter(registro => {
+						const fechaRegistro = new Date(registro.creado_en);
+						return fechaRegistro.getTime() >= fechaDesdeTs;
+					});
 				}
 
 				if ($filtros.fechaHasta) {
-					const fechaHasta = new Date($filtros.fechaHasta);
-					fechaHasta.setHours(23, 59, 59, 999); // Incluir todo el día
+					// Parse as local date, not UTC
+					const [year, month, day] = $filtros.fechaHasta.split('-').map(Number);
+					const fechaHasta = new Date(year, month - 1, day, 23, 59, 59, 999);
 					const fechaHastaTs = fechaHasta.getTime();
-					registrosFiltrados = registrosFiltrados.filter(registro => 
-						// Use precomputed timestamp if available
-						(registro._ts_creado_en || new Date(registro.creado_en).getTime()) <= fechaHastaTs
-					);
+					registrosFiltrados = registrosFiltrados.filter(registro => {
+						const fechaRegistro = new Date(registro.creado_en);
+						return fechaRegistro.getTime() <= fechaHastaTs;
+					});
 				}
 
 				// Aplicar búsqueda de texto libre
@@ -150,10 +154,9 @@ class AuditoriaController {
 
 	/**
 	 * Inicializa el controlador cargando los registros de auditoría
+	 * Siempre recarga para obtener los datos más recientes
 	 */
 	async init() {
-		if (this.initialized) return;
-
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
 		}

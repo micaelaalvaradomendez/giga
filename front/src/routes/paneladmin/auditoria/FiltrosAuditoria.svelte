@@ -74,6 +74,10 @@
 		auditoriaController.limpiarFiltros();
 	}
 
+	async function refrescarDatos() {
+		await auditoriaController.recargar();
+	}
+
 	// Función para obtener fecha formateada para input date
 	function formatearFechaParaInput(fecha) {
 		if (!fecha) return '';
@@ -117,9 +121,12 @@
 	<div class="filtros-header">
 		<h3>🔧 Filtros Avanzados</h3>
 		<div class="filtros-actions">
+			<button class="btn-refrescar" on:click={refrescarDatos} title="Recargar datos del servidor">
+				🔄 Refrescar
+			</button>
 			{#if hayFiltrosActivos}
 				<button class="btn-clear-all" on:click={limpiarFiltros}>
-					🗑️ Limpiar todo
+					🗑️ Limpiar
 				</button>
 			{/if}
 		</div>
@@ -289,6 +296,28 @@
 		font-size: 1.2rem;
 		color: #374151;
 		font-weight: 600;
+	}
+
+	.filtros-actions {
+		display: flex;
+		gap: 10px;
+	}
+
+	.btn-refrescar {
+		background: #667eea;
+		color: white;
+		border: none;
+		padding: 8px 16px;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 0.9rem;
+		font-weight: 500;
+		transition: all 0.2s ease;
+	}
+
+	.btn-refrescar:hover {
+		background: #5568d3;
+		transform: translateY(-1px);
 	}
 
 	.btn-clear-all {

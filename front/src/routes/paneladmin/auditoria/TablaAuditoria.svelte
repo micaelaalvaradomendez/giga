@@ -341,11 +341,6 @@
 								<span class="fecha-principal"
 									>{formatearFecha(registro.creado_en)}</span
 								>
-								<span class="fecha-relativa"
-									>{new Date(
-										registro.creado_en,
-									).toLocaleDateString("es-AR")}</span
-								>
 							</div>
 						</td>
 						<td class="usuario">
@@ -354,11 +349,6 @@
 									>{registro.creado_por_nombre ||
 										"Sistema"}</span
 								>
-								{#if registro.id_agente}
-									<span class="usuario-id"
-										>ID: {registro.id_agente}</span
-									>
-								{/if}
 							</div>
 						</td>
 						<td class="accion">
@@ -671,9 +661,9 @@
 	}
 
 	.id-registro {
-		font-family: "Courier New", monospace;
-		color: #6b7280;
-		font-size: 0.9rem;
+		font-weight: 600;
+		color: #374151;
+		font-size: 0.95rem;
 	}
 
 	.fila-detalles {
