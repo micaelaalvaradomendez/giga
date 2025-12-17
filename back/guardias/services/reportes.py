@@ -329,8 +329,6 @@ def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
             id_agente_id__in=agentes_qs.values_list("id_agente", flat=True)
         )
     )
-
-    # ✅ días = guardias + licencias + feriados
     dias_set = {g.fecha.strftime(DATE_FMT) for g in guardias_qs}
     if incluir_licencias:
         for per_agente in licencias_map.values():
