@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { writable, derived } from 'svelte/store';
 import { goto } from '$app/navigation';
 import { guardiasService, personasService } from '$lib/services.js';
@@ -9,6 +10,11 @@ import AuthService from '$lib/login/authService.js';
  */
 class AprobacionesGuardiasController {
 	constructor() {
+		// Prevenir inicialización en SSR
+		if (!browser) {
+			return;
+		}
+		
 		// Stores de estado
 		this.loading = writable(false);
 		this.error = writable('');
@@ -56,6 +62,11 @@ class AprobacionesGuardiasController {
 	 * Inicializa el controller
 	 */
 	async init() {
+		// Prevenir ejecución en SSR
+		if (!browser) {
+			return;
+		}
+		
 		try {
 			// Use isAuthenticated check (checkSession already called in +layout.svelte)
 			if (!AuthService.isAuthenticated()) {

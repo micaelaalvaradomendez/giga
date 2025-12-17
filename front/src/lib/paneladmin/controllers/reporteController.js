@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { writable, derived, get } from 'svelte/store';
 import { personasService, guardiasService } from '$lib/services.js';
 import exportService from '$lib/services/exportService.js';
@@ -8,6 +9,11 @@ import exportService from '$lib/services/exportService.js';
  */
 class ReporteController {
 	constructor() {
+		// Prevenir inicialización en SSR
+		if (!browser) {
+			return;
+		}
+		
 		// ========================================
 		// STORES PRINCIPALES
 		// ========================================
