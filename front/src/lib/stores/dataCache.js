@@ -1,5 +1,4 @@
 import { writable, derived, get } from 'svelte/store';
-import { guardiasService, personasService, organigramaService } from '$lib/services.js';
 
 /**
  * Global Data Cache Store
@@ -15,20 +14,20 @@ import { guardiasService, personasService, organigramaService } from '$lib/servi
  */
 
 const CACHE_TTL = {
-	feriados: 5 * 60 * 1000, // 5 minutos
-	areas: 10 * 60 * 1000, // 10 minutos
-	organigrama: 10 * 60 * 1000, // 10 minutos
-	guardias: 2 * 60 * 1000, // 2 minutos (más dinámico)
+feriados: 5 * 60 * 1000, // 5 minutos
+areas: 10 * 60 * 1000, // 10 minutos
+organigrama: 10 * 60 * 1000, // 10 minutos
+guardias: 2 * 60 * 1000, // 2 minutos (más dinámico)
 };
 
 // Estructura de datos en caché
 function createCachedStore(initialValue = null) {
-	return writable({
-		data: initialValue,
-		timestamp: null,
-		loading: false,
-		error: null
-	});
+return writable({
+initialValue,
+null,
+g: false,
+null
+});
 }
 
 // Stores de datos cacheados
@@ -43,252 +42,200 @@ export const cacheLoading = writable(false);
  * Verifica si los datos en caché están obsoletos
  */
 function isCacheStale(timestamp, ttl) {
-	if (!timestamp) return true;
-	const now = Date.now();
-	return (now - timestamp) > ttl;
+if (!timestamp) return true;
+const now = Date.now();
+return (now - timestamp) > ttl;
 }
 
 /**
  * Carga feriados desde API o caché
  */
 export async function loadFeriados(forceRefresh = false) {
-	const cache = get(feriadosCache);
-	
-	// Si no forzamos refresh y el caché es válido, retornar datos existentes
-	if (!forceRefresh && !isCacheStale(cache.timestamp, CACHE_TTL.feriados) && cache.data?.length > 0) {
-		console.log('✅ Usando feriados desde caché', { 
-			count: cache.data.length,
-			age: Math.round((Date.now() - cache.timestamp) / 1000) + 's'
-		});
-		return cache.data;
-	}
+const cache = get(feriadosCache);
 
-	// Evitar múltiples cargas simultáneas
-	if (cache.loading) {
-		console.log('⏳ Carga de feriados ya en progreso, esperando...');
-		// Esperar a que termine la carga actual con timeout
-		return new Promise((resolve, reject) => {
-			const timeout = setTimeout(() => {
-				unsubscribe();
-				reject(new Error('Timeout esperando carga de feriados'));
-			}, 30000); // 30 segundos timeout
-			
-			const unsubscribe = feriadosCache.subscribe((value) => {
-				if (!value.loading) {
-					clearTimeout(timeout);
-					unsubscribe();
-					if (value.error) {
-						reject(new Error(value.error));
-					} else if (value.data) {
-						resolve(value.data);
-					} else {
-						reject(new Error('No se pudieron cargar los feriados'));
-					}
-				}
-			});
-		});
-	}
+// Si no forzamos refresh y el caché es válido, retornar datos existentes
+if (!forceRefresh && !isCacheStale(cache.timestamp, CACHE_TTL.feriados) && cache.data?.length > 0) {
+sole.log('✅ Usando feriados desde caché', { 
+t: cache.data.length,
+Math.round((Date.now() - cache.timestamp) / 1000) + 's'
+ cache.data;
+}
 
-	try {
-		feriadosCache.update(s => ({ ...s, loading: true, error: null }));
-		console.log('🔄 Cargando feriados desde API...');
-		
-		const response = await guardiasService.getFeriados();
-		const data = response.data?.results || response.data || [];
-		
-		feriadosCache.set({
-			data,
-			timestamp: Date.now(),
-			loading: false,
-			error: null
-		});
-		
-		console.log('✅ Feriados cargados y cacheados', { count: data.length });
-		return data;
-	} catch (error) {
-		console.error('❌ Error cargando feriados:', error);
-		feriadosCache.update(s => ({ 
-			...s, 
-			loading: false, 
-			error: error.message || 'Error al cargar feriados'
-		}));
-		throw error;
-	}
+// Evitar múltiples cargas simultáneas
+if (cache.loading) {
+sole.log('⏳ Carga de feriados ya en progreso, esperando...');
+Esperar a que termine la carga actual con timeout
+ new Promise((resolve, reject) => {
+st timeout = setTimeout(() => {
+subscribe();
+ew Error('Timeout esperando carga de feriados'));
+30000); // 30 segundos timeout
+st unsubscribe = feriadosCache.subscribe((value) => {
+(!value.loading) {
+subscribe();
+(value.error) {
+ew Error(value.error));
+else if (value.data) {
+else {
+ew Error('No se pudieron cargar los feriados'));
+
+try {
+=> ({ ...s, loading: true, error: null }));
+sole.log('🔄 Cargando feriados desde API...');
+st { guardiasService } = await import('$lib/services.js');
+st response = await guardiasService.getFeriados();
+st data = response.data?.results || response.data || [];
+Date.now(),
+g: false,
+null
+sole.log('✅ Feriados cargados y cacheados', { count: data.length });
+ data;
+} catch (error) {
+sole.error('❌ Error cargando feriados:', error);
+=> ({ 
+
+g: false, 
+error.message || 'Error al cargar feriados'
+error;
+}
 }
 
 /**
  * Carga áreas desde API o caché
  */
 export async function loadAreas(forceRefresh = false) {
-	const cache = get(areasCache);
-	
-	if (!forceRefresh && !isCacheStale(cache.timestamp, CACHE_TTL.areas) && cache.data?.length > 0) {
-		console.log('✅ Usando áreas desde caché', { 
-			count: cache.data.length,
-			age: Math.round((Date.now() - cache.timestamp) / 1000) + 's'
-		});
-		return cache.data;
-	}
+const cache = get(areasCache);
 
-	if (cache.loading) {
-		console.log('⏳ Carga de áreas ya en progreso, esperando...');
-		return new Promise((resolve, reject) => {
-			const timeout = setTimeout(() => {
-				unsubscribe();
-				reject(new Error('Timeout esperando carga de áreas'));
-			}, 30000); // 30 segundos timeout
-			
-			const unsubscribe = areasCache.subscribe((value) => {
-				if (!value.loading) {
-					clearTimeout(timeout);
-					unsubscribe();
-					if (value.error) {
-						reject(new Error(value.error));
-					} else if (value.data) {
-						resolve(value.data);
-					} else {
-						reject(new Error('No se pudieron cargar las áreas'));
-					}
-				}
-			});
-		});
-	}
+if (!forceRefresh && !isCacheStale(cache.timestamp, CACHE_TTL.areas) && cache.data?.length > 0) {
+sole.log('✅ Usando áreas desde caché', { 
+t: cache.data.length,
+Math.round((Date.now() - cache.timestamp) / 1000) + 's'
+ cache.data;
+}
 
-	try {
-		areasCache.update(s => ({ ...s, loading: true, error: null }));
-		console.log('🔄 Cargando áreas desde API...');
-		
-		const response = await personasService.getAreas();
-		const data = response.data?.results || response.data || [];
-		
-		areasCache.set({
-			data,
-			timestamp: Date.now(),
-			loading: false,
-			error: null
-		});
-		
-		console.log('✅ Áreas cargadas y cacheadas', { count: data.length });
-		return data;
-	} catch (error) {
-		console.error('❌ Error cargando áreas:', error);
-		areasCache.update(s => ({ 
-			...s, 
-			loading: false, 
-			error: error.message || 'Error al cargar áreas'
-		}));
-		throw error;
-	}
+if (cache.loading) {
+sole.log('⏳ Carga de áreas ya en progreso, esperando...');
+ new Promise((resolve, reject) => {
+st timeout = setTimeout(() => {
+subscribe();
+ew Error('Timeout esperando carga de áreas'));
+30000); // 30 segundos timeout
+st unsubscribe = areasCache.subscribe((value) => {
+(!value.loading) {
+subscribe();
+(value.error) {
+ew Error(value.error));
+else if (value.data) {
+else {
+ew Error('No se pudieron cargar las áreas'));
+
+try {
+=> ({ ...s, loading: true, error: null }));
+sole.log('🔄 Cargando áreas desde API...');
+st { personasService } = await import('$lib/services.js');
+st response = await personasService.getAreas();
+st data = response.data?.results || response.data || [];
+Date.now(),
+g: false,
+null
+sole.log('✅ Áreas cargadas y cacheadas', { count: data.length });
+ data;
+} catch (error) {
+sole.error('❌ Error cargando áreas:', error);
+=> ({ 
+
+g: false, 
+error.message || 'Error al cargar áreas'
+error;
+}
 }
 
 /**
  * Carga organigrama desde API o caché
  */
 export async function loadOrganigrama(forceRefresh = false) {
-	const cache = get(organigramaCache);
-	
-	if (!forceRefresh && !isCacheStale(cache.timestamp, CACHE_TTL.organigrama) && cache.data) {
-		console.log('✅ Usando organigrama desde caché', { 
-			age: Math.round((Date.now() - cache.timestamp) / 1000) + 's'
-		});
-		return cache.data;
-	}
+const cache = get(organigramaCache);
 
-	if (cache.loading) {
-		console.log('⏳ Carga de organigrama ya en progreso, esperando...');
-		return new Promise((resolve, reject) => {
-			const timeout = setTimeout(() => {
-				unsubscribe();
-				reject(new Error('Timeout esperando carga de organigrama'));
-			}, 30000); // 30 segundos timeout
-			
-			const unsubscribe = organigramaCache.subscribe((value) => {
-				if (!value.loading) {
-					clearTimeout(timeout);
-					unsubscribe();
-					if (value.error) {
-						reject(new Error(value.error));
-					} else if (value.data) {
-						resolve(value.data);
-					} else {
-						reject(new Error('No se pudo cargar el organigrama'));
-					}
-				}
-			});
-		});
-	}
+if (!forceRefresh && !isCacheStale(cache.timestamp, CACHE_TTL.organigrama) && cache.data) {
+sole.log('✅ Usando organigrama desde caché', { 
+Math.round((Date.now() - cache.timestamp) / 1000) + 's'
+ cache.data;
+}
 
-	try {
-		organigramaCache.update(s => ({ ...s, loading: true, error: null }));
-		console.log('🔄 Cargando organigrama desde API...');
-		
-		const response = await organigramaService.getOrganigrama();
-		
-		let data = null;
-		// Validar explícitamente que success es true
-		if (response.data && response.data.success === true) {
-			data = {
-				version: response.data.data.version,
-				lastUpdated: response.data.data.actualizado_en,
-				updatedBy: response.data.data.creado_por,
-				organigrama: response.data.data.estructura,
-			};
-		}
-		
-		organigramaCache.set({
-			data,
-			timestamp: Date.now(),
-			loading: false,
-			error: null
-		});
-		
-		console.log('✅ Organigrama cargado y cacheado');
-		return data;
-	} catch (error) {
-		console.error('❌ Error cargando organigrama:', error);
-		organigramaCache.update(s => ({ 
-			...s, 
-			loading: false, 
-			error: error.message || 'Error al cargar organigrama'
-		}));
-		throw error;
-	}
+if (cache.loading) {
+sole.log('⏳ Carga de organigrama ya en progreso, esperando...');
+ new Promise((resolve, reject) => {
+st timeout = setTimeout(() => {
+subscribe();
+ew Error('Timeout esperando carga de organigrama'));
+30000); // 30 segundos timeout
+st unsubscribe = organigramaCache.subscribe((value) => {
+ if (!value.loading) {
+subscribe();
+(value.error) {
+ew Error(value.error));
+else if (value.data) {
+else {
+ew Error('No se pudo cargar el organigrama'));
+
+try {
+igramaCache.update(s => ({ ...s, loading: true, error: null }));
+sole.log('🔄 Cargando organigrama desde API...');
+st { organigramaService } = await import('$lib/services.js');
+st response = await organigramaService.getOrganigrama();
+data = null;
+Validar explícitamente que success es true
+(response.data && response.data.success === true) {
+= {
+: response.data.data.version,
+response.data.data.actualizado_en,
+: response.data.data.creado_por,
+igrama: response.data.data.estructura,
+igramaCache.set({
+Date.now(),
+g: false,
+null
+sole.log('✅ Organigrama cargado y cacheado');
+ data;
+} catch (error) {
+sole.error('❌ Error cargando organigrama:', error);
+igramaCache.update(s => ({ 
+
+g: false, 
+error.message || 'Error al cargar organigrama'
+error;
+}
 }
 
 /**
  * Invalida el caché de un recurso específico
  */
 export function invalidateCache(resource) {
-	switch(resource) {
-		case 'feriados':
-			feriadosCache.update(s => ({ ...s, timestamp: null }));
-			console.log('🧹 Caché de feriados invalidado');
-			break;
-		case 'areas':
-			areasCache.update(s => ({ ...s, timestamp: null }));
-			console.log('🧹 Caché de áreas invalidado');
-			break;
-		case 'organigrama':
-			organigramaCache.update(s => ({ ...s, timestamp: null }));
-			console.log('🧹 Caché de organigrama invalidado');
-			break;
-		case 'all':
-			feriadosCache.update(s => ({ ...s, timestamp: null }));
-			areasCache.update(s => ({ ...s, timestamp: null }));
-			organigramaCache.update(s => ({ ...s, timestamp: null }));
-			console.log('🧹 Todo el caché invalidado');
-			break;
-	}
+switch(resource) {
+'feriados':
+=> ({ ...s, timestamp: null }));
+sole.log('🧹 Caché de feriados invalidado');
+'areas':
+=> ({ ...s, timestamp: null }));
+sole.log('🧹 Caché de áreas invalidado');
+'organigrama':
+igramaCache.update(s => ({ ...s, timestamp: null }));
+sole.log('🧹 Caché de organigrama invalidado');
+'all':
+=> ({ ...s, timestamp: null }));
+=> ({ ...s, timestamp: null }));
+igramaCache.update(s => ({ ...s, timestamp: null }));
+sole.log('🧹 Todo el caché invalidado');
 }
 
 /**
  * Limpia completamente el caché
  */
 export function clearCache() {
-	feriadosCache.set({ data: [], timestamp: null, loading: false, error: null });
-	areasCache.set({ data: [], timestamp: null, loading: false, error: null });
-	organigramaCache.set({ data: null, timestamp: null, loading: false, error: null });
-	console.log('🧹 Caché completamente limpiado');
+feriadosCache.set({ data: [], timestamp: null, loading: false, error: null });
+areasCache.set({ data: [], timestamp: null, loading: false, error: null });
+organigramaCache.set({ data: null, timestamp: null, loading: false, error: null });
+console.log('🧹 Caché completamente limpiado');
 }
 
 /**
