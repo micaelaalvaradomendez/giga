@@ -37,13 +37,7 @@
 			area_id: areaId,
 			activo: agente.activo !== false,
 		};
-		console.log("🎯 FormData inicializado - Dirección preservada:", {
-			calle: formData.calle,
-			numero: formData.numero,
-			ciudad: formData.ciudad,
-			provincia: formData.provincia,
-			area_id: areaId,
-		});
+
 		initialized = true;
 		validateForm();
 	}

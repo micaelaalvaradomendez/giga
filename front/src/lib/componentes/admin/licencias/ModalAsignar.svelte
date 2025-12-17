@@ -47,19 +47,9 @@
 				areasDisponibles = areas.filter(
 					(area) => area.id_area === userArea,
 				);
-				console.log(
-					`🏢 Filtrando áreas para ${userRol}: área ${userArea} encontrada:`,
-					areasDisponibles.length > 0,
-				);
 			} else {
 				areasDisponibles = [];
 			}
-			console.log(
-				`📍 Áreas disponibles para ${userRol}:`,
-				areasDisponibles.length,
-				"de",
-				areas.length,
-			);
 		} else {
 			areasDisponibles = areas;
 		}
@@ -93,7 +83,6 @@
 			const userResponse = await AuthService.getCurrentUserData();
 			if (userResponse?.success && userResponse.data?.success) {
 				userInfo = userResponse.data.data;
-				console.log("👤 Usuario en modal:", userInfo);
 			}
 		} catch (err) {
 			console.error("Error cargando usuario en modal:", err);
@@ -104,36 +93,19 @@
 		dispatch("close");
 	}
 	async function cargarAgentesPorArea(areaId) {
-		console.log("🔄 Cargando agentes para área:", areaId);
-		console.log(
-			"🔍 Rol del usuario:",
-			userRol,
-			"Área del usuario:",
-			userArea,
-		);
 		if (!areaId) {
 			agentesDelArea = [];
 			return;
 		}
 		try {
 			cargandoAgentes = true;
-			console.log("🌐 Haciendo request para área:", areaId);
 			const response = await personasService.getAgentesByArea(areaId);
-			console.log("📋 Respuesta completa agentes por área:", response);
 			let agentesCompletos = [];
 			if (response?.data) {
 				if (response.data.results) {
 					agentesCompletos = response.data.results || [];
-					console.log(
-						"✅ Agentes cargados (formato paginado):",
-						agentesCompletos.length,
-					);
 				} else if (response.data.success && response.data.data) {
 					agentesCompletos = response.data.data || [];
-					console.log(
-						"✅ Agentes cargados (formato success):",
-						agentesCompletos.length,
-					);
 				} else {
 					console.warn(
 						"⚠️ Respuesta sin formato conocido:",
@@ -146,7 +118,7 @@
 				agentesCompletos = [];
 			}
 			if (userRol) {
-				console.log("🔍 Filtrando agentes para rol:", userRol);
+
 				agentesDelArea = agentesCompletos.filter((agente) => {
 					const puedeAsignar = puedeAsignarAAgente(
 						agente.rol?.nombre || agente.rol_nombre || "Agente",
@@ -154,15 +126,9 @@
 						agente.id_area || areaId,
 						userArea,
 					);
-					console.log(
-						`🔒 ¿Puede asignar a ${agente.nombre} (${agente.rol?.nombre || agente.rol_nombre})?`,
-						puedeAsignar,
-					);
 					return puedeAsignar;
 				});
-				console.log(
-					`✅ Agentes filtrados: ${agentesDelArea.length} de ${agentesCompletos.length} totales`,
-				);
+
 			} else {
 				agentesDelArea = agentesCompletos;
 			}
@@ -174,16 +140,12 @@
 		}
 	}
 	$: if (areaSeleccionada && show && areas.length > 0) {
-		console.log(
-			"🔄 Reactivo: área seleccionada cambió a:",
-			areaSeleccionada,
-		);
 		cargarAgentesPorArea(areaSeleccionada);
 	}
 	async function handleAsignarLicencia() {
 		try {
 			enviando = true;
-			console.log("📝 Asignando licencia:", formLicencia);
+
 			const resultado = await asignarLicencia(formLicencia);
 			if (resultado.success) {
 				cerrarModal();

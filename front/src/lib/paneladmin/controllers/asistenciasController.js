@@ -49,7 +49,6 @@ class AsistenciasController {
 
 	// ========== INICIALIZACIÓN ==========
 	async init() {
-		console.log('🚀 Inicializando asistenciasController...');
 
 		try {
 			this.loading.set(true);
@@ -81,7 +80,6 @@ class AsistenciasController {
 			await this.cargarAreas();
 			await this.cargarDatos();
 
-			console.log('✅ asistenciasController inicializado correctamente');
 		} catch (error) {
 			console.error('❌ Error inicializando asistenciasController:', error);
 			throw new Error('Error al inicializar el controlador de asistencias');
@@ -96,7 +94,6 @@ class AsistenciasController {
 			const response = await personasService.getAreas();
 			const areasData = response.data?.data?.results || response.data?.results || response.data;
 			this.areas.set(areasData);
-			console.log('✅ Áreas cargadas:', areasData.length);
 		} catch (error) {
 			console.error('Error al cargar áreas:', error);
 		}
@@ -136,7 +133,6 @@ class AsistenciasController {
 					paramsAusentes.area_id = area;
 				}
 
-				console.log('🔍 Cargando todas las asistencias con parámetros:', paramsAsistencias, paramsAusentes);
 
 				const [responseAsistencias, responseAusentes] = await Promise.all([
 					asistenciaService.getAsistenciasAdmin(paramsAsistencias),
@@ -146,11 +142,6 @@ class AsistenciasController {
 				const dataAsistencias = responseAsistencias.data;
 				const dataAusentes = responseAusentes.data;
 
-				console.log('📊 Datos cargados:', {
-					asistencias_registradas: dataAsistencias.data?.length || 0,
-					ausentes: dataAusentes.data?.length || 0,
-					primer_ausente: dataAusentes.data?.[0]
-				});
 
 				// Combinar ambos arrays
 				asistenciasData = [
@@ -158,10 +149,6 @@ class AsistenciasController {
 					...(dataAusentes.data || [])
 				];
 
-				// Verificar estructura de primer ausente si existe
-				if (dataAusentes.data && dataAusentes.data.length > 0) {
-					console.log('🔍 Estructura del primer ausente:', dataAusentes.data[0]);
-				}
 			} else {
 				// Para tabs específicas, usar el filtro correspondiente
 				const params = { fecha_desde: fecha, fecha_hasta: fecha };
@@ -181,14 +168,11 @@ class AsistenciasController {
 					}
 				}
 
-				console.log('🔍 Cargando asistencias con parámetros:', params);
-
 				const response = await asistenciaService.getAsistenciasAdmin(params);
 				asistenciasData = response.data?.data || [];
 			}
 
 			this.asistencias.set(asistenciasData);
-			console.log(`✅ Asistencias cargadas (tab: ${tab}):`, asistenciasData.length, 'registros');
 		} catch (error) {
 			console.error('Error al cargar asistencias:', error);
 		}
@@ -263,19 +247,6 @@ class AsistenciasController {
 		this.horaSalida.set('');
 		this.usarHoraEspecifica.set(false);
 
-		console.log('📝 Abriendo modal para asistencia (normalizada):', {
-			id_asistencia: asistenciaNormalizada.id_asistencia,
-			agente_nombre: asistenciaNormalizada.agente_nombre,
-			agente_dni: asistenciaNormalizada.agente_dni,
-			id_agente: asistenciaNormalizada.id_agente,
-			tiene_entrada: !!asistenciaNormalizada.hora_entrada,
-			tiene_salida: !!asistenciaNormalizada.hora_salida,
-			fecha: asistenciaNormalizada.fecha,
-			area_nombre: asistenciaNormalizada.area_nombre,
-			estructura_original: asistencia,
-			estructura_normalizada: asistenciaNormalizada
-		});
-
 		this.modalCorreccion.set(true);
 	}
 
@@ -304,16 +275,12 @@ class AsistenciasController {
 			this.horaEntrada.set(horaEntradaFormatted);
 			this.horaSalida.set(horaSalidaFormatted);
 
-			console.log('⏰ Activando modo hora específica:', {
-				entrada_prellenada: horaEntradaFormatted,
-				salida_prellenada: horaSalidaFormatted
-			});
+
 		} else {
 			// Si se desactiva el checkbox, limpiar los campos
 			this.horaEntrada.set('');
 			this.horaSalida.set('');
 
-			console.log('🔄 Desactivando modo hora específica');
 		}
 	}
 
@@ -325,17 +292,6 @@ class AsistenciasController {
 		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
 		this.horaEntrada.subscribe((value) => (horaEntrada = value))();
 
-		console.log('🕐 Marcando entrada:', {
-			agente: asistencia?.agente_nombre,
-			dni: asistencia?.agente_dni,
-			id_agente: asistencia?.id_agente,
-			fecha: asistencia?.fecha,
-			usar_hora: usarHora,
-			hora_entrada: horaEntrada,
-			hora_especifica: horaEspecifica,
-			observacion: observacion,
-			asistencia_completa: asistencia
-		});
 
 		if (!asistencia) {
 			return {
@@ -383,11 +339,10 @@ class AsistenciasController {
 				requestBody.hora_especifica = horaEntrada;
 			}
 
-			console.log('📤 Enviando petición de marcación:', requestBody);
+
 
 			const response = await asistenciaService.marcarAsistencia(requestBody);
 			const data = response.data;
-			console.log('📥 Respuesta del servidor:', data);
 
 			if (data.success) {
 				this.cerrarModal();
@@ -417,18 +372,6 @@ class AsistenciasController {
 		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
 		this.horaSalida.subscribe((value) => (horaSalida = value))();
 
-		console.log('🚪 Intentando marcar salida:', {
-			asistencia_id: asistencia?.id_asistencia,
-			agente: asistencia?.agente_nombre,
-			dni: asistencia?.agente_dni,
-			id_agente: asistencia?.id_agente,
-			fecha: asistencia?.fecha,
-			tiene_entrada: !!asistencia?.hora_entrada,
-			tiene_salida: !!asistencia?.hora_salida,
-			usar_hora: usarHora,
-			hora_salida: horaSalida,
-			asistencia_completa: asistencia
-		});
 
 		if (!asistencia) {
 			return {
@@ -483,11 +426,9 @@ class AsistenciasController {
 				requestBody.hora_especifica = horaSalida;
 			}
 
-			console.log('📤 Enviando petición de marcación salida:', requestBody);
 
 			const response = await asistenciaService.marcarAsistencia(requestBody);
 			const data = response.data;
-			console.log('📥 Respuesta del servidor (salida):', data);
 
 			if (response.ok && data.success) {
 				this.cerrarModal();
@@ -519,15 +460,6 @@ class AsistenciasController {
 		this.horaEntrada.subscribe((value) => (horaEntrada = value))();
 		this.horaSalida.subscribe((value) => (horaSalida = value))();
 
-		console.log('🔧 Iniciando corrección de asistencia:', {
-			asistencia_id: asistencia?.id_asistencia,
-			tiene_entrada: !!asistencia?.hora_entrada,
-			tiene_salida: !!asistencia?.hora_salida,
-			usarHora,
-			horaEntrada,
-			horaSalida,
-			observacion
-		});
 
 		if (!asistencia) {
 			return {
@@ -547,7 +479,6 @@ class AsistenciasController {
 		// CASO ESPECIAL: Si no tiene ID de asistencia, significa que no tiene marcaciones previas
 		// En este caso, usar los métodos de marcación en lugar de corrección
 		if (!asistencia.id_asistencia) {
-			console.log('📝 Sin asistencia previa, creando nuevas marcaciones...');
 
 			if (!usarHora) {
 				return {
@@ -604,7 +535,6 @@ class AsistenciasController {
 
 					// IMPORTANTE: Recargar datos después de crear la entrada para tener el id_asistencia
 					if (horaSalida) {
-						console.log('🔄 Recargando datos después de crear entrada...');
 						await this.cargarAsistencias();
 
 						// Buscar la asistencia recién creada
@@ -618,7 +548,6 @@ class AsistenciasController {
 						);
 
 						if (asistenciaActualizada) {
-							console.log('✅ Asistencia actualizada encontrada:', asistenciaActualizada);
 							this.asistenciaEditando.set(asistenciaActualizada);
 						} else {
 							console.warn('⚠️ No se encontró la asistencia actualizada');
@@ -659,8 +588,6 @@ class AsistenciasController {
 			}
 		}
 
-		// ========== CORRECCIÓN DE ASISTENCIA EXISTENTE ==========
-		console.log('🔧 Corrigiendo asistencia existente con ID:', asistencia.id_asistencia);
 
 		if (!usarHora) {
 			return {
@@ -728,14 +655,10 @@ class AsistenciasController {
 				requestBody.hora_salida = horaSalida;
 			}
 
-			console.log('📤 Enviando solicitud de corrección:', {
-				url: `/api/asistencia/admin/corregir/${asistencia.id_asistencia}/`,
-				body: requestBody
-			});
+;
 
 			const response = await asistenciaService.corregirAsistencia(asistencia.id_asistencia, requestBody);
 			const data = response.data;
-			console.log('📥 Respuesta del servidor (corrección):', data);
 
 			if (response.ok && data.success) {
 				this.cerrarModal();
@@ -782,7 +705,6 @@ class AsistenciasController {
 	limpiarFiltros() {
 		this.areaSeleccionada.set('');
 		this.cargarDatos();
-		console.log('🧹 Filtros limpiados');
 	}
 
 	// ========== GESTIÓN DE FILTROS ==========
@@ -807,12 +729,6 @@ class AsistenciasController {
 		this.asistenciaEditando.subscribe((value) => (asistencia = value))();
 		this.observacionEdit.subscribe((value) => (observacion = value))();
 
-		console.log('❌ Marcando como ausente:', {
-			asistencia_id: asistencia?.id_asistencia,
-			agente: asistencia?.agente_nombre,
-			tenia_entrada: !!asistencia?.hora_entrada,
-			tenia_salida: !!asistencia?.hora_salida
-		});
 
 		if (!asistencia) {
 			return {
@@ -859,7 +775,6 @@ class AsistenciasController {
 				observacion: observacion.trim()
 			});
 			const data = response.data;
-			console.log('📥 Respuesta marcar ausente:', data);
 
 			if (response.ok && data.success) {
 				this.cerrarModal();

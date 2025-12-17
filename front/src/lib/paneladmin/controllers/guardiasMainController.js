@@ -34,9 +34,7 @@ class GuardiasMainController {
 	 * Inicializa el controller cargando todos los datos
 	 */
 	async init() {
-		console.log('🔄 Inicializando GuardiasMainController...');
 		await this.cargarDatos();
-		console.log('✅ GuardiasMainController inicializado');
 	}
 
 	/**
@@ -65,7 +63,6 @@ class GuardiasMainController {
 			// Agrupar guardias para el calendario
 			this.agruparGuardias(guardiasData);
 
-			console.log('✅ Guardias cargadas:', guardiasData.length);
 		} catch (e) {
 			this.error.set('Error al cargar las guardias');
 			console.error('❌ Error cargando guardias:', e);
@@ -82,7 +79,6 @@ class GuardiasMainController {
 			const response = await guardiasService.getFeriados();
 			const feriadosData = response.data?.results || response.data || [];
 			this.feriados.set(feriadosData);
-			console.log('✅ Feriados cargados:', feriadosData.length);
 		} catch (e) {
 			console.error('❌ Error cargando feriados:', e);
 			this.feriados.set([]);
@@ -187,7 +183,6 @@ class GuardiasMainController {
 		});
 
 		this.guardiasParaCalendario.set(guardiasParaCalendarioArray);
-		console.log('✅ Guardias agrupadas para calendario:', guardiasParaCalendarioArray.length);
 	}
 
 	/**
@@ -211,8 +206,6 @@ class GuardiasMainController {
 
 			this.guardiasDeFecha.set(guardiasFiltradas);
 			this.mostrarModal.set(true);
-
-			console.log('📅 Guardias del día seleccionado:', guardiasFiltradas.length);
 		}
 	}
 
@@ -259,7 +252,6 @@ class GuardiasMainController {
 	 * Recarga todos los datos
 	 */
 	async recargar() {
-		console.log('🔄 Recargando datos de guardias...');
 		await this.cargarDatos();
 	}
 }

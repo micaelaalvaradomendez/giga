@@ -29,15 +29,11 @@
   } = planificadorGuardiasController;
 
   onMount(async () => {
-    console.log(
-      "🔄 Componente de planificador montado, iniciando controller...",
-    );
-
+  
     // Verificar si viene parámetro de edición
     const urlParams = new URLSearchParams(window.location.search);
     await planificadorGuardiasController.init(urlParams);
 
-    console.log("✅ Controller de planificador inicializado");
   });
 
   // Fecha mínima: hoy
