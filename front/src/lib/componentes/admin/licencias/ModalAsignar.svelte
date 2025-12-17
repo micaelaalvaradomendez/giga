@@ -35,7 +35,10 @@
 	let resolverConfirmacion = null;
 	// filtra áreas según el rol del usuario
 	$: {
-		if (userRol) {
+		if (!areas || areas.length === 0) {
+			// No limpiar areasDisponibles si solo temporalmente no hay areas
+			// Esto previene que el dropdown se vacíe durante re-renders
+		} else if (userRol) {
 			// Si es administrador, puede ver todas las áreas
 			if (userRol.toLowerCase() === "administrador") {
 				areasDisponibles = areas;
@@ -48,9 +51,12 @@
 					(area) => area.id_area === userArea,
 				);
 			} else {
+				// Otros roles sin permisos especiales
 				areasDisponibles = [];
 			}
-		} else {
+		} else if (areas.length > 0 && areasDisponibles.length === 0) {
+			// Si no hay userRol pero hay áreas y areasDisponibles está vacío,
+			// mostrar todas las áreas como fallback
 			areasDisponibles = areas;
 		}
 	}
@@ -59,8 +65,12 @@
 	}
 	function handleFechaDesdeChange() {
 		// Si la nueva fecha desde es posterior a la fecha hasta, limpiar fecha hasta
-		if (formLicencia.fecha_desde && formLicencia.fecha_hasta && formLicencia.fecha_desde > formLicencia.fecha_hasta) {
-			formLicencia.fecha_hasta = '';
+		if (
+			formLicencia.fecha_desde &&
+			formLicencia.fecha_hasta &&
+			formLicencia.fecha_desde > formLicencia.fecha_hasta
+		) {
+			formLicencia.fecha_hasta = "";
 		}
 	}
 	$: if (!show) {
@@ -118,7 +128,6 @@
 				agentesCompletos = [];
 			}
 			if (userRol) {
-
 				agentesDelArea = agentesCompletos.filter((agente) => {
 					const puedeAsignar = puedeAsignarAAgente(
 						agente.rol?.nombre || agente.rol_nombre || "Agente",
@@ -128,7 +137,6 @@
 					);
 					return puedeAsignar;
 				});
-
 			} else {
 				agentesDelArea = agentesCompletos;
 			}
@@ -194,6 +202,7 @@
 		resolverConfirmacion = null;
 	}
 </script>
+
 {#if show}
 	<div class="modal-backdrop">
 		<div class="modal-contenido">
@@ -212,8 +221,6 @@
 						<select
 							id="area_asignar"
 							bind:value={areaSeleccionada}
-							on:change={(e) =>
-								cargarAgentesPorArea(e.target.value)}
 							required
 						>
 							<option value="">Seleccione área</option>
@@ -366,6 +373,7 @@
 		</div>
 	</div>
 {/if}
+
 <style>
 	.modal-backdrop {
 		position: fixed;
