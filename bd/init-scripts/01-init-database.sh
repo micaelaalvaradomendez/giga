@@ -62,6 +62,9 @@ run_sql "$SCRIPT_DIR/sesion-activa.sql" \
 run_sql "$SCRIPT_DIR/08-create-notificaciones.sql" \
     "Tabla de notificaciones"
 
+run_sql "$SCRIPT_DIR/09-alter-table-cronogramas.sql" \
+    "Agregados campos cronograma"
+
 # ========================================================================
 # Finalización
 # ========================================================================
