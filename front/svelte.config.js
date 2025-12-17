@@ -10,11 +10,6 @@ const config = {
 		}),
 		alias: {
 			$lib: 'src/lib'
-		},
-		// Configuración para mejorar la compatibilidad SSR
-		ssr: {
-			// No externalizar ningún paquete de $lib
-			noExternal: process.env.NODE_ENV === 'production' ? ['$lib'] : []
 		}
 	},
 	vitePlugin: {
