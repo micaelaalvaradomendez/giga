@@ -1,17 +1,18 @@
 <script>
-    import { onMount } from "svelte";
+    import { browser } from '$app/environment';
+    import { onMount, onDestroy } from "svelte";
     import { goto } from "$app/navigation";
     import { page } from "$app/stores";
-    import AuthService, {
-        isAuthenticated as authStore,
-        user as userStore,
-    } from "../../lib/login/authService.js";
-
+    
+    // Guard SSR - solo cargar AuthService en el cliente
+    let AuthService, authStore, userStore;
+    let unsubscribeAuth, unsubscribeUser;
+    
     export let isActive = false;
 
     // Local reactive aliases
-    $: currentUser = $userStore;
-    $: isAuth = $authStore;
+    let currentUser = null;
+    let isAuth = false;
     $: currentPath = $page.url.pathname;
 
     // Evitar ejecutar checkSession muchas veces: bandera de módulo
@@ -54,26 +55,44 @@
             : `${base}/${clean}`;
     }
 
-    onMount(() => {
-        // Solo intentar checkSession si no estamos autenticados y no se intentó antes
-        // Nota: +layout.svelte ya hace checkSession, así que esto es redundante en la mayoría de casos
-        if (!$authStore && !_checkSessionCalled) {
-            _checkSessionCalled = true;
-            // lanzar sin bloquear render y sin logs pesados
-            AuthService.checkSession().catch((error) => {
-                // El servicio AuthService ya maneja y registra errores críticos
-                // Solo registramos errores de red que puedan requerir atención
-                if (
-                    error?.message &&
-                    !error.message.includes("authenticated")
-                ) {
-                    console.error(
-                        "Error en verificación de sesión del menú:",
-                        error.message,
-                    );
-                }
-            });
+    onMount(async () => {
+        if (browser) {
+            // Importar dinámicamente el servicio de autenticación
+            const authModule = await import("$lib/login/authService.js");
+            AuthService = authModule.default;
+            authStore = authModule.isAuthenticated;
+            userStore = authModule.user;
+            
+            // Suscribirse a los stores y guardar funciones de desuscripción
+            unsubscribeAuth = authStore.subscribe(value => { isAuth = value; });
+            unsubscribeUser = userStore.subscribe(value => { currentUser = value; });
+            
+            // Solo intentar checkSession si no estamos autenticados y no se intentó antes
+            // Nota: +layout.svelte ya hace checkSession, así que esto es redundante en la mayoría de casos
+            if (!isAuth && !_checkSessionCalled) {
+                _checkSessionCalled = true;
+                // lanzar sin bloquear render y sin logs pesados
+                AuthService.checkSession().catch((error) => {
+                    // El servicio AuthService ya maneja y registra errores críticos
+                    // Solo registramos errores de red que puedan requerir atención
+                    if (
+                        error?.message &&
+                        !error.message.includes("authenticated")
+                    ) {
+                        console.error(
+                            "Error en verificación de sesión del menú:",
+                            error.message,
+                        );
+                    }
+                });
+            }
         }
+    });
+    
+    onDestroy(() => {
+        // Limpiar suscripciones para evitar memory leaks
+        if (unsubscribeAuth) unsubscribeAuth();
+        if (unsubscribeUser) unsubscribeUser();
     });
 </script>
 
