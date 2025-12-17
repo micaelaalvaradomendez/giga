@@ -1,11 +1,10 @@
-<script>
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import OrganigramaViewer from "$lib/componentes/admin/organigrama/OrganigramaViewer.svelte";
   import AdminNodeRenderer from "$lib/componentes/admin/organigrama/AdminNodeRenderer.svelte";
   import ModalEliminar from "$lib/componentes/admin/parametros/ModalEliminar.svelte";
   import { organigramaController } from "$lib/paneladmin/controllers";
-  import { API_BASE_URL } from "$lib/api";
+  import { API_BASE_URL } from "$lib/api.js";
   import { derived } from "svelte/store";
   import ModalAlert from "$lib/componentes/ModalAlert.svelte";
   import {
@@ -13,6 +12,8 @@
     showAlert,
     showConfirm,
   } from "$lib/stores/modalAlertStore.js";
+  import { organigrama as organigramaStore, loadOrganigrama as loadOrganigramaCache, invalidateCache } from "$lib/stores/dataCache.js";
+  
   let organigramaData = null;
   let loading = true;
   let showModal = false;
@@ -28,6 +29,12 @@
   let showDeleteModal = false;
   let nodeToDelete = null;
   const agentes = organigramaController.agentes;
+  
+  // OPTIMIZACIÓN: Reaccionar a cambios en el store de organigrama
+  $: if ($organigramaStore) {
+    organigramaData = $organigramaStore;
+  }
+  
   // Datos del formulario
   let formData = {
     nombre: "",
@@ -46,6 +53,7 @@
     { value: "departamento", label: "Departamento" },
     { value: "division", label: "División" },
   ];
+  
   onMount(async () => {
     if (browser) {
       try {
@@ -54,12 +62,30 @@
         console.error("Error init organigramaController:", e);
       }
       await loadOrganigrama();
+      
+      // OPTIMIZACIÓN: Solo recargar si el caché está obsoleto (>10 minutos)
       const handleVisibilityChange = () => {
         if (document.visibilityState === "visible") {
-          loadOrganigrama();
+          const lastUpdate = localStorage.getItem('lastOrganigramaUpdate');
+          const timeDiff = lastUpdate ? Date.now() - parseInt(lastUpdate) : Infinity;
+          
+          // Solo recargar si pasaron más de 10 minutos (600000ms)
+          if (timeDiff > 600000) {
+            console.log('🔄 Recargando organigrama (caché obsoleto)');
+            invalidateCache('organigrama');
+            loadOrganigrama();
+            localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
+          } else {
+            console.log('✅ Usando organigrama en caché (actualizado hace', Math.round(timeDiff/1000), 'segundos)');
+          }
         }
       };
+      
       document.addEventListener("visibilitychange", handleVisibilityChange);
+      
+      // Guardar timestamp inicial
+      localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
+      
       return () => {
         document.removeEventListener(
           "visibilitychange",
@@ -68,41 +94,20 @@
       };
     }
   });
+  
   async function loadOrganigrama() {
     try {
       loading = true;
-      console.log("🔄 Cargando organigrama desde API...");
-      // CARGAR DESDE API DEL BACKEND
-      const response = await fetch(`${API_BASE_URL}/personas/organigrama/`, {
-        method: "GET",
-        credentials: "include",
-      });
-      console.log("📡 Response status:", response.status);
-      if (response.ok) {
-        const result = await response.json();
-        console.log("📥 API Response:", result);
-        if (result.success) {
-          // Convertir estructura de la API al formato esperado por el frontend
-          organigramaData = {
-            version: result.data.version,
-            lastUpdated: result.data.actualizado_en,
-            updatedBy: result.data.creado_por,
-            organigrama: result.data.estructura,
-          };
-          console.log("✅ Organigrama cargado:", organigramaData);
-          console.log("✅ Estructura length:", result.data.estructura?.length);
-        } else {
-          console.error("❌ API success=false, message:", result.message);
-          throw new Error(result.message || "Error al cargar organigrama");
-        }
-      } else {
-        console.error(
-          "❌ Response not ok:",
-          response.status,
-          response.statusText,
-        );
-        throw new Error("Error de conexión con el servidor");
+      console.log("🔄 Cargando organigrama...");
+      
+      // OPTIMIZACIÓN: Usar caché global
+      const data = await loadOrganigramaCache();
+      
+      if (data) {
+        organigramaData = data;
+        console.log("✅ Organigrama cargado desde caché");
       }
+      
       // Actualizar lista de nodos para el selector
       updateNodesList();
       console.log("✅ Lista de nodos actualizada:", allNodes.length, "nodos");
@@ -215,6 +220,11 @@
           organigramaData.lastUpdated = result.data.actualizado_en;
           organigramaData.updatedBy = result.data.creado_por;
           showUnsavedWarning = false;
+          
+          // OPTIMIZACIÓN: Invalidar caché para forzar recarga en otras páginas
+          invalidateCache('organigrama');
+          localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
+          
           updateNodesList();
           return true;
         } else {
