@@ -13,10 +13,6 @@ const config = {
 		// Proxy configuration for API requests
 		alias: {
 			$lib: 'src/lib'
-		},
-		// SSR configuration to prevent issues with circular dependencies
-		ssr: {
-			noExternal: ['$lib']
 		}
 	},
 	vitePlugin: {
