@@ -7,11 +7,7 @@
   import { API_BASE_URL } from "$lib/api.js";
   import { derived } from "svelte/store";
   import ModalAlert from "$lib/componentes/ModalAlert.svelte";
-  import {
-    modalAlert,
-    showAlert,
-    showConfirm,
-  } from "$lib/stores/modalAlertStore.js";
+  import { modalAlert, showAlert, showConfirm } from "$lib/stores/modalAlertStore.js";
   import { organigrama as organigramaStore, loadOrganigrama as loadOrganigramaCache, invalidateCache } from "$lib/stores/dataCache.js";
   
   let organigramaData = null;
