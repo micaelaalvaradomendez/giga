@@ -3,22 +3,29 @@
  * Maneja la lógica de aprobación jerárquica según roles
  */
 
+import { browser } from '$app/environment';
 import { writable, derived } from 'svelte/store';
 import { asistenciaService } from '$lib/services.js';
 
-// Stores principales
-export const licencias = writable([]);
-export const tiposLicencia = writable([]);
-export const filtros = writable({
+// Stores principales - solo crear en el cliente
+export const licencias = browser ? writable([]) : writable([]);
+export const tiposLicencia = browser ? writable([]) : writable([]);
+export const filtros = browser ? writable({
     fecha_desde: '',
     fecha_hasta: '',
     area_id: null,
     estado: 'todas', // 'pendiente', 'aprobada', 'rechazada', 'todas'
     tipo_licencia_id: null
+}) : writable({
+    fecha_desde: '',
+    fecha_hasta: '',
+    area_id: null,
+    estado: 'todas',
+    tipo_licencia_id: null
 });
-export const loading = writable(false);
-export const error = writable(null);
-export const usuario = writable(null);
+export const loading = browser ? writable(false) : writable(false);
+export const error = browser ? writable(null) : writable(null);
+export const usuario = browser ? writable(null) : writable(null);
 
 // Store derivado para licencias filtradas
 export const licenciasFiltradas = derived(

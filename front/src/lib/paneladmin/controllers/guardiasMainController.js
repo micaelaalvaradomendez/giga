@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { writable, derived } from 'svelte/store';
 import { guardiasService } from '$lib/services.js';
 
@@ -7,6 +8,11 @@ import { guardiasService } from '$lib/services.js';
  */
 class GuardiasMainController {
 	constructor() {
+		// Prevenir inicialización en SSR
+		if (!browser) {
+			return;
+		}
+		
 		// Stores principales
 		this.loading = writable(false);
 		this.error = writable('');
@@ -34,6 +40,11 @@ class GuardiasMainController {
 	 * Inicializa el controller cargando todos los datos
 	 */
 	async init() {
+		// Prevenir ejecución en SSR
+		if (!browser) {
+			return;
+		}
+		
 		await this.cargarDatos();
 	}
 
