@@ -17,11 +17,15 @@ class PartitionedSessionCookieMiddleware:
         response = self.get_response(request)
 
         # Debug temporal
-        print(f"[MIDDLEWARE] DEBUG={settings.DEBUG}, tiene cookies={hasattr(response, 'cookies')}")
+        print(f"[MIDDLEWARE] Path: {request.path}, DEBUG={settings.DEBUG}")
+        print(f"[MIDDLEWARE] Response tiene cookies: {hasattr(response, 'cookies')}")
+        if hasattr(response, 'cookies'):
+            print(f"[MIDDLEWARE] Cookies en response: {list(response.cookies.keys())}")
+        print(f"[MIDDLEWARE] SESSION_COOKIE_NAME: {settings.SESSION_COOKIE_NAME}")
         
         # Solo en producción (DEBUG=False) y si hay cookie de sesión
         if not settings.DEBUG and hasattr(response, 'cookies') and settings.SESSION_COOKIE_NAME in response.cookies:
-            print(f"[MIDDLEWARE] Agregando Partitioned a cookie de sesión")
+            print(f"[MIDDLEWARE] ✅ Agregando Partitioned a cookie de sesión")
             set_cookie_headers = response._headers.get('set-cookie')
             
             if set_cookie_headers:

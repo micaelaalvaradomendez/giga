@@ -269,6 +269,11 @@ def login_view(request):
         if not request.session.session_key:
             request.session.create()
         
+        # Debug temporal
+        print(f"[LOGIN] Sesión creada - Session key: {request.session.session_key}")
+        print(f"[LOGIN] User ID guardado: {request.session.get('user_id')}")
+        print(f"[LOGIN] Cookies en response: {hasattr(request, '_cached_cookies')}")
+        
         # ✅ CONTROL DE SESIONES CONCURRENTES (Máximo 2)
         from .models import SesionActiva
         from django.contrib.sessions.models import Session
