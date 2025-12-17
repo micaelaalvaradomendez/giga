@@ -7,6 +7,8 @@
     import { feriadosController } from "$lib/paneladmin/controllers";
     import ModalAlert from "$lib/componentes/ModalAlert.svelte";
     import { modalAlert } from "$lib/stores/modalAlertStore.js";
+    import { invalidateCache } from "$lib/stores/dataCache.js";
+    
     // Stores del controlador
     const { feriados, loading, error, success, modalGestionFeriado } =
         feriadosController;
@@ -18,27 +20,51 @@
         try {
             await feriadosController.init();
             console.log("✅ Controlador de feriados inicializado exitosamente");
-            // Recargar cuando la página vuelve a ser visible
+            
+            // OPTIMIZADO: Recargar solo si pasaron más de 5 minutos desde la última actualización
+            // en lugar de recargar en cada visibilitychange
             if (browser) {
                 const handleVisibilityChange = () => {
                     if (document.visibilityState === "visible") {
-                        feriadosController.init();
+                        try {
+                            // Verificar si el caché está obsoleto antes de recargar
+                            const lastUpdate = localStorage.getItem('lastFeriadosUpdate');
+                            const timeDiff = lastUpdate ? Date.now() - parseInt(lastUpdate) : Infinity;
+                            
+                            // Solo recargar si pasaron más de 5 minutos (300000ms)
+                            if (timeDiff > 300000) {
+                                console.log('🔄 Recargando feriados (caché obsoleto)');
+                                invalidateCache('feriados');
+                                feriadosController.init();
+                                localStorage.setItem('lastFeriadosUpdate', Date.now().toString());
+                            } else {
+                                console.log('✅ Usando feriados en caché (actualizado hace', Math.round(timeDiff/1000), 'segundos)');
+                            }
+                        } catch (error) {
+                            // Si localStorage no está disponible, recargar directamente
+                            console.warn('localStorage no disponible, recargando feriados');
+                            feriadosController.init();
+                        }
                     }
                 };
-                const handleFocus = () => {
-                    feriadosController.init();
-                };
+                
                 document.addEventListener(
                     "visibilitychange",
                     handleVisibilityChange,
                 );
-                window.addEventListener("focus", handleFocus);
+                
+                // Guardar timestamp inicial
+                try {
+                    localStorage.setItem('lastFeriadosUpdate', Date.now().toString());
+                } catch (e) {
+                    console.warn('No se pudo guardar timestamp en localStorage:', e);
+                }
+                
                 return () => {
                     document.removeEventListener(
                         "visibilitychange",
                         handleVisibilityChange,
                     );
-                    window.removeEventListener("focus", handleFocus);
                 };
             }
         } catch (err) {

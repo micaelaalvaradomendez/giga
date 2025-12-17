@@ -9,18 +9,22 @@
 	import CalendarioBase from "$lib/componentes/calendarioBase.svelte";
 	import { guardiasService } from "$lib/services.js";
     import Notificaciones from "$lib/componentes/notificaciones/Notificaciones.svelte";
+	import { feriados as feriadosStore, loadFeriados } from "$lib/stores/dataCache.js";
+	
 	let user = null;
 	let isLoading = true;
 	let errorMessage = "";
 	let showModalUsuario = false;
 	let showEditProfile = false;
 	let showMandatoryPasswordChange = false;
-	let feriados = [];
 	let guardias = [];
-	let loadingFeriados = false;
 	let loadingGuardias = false;
 	let asistenciaHoy = null;
 	let loadingAsistencia = false;
+	
+	// Usar store de feriados en lugar de variable local
+	$: feriados = $feriadosStore;
+	
 	onMount(async () => {
 		try {
 			// Use getCurrentUser from localStorage first (checkSession already called in +layout.svelte)
@@ -31,7 +35,7 @@
 					showMandatoryPasswordChange = true;
 				}
 				await Promise.all([
-					cargarFeriados(),
+					cargarFeriadosOptimizado(),
 					cargarGuardias(),
 					cargarEstadoAsistencia(),
 				]);
@@ -47,18 +51,16 @@
 			isLoading = false;
 		}
 	});
-	async function cargarFeriados() {
+	
+	async function cargarFeriadosOptimizado() {
 		try {
-			loadingFeriados = true;
-			const response = await guardiasService.getFeriados();
-			feriados = response.data?.results || response.data || [];
+			// Usar caché global - evita cargas duplicadas
+			await loadFeriados();
 		} catch (error) {
 			console.error("Error cargando feriados:", error);
-			feriados = [];
-		} finally {
-			loadingFeriados = false;
 		}
 	}
+	
 	async function cargarGuardias() {
 		if (!user || !user.id) return;
 		try {
