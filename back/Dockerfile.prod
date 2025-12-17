@@ -60,7 +60,7 @@ RUN echo '#!/bin/sh\n\
     python manage.py check --database default\n\
     \n\
     echo "🔄 Aplicando migraciones de Django (si las hay)..."\n\
-    python manage.py migrate --noinput || echo "⚠️  No hay migraciones de Django que aplicar"\n\
+    python manage.py migrate --fake-initial --noinput || echo "⚠️  No hay migraciones de Django que aplicar"\n\
     \n\
     echo "📦 Recolectando archivos estáticos..."\n\
     python manage.py collectstatic --noinput --clear\n\
