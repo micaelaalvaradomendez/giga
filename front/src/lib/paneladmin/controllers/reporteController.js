@@ -501,6 +501,7 @@ class ReporteController {
 					throw new Error(`Tipo de reporte no soportado: ${tipo}`);
 			}
 
+			console.log(datos, "DATOS REPORTE")
 			this.datosReporte.set(datos);
 			this.vistaPreviaVisible.set(true);
 			this.mensaje.set(`Reporte ${tipo} generado exitosamente`);
@@ -1716,8 +1717,6 @@ class ReporteController {
 				incluir_feriados: filtros.incluir_feriados,
 				incluir_licencias: filtros.incluir_licencias
 			};
-
-			console.log('¡Generando reporte general (POST) con body:', body);
 
 			const response = await guardiasService.getReporteGeneral(body);
 			const reporte = response.data;

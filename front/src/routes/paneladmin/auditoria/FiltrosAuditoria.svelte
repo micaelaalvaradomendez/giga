@@ -273,6 +273,8 @@
 		margin-bottom: 20px;
 		overflow: hidden;
 		border-left: 4px solid #667eea;
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.filtros-header {

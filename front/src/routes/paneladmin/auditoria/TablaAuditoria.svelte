@@ -505,6 +505,8 @@
 		border-radius: 12px;
 		overflow: hidden;
 		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.tabla-controles {

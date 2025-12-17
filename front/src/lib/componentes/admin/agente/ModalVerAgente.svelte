@@ -489,29 +489,56 @@
 
 	/* Responsive Design */
 	@media (max-width: 768px) {
+		.modal-overlay {
+			align-items: flex-start;
+			padding: 0.5rem;
+		}
+
 		.modal-content {
-			width: 95%;
-			margin: 1rem;
+			width: 100%;
+			margin: 0;
+			max-height: 95vh;
+			border-radius: 8px;
+		}
+
+		.modal-header {
+			padding: 1rem;
+		}
+
+		.modal-header h2 {
+			font-size: 1.1rem;
+		}
+
+		.modal-body {
+			padding: 1rem;
 		}
 
 		.info-grid {
 			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+
+		.info-section {
+			padding: 0.75rem;
 		}
 
 		.info-row {
 			flex-direction: column;
 			align-items: flex-start;
 			gap: 0.25rem;
+			margin-bottom: 0.5rem;
 		}
 
 		.label {
 			margin-right: 0;
-			font-size: 0.9rem;
+			font-size: 0.85rem;
+			color: #6c757d;
 		}
 
 		.value {
 			text-align: left;
 			width: 100%;
+			font-size: 0.95rem;
 		}
 
 		.email-value {

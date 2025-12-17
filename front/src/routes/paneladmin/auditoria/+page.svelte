@@ -211,6 +211,9 @@
 		background: #f8fafc;
 		min-height: 100vh;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		overflow-x: hidden;
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	/* Header Principal */
@@ -223,6 +226,8 @@
 		color: white;
 		position: relative;
 		overflow: hidden;
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.auditoria-header::before {
@@ -283,6 +288,7 @@
 		gap: 20px;
 		position: relative;
 		z-index: 1;
+		width: 100%;
 	}
 
 	.stat-item {

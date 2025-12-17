@@ -477,8 +477,12 @@
 	// Funciones para filtros
 	function handleFechaDesdeChange() {
 		// Si la nueva fecha desde es posterior a la fecha hasta, limpiar fecha hasta
-		if ($filtros.fecha_desde && $filtros.fecha_hasta && $filtros.fecha_desde > $filtros.fecha_hasta) {
-			actualizarFiltros({ fecha_hasta: '' });
+		if (
+			$filtros.fecha_desde &&
+			$filtros.fecha_hasta &&
+			$filtros.fecha_desde > $filtros.fecha_hasta
+		) {
+			actualizarFiltros({ fecha_hasta: "" });
 		}
 		aplicarFiltros();
 	}
@@ -509,7 +513,7 @@
 <div class="page-container">
 	<div class="page-header">
 		<div class="header-title">
-			<h1>📋 Gestión de Licencias</h1>
+			<h1>Gestión de Licencias</h1>
 		</div>
 		<div class="header-actions">
 			{#if permisos.puedeCrear}
@@ -764,34 +768,56 @@
 			<!-- Vista de tarjetas para móvil -->
 			<div class="cards-container mobile-only">
 				{#each $licenciasFiltradas as licencia (licencia.id_licencia)}
-					<div class="licencia-card" class:pending={licencia.estado === "pendiente"}>
+					<div
+						class="licencia-card"
+						class:pending={licencia.estado === "pendiente"}
+					>
 						<div class="card-header">
 							<div class="card-agente">
 								<strong>{licencia.agente_nombre}</strong>
 								<small>{licencia.area_nombre}</small>
-								<span class="tipo-badge-mobile">{licencia.tipo_licencia_descripcion}</span>
+								<span class="tipo-badge-mobile"
+									>{licencia.tipo_licencia_descripcion}</span
+								>
 							</div>
 							<span
 								class="estado-badge"
-								style="background-color: {obtenerColorEstado(licencia.estado)}20; color: {obtenerColorEstado(licencia.estado)}; border: 1px solid {obtenerColorEstado(licencia.estado)}40"
+								style="background-color: {obtenerColorEstado(
+									licencia.estado,
+								)}20; color: {obtenerColorEstado(
+									licencia.estado,
+								)}; border: 1px solid {obtenerColorEstado(
+									licencia.estado,
+								)}40"
 							>
 								{obtenerIconoEstado(licencia.estado)}
 								{licencia.estado.toUpperCase()}
 							</span>
 						</div>
-						
+
 						<div class="card-body">
 							<div class="card-row">
 								<span class="card-label">📅 Período:</span>
-								<span class="card-value">{formatearFecha(licencia.fecha_desde)} - {formatearFecha(licencia.fecha_hasta)}</span>
+								<span class="card-value"
+									>{formatearFecha(licencia.fecha_desde)} - {formatearFecha(
+										licencia.fecha_hasta,
+									)}</span
+								>
 							</div>
 							<div class="card-row">
 								<span class="card-label">⏱️ Duración:</span>
-								<span class="dias-count-big">{calcularDiasLicencia(licencia.fecha_desde, licencia.fecha_hasta)} días</span>
+								<span class="dias-count-big"
+									>{calcularDiasLicencia(
+										licencia.fecha_desde,
+										licencia.fecha_hasta,
+									)} días</span
+								>
 							</div>
 							<div class="card-row">
 								<span class="card-label">📨 Solicitado:</span>
-								<span class="card-value">{formatearFecha(licencia.creado_en)}</span>
+								<span class="card-value"
+									>{formatearFecha(licencia.creado_en)}</span
+								>
 							</div>
 						</div>
 
@@ -805,16 +831,18 @@
 								</button>
 								<button
 									class="btn-card btn-danger"
-									on:click={() => abrirModalRechazar(licencia)}
+									on:click={() =>
+										abrirModalRechazar(licencia)}
 								>
 									❌ Rechazar
 								</button>
 							</div>
 						{/if}
-						
+
 						{#if licencia.observaciones}
 							<div class="card-observaciones">
-								<span class="card-label">💬 Observaciones:</span>
+								<span class="card-label">💬 Observaciones:</span
+								>
 								<p>{licencia.observaciones}</p>
 							</div>
 						{/if}
@@ -889,24 +917,19 @@
 />
 
 <style>
-* {
-    box-sizing: border-box;
-}
+	* {
+		box-sizing: border-box;
+	}
 
-html, body {
-    overflow-x: hidden;
-    max-width: 100vw;
-}
-
-.page-container {
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: 1.5rem;
-    min-height: 100vh;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    box-sizing: border-box;
-    overflow-x: hidden;
-}
+	.page-container {
+		max-width: 1600px;
+		margin: 0 auto;
+		padding: 1.5rem;
+		min-height: 100vh;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		box-sizing: border-box;
+		overflow-x: hidden;
+	}
 
 	.page-header {
 		display: flex;
@@ -1521,17 +1544,6 @@ html, body {
 		font-weight: 600;
 	}
 
-	.tipo-row {
-		flex-wrap: wrap;
-	}
-
-	.card-tipo-value {
-		font-size: 12px;
-		color: #1e293b;
-		font-weight: 600;
-		word-break: break-word;
-	}
-
 	.card-actions {
 		display: flex;
 		gap: 10px;
@@ -1632,9 +1644,9 @@ html, body {
 
 		.page-container {
 			padding: 0.75rem;
-			 max-width: 100vw;  
-        overflow-x: hidden;
-        box-sizing: border-box; 
+			max-width: 100vw;
+			overflow-x: hidden;
+			box-sizing: border-box;
 		}
 
 		.page-header {
