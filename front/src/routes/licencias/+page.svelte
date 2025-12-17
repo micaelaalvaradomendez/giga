@@ -32,6 +32,7 @@
 	import ModalAprobar from "$lib/componentes/admin/licencias/ModalAprobar.svelte";
 	import ModalRechazar from "$lib/componentes/admin/licencias/ModalRechazar.svelte";
 	import ModalSolicitar from "$lib/componentes/licencias/ModalSolicitar.svelte";
+	import ModalDetalleLicencia from "$lib/componentes/admin/licencias/ModalDetalleLicencia.svelte";
 	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
 	import { modalAlert } from "$lib/stores/modalAlertStore.js";
 	let vistaActual = "licencias"; // 'licencias' o 'tipos'
@@ -71,6 +72,8 @@
 	let showConfirmDeleteLicencia = false;
 	let licenciaAEliminar = null;
 	let eliminandoLicencia = false;
+	let showModalDetalle = false;
+	let licenciaParaDetalle = null;
 	let alertConfig = {
 		show: false,
 		type: "info",
@@ -253,6 +256,10 @@
 		showModalAsignar = false;
 		licenciaSeleccionada = null;
 		saving = false;
+	}
+	function abrirModalDetalle(licencia) {
+		licenciaParaDetalle = licencia;
+		showModalDetalle = true;
 	}
 	function mostrarAlerta(config) {
 		if (typeof config === "string") {
@@ -684,14 +691,13 @@
 												❌ Rechazar
 											</button>
 										{/if}
-										{#if licencia.observaciones}
-											<button
-												class="btn-small btn-info"
-												title="Observaciones: {licencia.observaciones}"
-											>
-												💬 Info
-											</button>
-										{/if}
+										<button
+											class="btn-small btn-info"
+											on:click={() => abrirModalDetalle(licencia)}
+											title="Ver detalles"
+										>
+											ℹ️ Info
+										</button>
 									</div>
 								</td>
 							</tr>
@@ -770,6 +776,14 @@
 								</button>
 							</div>
 						{/if}
+						<div class="card-actions" style="margin-top: 8px;">
+							<button
+								class="btn-card btn-info"
+								on:click={() => abrirModalDetalle(licencia)}
+							>
+								ℹ️ Ver Detalles
+							</button>
+						</div>
 						{#if licencia.observaciones}
 							<div class="card-observaciones">
 								<span class="card-label">💬 Observaciones:</span
@@ -813,6 +827,17 @@
 	on:rechazar={handleRechazarEvent}
 	on:cancelar={() => (showModalRechazar = false)}
 />
+
+{#if showModalDetalle && licenciaParaDetalle}
+	<ModalDetalleLicencia
+		licencia={licenciaParaDetalle}
+		on:close={() => {
+			showModalDetalle = false;
+			licenciaParaDetalle = null;
+		}}
+	/>
+{/if}
+
 <ModalAlert
 	bind:show={alertConfig.show}
 	type={alertConfig.type}

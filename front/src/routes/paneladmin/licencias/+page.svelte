@@ -36,6 +36,7 @@
 	import ModalEliminarLicencia from "$lib/componentes/admin/licencias/ModalEliminarLicencia.svelte";
 	import ModalTipoLicencia from "$lib/componentes/admin/licencias/ModalTipoLicencia.svelte";
 	import ModalConfirmarEliminarTipo from "$lib/componentes/admin/licencias/ModalConfirmarEliminarTipo.svelte";
+	import ModalDetalleLicencia from "$lib/componentes/admin/licencias/ModalDetalleLicencia.svelte";
 	import ModalAlert from "$lib/componentes/ModalAlert.svelte";
 	import { modalAlert, showAlert } from "$lib/stores/modalAlertStore.js";
 	let vistaActual = "licencias";
@@ -82,6 +83,8 @@
 	let showConfirmDeleteLicencia = false;
 	let licenciaAEliminar = null;
 	let eliminandoLicencia = false;
+	let showModalDetalle = false;
+	let licenciaParaDetalle = null;
 	onMount(async () => {
 		console.log("Iniciando página de licencias...");
 		await inicializar();
@@ -264,6 +267,10 @@
 	function abrirModalEliminarLicencia(licencia) {
 		licenciaAEliminar = licencia;
 		showConfirmDeleteLicencia = true;
+	}
+	function abrirModalDetalle(licencia) {
+		licenciaParaDetalle = licencia;
+		showModalDetalle = true;
 	}
 	function cancelarEliminacionLicencia() {
 		showConfirmDeleteLicencia = false;
@@ -795,6 +802,14 @@
 													❌
 												</button>
 											{/if}
+											<button
+												class="btn-sm btn-info"
+												on:click={() => abrirModalDetalle(licencia)}
+												title="Ver detalles"
+												style="margin-left: 4px;"
+											>
+												ℹ️
+											</button>
 											{#if isAdmin}
 												<button
 													class="btn-sm btn-warning"
@@ -907,6 +922,14 @@
 										</button>
 									</div>
 								{/if}
+								<div class="card-actions" style="margin-top: 8px;">
+									<button
+										class="btn-card btn-info"
+										on:click={() => abrirModalDetalle(licencia)}
+									>
+										ℹ️ Ver Detalles
+									</button>
+								</div>
 								{#if isAdmin}
 									<div
 										class="card-actions"
@@ -1138,6 +1161,16 @@
 	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
 	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
+
+{#if showModalDetalle && licenciaParaDetalle}
+	<ModalDetalleLicencia
+		licencia={licenciaParaDetalle}
+		on:close={() => {
+			showModalDetalle = false;
+			licenciaParaDetalle = null;
+		}}
+	/>
+{/if}
 <style>
 	* {
 		box-sizing: border-box;
@@ -2525,5 +2558,46 @@
 		background: linear-gradient(135deg, #ef4444, #dc2626);
 		color: white;
 		box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+	}
+	.btn-card.btn-info {
+		background: linear-gradient(135deg, #3b82f6, #2563eb);
+		color: white;
+		box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+	}
+	.btn-sm {
+		padding: 6px 12px;
+		border: none;
+		border-radius: 6px;
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.btn-sm.btn-success {
+		background: linear-gradient(135deg, #10b981, #059669);
+		color: white;
+		box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+	}
+	.btn-sm.btn-danger {
+		background: linear-gradient(135deg, #ef4444, #dc2626);
+		color: white;
+		box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+	}
+	.btn-sm.btn-warning {
+		background: linear-gradient(135deg, #f59e0b, #d97706);
+		color: white;
+		box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+	}
+	.btn-sm.btn-info {
+		background: linear-gradient(135deg, #3b82f6, #2563eb);
+		color: white;
+		box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+	}
+	.btn-sm:hover {
+		transform: translateY(-1px);
+		opacity: 0.9;
 	}
 </style>
