@@ -26,18 +26,24 @@
             if (browser) {
                 const handleVisibilityChange = () => {
                     if (document.visibilityState === "visible") {
-                        // Verificar si el caché está obsoleto antes de recargar
-                        const lastUpdate = localStorage.getItem('lastFeriadosUpdate');
-                        const timeDiff = lastUpdate ? Date.now() - parseInt(lastUpdate) : Infinity;
-                        
-                        // Solo recargar si pasaron más de 5 minutos (300000ms)
-                        if (timeDiff > 300000) {
-                            console.log('🔄 Recargando feriados (caché obsoleto)');
-                            invalidateCache('feriados');
+                        try {
+                            // Verificar si el caché está obsoleto antes de recargar
+                            const lastUpdate = localStorage.getItem('lastFeriadosUpdate');
+                            const timeDiff = lastUpdate ? Date.now() - parseInt(lastUpdate) : Infinity;
+                            
+                            // Solo recargar si pasaron más de 5 minutos (300000ms)
+                            if (timeDiff > 300000) {
+                                console.log('🔄 Recargando feriados (caché obsoleto)');
+                                invalidateCache('feriados');
+                                feriadosController.init();
+                                localStorage.setItem('lastFeriadosUpdate', Date.now().toString());
+                            } else {
+                                console.log('✅ Usando feriados en caché (actualizado hace', Math.round(timeDiff/1000), 'segundos)');
+                            }
+                        } catch (error) {
+                            // Si localStorage no está disponible, recargar directamente
+                            console.warn('localStorage no disponible, recargando feriados');
                             feriadosController.init();
-                            localStorage.setItem('lastFeriadosUpdate', Date.now().toString());
-                        } else {
-                            console.log('✅ Usando feriados en caché (actualizado hace', Math.round(timeDiff/1000), 'segundos)');
                         }
                     }
                 };
@@ -48,7 +54,11 @@
                 );
                 
                 // Guardar timestamp inicial
-                localStorage.setItem('lastFeriadosUpdate', Date.now().toString());
+                try {
+                    localStorage.setItem('lastFeriadosUpdate', Date.now().toString());
+                } catch (e) {
+                    console.warn('No se pudo guardar timestamp en localStorage:', e);
+                }
                 
                 return () => {
                     document.removeEventListener(

@@ -12,7 +12,7 @@
 			await tick();
 			
 			// Usar requestIdleCallback si está disponible, sino setTimeout
-			if (typeof requestIdleCallback !== 'undefined') {
+			if ('requestIdleCallback' in window) {
 				requestIdleCallback(() => {
 					expandNodesLazy();
 				});

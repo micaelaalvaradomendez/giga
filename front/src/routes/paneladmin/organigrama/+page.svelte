@@ -66,17 +66,23 @@
       // OPTIMIZACIÓN: Solo recargar si el caché está obsoleto (>10 minutos)
       const handleVisibilityChange = () => {
         if (document.visibilityState === "visible") {
-          const lastUpdate = localStorage.getItem('lastOrganigramaUpdate');
-          const timeDiff = lastUpdate ? Date.now() - parseInt(lastUpdate) : Infinity;
-          
-          // Solo recargar si pasaron más de 10 minutos (600000ms)
-          if (timeDiff > 600000) {
-            console.log('🔄 Recargando organigrama (caché obsoleto)');
-            invalidateCache('organigrama');
+          try {
+            const lastUpdate = localStorage.getItem('lastOrganigramaUpdate');
+            const timeDiff = lastUpdate ? Date.now() - parseInt(lastUpdate) : Infinity;
+            
+            // Solo recargar si pasaron más de 10 minutos (600000ms)
+            if (timeDiff > 600000) {
+              console.log('🔄 Recargando organigrama (caché obsoleto)');
+              invalidateCache('organigrama');
+              loadOrganigrama();
+              localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
+            } else {
+              console.log('✅ Usando organigrama en caché (actualizado hace', Math.round(timeDiff/1000), 'segundos)');
+            }
+          } catch (error) {
+            // Si localStorage no está disponible, recargar directamente
+            console.warn('localStorage no disponible, recargando organigrama');
             loadOrganigrama();
-            localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
-          } else {
-            console.log('✅ Usando organigrama en caché (actualizado hace', Math.round(timeDiff/1000), 'segundos)');
           }
         }
       };
@@ -84,7 +90,11 @@
       document.addEventListener("visibilitychange", handleVisibilityChange);
       
       // Guardar timestamp inicial
-      localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
+      try {
+        localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
+      } catch (e) {
+        console.warn('No se pudo guardar timestamp en localStorage:', e);
+      }
       
       return () => {
         document.removeEventListener(
@@ -223,7 +233,11 @@
           
           // OPTIMIZACIÓN: Invalidar caché para forzar recarga en otras páginas
           invalidateCache('organigrama');
-          localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
+          try {
+            localStorage.setItem('lastOrganigramaUpdate', Date.now().toString());
+          } catch (e) {
+            console.warn('No se pudo actualizar timestamp en localStorage:', e);
+          }
           
           updateNodesList();
           return true;

@@ -66,12 +66,24 @@ export async function loadFeriados(forceRefresh = false) {
 	// Evitar múltiples cargas simultáneas
 	if (cache.loading) {
 		console.log('⏳ Carga de feriados ya en progreso, esperando...');
-		// Esperar a que termine la carga actual
-		return new Promise((resolve) => {
+		// Esperar a que termine la carga actual con timeout
+		return new Promise((resolve, reject) => {
+			const timeout = setTimeout(() => {
+				unsubscribe();
+				reject(new Error('Timeout esperando carga de feriados'));
+			}, 30000); // 30 segundos timeout
+			
 			const unsubscribe = feriadosCache.subscribe((value) => {
-				if (!value.loading && value.data) {
+				if (!value.loading) {
+					clearTimeout(timeout);
 					unsubscribe();
-					resolve(value.data);
+					if (value.error) {
+						reject(new Error(value.error));
+					} else if (value.data) {
+						resolve(value.data);
+					} else {
+						reject(new Error('No se pudieron cargar los feriados'));
+					}
 				}
 			});
 		});
@@ -120,11 +132,23 @@ export async function loadAreas(forceRefresh = false) {
 
 	if (cache.loading) {
 		console.log('⏳ Carga de áreas ya en progreso, esperando...');
-		return new Promise((resolve) => {
+		return new Promise((resolve, reject) => {
+			const timeout = setTimeout(() => {
+				unsubscribe();
+				reject(new Error('Timeout esperando carga de áreas'));
+			}, 30000); // 30 segundos timeout
+			
 			const unsubscribe = areasCache.subscribe((value) => {
-				if (!value.loading && value.data) {
+				if (!value.loading) {
+					clearTimeout(timeout);
 					unsubscribe();
-					resolve(value.data);
+					if (value.error) {
+						reject(new Error(value.error));
+					} else if (value.data) {
+						resolve(value.data);
+					} else {
+						reject(new Error('No se pudieron cargar las áreas'));
+					}
 				}
 			});
 		});
@@ -172,11 +196,23 @@ export async function loadOrganigrama(forceRefresh = false) {
 
 	if (cache.loading) {
 		console.log('⏳ Carga de organigrama ya en progreso, esperando...');
-		return new Promise((resolve) => {
+		return new Promise((resolve, reject) => {
+			const timeout = setTimeout(() => {
+				unsubscribe();
+				reject(new Error('Timeout esperando carga de organigrama'));
+			}, 30000); // 30 segundos timeout
+			
 			const unsubscribe = organigramaCache.subscribe((value) => {
-				if (!value.loading && value.data) {
+				if (!value.loading) {
+					clearTimeout(timeout);
 					unsubscribe();
-					resolve(value.data);
+					if (value.error) {
+						reject(new Error(value.error));
+					} else if (value.data) {
+						resolve(value.data);
+					} else {
+						reject(new Error('No se pudo cargar el organigrama'));
+					}
 				}
 			});
 		});
@@ -189,7 +225,8 @@ export async function loadOrganigrama(forceRefresh = false) {
 		const response = await organigramaService.getOrganigrama();
 		
 		let data = null;
-		if (response.data?.success) {
+		// Validar explícitamente que success es true
+		if (response.data && response.data.success === true) {
 			data = {
 				version: response.data.data.version,
 				lastUpdated: response.data.data.actualizado_en,
