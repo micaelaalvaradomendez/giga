@@ -14,14 +14,7 @@ class IncidenciaSerializer(serializers.ModelSerializer):
     area_nombre = serializers.CharField(source='area_involucrada.nombre', read_only=True)
     estado_display = serializers.CharField(source='get_estado_display', read_only=True)
     prioridad_display = serializers.CharField(source='get_prioridad_display', read_only=True)
-    tiempo_resolucion = serializers.ReadOnlyField()
-    esta_vencida = serializers.ReadOnlyField()
     puede_cambiar_estado = serializers.SerializerMethodField()
-    
-    # Sobrescribir campos de fecha para asegurar timezone correcto
-    fecha_creacion = serializers.SerializerMethodField()
-    fecha_asignacion = serializers.SerializerMethodField()
-    fecha_resolucion = serializers.SerializerMethodField()
     
     class Meta:
         model = Incidencia
@@ -30,8 +23,7 @@ class IncidenciaSerializer(serializers.ModelSerializer):
             'creado_por', 'creado_por_detalle', 'creado_por_nombre',
             'asignado_a', 'asignado_a_detalle', 'asignado_a_nombre',
             'area_involucrada', 'area_nombre', 'fecha_creacion', 'fecha_asignacion',
-            'fecha_resolucion', 'resolucion', 'comentarios_seguimiento',
-            'tiempo_resolucion', 'esta_vencida', 'puede_cambiar_estado'
+            'fecha_resolucion', 'resolucion', 'comentarios_seguimiento', 'puede_cambiar_estado'
         ]
         read_only_fields = ['numero', 'fecha_creacion', 'fecha_asignacion', 'fecha_resolucion']
     
@@ -63,27 +55,6 @@ class IncidenciaSerializer(serializers.ModelSerializer):
             if agente:
                 return obj.puede_cambiar_estado(agente)
         return False
-    
-    def _ensure_timezone(self, dt):
-        """Asegura que el datetime tenga timezone de Argentina"""
-        import pytz
-        if dt is None:
-            return None
-        argentina_tz = pytz.timezone('America/Argentina/Buenos_Aires')
-        # Si el datetime es naive (sin timezone), asumimos que está en UTC y lo convertimos
-        if timezone.is_naive(dt):
-            dt = timezone.make_aware(dt, pytz.UTC)
-        # Convertir a timezone de Argentina
-        return dt.astimezone(argentina_tz).isoformat()
-    
-    def get_fecha_creacion(self, obj):
-        return self._ensure_timezone(obj.fecha_creacion)
-    
-    def get_fecha_asignacion(self, obj):
-        return self._ensure_timezone(obj.fecha_asignacion)
-    
-    def get_fecha_resolucion(self, obj):
-        return self._ensure_timezone(obj.fecha_resolucion)
 
 
 class IncidenciaCreateSerializer(serializers.ModelSerializer):
@@ -129,7 +100,7 @@ class IncidenciaListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'numero', 'titulo', 'estado', 'estado_display', 'prioridad', 'prioridad_display',
             'creado_por_nombre', 'asignado_a_nombre', 'area_nombre',
-            'fecha_creacion', 'fecha_resolucion', 'esta_vencida'
+            'fecha_creacion', 'fecha_resolucion'
         ]
     
     def get_creado_por_nombre(self, obj):

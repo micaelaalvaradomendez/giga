@@ -144,17 +144,30 @@ class IncidenciasService {
     // Utilidades para el frontend
     static formatearFecha(fechaString) {
         if (!fechaString) return 'No establecida';
-        const fecha = new Date(fechaString);
-        return fecha.toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        
+        try {
+            const fecha = new Date(fechaString);
+            
+            // Verificar que la fecha sea válida
+            if (isNaN(fecha.getTime())) {
+                console.warn('Fecha inválida:', fechaString);
+                return 'Fecha inválida';
+            }
+            
+            // Usar toLocaleString que automáticamente convierte de UTC a hora local
+            return fecha.toLocaleString('es-AR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+        } catch (error) {
+            console.error('Error al formatear fecha:', error);
+            return 'Error en fecha';
+        }
     }
-
-
 }
 
 export { IncidenciasService };

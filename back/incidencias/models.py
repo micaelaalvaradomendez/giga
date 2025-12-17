@@ -115,6 +115,22 @@ class Incidencia(models.Model):
         }
         self.comentarios_seguimiento.append(nuevo_comentario)
         self.save()
+        
+        # Registrar en auditoría
+        from auditoria.models import Auditoria
+        try:
+            Auditoria.objects.create(
+                pk_afectada=self.id,
+                nombre_tabla='incidencia',
+                creado_en=timezone.now(),
+                valor_nuevo={'comentario': comentario[:200]},
+                accion='COMENTAR',
+                id_agente=autor
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error al registrar auditoría de comentario: {str(e)}")
     
     def resolver_incidencia(self, resolucion, autor=None):
         """Resolver la incidencia"""
@@ -178,35 +194,6 @@ class Incidencia(models.Model):
             return self.area_involucrada_id == agente.id_area
         
         return False
-    
-    @property
-    def tiempo_resolucion(self):
-        """Calcula el tiempo de resolución en días"""
-        if self.fecha_resolucion:
-            fecha_creacion = self.fecha_creacion
-            fecha_resolucion = self.fecha_resolucion
-            
-            # Asegurar que ambas sean conscientes de zona horaria o ambas ingenuas
-            if timezone.is_naive(fecha_creacion):
-                fecha_creacion = timezone.make_aware(fecha_creacion)
-            if timezone.is_naive(fecha_resolucion):
-                fecha_resolucion = timezone.make_aware(fecha_resolucion)
-                
-            return (fecha_resolucion - fecha_creacion).days
-        return None
-    
-    @property
-    def esta_vencida(self):
-        """Determina si la incidencia está vencida (más de 7 días sin resolver)"""
-        if self.fecha_resolucion:
-            return False
-        
-        fecha_creacion = self.fecha_creacion
-        if timezone.is_naive(fecha_creacion):
-            fecha_creacion = timezone.make_aware(fecha_creacion)
-            
-        dias_transcurridos = (timezone.now() - fecha_creacion).days
-        return dias_transcurridos > 7
     
     def __str__(self):
         return f"{self.numero} - {self.titulo}"
