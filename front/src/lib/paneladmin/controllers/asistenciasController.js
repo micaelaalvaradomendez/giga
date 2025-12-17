@@ -9,6 +9,7 @@ import { writable, derived } from 'svelte/store';
 import { goto } from '$app/navigation';
 import { asistenciaService, personasService } from '$lib/services.js';
 import { AuthService } from '$lib/login/authService.js';
+import { showConfirm } from '$lib/stores/modalAlertStore.js';
 
 class AsistenciasController {
 	constructor() {
@@ -16,7 +17,7 @@ class AsistenciasController {
 		if (!browser) {
 			return;
 		}
-		
+
 		// ========== STORES ==========
 		this.agente = writable(null);
 		this.loading = writable(true);
@@ -65,7 +66,7 @@ class AsistenciasController {
 
 			// Verificar sesión desde localStorage (evita llamada redundante)
 			const currentUser = AuthService.getCurrentUser();
-			
+
 			if (!currentUser || !AuthService.isAuthenticated()) {
 				goto('/');
 				return;
@@ -137,7 +138,7 @@ class AsistenciasController {
 				// Para "todas", cargar asistencias registradas + ausentes
 				const paramsAsistencias = { fecha_desde: fecha, fecha_hasta: fecha };
 				const paramsAusentes = { fecha_desde: fecha, fecha_hasta: fecha, estado: 'sin_entrada' };
-				
+
 				if (area) {
 					paramsAsistencias.area_id = area;
 					paramsAusentes.area_id = area;
@@ -152,11 +153,21 @@ class AsistenciasController {
 				const dataAsistencias = responseAsistencias.data;
 				const dataAusentes = responseAusentes.data;
 
+				console.log('📊 Datos cargados:', {
+					asistencias_registradas: dataAsistencias.data?.length || 0,
+					ausentes: dataAusentes.data?.length || 0,
+					primer_ausente: dataAusentes.data?.[0]
+				});
 
-				// Combinar ambos arrays
+				// Filtrar ausentes que YA tienen asistencia (evitar duplicados visuales)
+				// Esto protege contra latencia del backend o condiciones de carrera
+				const dniConAsistencia = new Set((dataAsistencias.data || []).map(a => a.agente_dni));
+				const ausentesFiltrados = (dataAusentes.data || []).filter(a => !dniConAsistencia.has(a.agente_dni));
+
+				// Combinar arrays (asistencias reales primero)
 				asistenciasData = [
 					...(dataAsistencias.data || []),
-					...(dataAusentes.data || [])
+					...ausentesFiltrados
 				];
 
 			} else {
@@ -295,7 +306,7 @@ class AsistenciasController {
 	}
 
 	// ========== MARCACIÓN DE ASISTENCIA ==========
-	async marcarEntrada(horaEspecifica = null) {
+	async marcarEntrada(horaEspecifica = null, cerrarModal = true) {
 		let asistencia, observacion, usarHora, horaEntrada;
 		this.asistenciaEditando.subscribe((value) => (asistencia = value))();
 		this.observacionEdit.subscribe((value) => (observacion = value))();
@@ -319,12 +330,15 @@ class AsistenciasController {
 			});
 			return {
 				success: false,
-				message: `Error: El agente ${asistencia.agente_nombre || 'desconocido'} no tiene DNI registrado`
+				message: `Error: El agente ${(asistencia && asistencia.agente_nombre) || 'desconocido'} no tiene DNI registrado`
 			};
 		}
 
 		if (asistencia.hora_entrada) {
-			const confirmar = confirm('Este agente ya tiene entrada marcada. ¿Desea marcar nuevamente?');
+			const confirmar = await showConfirm(
+				'Este agente ya tiene entrada marcada. ¿Desea marcar nuevamente?',
+				'Confirmar re-marcación'
+			);
 			if (!confirmar) {
 				return { success: false, message: 'Operación cancelada' };
 			}
@@ -354,9 +368,34 @@ class AsistenciasController {
 			const response = await asistenciaService.marcarAsistencia(requestBody);
 			const data = response.data;
 
-			if (data.success) {
-				this.cerrarModal();
+			if (response.status === 200 && data.success) {
+				if (cerrarModal) {
+					this.cerrarModal();
+				}
 				await this.cargarDatos();
+
+				// Actualizar la asistencia editando si no se cierra el modal
+				if (!cerrarModal) {
+					// Buscar la asistencia actualizada en el array cargado (más seguro que usar la respuesta)
+					let asistenciasActuales;
+					this.asistencias.subscribe(value => asistenciasActuales = value)();
+
+					// Intentar encontrar la asistencia con el mismo DNI y fecha
+					// Esto es crucial para que el siguiente paso (salida) tenga el ID correcto
+					const dniBusqueda = asistencia.agente_dni;
+					const fechaBusqueda = asistencia.fecha;
+
+					const asistenciaActualizada = asistenciasActuales.find(a =>
+						a.agente_dni === dniBusqueda &&
+						(a.fecha === fechaBusqueda || new Date(a.fecha).toISOString().slice(0, 10) === new Date(fechaBusqueda).toISOString().slice(0, 10))
+					);
+
+					if (asistenciaActualizada) {
+						console.log('🔄 Actualizando asistenciaEditando tras marcar entrada:', asistenciaActualizada);
+						this.asistenciaEditando.set(asistenciaActualizada);
+					}
+				}
+
 				return { success: true, message: '✅ Entrada marcada correctamente' };
 			} else {
 				console.error('❌ Error en marcación:', data);
@@ -382,8 +421,21 @@ class AsistenciasController {
 		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
 		this.horaSalida.subscribe((value) => (horaSalida = value))();
 
+		console.log('🚪 Intentando marcar salida:', {
+			asistencia_id: asistencia?.id_asistencia,
+			agente: asistencia?.agente_nombre,
+			dni: asistencia?.agente_dni,
+			id_agente: asistencia?.id_agente,
+			fecha: asistencia?.fecha,
+			tiene_entrada: !!asistencia?.hora_entrada,
+			tiene_salida: !!asistencia?.hora_salida,
+			usar_hora: usarHora,
+			hora_salida: horaSalida,
+			asistencia_completa: asistencia
+		});
 
-		if (!asistencia) {
+		if (!asistencia || !asistencia.id_agente) {
+			console.error("❌ Error: No se recibió información del agente en marcarSalida", asistencia);
 			return {
 				success: false,
 				message: 'Error: No se recibió información del agente'
@@ -411,7 +463,10 @@ class AsistenciasController {
 		}
 
 		if (asistencia.hora_salida) {
-			const confirmar = confirm('Este agente ya tiene salida marcada. ¿Desea marcar nuevamente?');
+			const confirmar = await showConfirm(
+				'Este agente ya tiene salida marcada. ¿Desea marcar nuevamente?',
+				'Confirmar re-marcación'
+			);
 			if (!confirmar) {
 				return { success: false, message: 'Operación cancelada' };
 			}
@@ -440,7 +495,7 @@ class AsistenciasController {
 			const response = await asistenciaService.marcarAsistencia(requestBody);
 			const data = response.data;
 
-			if (response.ok && data.success) {
+			if (response.status === 200 && data.success) {
 				this.cerrarModal();
 				await this.cargarDatos();
 				return { success: true, message: '✅ Salida marcada correctamente' };
@@ -470,8 +525,18 @@ class AsistenciasController {
 		this.horaEntrada.subscribe((value) => (horaEntrada = value))();
 		this.horaSalida.subscribe((value) => (horaSalida = value))();
 
+		console.log('🔧 Iniciando corrección de asistencia:', {
+			asistencia_id: asistencia?.id_asistencia,
+			tiene_entrada: !!asistencia?.hora_entrada,
+			tiene_salida: !!asistencia?.hora_salida,
+			usarHora,
+			horaEntrada,
+			horaSalida,
+			observacion
+		});
 
-		if (!asistencia) {
+		if (!asistencia || !asistencia.id_agente) {
+			console.error("❌ Error: No se recibió información del agente en corregirAsistencia", asistencia);
 			return {
 				success: false,
 				message: 'Error: No se recibió información del agente'
@@ -536,32 +601,26 @@ class AsistenciasController {
 				if (horaEntrada) {
 					// Temporalmente setear la observación
 					this.observacionEdit.set(observacion || 'Marcación creada por administrador');
-					const resultado_entrada = await this.marcarEntrada(horaEntrada);
+
+					// Llamar a marcarEntrada pero NO CERRAR EL MODAL si vamos a marcar salida después
+					const cerrarAlFinal = !horaSalida;
+					const resultado_entrada = await this.marcarEntrada(horaEntrada, cerrarAlFinal);
 
 					if (!resultado_entrada.success) {
 						return resultado_entrada;
 					}
 					resultado_final.messages.push('Entrada creada');
 
-					// IMPORTANTE: Recargar datos después de crear la entrada para tener el id_asistencia
+					// Actualizar manualmente el store para que el siguiente paso (salida) pase la validación
+					// Esto simula que la asistencia ya tiene entrada marcada
 					if (horaSalida) {
-						await this.cargarAsistencias();
-
-						// Buscar la asistencia recién creada
-						let asistenciasActuales;
-						this.asistencias.subscribe(value => asistenciasActuales = value)();
-
-						const asistenciaActualizada = asistenciasActuales.find(a =>
-							a.agente_dni === asistencia.agente_dni &&
-							a.fecha === asistencia.fecha &&
-							a.hora_entrada !== null
-						);
-
-						if (asistenciaActualizada) {
-							this.asistenciaEditando.set(asistenciaActualizada);
-						} else {
-							console.warn('⚠️ No se encontró la asistencia actualizada');
-						}
+						this.asistenciaEditando.update(a => ({
+							...a,
+							hora_entrada: horaEntrada,
+							// Intentamos mantener el ID si existe, o confiamos en que marcarSalida use DNI
+							id_asistencia: a.id_asistencia || null
+						}));
+						console.log('🔄 Store actualizado manualmente con entrada:', horaEntrada);
 					}
 				}
 
@@ -645,8 +704,9 @@ class AsistenciasController {
 			};
 		}
 
-		const confirmar = confirm(
-			'¿Está seguro que desea corregir esta asistencia? Esta acción quedará registrada en el sistema.'
+		const confirmar = await showConfirm(
+			'¿Está seguro que desea corregir esta asistencia? Esta acción quedará registrada en el sistema.',
+			'Confirmar corrección'
 		);
 		if (!confirmar) {
 			return { success: false, message: 'Operación cancelada' };
@@ -665,12 +725,12 @@ class AsistenciasController {
 				requestBody.hora_salida = horaSalida;
 			}
 
-;
+			;
 
 			const response = await asistenciaService.corregirAsistencia(asistencia.id_asistencia, requestBody);
 			const data = response.data;
 
-			if (response.ok && data.success) {
+			if (response.status === 200 && data.success) {
 				this.cerrarModal();
 				await this.cargarDatos();
 				return { success: true, message: '✅ Asistencia corregida correctamente' };
@@ -754,9 +814,10 @@ class AsistenciasController {
 			};
 		}
 
-		const confirmar = confirm(
+		const confirmar = await showConfirm(
 			`¿Está seguro que desea marcar a ${asistencia.agente_nombre} como AUSENTE?\n\n` +
-			'Esta acción eliminará su presentismo para el día de hoy y quedará registrada en el sistema.'
+			'Esta acción eliminará su presentismo para el día de hoy y quedará registrada en el sistema.',
+			'Confirmar ausencia'
 		);
 
 		if (!confirmar) {
@@ -786,7 +847,7 @@ class AsistenciasController {
 			});
 			const data = response.data;
 
-			if (response.ok && data.success) {
+			if (response.status === 200 && data.success) {
 				this.cerrarModal();
 				await this.cargarDatos();
 				return { success: true, message: '✅ Agente marcado como ausente correctamente' };

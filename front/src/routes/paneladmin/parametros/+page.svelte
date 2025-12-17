@@ -184,355 +184,367 @@
 		}
 	}
 </script>
+
 <svelte:head>
 	<title>Parámetros del Sistema - GIGA</title>
 </svelte:head>
 <div class="page-container">
-<div class="page-header">
-	<div class="page-header-title">
-		<h1>Parámetros del Sistema</h1>
-	</div>
-	<div class="header-actions">
-		<button class="btn-horario-global" on:click={abrirModalHorarioGlobal}>
-			🕐 Horario Global
-		</button>
-		<button
-			class="btn-primary"
-			on:click={() => parametrosController.agregarArea()}
-		>
-			+ Añadir Área
-		</button>
-		<button
-			class="btn-secondary"
-			on:click={() => parametrosController.agregarAgrupacion()}
-		>
-			+ Añadir Agrupación
-		</button>
-	</div>
-</div>
-<!-- Mensajes de éxito -->
-{#if mensajeExito}
-	<div class="alert alert-success">
-		{mensajeExito}
-		<button class="btn-close" on:click={() => (mensajeExito = "")}>×</button
-		>
-	</div>
-{/if}
-<!-- Mensajes de error -->
-{#if mensajeError}
-	<div class="alert alert-error">
-		❌ {mensajeError}
-		<button class="btn-close" on:click={() => (mensajeError = "")}>×</button
-		>
-	</div>
-{/if}
-{#if $error}
-	<div class="alert alert-error">
-		❌ {$error}
-		<button
-			class="btn-close"
-			on:click={() => parametrosController.error.set(null)}>×</button
-		>
-	</div>
-{/if}
-<!-- Loading indicator -->
-{#if $loading}
-	<div class="loading-container">
-		<div class="loading-spinner"></div>
-		<p>Cargando parámetros del sistema...</p>
-	</div>
-{:else}
-	<!-- Sección de Horario Global -->
-	<div class="content-grid">
-		<!-- Panel de Áreas -->
-		<div class="panel-areas">
-			<div class="panel-header">
-				<h2>📍 Gestión de Áreas</h2>
-			</div>
-			<!-- Estadísticas de Áreas -->
-			{#if $areasFiltradas && $areasFiltradas.length > 0}
-				<div class="panel-stats">
-					<div class="stat-card">
-						<h3>Total Áreas</h3>
-						<p class="stat-number">{$areas ? $areas.length : 0}</p>
-					</div>
-					<div class="stat-card">
-						<h3>Áreas Activas</h3>
-						<p class="stat-number">
-							{$areas ? $areas.filter((a) => a.activo).length : 0}
-						</p>
-					</div>
-				</div>
-			{/if}
-			<!-- Filtros de áreas -->
-			<div class="filtros-container">
-				<div class="filtro-group">
-					<label for="busquedaAreas">🔍 Buscar áreas</label>
-					<input
-						type="text"
-						id="busquedaAreas"
-						bind:value={$busquedaAreas}
-						placeholder="Buscar por nombre..."
-						class="input-busqueda"
-					/>
-				</div>
-				<div class="filtro-actions">
-					<button
-						class="btn-limpiar"
-						on:click={() =>
-							parametrosController.limpiarFiltrosAreas()}
-						title="Limpiar filtros"
-					>
-						🗑️ Limpiar
-					</button>
-				</div>
-			</div>
-			<div class="table-container">
-				<table>
-					<thead>
-						<tr>
-							<th>Área</th>
-							<th>Estado</th>
-							<th>Acciones</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#if $areasFiltradas && $areasFiltradas.length > 0}
-							{#each $areasFiltradas as area}
-								<tr>
-									<td>
-										<strong>{area.nombre}</strong>
-									</td>
-									<td>
-										<span
-											class="badge badge-{area.activo
-												? 'success'
-												: 'inactive'}"
-										>
-											{area.activo
-												? "Activa"
-												: "Inactiva"}
-										</span>
-									</td>
-									<td class="actions">
-										<button
-											class="btn-icon"
-											title="Editar"
-											on:click={() =>
-												parametrosController.editarArea(
-													area,
-												)}>✏️</button
-										>
-										<button
-											class="btn-icon"
-											title="Horarios"
-											on:click={() =>
-												parametrosController.gestionarHorarios(
-													"area",
-													area,
-												)}>🕒</button
-										>
-										<button
-											class="btn-icon-danger"
-											title="Eliminar"
-											on:click={() =>
-												parametrosController.eliminarArea(
-													area,
-												)}>🗑️</button
-										>
-									</td>
-								</tr>
-							{/each}
-						{:else}
-							<tr>
-								<td
-									colspan="3"
-									style="text-align: center; padding: 2rem;"
-								>
-									{#if busquedaAreas}
-										No se encontraron áreas que coincidan
-										con la búsqueda.
-										<br /><button
-											class="btn-link"
-											on:click={() =>
-												parametrosController.limpiarFiltrosAreas()}
-											>Limpiar filtros</button
-										>
-									{:else}
-										No hay áreas registradas.
-										<br /><button
-											class="btn-link"
-											on:click={() =>
-												parametrosController.agregarArea()}
-											>Crear primera área</button
-										>
-									{/if}
-								</td>
-							</tr>
-						{/if}
-					</tbody>
-				</table>
-			</div>
+	<div class="page-header">
+		<div class="page-header-title">
+			<h1>Parámetros del Sistema</h1>
 		</div>
-		<!-- Panel de Agrupaciones -->
-		<div class="panel-agrupaciones">
-			<div class="panel-header">
-				<h2>👥 Gestión de Agrupaciones</h2>
-			</div>
-			<!-- Estadísticas de Agrupaciones -->
-			{#if $agrupacionesFiltradas && $agrupacionesFiltradas.length > 0}
-				<div class="panel-stats">
-					<div class="stat-card">
-						<h3>Total Agrupaciones</h3>
-						<p class="stat-number">
-							{$agrupaciones ? $agrupaciones.length : 0}
-						</p>
+		<div class="header-actions">
+			<button
+				class="btn-horario-global"
+				on:click={abrirModalHorarioGlobal}
+			>
+				🕐 Horario Global
+			</button>
+			<button
+				class="btn-primary"
+				on:click={() => parametrosController.agregarArea()}
+			>
+				+ Añadir Área
+			</button>
+			<button
+				class="btn-secondary"
+				on:click={() => parametrosController.agregarAgrupacion()}
+			>
+				+ Añadir Agrupación
+			</button>
+		</div>
+	</div>
+	<!-- Mensajes de éxito -->
+	{#if mensajeExito}
+		<div class="alert alert-success">
+			{mensajeExito}
+			<button class="btn-close" on:click={() => (mensajeExito = "")}
+				>×</button
+			>
+		</div>
+	{/if}
+	<!-- Mensajes de error -->
+	{#if mensajeError}
+		<div class="alert alert-error">
+			❌ {mensajeError}
+			<button class="btn-close" on:click={() => (mensajeError = "")}
+				>×</button
+			>
+		</div>
+	{/if}
+	{#if $error}
+		<div class="alert alert-error">
+			❌ {$error}
+			<button
+				class="btn-close"
+				on:click={() => parametrosController.error.set(null)}>×</button
+			>
+		</div>
+	{/if}
+	<!-- Loading indicator -->
+	{#if $loading}
+		<div class="loading-container">
+			<div class="loading-spinner"></div>
+			<p>Cargando parámetros del sistema...</p>
+		</div>
+	{:else}
+		<!-- Sección de Horario Global -->
+		<div class="content-grid">
+			<!-- Panel de Áreas -->
+			<div class="panel-areas">
+				<div class="panel-header">
+					<h2>📍 Gestión de Áreas</h2>
+				</div>
+				<!-- Estadísticas de Áreas -->
+				{#if $areasFiltradas && $areasFiltradas.length > 0}
+					<div class="panel-stats">
+						<div class="stat-card">
+							<h3>Total Áreas</h3>
+							<p class="stat-number">
+								{$areas ? $areas.length : 0}
+							</p>
+						</div>
+						<div class="stat-card">
+							<h3>Áreas Activas</h3>
+							<p class="stat-number">
+								{$areas
+									? $areas.filter((a) => a.activo).length
+									: 0}
+							</p>
+						</div>
 					</div>
-					<div class="stat-card">
-						<h3>Agentes en Agrupaciones</h3>
-						<p class="stat-number">
-							{$agrupaciones
-								? $agrupaciones.reduce(
-										(sum, a) =>
-											sum + (a.total_agentes || 0),
-										0,
-									)
-								: 0}
-						</p>
+				{/if}
+				<!-- Filtros de áreas -->
+				<div class="filtros-container">
+					<div class="filtro-group">
+						<label for="busquedaAreas">🔍 Buscar áreas</label>
+						<input
+							type="text"
+							id="busquedaAreas"
+							bind:value={$busquedaAreas}
+							placeholder="Buscar por nombre..."
+							class="input-busqueda"
+						/>
+					</div>
+					<div class="filtro-actions">
+						<button
+							class="btn-limpiar"
+							on:click={() =>
+								parametrosController.limpiarFiltrosAreas()}
+							title="Limpiar filtros"
+						>
+							🗑️ Limpiar
+						</button>
 					</div>
 				</div>
-			{/if}
-			<!-- Filtros de agrupaciones -->
-			<div class="filtros-container">
-				<div class="filtro-group">
-					<label for="busquedaAgrupaciones"
-						>🔍 Buscar agrupaciones</label
-					>
-					<input
-						type="text"
-						id="busquedaAgrupaciones"
-						bind:value={$busquedaAgrupaciones}
-						placeholder="Buscar por nombre..."
-						class="input-busqueda"
-					/>
-				</div>
-				<div class="filtro-actions">
-					<button
-						class="btn-limpiar"
-						on:click={() =>
-							parametrosController.limpiarFiltrosAgrupaciones()}
-						title="Limpiar filtros"
-					>
-						🗑️ Limpiar
-					</button>
-				</div>
-			</div>
-			<div class="table-container">
-				<table>
-					<thead>
-						<tr>
-							<th>Agrupación</th>
-							<th>Descripción</th>
-							<th>Agentes</th>
-							<th>Estado</th>
-							<th>Acciones</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#if $agrupacionesFiltradas && $agrupacionesFiltradas.length > 0}
-							{#each $agrupacionesFiltradas as agrupacion}
+				<div class="table-container">
+					<table>
+						<thead>
+							<tr>
+								<th>Área</th>
+								<th>Estado</th>
+								<th>Acciones</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#if $areasFiltradas && $areasFiltradas.length > 0}
+								{#each $areasFiltradas as area}
+									<tr>
+										<td>
+											<strong>{area.nombre}</strong>
+										</td>
+										<td>
+											<span
+												class="badge badge-{area.activo
+													? 'success'
+													: 'inactive'}"
+											>
+												{area.activo
+													? "Activa"
+													: "Inactiva"}
+											</span>
+										</td>
+										<td class="actions">
+											<button
+												class="btn-icon"
+												title="Editar"
+												on:click={() =>
+													parametrosController.editarArea(
+														area,
+													)}>✏️</button
+											>
+											<button
+												class="btn-icon"
+												title="Horarios"
+												on:click={() =>
+													parametrosController.gestionarHorarios(
+														"area",
+														area,
+													)}>🕒</button
+											>
+											<button
+												class="btn-icon-danger"
+												title="Eliminar"
+												on:click={() =>
+													parametrosController.eliminarArea(
+														area,
+													)}>🗑️</button
+											>
+										</td>
+									</tr>
+								{/each}
+							{:else}
 								<tr>
-									<td>
-										<div class="agrupacion-info">
-											<div
-												class="color-indicator"
-												style="background-color: {agrupacion.color}"
-											></div>
-											<strong>{agrupacion.nombre}</strong>
-										</div>
-									</td>
 									<td
-										>{agrupacion.descripcion ||
-											"Sin descripción"}</td
+										colspan="3"
+										style="text-align: center; padding: 2rem;"
 									>
-									<td>
-										<span class="badge badge-info">
-											{agrupacion.total_agentes} agentes
-										</span>
-									</td>
-									<td>
-										<span
-											class="badge badge-{agrupacion.activo
-												? 'success'
-												: 'inactive'}"
-										>
-											{agrupacion.activo
-												? "Activa"
-												: "Inactiva"}
-										</span>
-									</td>
-									<td class="actions">
-										<button
-											class="btn-icon"
-											title="Editar"
-											on:click={() =>
-												parametrosController.editarAgrupacion(
-													agrupacion,
-												)}>✏️</button
-										>
-										<button
-											class="btn-icon"
-											title="Horarios"
-											on:click={() =>
-												parametrosController.gestionarHorarios(
-													"agrupacion",
-													agrupacion,
-												)}>🕒</button
-										>
-										<button
-											class="btn-icon-danger"
-											title="Eliminar"
-											on:click={() =>
-												parametrosController.eliminarAgrupacion(
-													agrupacion,
-												)}>🗑️</button
-										>
+										{#if busquedaAreas}
+											No se encontraron áreas que
+											coincidan con la búsqueda.
+											<br /><button
+												class="btn-link"
+												on:click={() =>
+													parametrosController.limpiarFiltrosAreas()}
+												>Limpiar filtros</button
+											>
+										{:else}
+											No hay áreas registradas.
+											<br /><button
+												class="btn-link"
+												on:click={() =>
+													parametrosController.agregarArea()}
+												>Crear primera área</button
+											>
+										{/if}
 									</td>
 								</tr>
-							{/each}
-						{:else}
+							{/if}
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<!-- Panel de Agrupaciones -->
+			<div class="panel-agrupaciones">
+				<div class="panel-header">
+					<h2>👥 Gestión de Agrupaciones</h2>
+				</div>
+				<!-- Estadísticas de Agrupaciones -->
+				{#if $agrupacionesFiltradas && $agrupacionesFiltradas.length > 0}
+					<div class="panel-stats">
+						<div class="stat-card">
+							<h3>Total Agrupaciones</h3>
+							<p class="stat-number">
+								{$agrupaciones ? $agrupaciones.length : 0}
+							</p>
+						</div>
+						<div class="stat-card">
+							<h3>Agentes en Agrupaciones</h3>
+							<p class="stat-number">
+								{$agrupaciones
+									? $agrupaciones.reduce(
+											(sum, a) =>
+												sum + (a.total_agentes || 0),
+											0,
+										)
+									: 0}
+							</p>
+						</div>
+					</div>
+				{/if}
+				<!-- Filtros de agrupaciones -->
+				<div class="filtros-container">
+					<div class="filtro-group">
+						<label for="busquedaAgrupaciones"
+							>🔍 Buscar agrupaciones</label
+						>
+						<input
+							type="text"
+							id="busquedaAgrupaciones"
+							bind:value={$busquedaAgrupaciones}
+							placeholder="Buscar por nombre..."
+							class="input-busqueda"
+						/>
+					</div>
+					<div class="filtro-actions">
+						<button
+							class="btn-limpiar"
+							on:click={() =>
+								parametrosController.limpiarFiltrosAgrupaciones()}
+							title="Limpiar filtros"
+						>
+							🗑️ Limpiar
+						</button>
+					</div>
+				</div>
+				<div class="table-container">
+					<table>
+						<thead>
 							<tr>
-								<td
-									colspan="5"
-									style="text-align: center; padding: 2rem;"
-								>
-									{#if busquedaAgrupaciones}
-										No se encontraron agrupaciones que
-										coincidan con la búsqueda.
-										<br /><button
-											class="btn-link"
-											on:click={() =>
-												parametrosController.limpiarFiltrosAgrupaciones()}
-											>Limpiar filtros</button
-										>
-									{:else}
-										No hay agrupaciones registradas.
-										<br /><button
-											class="btn-link"
-											on:click={() =>
-												parametrosController.agregarAgrupacion()}
-											>Crear primera agrupación</button
-										>
-									{/if}
-								</td>
+								<th>Agrupación</th>
+								<th>Descripción</th>
+								<th>Agentes</th>
+								<th>Estado</th>
+								<th>Acciones</th>
 							</tr>
-						{/if}
-					</tbody>
-				</table>
+						</thead>
+						<tbody>
+							{#if $agrupacionesFiltradas && $agrupacionesFiltradas.length > 0}
+								{#each $agrupacionesFiltradas as agrupacion}
+									<tr>
+										<td>
+											<div class="agrupacion-info">
+												<div
+													class="color-indicator"
+													style="background-color: {agrupacion.color}"
+												></div>
+												<strong
+													>{agrupacion.nombre}</strong
+												>
+											</div>
+										</td>
+										<td
+											>{agrupacion.descripcion ||
+												"Sin descripción"}</td
+										>
+										<td>
+											<span class="badge badge-info">
+												{agrupacion.total_agentes} agentes
+											</span>
+										</td>
+										<td>
+											<span
+												class="badge badge-{agrupacion.activo
+													? 'success'
+													: 'inactive'}"
+											>
+												{agrupacion.activo
+													? "Activa"
+													: "Inactiva"}
+											</span>
+										</td>
+										<td class="actions">
+											<button
+												class="btn-icon"
+												title="Editar"
+												on:click={() =>
+													parametrosController.editarAgrupacion(
+														agrupacion,
+													)}>✏️</button
+											>
+											<button
+												class="btn-icon"
+												title="Horarios"
+												on:click={() =>
+													parametrosController.gestionarHorarios(
+														"agrupacion",
+														agrupacion,
+													)}>🕒</button
+											>
+											<button
+												class="btn-icon-danger"
+												title="Eliminar"
+												on:click={() =>
+													parametrosController.eliminarAgrupacion(
+														agrupacion,
+													)}>🗑️</button
+											>
+										</td>
+									</tr>
+								{/each}
+							{:else}
+								<tr>
+									<td
+										colspan="5"
+										style="text-align: center; padding: 2rem;"
+									>
+										{#if busquedaAgrupaciones}
+											No se encontraron agrupaciones que
+											coincidan con la búsqueda.
+											<br /><button
+												class="btn-link"
+												on:click={() =>
+													parametrosController.limpiarFiltrosAgrupaciones()}
+												>Limpiar filtros</button
+											>
+										{:else}
+											No hay agrupaciones registradas.
+											<br /><button
+												class="btn-link"
+												on:click={() =>
+													parametrosController.agregarAgrupacion()}
+												>Crear primera agrupación</button
+											>
+										{/if}
+									</td>
+								</tr>
+							{/if}
+						</tbody>
+					</table>
+				</div>
 			</div>
 		</div>
-	</div>
-{/if}
+	{/if}
 </div>
 <!-- Componentes Modales -->
 <ModalArea
@@ -604,12 +616,12 @@
 	on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
 	on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
+
 <style>
 	.page-container {
-		 width: 100%;
-    max-width: 1800px;
-    margin: 0 auto;
-    padding: 1.5rem 1rem;
+		max-width: 1600px;
+		margin: 0 auto;
+		padding: 1.5rem 1rem;
 	}
 	.page-header {
 		display: flex;
@@ -1020,15 +1032,18 @@
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
 		background: #f8f9fa;
-        white-space: nowrap;
+		white-space: nowrap;
 	}
-    th:first-child, td:first-child {
-        min-width: 200px; 
-    }
-    th:last-child, td:last-child {
-        width: 1%; 
-        white-space: nowrap;
-    }
+	th:first-child,
+	td:first-child {
+		min-width: 120px;
+		max-width: 180px;
+	}
+	th:last-child,
+	td:last-child {
+		width: 1%;
+		white-space: nowrap;
+	}
 	td {
 		padding: 15px 20px;
 		border-bottom: 1px solid #f1f3f4;
@@ -1129,21 +1144,21 @@
 	}
 	@media (max-width: 768px) {
 		.page-container {
-			padding-left: 45px !important; 
-            padding-right: 45px !important;
-            padding-bottom: 40px !important;
-            padding-top: 15px !important;
-            margin: 0 !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-            display: block;
+			padding-left: 45px !important;
+			padding-right: 45px !important;
+			padding-bottom: 40px !important;
+			padding-top: 15px !important;
+			margin: 0 !important;
+			width: 100% !important;
+			box-sizing: border-box !important;
+			display: block;
 		}
 		.page-header {
 			flex-direction: column;
 			gap: 10px;
 			text-align: center;
 			align-items: stretch;
-            margin-bottom: 0.5rem;
+			margin-bottom: 0.5rem;
 		}
 		.header-actions {
 			display: flex;
@@ -1157,27 +1172,27 @@
 			width: 100%;
 			margin: 0;
 			justify-content: center;
-            padding: 12px 20px;
+			padding: 12px 20px;
 		}
 		.panel-stats {
 			padding: 10px 15px;
-            gap: 10px; 
+			gap: 10px;
 		}
 		.stat-card {
-			padding: 15px; 
-            margin-bottom: 0;
+			padding: 15px;
+			margin-bottom: 0;
 		}
 		.panel-header {
 			padding: 15px;
 		}
-        .panel-header h2 {
+		.panel-header h2 {
 			font-size: 1.1rem;
 		}
 		.filtros-container {
 			flex-direction: column;
 			align-items: stretch;
 			padding: 10px 15px;
-            gap: 5px;
+			gap: 5px;
 		}
 		.filtro-group {
 			width: 100%;
@@ -1190,17 +1205,18 @@
 		}
 		.btn-limpiar {
 			width: 100%;
-            height: 38px;
+			height: 38px;
 		}
-        .panel-areas, .panel-agrupaciones {
-            margin-bottom: 15px; 
-        }
+		.panel-areas,
+		.panel-agrupaciones {
+			margin-bottom: 15px;
+		}
 		th,
 		td {
 			padding: 5px 4px;
 			font-size: 0.8rem;
-            white-space: nowrap;
-            line-height: 1.2;
+			white-space: nowrap;
+			line-height: 1.2;
 		}
 		.badge {
 			padding: 4px 6px;
@@ -1210,29 +1226,29 @@
 			font-size: 1.1rem;
 		}
 		.actions {
-			flex-wrap: nowrap; 
+			flex-wrap: nowrap;
 			justify-content: flex-start;
-            gap: 8px;
+			gap: 8px;
 		}
-        .btn-icon,
-        .btn-icon-danger {
-            padding: 8px 10px; 
-            font-size: 16px; 
-        }
+		.btn-icon,
+		.btn-icon-danger {
+			padding: 8px 10px;
+			font-size: 16px;
+		}
 	}
 	@media (max-width: 480px) {
-        .page-container {
-            padding-left: 15px !important;
-            padding-right: 15px !important;
-        }
+		.page-container {
+			padding-left: 15px !important;
+			padding-right: 15px !important;
+		}
 		.page-header-title {
 			padding: 15px;
 		}
 		.page-header-title h1 {
 			font-size: 1.1rem;
 		}
-        .panel-stats {
-            grid-template-columns: 1fr;
-        }
+		.panel-stats {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

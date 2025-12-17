@@ -917,7 +917,7 @@ def listar_asistencias_admin(request):
         ).filter(
             fecha__gte=fecha_desde,
             fecha__lte=fecha_hasta
-        )
+        ).distinct()
         
         # RBAC: Filtrar por áreas permitidas
         if rol_sesion != 'administrador':
@@ -939,10 +939,14 @@ def listar_asistencias_admin(request):
         
         serializer = AsistenciaSerializer(queryset, many=True)
         
+        # Deduplicar por id_asistencia para asegurar unicidad (fix para duplicados persistentes)
+        data_dict = {item['id_asistencia']: item for item in serializer.data}
+        unique_data = list(data_dict.values())
+        
         return Response({
             'success': True,
-            'data': serializer.data,
-            'total': queryset.count()
+            'data': unique_data,
+            'total': len(unique_data)
         })
     
     except Exception as e:
@@ -1013,7 +1017,34 @@ def resumen_asistencias(request):
         
         en_licencia = licencias.count()
         
-        ausentes = total_agentes - presentes - en_licencia
+        # Obtener sets de IDs to avoid duplicates/overlaps
+        ids_presentes = set(asistencias.filter(hora_entrada__isnull=False).values_list('id_agente_id', flat=True))
+        ids_licencia = set(licencias.values_list('id_agente_id', flat=True))
+        
+        # Filtrar solo agentes activos en los conteos (por si acaso hay registros de inactivos)
+        ids_activos = set(agentes_query.values_list('id_agente', flat=True))
+        
+        # Intersección con activos para asegurar consistencia
+        ids_presentes = ids_presentes.intersection(ids_activos)
+        ids_licencia = ids_licencia.intersection(ids_activos)
+        
+        # Calcular uniones e intersecciones correctamente
+        presentes = len(ids_presentes)
+        en_licencia = len(ids_licencia)
+        sin_salida = asistencias.filter(
+            hora_entrada__isnull=False, 
+            hora_salida__isnull=True,
+            id_agente__in=ids_activos
+        ).count()
+        salidas_automaticas = asistencias.filter(
+            marcacion_salida_automatica=True,
+            id_agente__in=ids_activos
+        ).count()
+        
+        # Ausentes = Total - (Union de Presentes y Licencias)
+        # Esto maneja correctamente si alguien vino Y tiene licencia (no se resta doble)
+        ids_justificados_o_presentes = ids_presentes.union(ids_licencia)
+        ausentes = total_agentes - len(ids_justificados_o_presentes)
         
         return Response({
             'success': True,
@@ -1021,7 +1052,7 @@ def resumen_asistencias(request):
                 'fecha': fecha,
                 'total_agentes': total_agentes,
                 'presentes': presentes,
-                'ausentes': ausentes,
+                'ausentes': max(0, ausentes), # Ensure never negative
                 'sin_salida': sin_salida,
                 'salidas_automaticas': salidas_automaticas,
                 'en_licencia': en_licencia
@@ -1229,7 +1260,7 @@ def listar_licencias_impl(request):
             'id_agente__id_area', 'id_tipo_licencia'
         ).prefetch_related(
             'id_agente__agenterol_set__id_rol'
-        )
+        ).distinct()
         
         # Aplicar filtros según permisos y jerarquía del usuario
         rol_nombre = rol.id_rol.nombre
@@ -1799,13 +1830,31 @@ def ejecutar_marcacion_automatica(request):
         
         ayer = date.today() - timedelta(days=1)
         
+        # 1. Verificar si ayer fue fin de semana (Sábado=5, Domingo=6)
+        if ayer.weekday() >= 5:
+            logger.info(f'Marcación automática omitida: {ayer} es fin de semana')
+            return Response({
+                'success': True,
+                'message': f'Marcación automática omitida: {ayer} es fin de semana',
+                'total_marcadas': 0
+            })
+
+        # 2. Verificar si ayer fue feriado
+        if Feriado.objects.filter(fecha=ayer).exists():
+            logger.info(f'Marcación automática omitida: {ayer} es feriado')
+            return Response({
+                'success': True,
+                'message': f'Marcación automática omitida: {ayer} es feriado',
+                'total_marcadas': 0
+            })
+
         # Actualizar asistencias sin salida del día anterior
         asistencias_actualizadas = Asistencia.objects.filter(
             fecha=ayer,
             hora_entrada__isnull=False,
             hora_salida__isnull=True
         ).update(
-            hora_salida=time(22, 0),
+            hora_salida=time(23, 0),
             marcacion_salida_automatica=True,
             actualizado_en=timezone.now()
         )

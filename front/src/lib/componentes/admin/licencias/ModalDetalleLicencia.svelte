@@ -1,10 +1,31 @@
 <script>
-	import { createEventDispatcher } from "svelte";
+	import { createEventDispatcher, onMount } from "svelte";
 	import { formatearFecha, calcularDiasLicencia } from "$lib/paneladmin/controllers/licenciasController.js";
 
 	export let licencia;
 
 	const dispatch = createEventDispatcher();
+
+	// Bloquear scroll del body cuando el modal está abierto
+	onMount(() => {
+		// Guardar el scroll actual
+		const scrollY = window.scrollY;
+		
+		// Bloquear scroll del body
+		document.body.style.overflow = 'hidden';
+		document.body.style.position = 'fixed';
+		document.body.style.top = `-${scrollY}px`;
+		document.body.style.width = '100%';
+
+		// Restaurar scroll cuando se desmonte el componente
+		return () => {
+			document.body.style.overflow = '';
+			document.body.style.position = '';
+			document.body.style.top = '';
+			document.body.style.width = '';
+			window.scrollTo(0, scrollY);
+		};
+	});
 
 	function cerrar() {
 		dispatch("close");
@@ -154,6 +175,8 @@
 		align-items: center;
 		z-index: 1000;
 		backdrop-filter: blur(4px);
+		overflow-y: auto;
+		padding: 20px 0;
 	}
 
 	.modal-contenido {
@@ -162,15 +185,12 @@
 		max-width: 600px;
 		width: 90%;
 		max-height: 90vh;
-		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-		scrollbar-width: none;
-		-ms-overflow-style: none;
-	}
-
-	.modal-contenido::-webkit-scrollbar {
-		display: none;
+		margin: auto;
+		position: relative;
 	}
 
 	.modal-header {
@@ -181,6 +201,34 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		flex-shrink: 0;
+	}
+
+	.modal-body {
+		padding: 2rem;
+		overflow-y: auto;
+		flex: 1;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: thin;
+		scrollbar-color: #c1c7cd #f1f3f4;
+	}
+
+	.modal-body::-webkit-scrollbar {
+		width: 8px;
+	}
+
+	.modal-body::-webkit-scrollbar-track {
+		background: #f1f3f4;
+		border-radius: 10px;
+	}
+
+	.modal-body::-webkit-scrollbar-thumb {
+		background: #c1c7cd;
+		border-radius: 10px;
+	}
+
+	.modal-body::-webkit-scrollbar-thumb:hover {
+		background: #a8aeb4;
 	}
 
 	.modal-header h5 {
@@ -207,10 +255,6 @@
 	.btn-close:hover {
 		background: rgba(255, 255, 255, 0.2);
 		transform: rotate(90deg);
-	}
-
-	.modal-body {
-		padding: 2rem;
 	}
 
 	.licencia-info {

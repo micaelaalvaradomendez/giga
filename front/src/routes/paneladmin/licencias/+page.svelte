@@ -899,14 +899,7 @@
 										)}</span
 									>
 								</div>
-								{#if licencia.observaciones}
-									<div class="card-row">
-										<span class="card-label">💬 Obs:</span>
-										<span class="card-value"
-											>{licencia.observaciones}</span
-										>
-									</div>
-								{/if}
+
 							</div>
 							<div class="card-actions-wrapper">
 								{#if puedeAprobarLicenciaEspecifica(licencia)}

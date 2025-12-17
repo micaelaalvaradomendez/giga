@@ -105,10 +105,13 @@
 <svelte:head>
     <title>Gestión de Asistencias - Admin</title>
 </svelte:head>
-<div class="admin-container">
-    <div class="header">
-        <h1>Gestión de Asistencias</h1>
+<div class="page-container">
+    <div class="page-header">
+        <div class="header-title">
+            <h1>Gestión de Asistencias</h1>
+        </div>
     </div>
+    <div class="page-content">
     <!-- Resumen -->
     {#if $resumen}
         <div class="resumen-grid">
@@ -135,9 +138,9 @@
         </div>
     {/if}
     <!-- Filtros -->
-    <div class="filtros-card">
-        <div class="filtros-grid">
-            <div class="form-group">
+    <div class="filtros-container">
+        <div class="filtros-row">
+            <div class="filtro-group">
                 <label for="fecha">📅 Fecha</label>
                 <input
                     type="date"
@@ -147,7 +150,7 @@
                         asistenciasController.setFecha($fechaSeleccionada)}
                 />
             </div>
-            <div class="form-group">
+            <div class="filtro-group">
                 <label for="area">📍 Filtrar por área</label>
                 <select
                     id="area"
@@ -164,13 +167,13 @@
                     {/if}
                 </select>
             </div>
-            <div class="filtro-actions">
+            <div class="filtro-group">
                 <button
-                    class="btn-limpiar"
+                    class="btn-clear"
                     on:click={limpiarFiltros}
                     title="Limpiar filtros"
                 >
-                    🗑️ Limpiar
+                    🗑️ Limpiar Filtros
                 </button>
             </div>
         </div>
@@ -219,6 +222,7 @@
         <div class="loading">Cargando...</div>
     {:else if $tabActiva === "licencias"}
         <!-- Lista de Licencias -->
+        <!-- Desktop View -->
         <div class="table-container">
             <table>
                 <thead>
@@ -242,7 +246,7 @@
                         {#each $licencias as licencia}
                             <tr>
                                 <td>{licencia.agente_nombre}</td>
-                                <td>{licencia.agente_dni || "N/A"}</td>
+                                <td>{licencia.agente_dni || licencia.dni || (licencia.agente ? licencia.agente.dni : "N/A")}</td>
                                 <td>{licencia.area_nombre || "N/A"}</td>
                                 <td>{licencia.tipo_licencia_descripcion}</td>
                                 <td
@@ -261,8 +265,10 @@
                 </tbody>
             </table>
         </div>
+        <!-- Mobile View -->
     {:else}
         <!-- Lista de Asistencias -->
+        <!-- Desktop View -->
         <div class="table-container">
             <table>
                 <thead>
@@ -358,7 +364,9 @@
                 </tbody>
             </table>
         </div>
+        <!-- Mobile View -->
     {/if}
+    </div>
 </div>
 <!-- Modal de Corrección -->
 <ModalCorreccionAsistencia
@@ -389,32 +397,41 @@
     on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
 <style>
-    .admin-container {
-        width: 100%;
-        max-width: 1600px;
-        margin: 0 auto;
-        padding: 1rem;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    * {
+        box-sizing: border-box;
     }
-    .header {
+    .page-container {
+        margin: 0 auto;
+        padding: 1.5rem;
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        box-sizing: border-box;
+        overflow-x: hidden;
+        width: 100%;
+    }
+    .page-content {
+        width: 100%;
+    }
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    .header-title {
         position: relative;
         background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
         color: white;
-        padding: 20px;
-        margin-bottom: 30px;
+        padding: 30px 40px;
+        margin: 0;
         border-radius: 28px;
         overflow: hidden;
         text-align: center;
         box-shadow:
             0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-            0 10px 30px rgba(30, 64, 175, 0.4);
+            0 20px 60px rgba(30, 64, 175, 0.4);
     }
-    @media (min-width: 768px) {
-        .header {
-            padding: 30px 40px;
-        }
-    }
-    .header::before {
+    .header-title::before {
         content: "";
         position: absolute;
         top: 0;
@@ -430,7 +447,7 @@
         background-size: 50px 50px;
         animation: moveLines 20s linear infinite;
     }
-    .header h1 {
+    .header-title h1 {
         margin: 10px;
         font-weight: 800;
         font-size: 18px;
@@ -443,22 +460,32 @@
         word-wrap: break-word;
     }
     @media (min-width: 480px) {
-        .header h1 {
+        .header-title h1 {
             font-size: 22px;
         }
     }
     @media (min-width: 640px) {
-        .header h1 {
+        .header-title h1 {
             font-size: 26px;
             display: inline-block;
         }
     }
     @media (min-width: 768px) {
-        .header h1 {
+        .header-title h1 {
             font-size: 30px;
         }
     }
-    .header h1::after {
+    @media (min-width: 768px) {
+        .header-title h1 {
+            font-size: 30px;
+        }
+    }
+    @media (max-width: 768px) {
+        .header-title {
+            padding: 20px 20px;
+        }
+    }
+    .header-title h1::after {
         content: "";
         position: absolute;
         width: 40%;
@@ -481,74 +508,21 @@
             left: 100%;
         }
     }
-    .filtros-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        margin-bottom: 1.5rem;
-        border: 1px solid #e9ecef;
-    }
-    .filtros-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1rem;
-        align-items: stretch;
-        margin-bottom: 1rem;
-    }
-    @media (min-width: 768px) {
-        .filtros-grid {
-            grid-template-columns: 1fr auto auto;
-            align-items: end;
+    @keyframes moveLines {
+        0% {
+            background-position: 0 0;
+        }
+        100% {
+            background-position: 50px 50px;
         }
     }
-    .form-group {
-        display: flex;
-        flex-direction: column;
-    }
-    .form-group label {
-        font-weight: 600;
-        margin-bottom: 0.9rem;
-        color: #555;
-    }
-    .form-group input,
-    .form-group select {
-        padding: 0.75rem;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 1rem;
-    }
-    .filtro-actions {
-        display: flex;
-        gap: 10px;
-        flex-shrink: 0;
-    }
-    .form-group input:focus,
-    .form-group select:focus {
-        outline: none;
-        border-color: #667eea;
-    }
-    .btn-limpiar {
-        padding: 10px 25px;
-        background: #6c757d;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        white-space: nowrap;
-        height: 42px;
-    }
-    .btn-limpiar:hover {
-        background: #5a6268;
-        transform: translateY(-1px);
-    }
+
     .resumen-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem;
-        margin-bottom: 2rem;
+        margin-top: 20px;
+        margin-bottom: 20px;
     }
     .resumen-card {
         background: white;
@@ -600,6 +574,61 @@
         margin-top: 0.5rem;
         font-weight: 600;
     }
+
+    .filtros-container {
+        background: #f3f3f3d8;
+        border: 1px solid #e0e0e09c;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .filtros-row {
+        display: flex;
+        gap: 2rem;
+        align-items: end;
+        flex-wrap: nowrap;
+    }
+    .filtro-group {
+        flex: 1 1 200px;
+        min-width: 160px;
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .filtro-group label {
+        font-weight: 600;
+        font-size: 14px;
+        color: #4a5568;
+    }
+    .filtro-group input,
+    .filtro-group select {
+        padding: 0.75rem;
+        border: 1px solid #cbd5e0;
+        border-radius: 8px;
+        font-size: 1rem;
+        background: white;
+        transition: all 0.2s;
+    }
+    .filtro-group input:focus,
+    .filtro-group select:focus {
+        outline: none;
+        border-color: #4c51bf;
+        box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
+    }
+    .btn-clear {
+        padding: 0.5rem 1rem;
+        background: #e53e3e;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    .btn-clear:hover {
+        background: #c53030;
+    }
+
     .tabs {
         display: flex;
         gap: 0.75rem;
@@ -653,8 +682,9 @@
     }
     .tabs button.active:hover {
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        color: #5771e4;
+        color: #f0f0f0;
     }
+
     .table-container {
         overflow-x: auto;
         max-height: 600px;
@@ -663,11 +693,14 @@
         border-radius: 24px;
         box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
         background: white;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
+        scrollbar-width: thin;
+        scrollbar-color: #c1c7cd #f1f3f4;
     }
-    .table-container::-webkit-scrollbar {
-        display: none;
+    
+    @media (min-width: 1024px) {
+        .table-container {
+            overflow-x: hidden;
+        }
     }
     .table-container::-webkit-scrollbar {
         width: 8px;
@@ -785,15 +818,76 @@
         color: #666;
         font-size: 1.2rem;
     }
+    .desktop-only {
+        display: block;
+    }
+    .mobile-only {
+        display: none;
+    }
     @media (max-width: 768px) {
-        .admin-container {
+        .desktop-only {
+            display: none !important;
+        }
+        .mobile-only {
+            display: flex !important;
+            flex-direction: column;
+        }
+        .page-container {
+            padding: 0.75rem;
+            max-width: 100vw;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+        .page-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .header-title {
+            padding: 18px 12px;
+            border-radius: 16px;
+            margin: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .header-title h1 {
+            font-size: 18px;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+        .filtros-container {
             padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
         }
-        .filtros-grid {
-            grid-template-columns: 1fr;
+        .filtros-row {
+            flex-direction: column;
+            gap: 1rem;
         }
-        .resumen-grid {
-            grid-template-columns: repeat(2, 1fr);
+        .filtro-group {
+            flex: 1 1 100%;
+            min-width: 100%;
+        }
+        .filtro-group label {
+            font-size: 14px;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .filtro-group input,
+        .filtro-group select {
+            padding: 12px;
+            font-size: 14px;
+            border-radius: 10px;
+        }
+        .btn-clear {
+            width: 100%;
+            height: auto;
+            padding: 14px;
+            font-size: 14px;
+            border-radius: 10px;
+            margin-top: 0.5rem;
         }
         .tabs {
             flex-direction: column;
@@ -801,11 +895,115 @@
         .tabs button {
             width: 100%;
         }
-        .table-container {
-            overflow-x: auto;
-        }
-        table {
-            min-width: 800px;
-        }
+    }
+
+    .cards-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    .licencia-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+    }
+    .licencia-card.pending {
+        border-left: 4px solid #ed8936;
+        background: linear-gradient(to right, #fffbeb, white);
+    }
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 12px 14px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-bottom: 1px solid #e5e7eb;
+        gap: 10px;
+    }
+    .card-agente {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        flex: 1;
+        min-width: 0;
+    }
+    .card-agente strong {
+        font-size: 15px;
+        color: #1e293b;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .card-agente small {
+        font-size: 12px;
+        color: #64748b;
+    }
+    .tipo-badge-mobile {
+        display: inline-block;
+        margin-top: 6px;
+        padding: 4px 10px;
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        color: #3730a3;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 12px;
+        border: 1px solid #a5b4fc;
+        align-self: flex-start;
+    }
+    .card-body {
+        padding: 8px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .card-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 0;
+        flex-wrap: wrap;
+    }
+    .card-label {
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+    .card-value {
+        font-size: 13px;
+        color: #1e293b;
+        font-weight: 600;
+        text-align: right;
+    }
+    .card-actions {
+        display: flex;
+        gap: 10px;
+        padding: 12px 16px;
+        background: #f8fafc;
+        border-top: 1px solid #e5e7eb;
+    }
+    .btn-card {
+        flex: 1;
+        padding: 12px 16px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #718096;
     }
 </style>
+

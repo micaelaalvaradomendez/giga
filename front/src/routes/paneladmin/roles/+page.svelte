@@ -71,6 +71,7 @@
 		rolesController.limpiarFiltros();
 	}
 </script>
+
 <svelte:head>
 	<title>Roles y Permisos - GIGA</title>
 </svelte:head>
@@ -320,9 +321,10 @@
 		{/if}
 	</div>
 </div>
+
 <style>
 	.page-container {
-		width: 1600px;
+		max-width: 1600px;
 		margin: 0 auto;
 		padding: 2rem;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -332,7 +334,6 @@
 		background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
 		color: white;
 		padding: 30px 40px;
-		max-width: 1600px;
 		border-radius: 28px;
 		overflow: hidden;
 		text-align: center;
@@ -783,7 +784,8 @@
 		.roles-table {
 			min-width: 800px;
 		}
-		th, td {
+		th,
+		td {
 			padding: 10px 12px;
 			font-size: 0.85rem;
 		}
@@ -839,7 +841,8 @@
 		.roles-table {
 			min-width: 700px;
 		}
-		th, td {
+		th,
+		td {
 			padding: 8px 10px;
 			font-size: 0.8rem;
 		}

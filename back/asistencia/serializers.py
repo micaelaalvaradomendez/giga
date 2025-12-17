@@ -93,6 +93,7 @@ class TipoLicenciaSerializer(serializers.ModelSerializer):
 
 class LicenciaSerializer(serializers.ModelSerializer):
     agente_nombre = serializers.SerializerMethodField()
+    agente_dni = serializers.SerializerMethodField()
     tipo_licencia_descripcion = serializers.SerializerMethodField()
     area_nombre = serializers.SerializerMethodField()
     dias_licencia = serializers.ReadOnlyField()
@@ -106,7 +107,8 @@ class LicenciaSerializer(serializers.ModelSerializer):
         model = Licencia
         fields = [
             'id_licencia', 'estado', 'id_tipo_licencia', 'tipo_licencia_descripcion',
-            'fecha_desde', 'fecha_hasta', 'id_agente', 'agente_nombre', 'area_nombre',
+            'id_licencia', 'estado', 'id_tipo_licencia', 'tipo_licencia_descripcion',
+            'fecha_desde', 'fecha_hasta', 'id_agente', 'agente_nombre', 'agente_dni', 'area_nombre',
             'observaciones', 'justificacion', 'dias_licencia',
             'aprobada_por', 'aprobada_por_nombre', 'fecha_aprobacion', 'observaciones_aprobacion',
             'rechazada_por', 'rechazada_por_nombre', 'fecha_rechazo', 'motivo_rechazo',
@@ -118,6 +120,11 @@ class LicenciaSerializer(serializers.ModelSerializer):
     def get_agente_nombre(self, obj):
         if obj.id_agente:
             return f"{obj.id_agente.nombre} {obj.id_agente.apellido}"
+        return None
+    
+    def get_agente_dni(self, obj):
+        if obj.id_agente:
+            return obj.id_agente.dni
         return None
     
     def get_tipo_licencia_descripcion(self, obj):

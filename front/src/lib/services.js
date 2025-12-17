@@ -120,9 +120,18 @@ export const asistenciaService = {
   deleteTipoLicencia: (id, token = null) => createApiClient(token).delete(`/asistencia/admin/tipos-licencia/eliminar/${id}/`),
 
   // Admin - Asistencias
-  getAsistenciasAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/listar/?${params}`),
-  getResumenAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/resumen/?${params}`),
-  getLicenciasAdmin: (params = '', token = null) => createApiClient(token).get(`/asistencia/admin/licencias/?${params}`),
+  getAsistenciasAdmin: (params = {}, token = null) => {
+    const queryString = new URLSearchParams(params).toString();
+    return createApiClient(token).get(`/asistencia/admin/listar/?${queryString}`);
+  },
+  getResumenAdmin: (params = {}, token = null) => {
+    const queryString = new URLSearchParams(params).toString();
+    return createApiClient(token).get(`/asistencia/admin/resumen/?${queryString}`);
+  },
+  getLicenciasAdmin: (params = {}, token = null) => {
+    const queryString = new URLSearchParams(params).toString();
+    return createApiClient(token).get(`/asistencia/admin/licencias/?${queryString}`);
+  },
   corregirAsistencia: (id, data, token = null) => createApiClient(token).patch(`/asistencia/admin/corregir/${id}/`, data),
   marcarAusente: (id, data, token = null) => createApiClient(token).patch(`/asistencia/admin/marcar-ausente/${id}/`, data),
   marcarAsistencia: (data, token = null) => createApiClient(token).post('/asistencia/marcar/', data),
@@ -216,11 +225,11 @@ export const guardiasService = {
   getResumenMensual: (id, token = null) => createApiClient(token).get(`/guardias/resumen-mes/${id}/`),
   calcularPlusMensual: (data, token = null) => createApiClient(token).post('/guardias/resumen-mes/calcular_mensual/', data),
   aprobarLotePlus: (data, token = null) => createApiClient(token).patch('/guardias/resumen-mes/aprobar_lote/', data),
-  
+
   // Reportes según documentación (POST con body JSON)
   getReporteIndividual: (body = {}, token = null) => createApiClient(token).post(`/guardias/guardias/reporte_individual/`, body),
   getReporteGeneral: (body = {}, token = null) => createApiClient(token).post(`/guardias/guardias/reporte_general/`, body),
-  
+
   // Nuevos reportes según especificaciones
   getReporteHorasTrabajadas: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_horas_trabajadas/?${params}`),
   getReporteParteDiario: (params = '', token = null) => createApiClient(token).get(`/guardias/guardias/reporte_parte_diario/?${params}`),
@@ -239,8 +248,8 @@ export const guardiasService = {
   rechazarCompensacion: (id, data, token = null) => createApiClient(token).patch(`/guardias/compensaciones/${id}/rechazar/`, data),
 
   // Exportaciones reales de reportes
-  exportarReportePDF:   (body = {}, token = null) => createApiClient(token).post(`/guardias/guardias/exportar_pdf/`, body, { responseType: 'blob' }),
-  exportarReporteCSV:   (body = {}, token = null) => createApiClient(token).post(`/guardias/guardias/exportar_csv/`, body, { responseType: 'blob' }),
+  exportarReportePDF: (body = {}, token = null) => createApiClient(token).post(`/guardias/guardias/exportar_pdf/`, body, { responseType: 'blob' }),
+  exportarReporteCSV: (body = {}, token = null) => createApiClient(token).post(`/guardias/guardias/exportar_csv/`, body, { responseType: 'blob' }),
   exportarReporteExcel: (body = {}, token = null) => createApiClient(token).post(`/guardias/guardias/exportar_excel/`, body, { responseType: 'blob' }),
 };
 

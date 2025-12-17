@@ -120,22 +120,12 @@
 </svelte:head>
 <div class="container-reportes">
   <!-- Encabezado -->
-  <header class="header-reportes">
-    <div class="titulo-section">
-      <h1>📊 Gestión de Reportes</h1>
-      <p>Genere y exporte reportes de guardias individuales y generales</p>
-      {#if $loadingFiltros}
-        <p class="estado-carga">🔄 Cargando opciones disponibles...</p>
-      {:else if $filtrosDisponibles.agentes?.length === 0}
-        <p class="estado-advertencia">
-          ⚠️ Sistema en modo fallback - Los reportes usarán datos simulados
-        </p>
-      {:else}
-        <p class="estado-ok">
-          ✅ Sistema conectado - Reportes con datos reales disponibles
-        </p>
-      {/if}
+  <div class="page-header">
+    <div class="header-title">
+      <h1>Gestión de Reportes</h1>
     </div>
+  </div>
+  <header class="header-reportes-messages">
     {#if $mensaje}
       <div class="mensaje mensaje-exito">
         <span>✅ {$mensaje}</span>
@@ -906,21 +896,122 @@
     margin: 0 auto;
     padding: 16px;
   }
-  .header-reportes {
-    background: white;
-    padding: 16px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2rem;
+  .header-reportes-messages {
+    margin-bottom: 1rem;
   }
-  .titulo-section h1 {
-    margin: 0 0 0.5rem 0;
-    color: #2c3e50;
-    font-size: 1.3rem;
-    font-weight: 700;
+  
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .header-title {
+    position: relative;
+    background: linear-gradient(135deg, #1e40afc7 0%, #3b83f6d3 100%);
+    color: white;
+    padding: 30px 40px;
+    margin: 0;
+    max-width: 1000px;
+    border-radius: 28px;
+    overflow: hidden;
+    text-align: center;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+      0 20px 60px rgba(30, 64, 175, 0.4);
+  }
+  
+  .header-title::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 1px
+      ),
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: moveLines 20s linear infinite;
+  }
+  
+  .header-title h1 {
+    margin: 10px;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.2px;
+    position: relative;
+    padding-bottom: 12px;
+    overflow: hidden;
+    display: block;
     max-width: 100%;
     word-wrap: break-word;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
+  
+  @media (min-width: 480px) {
+    .header-title h1 {
+      font-size: 22px;
+    }
+  }
+  
+  @media (min-width: 640px) {
+    .header-title h1 {
+      font-size: 26px;
+      display: inline-block;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .header-title h1 {
+      font-size: 30px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .header-title {
+      padding: 20px 20px;
+    }
+  }
+  
+  .header-title h1::after {
+    content: "";
+    position: absolute;
+    width: 40%;
+    height: 3px;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.9),
+      transparent
+    );
+    animation: moveLine 2s linear infinite;
+  }
+  
+  @keyframes moveLine {
+    0% {
+      left: -40%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
+  
+  @keyframes moveLines {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 50px 50px;
+    }
+  }
+  
   @media (min-width: 768px) {
     .container-reportes { padding: 24px; }
   }
@@ -961,7 +1052,7 @@
   }
   .titulo-section p {
     margin: 0;
-    color: #6c757d;
+    color: rgba(255, 255, 255, 0.95);
     font-size: 1rem;
   }
   .estado-carga {
@@ -995,8 +1086,8 @@
   .selector-tipo {
     background: white;
     padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     margin-bottom: 2rem;
   }
   .tipos-categoria {
@@ -1069,8 +1160,8 @@
   .panel-filtros {
     background: white;
     padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     margin-bottom: 2rem;
   }
   .panel-header {
@@ -1258,13 +1349,14 @@
     text-decoration: none;
   }
   .btn-primario {
-    background: #007bff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   }
   .btn-primario:hover:not(.disabled) {
-    background: #0056b3;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+    background: linear-gradient(135deg, #5468d4 0%, #653a8e 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
   }
   .btn-secundario {
     background: #6c757d;
@@ -1312,8 +1404,8 @@
   .panel-resultado {
     background: white;
     padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     margin-bottom: 2rem;
   }
   .resultado-header {
@@ -1717,6 +1809,22 @@
     }
     .rango-separador {
       order: 0;
+    }
+    .container-reportes {
+      padding: 0.75rem;
+    }
+    .header-reportes {
+      padding: 1.5rem 1rem;
+      border-radius: 16px;
+    }
+    .titulo-section h1 {
+      font-size: 1.25rem;
+    }
+    .selector-tipo,
+    .panel-filtros,
+    .panel-resultado {
+      padding: 1.5rem 1rem;
+      border-radius: 16px;
     }
   }
   @media (max-width: 768px) {
