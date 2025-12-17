@@ -91,7 +91,7 @@
 	});
 	async function inicializar() {
 		console.log("Inicializando datos...");
-		await cargarDatosIniciales();
+		// Primero cargamos usuario para habilitar UI critica (botones)
 		try {
 			const userResponse = await AuthService.getCurrentUserData();
 			console.log("Respuesta de usuario:", userResponse);
@@ -138,6 +138,9 @@
 		} catch (err) {
 			console.error("Error en autenticación, continuando:", err);
 		}
+
+		// Luego cargamos los datos pesados
+		await cargarDatosIniciales();
 	}
 	async function cargarDatosIniciales() {
 		console.log("🚀 Cargando datos iniciales...");
@@ -552,6 +555,7 @@
 		);
 	});
 </script>
+
 <svelte:head>
 	<title>Gestión de Licencias - GIGA</title>
 </svelte:head>
@@ -804,7 +808,8 @@
 											{/if}
 											<button
 												class="btn-sm btn-info"
-												on:click={() => abrirModalDetalle(licencia)}
+												on:click={() =>
+													abrirModalDetalle(licencia)}
 												title="Ver detalles"
 												style="margin-left: 4px;"
 											>
@@ -922,10 +927,14 @@
 										</button>
 									</div>
 								{/if}
-								<div class="card-actions" style="margin-top: 8px;">
+								<div
+									class="card-actions"
+									style="margin-top: 8px;"
+								>
 									<button
 										class="btn-card btn-info"
-										on:click={() => abrirModalDetalle(licencia)}
+										on:click={() =>
+											abrirModalDetalle(licencia)}
 									>
 										ℹ️ Ver Detalles
 									</button>
@@ -1171,6 +1180,7 @@
 		}}
 	/>
 {/if}
+
 <style>
 	* {
 		box-sizing: border-box;
@@ -1242,7 +1252,7 @@
 	}
 	@media (max-width: 768px) {
 		.header-title h1 {
-			font-size: 1.2rem !important; 
+			font-size: 1.2rem !important;
 			margin: 5px 0 !important;
 			padding-bottom: 8px !important;
 		}
@@ -1815,7 +1825,7 @@
 		.header-title h1 {
 			font-size: 18px !important;
 			margin: 10px !important;
-			padding-bottom: 12px !important; 
+			padding-bottom: 12px !important;
 			padding-top: 0 !important;
 			padding-left: 0 !important;
 			padding-right: 0 !important;
@@ -1830,12 +1840,12 @@
 		.btn-secondary,
 		.btn-refresh,
 		.btn-header,
-		.btn-primary { 
+		.btn-primary {
 			width: 100%;
 			justify-content: center;
 			margin-left: 0;
-			padding: 12px 20px !important; 
-			font-size: 0.95rem !important; 
+			padding: 12px 20px !important;
+			font-size: 0.95rem !important;
 		}
 		.toggle-buttons {
 			flex-direction: column;
