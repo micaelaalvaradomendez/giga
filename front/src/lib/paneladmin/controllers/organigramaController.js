@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { writable, derived } from 'svelte/store';
 import { personasService } from '$lib/services.js';
 import AuthService from '$lib/login/authService.js';
@@ -8,6 +9,11 @@ import AuthService from '$lib/login/authService.js';
  */
 class OrganigramaController {
 	constructor() {
+		// Prevenir inicialización en SSR
+		if (!browser) {
+			return;
+		}
+		
 		// Stores principales
 		this.agentes = writable([]);
 		this.areas = writable([]);
@@ -136,6 +142,11 @@ class OrganigramaController {
 	}
 
 	async init() {
+		// Prevenir ejecución en SSR
+		if (!browser) {
+			return;
+		}
+		
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
 		}

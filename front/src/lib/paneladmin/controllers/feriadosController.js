@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { writable, derived, get } from 'svelte/store';
 import { guardiasService } from '$lib/services.js';
 import AuthService from '$lib/login/authService.js';
@@ -10,6 +11,11 @@ import { loadFeriados as loadFeriadosCache, invalidateCache, feriadosCache } fro
  */
 class FeriadosController {
 	constructor() {
+		// Prevenir inicialización en SSR
+		if (!browser) {
+			return;
+		}
+		
 		// OPTIMIZACIÓN: Usar store de caché global en lugar de store local
 		// Esto permite compartir datos entre múltiples componentes
 		this.feriados = derived(feriadosCache, $cache => $cache.data || []);
@@ -54,6 +60,11 @@ class FeriadosController {
 	 * OPTIMIZADO: Usa caché global
 	 */
 	async init() {
+		// Prevenir ejecución en SSR
+		if (!browser) {
+			return;
+		}
+		
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
 		}

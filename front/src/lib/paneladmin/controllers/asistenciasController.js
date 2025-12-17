@@ -4,6 +4,7 @@
  * Maneja la lógica de negocio relacionada con asistencias, licencias y correcciones.
  */
 
+import { browser } from '$app/environment';
 import { writable, derived } from 'svelte/store';
 import { goto } from '$app/navigation';
 import { asistenciaService, personasService } from '$lib/services.js';
@@ -11,6 +12,11 @@ import { AuthService } from '$lib/login/authService.js';
 
 class AsistenciasController {
 	constructor() {
+		// Prevenir inicialización en SSR
+		if (!browser) {
+			return;
+		}
+		
 		// ========== STORES ==========
 		this.agente = writable(null);
 		this.loading = writable(true);
@@ -49,6 +55,10 @@ class AsistenciasController {
 
 	// ========== INICIALIZACIÓN ==========
 	async init() {
+		// Prevenir ejecución en SSR
+		if (!browser) {
+			return;
+		}
 
 		try {
 			this.loading.set(true);

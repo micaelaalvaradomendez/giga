@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { writable, derived } from 'svelte/store';
 import { goto } from '$app/navigation';
 import { personasService, guardiasService } from '$lib/services.js';
@@ -8,6 +9,11 @@ import { personasService, guardiasService } from '$lib/services.js';
  */
 class PlanificadorGuardiasController {
 	constructor() {
+		// Prevenir inicialización en SSR
+		if (!browser) {
+			return;
+		}
+		
 		// Stores de navegación y estado general
 		this.loading = writable(false);
 		this.error = writable('');
@@ -46,6 +52,10 @@ class PlanificadorGuardiasController {
 	 * @param {URLSearchParams} urlParams - Parámetros de la URL para detectar modo edición
 	 */
 	async init(urlParams = null) {
+		// Prevenir ejecución en SSR
+		if (!browser) {
+			return;
+		}
 
 		this.resetFormulario();
 

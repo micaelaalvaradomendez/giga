@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { writable, derived } from 'svelte/store';
 import { guardiasService, personasService } from '$lib/services.js';
 import AuthService from '$lib/login/authService.js';
@@ -14,6 +15,11 @@ import AuthService from '$lib/login/authService.js';
  */
 class GuardiasController {
 	constructor() {
+		// Prevenir inicialización en SSR
+		if (!browser) {
+			return;
+		}
+		
 		// ==========================================
 		// STORES PRINCIPALES
 		// ==========================================
@@ -93,6 +99,11 @@ class GuardiasController {
 	 * Inicializa el controlador cargando datos iniciales
 	 */
 	async init() {
+		// Prevenir ejecución en SSR
+		if (!browser) {
+			return;
+		}
+		
 		if (this.initialized) return;
 		
 		if (!AuthService.isAuthenticated()) {

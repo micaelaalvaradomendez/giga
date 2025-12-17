@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { writable, derived } from 'svelte/store';
 import { personasService } from '$lib/services.js';
 import AuthService from '$lib/login/authService.js';
@@ -8,6 +9,11 @@ import AuthService from '$lib/login/authService.js';
  */
 class ParametrosController {
 	constructor() {
+		// Prevenir inicialización en SSR
+		if (!browser) {
+			return;
+		}
+		
 		// Stores principales para datos
 		this.areas = writable([]);
 		this.agrupaciones = writable([]);
@@ -101,6 +107,11 @@ class ParametrosController {
 	 * Inicializar el controlador - cargar datos iniciales
 	 */
 	async init() {
+		// Prevenir ejecución en SSR
+		if (!browser) {
+			return;
+		}
+		
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
 		}

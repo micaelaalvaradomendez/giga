@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { writable, derived, get } from 'svelte/store';
 import { auditoriaService } from '$lib/services.js';
 import AuthService from '$lib/login/authService.js';
@@ -8,6 +9,11 @@ import AuthService from '$lib/login/authService.js';
  */
 class AuditoriaController {
 	constructor() {
+		// Prevenir inicialización en SSR
+		if (!browser) {
+			return;
+		}
+		
 		// Stores principales
 		this.registros = writable([]);
 		this.loading = writable(false);
@@ -157,6 +163,11 @@ class AuditoriaController {
 	 * Siempre recarga para obtener los datos más recientes
 	 */
 	async init() {
+		// Prevenir ejecución en SSR
+		if (!browser) {
+			return;
+		}
+		
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
 		}
