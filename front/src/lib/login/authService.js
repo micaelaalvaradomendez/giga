@@ -71,6 +71,7 @@ export class AuthService {
             if (isBrowser) {
                 localStorage.removeItem('user');
                 localStorage.removeItem('isAuthenticated');
+                localStorage.removeItem('requires_password_change');
             }
             isAuthenticated.set(false);
             user.set(null);
