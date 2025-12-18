@@ -116,32 +116,50 @@
 					"/paneladmin/asistencias",
 					"/paneladmin/licencias",
 					"/paneladmin/guardias",
-					// Excluidos: auditoria, roles, feriados, parametros, reportes
+					// Excluidos: auditoria, roles, feriados, parametros (Jefatura), reportes
 				];
+				
+				// Director TIENE acceso a parámetros
+				if (userRoles.includes("director")) {
+					allowedPaths.push("/paneladmin/parametros");
+				}
+
 				modules = allModules.filter((m) =>
 					allowedPaths.includes(m.path),
 				);
 			} else if (isAgenteAvanzado) {
-				// Agente Avanzado: solo Usuarios, Licencias y Asistencias
+				// Agente Avanzado: Usuarios, Licencias, Asistencias y Reportes
 				const allowedPaths = [
 					"/paneladmin/usuarios",
 					"/paneladmin/licencias",
 					"/paneladmin/asistencias",
+					"/paneladmin/reportes",
 				];
 				modules = allModules.filter((m) =>
 					allowedPaths.includes(m.path),
 				);
 			} else {
-				// Agente: sin acceso - registrar en auditoría
-				await AuditService.logUnauthorizedAccess({
-					ruta: "/paneladmin",
-					accion: "acceso_denegado_rol_insuficiente",
-					rol: userRoles[0] || "agente",
-					userId: userInfo.id,
-				});
-				await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
-				goto("/inicio");
-				return;
+				// Agente (u otros roles permitidos pero no especificos arriba): solo Reportes
+				// Si llegamos aqui y pasó el check de hasGeneralAccess en layout, asumimos que es Agente
+				// o un rol basico que solo tiene acceso a lo minimo.
+				
+				const allowedPaths = ["/paneladmin/reportes"];
+				modules = allModules.filter((m) =>
+					allowedPaths.includes(m.path),
+				);
+				
+				// Si no tiene modulos (por ejemplo un rol nuevo no contemplado), denegar
+				if (modules.length === 0) {
+					await AuditService.logUnauthorizedAccess({
+						ruta: "/paneladmin",
+						accion: "acceso_denegado_rol_insuficiente",
+						rol: userRoles[0] || "agente",
+						userId: userInfo.id,
+					});
+					await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
+					goto("/inicio");
+					return;
+				}
 			}
 
 			// Registrar acceso exitoso
@@ -205,7 +223,6 @@
 				}
 			}, 100);
 		} catch (error) {
-			console.error("Error de autenticación:", error);
 			await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
 			goto("/");
 		}

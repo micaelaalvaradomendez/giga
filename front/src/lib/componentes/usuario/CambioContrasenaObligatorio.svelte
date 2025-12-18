@@ -93,8 +93,7 @@
             // Verificar si la respuesta es OK antes de parsear JSON
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error("Error del servidor:", response.status, errorText);
-                errors.general = `Error del servidor (${response.status}). Contacte al administrador.`;
+              errors.general = `Error del servidor (${response.status}). Contacte al administrador.`;
                 return;
             }
 
@@ -114,8 +113,7 @@
                     try {
                         await AuthService.logout();
                         window.location.href = "/";
-                    } catch (error) {
-                        console.error("Error al cerrar sesión:", error);
+                    } catch (error) {   
                         window.location.href = "/";
                     }
                 }, 3000);
@@ -124,7 +122,6 @@
                     result.message || "Error al actualizar la contraseña";
             }
         } catch (error) {
-            console.error("Error al actualizar contraseña:", error);
             errors.general = "Error de conexión. Verifique que el servidor esté activo.";
         } finally {
             loading = false;

@@ -13,7 +13,7 @@ class RolesController {
 		if (!browser) {
 			return;
 		}
-		
+
 		// Stores principales
 		this.agentes = writable([]);
 		this.rolesDisponibles = writable([]);
@@ -85,7 +85,7 @@ class RolesController {
 		if (!browser) {
 			return;
 		}
-		
+
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
 		}
@@ -138,9 +138,7 @@ class RolesController {
 				this.areasDisponibles.set(areasData);
 			}
 
-			console.log('✅ Datos cargados correctamente');
 		} catch (err) {
-			console.error('❌ Error cargando datos:', err);
 
 			let errorMessage = '';
 			if (err.response?.status === 401) {
@@ -265,7 +263,6 @@ class RolesController {
 				rol_id: nuevoRolId && String(nuevoRolId).trim() !== '' ? parseInt(nuevoRolId) : null
 			};
 
-			console.log('Cambiando rol con operación atómica:', cambioData);
 			const response = await personasService.cambiarRolAgente(cambioData);
 
 			if (response.data && response.data.success) {
@@ -276,10 +273,6 @@ class RolesController {
 
 				// Log del cambio para auditoría
 				const rolNuevo = nuevoRolId ? this.obtenerNombreRolPorId(parseInt(nuevoRolId)) : 'Sin rol';
-
-				console.log(`🔄 Cambio de rol realizado: ${agente.nombre} ${agente.apellido} - ${rolAnteriorNombre} → ${rolNuevo}`);
-				console.log(`📊 Backend reporta: ${response.data.data.roles_eliminados} roles eliminados`);
-
 				return {
 					success: true,
 					message: `Rol actualizado: ${rolAnteriorNombre} → ${rolNuevo}`
@@ -288,9 +281,6 @@ class RolesController {
 				throw new Error(response.data?.message || 'Error en la respuesta del servidor');
 			}
 		} catch (err) {
-			console.error('Error al cambiar rol:', err);
-			console.error('Respuesta del error:', err.response?.data);
-
 			let errorMessage = 'Error al cambiar el rol: ';
 
 			if (err.response?.status === 400) {
@@ -385,8 +375,6 @@ class RolesController {
 		} catch (error) {
 			const errorMessage = error.message || 'Error inesperado al limpiar roles duplicados';
 			this.error.set(errorMessage);
-			console.error('Error al limpiar roles duplicados:', error);
-
 			return {
 				success: false,
 				message: errorMessage

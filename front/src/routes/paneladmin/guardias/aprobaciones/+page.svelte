@@ -34,12 +34,8 @@
   const MIN_RELOAD_INTERVAL = 2000; // 2 segundos
 
   onMount(async () => {
-    console.log(
-      "🔄 Componente de aprobaciones montado, iniciando controller...",
-    );
     await aprobacionesGuardiasController.init();
     lastLoadTimestamp = Date.now();
-    console.log("✅ Controller de aprobaciones inicializado");
     // Recargar cuando la página vuelve a ser visible
     if (browser) {
       const handleVisibilityChange = () => {
@@ -49,13 +45,9 @@
 
           // Solo recargar si pasaron más de 2 segundos desde la última carga
           if (timeSinceLastLoad > MIN_RELOAD_INTERVAL) {
-            console.log("🔄 Recargando datos (visibility change)");
             aprobacionesGuardiasController.cargarDatos();
             lastLoadTimestamp = now;
           } else {
-            console.log(
-              `⏭️ Saltando recarga (última carga hace ${timeSinceLastLoad}ms)`,
-            );
           }
         }
       };
@@ -65,13 +57,9 @@
 
         // Solo recargar si pasaron más de 2 segundos desde la última carga
         if (timeSinceLastLoad > MIN_RELOAD_INTERVAL) {
-          console.log("🔄 Recargando datos (focus)");
           aprobacionesGuardiasController.cargarDatos();
           lastLoadTimestamp = now;
         } else {
-          console.log(
-            `⏭️ Saltando recarga (última carga hace ${timeSinceLastLoad}ms)`,
-          );
         }
       };
       document.addEventListener("visibilitychange", handleVisibilityChange);

@@ -35,14 +35,14 @@ export const validations = {
 		// Validar dígito verificador
 		const factors = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
 		let sum = 0;
-		
+
 		for (let i = 0; i < 10; i++) {
 			sum += parseInt(cuilStr[i]) * factors[i];
 		}
-		
+
 		const remainder = sum % 11;
 		const checkDigit = remainder < 2 ? remainder : 11 - remainder;
-		
+
 		return checkDigit === parseInt(cuilStr[10]);
 	},
 
@@ -114,14 +114,14 @@ export const formatters = {
 		if (!date) return '';
 		const d = new Date(date);
 		if (isNaN(d.getTime())) return '';
-		
+
 		const defaultOptions = {
 			year: 'numeric',
 			month: '2-digit',
 			day: '2-digit',
 			timeZone: 'America/Argentina/Buenos_Aires'
 		};
-		
+
 		return d.toLocaleDateString('es-AR', { ...defaultOptions, ...options });
 	},
 
@@ -144,17 +144,17 @@ export const formatters = {
 	formatPhone: (phone) => {
 		if (!phone) return '';
 		const phoneStr = phone.toString().replace(/[^0-9]/g, '');
-		
+
 		// Celular (11 dígitos): +54 9 11 1234-5678
 		if (phoneStr.length === 10 && phoneStr.startsWith('11')) {
 			return `+54 9 ${phoneStr.slice(0, 2)} ${phoneStr.slice(2, 6)}-${phoneStr.slice(6)}`;
 		}
-		
+
 		// Teléfono fijo (10 dígitos): +54 11 1234-5678
 		if (phoneStr.length === 10) {
 			return `+54 ${phoneStr.slice(0, 2)} ${phoneStr.slice(2, 6)}-${phoneStr.slice(6)}`;
 		}
-		
+
 		return phoneStr;
 	},
 
@@ -171,7 +171,7 @@ export const formatters = {
 	 */
 	titleCase: (str) => {
 		if (!str) return '';
-		return str.toLowerCase().split(' ').map(word => 
+		return str.toLowerCase().split(' ').map(word =>
 			word.charAt(0).toUpperCase() + word.slice(1)
 		).join(' ');
 	}
@@ -186,18 +186,18 @@ export const colorUtils = {
 	 */
 	generateColorFromText: (text) => {
 		if (!text) return '#6c757d';
-		
+
 		let hash = 0;
 		for (let i = 0; i < text.length; i++) {
 			hash = text.charCodeAt(i) + ((hash << 5) - hash);
 		}
-		
+
 		const colors = [
 			'#e74c3c', '#3498db', '#2ecc71', '#f39c12',
 			'#9b59b6', '#1abc9c', '#34495e', '#e67e22',
 			'#27ae60', '#8e44ad', '#2980b9', '#d35400'
 		];
-		
+
 		return colors[Math.abs(hash) % colors.length];
 	},
 
@@ -210,10 +210,10 @@ export const colorUtils = {
 		const r = parseInt(hex.substr(0, 2), 16);
 		const g = parseInt(hex.substr(2, 2), 16);
 		const b = parseInt(hex.substr(4, 2), 16);
-		
+
 		// Calcular luminancia
 		const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-		
+
 		// Retornar blanco para fondos oscuros, negro para fondos claros
 		return luminance > 0.5 ? '#000000' : '#ffffff';
 	},
@@ -242,15 +242,15 @@ export const errorUtils = {
 	 */
 	extractErrorMessage: (error) => {
 		if (!error) return 'Error desconocido';
-		
+
 		// Error de red
 		if (!error.response) {
 			return 'Error de conexión. Verifique su conexión a internet.';
 		}
-		
+
 		const status = error.response.status;
 		const data = error.response.data;
-		
+
 		// Errores comunes por código de estado
 		switch (status) {
 			case 400:
@@ -269,28 +269,28 @@ export const errorUtils = {
 					}
 				}
 				return data.message || 'Datos inválidos';
-			
+
 			case 401:
 				return 'Sesión expirada. Por favor, inicie sesión nuevamente.';
-			
+
 			case 403:
 				return 'No tiene permisos para realizar esta acción.';
-			
+
 			case 404:
 				return 'El recurso solicitado no fue encontrado.';
-			
+
 			case 409:
 				return data.message || 'Conflicto con los datos existentes.';
-			
+
 			case 422:
 				return data.message || 'Los datos enviados no son válidos.';
-			
+
 			case 500:
 				return 'Error interno del servidor. Contacte al administrador.';
-			
+
 			case 503:
 				return 'Servicio temporalmente no disponible. Intente más tarde.';
-			
+
 			default:
 				return data.message || `Error ${status}: ${error.message}`;
 		}
@@ -321,7 +321,6 @@ export const storageUtils = {
 			localStorage.setItem(key, JSON.stringify(value));
 			return true;
 		} catch (error) {
-			console.error('Error guardando en localStorage:', error);
 			return false;
 		}
 	},
@@ -334,7 +333,6 @@ export const storageUtils = {
 			const item = localStorage.getItem(key);
 			return item ? JSON.parse(item) : defaultValue;
 		} catch (error) {
-			console.error('Error leyendo de localStorage:', error);
 			return defaultValue;
 		}
 	},
@@ -347,7 +345,6 @@ export const storageUtils = {
 			localStorage.removeItem(key);
 			return true;
 		} catch (error) {
-			console.error('Error removiendo de localStorage:', error);
 			return false;
 		}
 	}
@@ -408,7 +405,7 @@ export const dataUtils = {
 		return [...array].sort((a, b) => {
 			const valueA = a[field];
 			const valueB = b[field];
-			
+
 			if (valueA < valueB) return direction === 'asc' ? -1 : 1;
 			if (valueA > valueB) return direction === 'asc' ? 1 : -1;
 			return 0;
@@ -421,8 +418,8 @@ export const dataUtils = {
 	filterByFields: (array, searchTerm, fields) => {
 		const term = searchTerm.toLowerCase().trim();
 		if (!term) return array;
-		
-		return array.filter(item => 
+
+		return array.filter(item =>
 			fields.some(field => {
 				const value = item[field];
 				return value && value.toString().toLowerCase().includes(term);

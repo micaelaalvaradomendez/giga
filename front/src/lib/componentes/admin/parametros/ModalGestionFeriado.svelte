@@ -89,7 +89,6 @@
 			});
 		} catch (error) {
 			// El error ya se maneja en el controlador
-			console.error("Error guardando feriado:", error);
 		}
 	}
 	async function handleDelete() {
@@ -101,7 +100,6 @@
 			await ferladosController.deleteFeriadoFromModal(feriado.id_feriado);
 		} catch (error) {
 			// El error ya se maneja en el controlador
-			console.error("Error eliminando feriado:", error);
 		}
 	}
 	function editarFeriadoExistente(feriadoExistente) {
@@ -135,7 +133,6 @@
 			);
 			// El modal se cerrará automáticamente después de la eliminación exitosa
 		} catch (error) {
-			console.error("Error eliminando feriado existente:", error);
 		}
 	}
 </script>

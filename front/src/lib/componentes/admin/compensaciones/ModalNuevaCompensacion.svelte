@@ -75,7 +75,6 @@
       guardias = [];
       guardiaSeleccionada = "";
     } catch (err) {
-      console.error("Error cargando agentes:", err);
       agentes = [];
     } finally {
       cargandoAgentes = false;
@@ -111,7 +110,6 @@
       await filtrarGuardiasConCompensacion();
       guardiaSeleccionada = "";
     } catch (err) {
-      console.error("Error cargando guardias:", err);
       guardias = [];
     } finally {
       cargandoGuardias = false;
@@ -139,7 +137,6 @@
         (guardia) => !guardiasConCompensacion.includes(guardia.id_guardia),
       );
     } catch (err) {
-      console.error("Error verificando compensaciones existentes:", err);
     }
   }
   // Reactive loaders
@@ -227,7 +224,6 @@
         cerrar();
       }, 1500);
     } catch (err) {
-      console.error("Error creating compensation:", err);
       alertConfig = {
         type: "error",
         title: "Error",

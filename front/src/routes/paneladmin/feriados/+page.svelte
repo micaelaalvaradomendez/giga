@@ -14,12 +14,8 @@
         feriadosController;
     // Inicializar el controlador
     onMount(async () => {
-        console.log(
-            "🔄 Componente montado, iniciando controlador de feriados...",
-        );
         try {
             await feriadosController.init();
-            console.log("✅ Controlador de feriados inicializado exitosamente");
             
             // OPTIMIZADO: Recargar solo si pasaron más de 5 minutos desde la última actualización
             // en lugar de recargar en cada visibilitychange
@@ -33,16 +29,13 @@
                             
                             // Solo recargar si pasaron más de 5 minutos (300000ms)
                             if (timeDiff > 300000) {
-                                console.log('🔄 Recargando feriados (caché obsoleto)');
                                 invalidateCache('feriados');
                                 feriadosController.init();
                                 localStorage.setItem('lastFeriadosUpdate', Date.now().toString());
                             } else {
-                                console.log('✅ Usando feriados en caché (actualizado hace', Math.round(timeDiff/1000), 'segundos)');
                             }
                         } catch (error) {
                             // Si localStorage no está disponible, recargar directamente
-                            console.warn('localStorage no disponible, recargando feriados');
                             feriadosController.init();
                         }
                     }
@@ -57,7 +50,6 @@
                 try {
                     localStorage.setItem('lastFeriadosUpdate', Date.now().toString());
                 } catch (e) {
-                    console.warn('No se pudo guardar timestamp en localStorage:', e);
                 }
                 
                 return () => {
@@ -68,10 +60,6 @@
                 };
             }
         } catch (err) {
-            console.error(
-                "❌ Error inicializando controlador de feriados:",
-                err,
-            );
             if (err.message === "Usuario no autenticado") {
                 goto("/");
                 return;

@@ -13,7 +13,7 @@ class OrganigramaController {
 		if (!browser) {
 			return;
 		}
-		
+
 		// Stores principales
 		this.agentes = writable([]);
 		this.areas = writable([]);
@@ -146,7 +146,7 @@ class OrganigramaController {
 		if (!browser) {
 			return;
 		}
-		
+
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
 		}
@@ -372,7 +372,6 @@ class OrganigramaController {
 			// Agregar más formatos en el futuro (PDF, PNG, etc.)
 			return estructura;
 		} catch (error) {
-			console.error('Error exportando organigrama:', error);
 			throw error;
 		}
 	}

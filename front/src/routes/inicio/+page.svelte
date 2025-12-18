@@ -44,7 +44,6 @@
 				return;
 			}
 		} catch (error) {
-			console.error("Error verificando sesión:", error);
 			errorMessage = "Error verificando la sesión";
 			setTimeout(() => goto("/"), 2000);
 		} finally {
@@ -57,7 +56,6 @@
 			// Usar caché global - evita cargas duplicadas
 			await loadFeriados();
 		} catch (error) {
-			console.error("Error cargando feriados:", error);
 		}
 	}
 	
@@ -68,7 +66,6 @@
 			const response = await guardiasService.getGuardiasAgente(user.id);
 			guardias = response.data?.guardias || [];
 		} catch (error) {
-			console.error("Error cargando guardias:", error);
 			guardias = [];
 		} finally {
 			loadingGuardias = false;
@@ -85,7 +82,6 @@
 				asistenciaHoy = data.data;
 			}
 		} catch (error) {
-			console.error("Error cargando estado asistencia:", error);
 		} finally {
 			loadingAsistencia = false;
 		}
@@ -95,7 +91,6 @@
 			await AuthService.logout();
 			goto("/");
 		} catch (error) {
-			console.error("Error durante logout:", error);
 			goto("/");
 		}
 	}

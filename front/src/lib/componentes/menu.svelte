@@ -38,6 +38,7 @@
     $: isDirector = userRole === "Director" || isAdmin;
     $: isJefatura = userRole === "Jefatura" || isDirector;
     $: isAgenteAvanzado = userRole === "Agente Avanzado" || isJefatura;
+    $: isAgente = userRole === "Agente" || isAgenteAvanzado;
 
     export function toggleMenu() {
         isActive = !isActive;
@@ -79,10 +80,6 @@
                         error?.message &&
                         !error.message.includes("authenticated")
                     ) {
-                        console.error(
-                            "Error en verificación de sesión del menú:",
-                            error.message,
-                        );
                     }
                 });
             }
@@ -192,7 +189,7 @@
                         <div class="menu-item-title">Guardias</div>
                     </div>
                 </a>
-                {#if isAdmin || isDirector || isJefatura}
+                {#if isAgente}
                     <a
                         href={goTO("reportes")}
                         class="menu-item"
@@ -207,23 +204,25 @@
                 {/if}
             </div>
 
-            {#if isJefatura}
+            {#if isAgenteAvanzado}
                 <div class="menu-section">
                     <div class="menu-section-title">
                         Administración y Control
                     </div>
 
-                    <a
-                        href="/paneladmin/auditoria"
-                        class="menu-item"
-                        class:active={currentPath === "/paneladmin/auditoria"}
-                        on:click={closeMenu}
-                    >
-                        <span class="menu-item-icon">🔍</span>
-                        <div class="menu-item-text">
-                            <div class="menu-item-title">Auditoría</div>
-                        </div>
-                    </a>
+                    {#if isJefatura}
+                        <a
+                            href="/paneladmin/auditoria"
+                            class="menu-item"
+                            class:active={currentPath === "/paneladmin/auditoria"}
+                            on:click={closeMenu}
+                        >
+                            <span class="menu-item-icon">🔍</span>
+                            <div class="menu-item-text">
+                                <div class="menu-item-title">Auditoría</div>
+                            </div>
+                        </a>
+                    {/if}
 
                     {#if isJefatura || isAdmin}
                         <a
@@ -242,18 +241,20 @@
                         </a>
                     {/if}
 
-                    <a
-                        href="/paneladmin/guardias/compensaciones"
-                        class="menu-item"
-                        class:active={currentPath.includes("/compensaciones")}
-                        on:click={closeMenu}
-                    >
-                        <span class="menu-item-icon">⏱️</span>
-                        <div class="menu-item-text">
-                            <div class="menu-item-title">Compensaciones</div>
-                            <div class="menu-item-subtitle">Horas extra</div>
-                        </div>
-                    </a>
+                    {#if isJefatura}
+                        <a
+                            href="/paneladmin/guardias/compensaciones"
+                            class="menu-item"
+                            class:active={currentPath.includes("/compensaciones")}
+                            on:click={closeMenu}
+                        >
+                            <span class="menu-item-icon">⏱️</span>
+                            <div class="menu-item-text">
+                                <div class="menu-item-title">Compensaciones</div>
+                                <div class="menu-item-subtitle">Horas extra</div>
+                            </div>
+                        </a>
+                    {/if}
 
                     {#if isDirector}
                         <a
@@ -297,7 +298,10 @@
                                 <div class="menu-item-title">Roles</div>
                             </div>
                         </a>
+                    {/if}
 
+                    {#if isAgente}
+                        <!-- Panel Administrativo visible para todos con acceso (no solo Admin) -->
                         <a
                             href="/paneladmin"
                             class="menu-item menu-item-admin"

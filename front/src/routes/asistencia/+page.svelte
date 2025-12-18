@@ -39,7 +39,6 @@
 			// Cargar estado de asistencia
 			await cargarEstado();
 		} catch (error) {
-			console.error("Error al verificar sesión:", error);
 			goto("/");
 		}
 	});
@@ -55,7 +54,6 @@
 				}
 			}
 		} catch (error) {
-			console.error("Error al cargar estado:", error);
 		} finally {
 			loadingEstado = false;
 		}
@@ -98,7 +96,6 @@
 				}
 			}
 		} catch (error) {
-			console.error("Error al marcar asistencia:", error);
 			mostrarMensaje("Error de conexión. Intente nuevamente.", "error");
 		} finally {
 			loading = false;

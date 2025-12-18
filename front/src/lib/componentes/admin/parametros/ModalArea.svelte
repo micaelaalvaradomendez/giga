@@ -39,7 +39,6 @@
 				}
 			}
 		} catch (error) {
-			console.error("Error cargando áreas:", error);
 			areas = [];
 		} finally {
 			loadingAreas = false;
@@ -57,7 +56,6 @@
 				agentes = result.success ? result.data?.results || [] : [];
 			}
 		} catch (error) {
-			console.error("Error cargando agentes:", error);
 			agentes = [];
 		} finally {
 			loadingAgentes = false;

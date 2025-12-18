@@ -130,7 +130,6 @@
                 errorMessage = result.message || "Error en el login";
             }
         } catch (error) {
-            console.error("Error durante el login:", error);
             errorMessage = "Error de conexión. Intente nuevamente.";
         } finally {
             isLoading = false;

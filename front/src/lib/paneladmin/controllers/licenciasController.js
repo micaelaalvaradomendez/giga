@@ -37,29 +37,19 @@ export const licenciasFiltradas = derived(
         if ($usuario) {
             const usuarioRol = $usuario.roles?.[0]?.nombre || $usuario.rol_nombre || 'Agente';
             const usuarioId = $usuario.id_agente;
-            console.log('🔍 Filtrando licencias para rol:', usuarioRol, 'ID:', usuarioId);
 
             resultado = resultado.filter(licencia => {
                 const puedeVer = puedeVerLicenciaDeRol(licencia.agente_rol, usuarioRol);
-                if (!puedeVer) {
-                    console.log(`🚫 ${usuarioRol} NO puede ver licencia de ${licencia.agente_rol} (${licencia.agente_nombre})`);
-                }
                 return puedeVer;
             });
 
             // FILTRO ADICIONAL: Agente y Agente Avanzado solo ven sus propias licencias
             if (usuarioRol.toLowerCase() === 'agente' || usuarioRol.toLowerCase() === 'agente avanzado') {
-                console.log('🔒 Aplicando filtro restricto: solo licencias del usuario actual');
                 resultado = resultado.filter(licencia => {
                     const esPropia = licencia.id_agente === usuarioId;
-                    if (!esPropia) {
-                        console.log(`🚫 Agente no puede ver licencia de otro agente:`, licencia.id_agente, 'vs', usuarioId);
-                    }
                     return esPropia;
                 });
             }
-
-            console.log(`✅ Licencias filtradas: ${resultado.length} de ${$licencias.length} totales`);
         }
 
         if ($filtros.fecha_desde) {
@@ -272,25 +262,15 @@ export async function cargarLicencias(parametros = {}) {
     error.set(null);
 
     try {
-        console.log('📊 Cargando licencias con parámetros:', parametros);
         const response = await asistenciaService.getLicencias(parametros);
-        console.log('📊 Respuesta completa de licencias:', response);
 
         if (response?.data?.success) {
             const licenciasData = response.data.data || [];
-            console.log('📊 Licencias procesadas:', licenciasData.length, licenciasData);
-
-            // Debug: mostrar la primera licencia completa
-            if (licenciasData.length > 0) {
-                console.log('🔍 Primera licencia (estructura completa):', JSON.stringify(licenciasData[0], null, 2));
-            }
-
             licencias.set(licenciasData);
         } else {
             throw new Error(response?.data?.message || 'Error al cargar licencias');
         }
     } catch (err) {
-        console.error('❌ Error cargando licencias:', err);
         error.set(err.message || 'Error al cargar licencias');
         licencias.set([]);
     } finally {
@@ -311,7 +291,6 @@ export async function cargarTiposLicencia() {
             throw new Error(response?.data?.message || 'Error al cargar tipos de licencia');
         }
     } catch (err) {
-        console.error('Error cargando tipos de licencia:', err);
         error.set(err.message || 'Error al cargar tipos de licencia');
     }
 }
@@ -331,7 +310,6 @@ export async function crearLicencia(datosLicencia) {
             throw new Error(response?.data?.message || 'Error al crear licencia');
         }
     } catch (err) {
-        console.error('Error creando licencia:', err);
         return {
             success: false,
             error: err.response?.data?.message || err.message || 'Error al crear licencia'
@@ -355,7 +333,6 @@ export async function aprobarLicencia(idLicencia, observaciones = '') {
             throw new Error(response?.data?.message || 'Error al aprobar licencia');
         }
     } catch (err) {
-        console.error('Error aprobando licencia:', err);
         return {
             success: false,
             error: err.response?.data?.message || err.message || 'Error al aprobar licencia'
@@ -379,7 +356,6 @@ export async function rechazarLicencia(idLicencia, motivoRechazo) {
             throw new Error(response?.data?.message || 'Error al rechazar licencia');
         }
     } catch (err) {
-        console.error('Error rechazando licencia:', err);
         return {
             success: false,
             error: err.response?.data?.message || err.message || 'Error al rechazar licencia'
@@ -491,9 +467,6 @@ export async function asignarLicencia(datosAsignacion) {
             return { success: false, error: errorMsg };
         }
     } catch (err) {
-        console.error('Error asignando licencia:', err);
-        console.error('Detalles del error:', err?.response?.data);
-        console.error('Status del error:', err?.response?.status);
         const errorMsg = err?.response?.data?.message || err.message || 'Error de conexión';
         error.set(errorMsg);
         return { success: false, error: errorMsg, response: err.response };
@@ -522,9 +495,6 @@ export async function eliminarLicencia(idLicencia) {
             return { success: false, error: errorMsg };
         }
     } catch (err) {
-        console.error('Error eliminando licencia:', err);
-        console.error('Detalles del error:', err?.response?.data);
-        console.error('Status del error:', err?.response?.status);
         const errorMsg = err?.response?.data?.message || err.message || 'Error de conexión';
         error.set(errorMsg);
         return { success: false, error: errorMsg };

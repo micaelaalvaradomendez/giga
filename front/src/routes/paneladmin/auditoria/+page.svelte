@@ -20,14 +20,8 @@
 	} = auditoriaController;
 	// Inicializar el controlador
 	onMount(async () => {
-		console.log(
-			"🔄 Componente montado, iniciando controlador de auditoría...",
-		);
 		try {
 			await auditoriaController.init();
-			console.log(
-				"✅ Controlador de auditoría inicializado exitosamente",
-			);
 			// Recargar cuando la página vuelve a ser visible
 			if (typeof window !== "undefined") {
 				const handleVisibilityChange = () => {
@@ -52,10 +46,6 @@
 				};
 			}
 		} catch (err) {
-			console.error(
-				"❌ Error inicializando controlador de auditoría:",
-				err,
-			);
 			if (err.message === "Usuario no autenticado") {
 				goto("/");
 				return;

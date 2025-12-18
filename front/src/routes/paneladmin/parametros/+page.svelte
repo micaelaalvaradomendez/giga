@@ -31,9 +31,7 @@
 	// Validación de autenticación e inicialización
 	onMount(async () => {
 		try {
-			console.log("🚀 Iniciando controlador de parámetros...");
 			await parametrosController.init();
-			console.log("✅ Controlador de parámetros inicializado");
 			// Recargar cuando la página vuelve a ser visible
 			if (typeof window !== "undefined") {
 				const handleVisibilityChange = () => {
@@ -58,7 +56,6 @@
 				};
 			}
 		} catch (err) {
-			console.error("❌ Error inicializando controlador:", err);
 			if (
 				err.message === "Usuario no autenticado" ||
 				err.message === "Sesión expirada"
@@ -125,7 +122,6 @@
 				mostrarError(data.message || "Error al aplicar horario global");
 			}
 		} catch (error) {
-			console.error("Error aplicando horario global:", error);
 			mostrarError("Error de conexión al aplicar horario global");
 		} finally {
 			guardandoHorarioGlobal = false;
@@ -145,7 +141,6 @@
 				mostrarExito("✅ Horarios actualizados correctamente");
 			}
 		} catch (error) {
-			console.error("Error actualizando horarios:", error);
 			mostrarError(error.message || "Error al actualizar horarios");
 		}
 	}
@@ -163,15 +158,12 @@
 				);
 			}
 		} catch (error) {
-			console.error("Error eliminando elemento:", error);
-			// Manejar error - podríamos mostrar una notificación
 		}
 	}
 	async function guardarArea() {
 		try {
 			await parametrosController.guardarArea($areaForm);
 		} catch (error) {
-			console.error("Error guardando área:", error);
 			parametrosController.error.set(error.message);
 		}
 	}
@@ -179,7 +171,6 @@
 		try {
 			await parametrosController.guardarAgrupacion($agrupacionForm);
 		} catch (error) {
-			console.error("Error guardando agrupación:", error);
 			parametrosController.error.set(error.message);
 		}
 	}

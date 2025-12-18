@@ -67,7 +67,6 @@
                     result.message || "Error al procesar la solicitud";
             }
         } catch (error) {
-            console.error("Error:", error);
             errorMessage = "Error de conexión. Intenta nuevamente.";
         } finally {
             isLoading = false;

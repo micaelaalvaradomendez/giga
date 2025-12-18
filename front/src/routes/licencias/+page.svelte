@@ -147,25 +147,13 @@
 					userInfo.roles?.[0]?.nombre ||
 					userInfo.rol_nombre ||
 					"Agente";
-				console.log(
-					"🔐 Usuario actual:",
-					userInfo.nombre,
-					userInfo.apellido,
-					"| Rol:",
-					rol,
-					"| Área:",
-					userInfo.area?.nombre,
-				);
 				permisos = obtenerPermisos(rol, userInfo.id_area);
-				console.log("🔑 Permisos calculados:", permisos);
 				// Cargar datos iniciales
 				await cargarDatosIniciales();
 			} else {
-				console.error("❌ No se pudo obtener información del usuario");
 				goto("/");
 			}
 		} catch (err) {
-			console.error("❌ Error inicializando:", err);
 			goto("/");
 		}
 	}
@@ -202,7 +190,6 @@
 			}
 			await cargarLicencias(parametros);
 		} catch (err) {
-			console.error("Error cargando datos iniciales:", err);
 			error.set("Error al cargar datos iniciales");
 		}
 	}
@@ -222,15 +209,11 @@
 							(agente.rol?.nombre || agente.rol_nombre) ===
 							"Agente",
 					);
-					console.log(
-						`🔍 Agente Avanzado: filtrado ${agentes.length} agentes de ${agentesCompletos.length} totales`,
-					);
 				} else {
 					agentes = agentesCompletos;
 				}
 			}
 		} catch (err) {
-			console.error("Error cargando agentes:", err);
 		}
 	}
 	function abrirModalCrear() {
@@ -281,7 +264,6 @@
 		cargarLicencias(); // Recargar la lista
 	}
 	function handleAsignarEvent(event) {
-		console.log("Asignar licencia event:", event.detail);
 		showModalAsignar = false;
 		mostrarExito("Licencia asignada correctamente");
 	}
@@ -335,7 +317,6 @@
 				errorTipos = resp?.data?.message || "Error al cargar tipos";
 			}
 		} catch (err) {
-			console.error(err);
 			errorTipos =
 				err?.response?.data?.message ||
 				err.message ||
@@ -376,7 +357,6 @@
 			tipos = tipos.filter((t) => (t.id_tipo_licencia || t.id) !== id);
 			mostrarExito("Tipo de licencia eliminado correctamente");
 		} catch (err) {
-			console.error(err);
 			const msg =
 				err?.response?.data?.message ||
 				err.message ||

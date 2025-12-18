@@ -12,7 +12,7 @@ class GuardiasMainController {
 		if (!browser) {
 			return;
 		}
-		
+
 		// Stores principales
 		this.loading = writable(false);
 		this.error = writable('');
@@ -44,7 +44,7 @@ class GuardiasMainController {
 		if (!browser) {
 			return;
 		}
-		
+
 		await this.cargarDatos();
 	}
 
@@ -76,7 +76,6 @@ class GuardiasMainController {
 
 		} catch (e) {
 			this.error.set('Error al cargar las guardias');
-			console.error('❌ Error cargando guardias:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -91,7 +90,6 @@ class GuardiasMainController {
 			const feriadosData = response.data?.results || response.data || [];
 			this.feriados.set(feriadosData);
 		} catch (e) {
-			console.error('❌ Error cargando feriados:', e);
 			this.feriados.set([]);
 		}
 	}

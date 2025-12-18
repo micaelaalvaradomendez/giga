@@ -59,8 +59,6 @@
       case "incumplimiento_normativo":
         await reporteController.generarReporteIncumplimientoNormativo();
         break;
-      default:
-        console.error("Tipo de reporte no soportado:", tipo);
     }
   }
   // Funciones de exportación

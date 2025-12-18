@@ -56,7 +56,6 @@ class IncidenciasService {
         }
 
         // Fallback: devolver array vacío en caso de estructura inesperada
-        console.warn('Estructura de respuesta inesperada en obtenerIncidencias:', response);
         return [];
     }
 
@@ -144,16 +143,15 @@ class IncidenciasService {
     // Utilidades para el frontend
     static formatearFecha(fechaString) {
         if (!fechaString) return 'No establecida';
-        
+
         try {
             const fecha = new Date(fechaString);
-            
+
             // Verificar que la fecha sea válida
             if (isNaN(fecha.getTime())) {
-                console.warn('Fecha inválida:', fechaString);
                 return 'Fecha inválida';
             }
-            
+
             // Usar toLocaleString que automáticamente convierte de UTC a hora local
             return fecha.toLocaleString('es-AR', {
                 day: '2-digit',
@@ -164,7 +162,6 @@ class IncidenciasService {
                 hour12: false
             });
         } catch (error) {
-            console.error('Error al formatear fecha:', error);
             return 'Error en fecha';
         }
     }
