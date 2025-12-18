@@ -16,6 +16,7 @@ class PlanificadorGuardiasController {
 
 		// Stores de navegación y estado general
 		this.loading = writable(false);
+		this.loadingAgentes = writable(false); // New store for background fetching
 		this.error = writable('');
 		this.success = writable('');
 		this.paso = writable(1);
@@ -100,10 +101,8 @@ class PlanificadorGuardiasController {
 			const agente = JSON.parse(localStorage.getItem('user') || '{}');
 			const idAreaAgente = agente?.area?.id ?? 0;
 
-			if (idAreaAgente !== 0) {
-				areasData = areasData.filter(a => a.id_area === Number(idAreaAgente));
-				this.areaSeleccionada.set(Number(idAreaAgente));
-			}
+			// Auto-seleccion deshabilitada para permitir elegir
+			this.areaSeleccionada.set("");
 
 			this.areas.set(areasData);
 		} catch (e) {
@@ -180,8 +179,8 @@ class PlanificadorGuardiasController {
 		}
 
 		try {
-			this.loading.set(true);
-			this.error.set('');
+			this.loadingAgentes.set(true); // Background loading
+			// this.error.set(''); // Optional: Don't clear global error for background fetch? Or do? Let's keep it minimal.
 
 			const response = await personasService.getAgentesByArea(areaId, token);
 			let agentes = response.data?.results || response.data || [];
@@ -233,9 +232,10 @@ class PlanificadorGuardiasController {
 				this.agentesDisponibles.set(agentes);
 			}
 		} catch (e) {
-			this.error.set('Error al cargar los agentes');
+			// this.error.set('Error al cargar los agentes'); // Only show global error if critical? Let's suppress or handle gracefully.
+			console.error(e);
 		} finally {
-			this.loading.set(false);
+			this.loadingAgentes.set(false);
 		}
 	}
 
@@ -292,27 +292,28 @@ class PlanificadorGuardiasController {
 		let seleccionados;
 		this.agentesSeleccionados.subscribe(s => seleccionados = s)();
 
+		const idString = String(agenteId);
 		const nuevoSet = new Set(seleccionados);
 
-		if (nuevoSet.has(agenteId)) {
+		if (nuevoSet.has(idString)) {
 			// Deseleccionar
-			nuevoSet.delete(agenteId);
+			nuevoSet.delete(idString);
 
 			let conflictos;
 			this.agentesConConflicto.subscribe(c => conflictos = c)();
 			const nuevosConflictos = new Set(conflictos);
-			nuevosConflictos.delete(agenteId);
+			nuevosConflictos.delete(idString);
 			this.agentesConConflicto.set(nuevosConflictos);
 		} else {
 			// Seleccionar y verificar conflictos
-			nuevoSet.add(agenteId);
+			nuevoSet.add(idString);
 
 			const tieneConflicto = await this.verificarDisponibilidadAgente(agenteId);
 			if (tieneConflicto) {
 				let conflictos;
 				this.agentesConConflicto.subscribe(c => conflictos = c)();
 				const nuevosConflictos = new Set(conflictos);
-				nuevosConflictos.add(agenteId);
+				nuevosConflictos.add(idString);
 				this.agentesConConflicto.set(nuevosConflictos);
 			}
 		}
