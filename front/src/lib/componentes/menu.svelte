@@ -189,7 +189,7 @@
                         <div class="menu-item-title">Guardias</div>
                     </div>
                 </a>
-                {#if isAgente}
+                {#if isJefatura}
                     <a
                         href={goTO("reportes")}
                         class="menu-item"
