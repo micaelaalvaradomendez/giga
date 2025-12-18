@@ -95,8 +95,8 @@ class AprobacionesGuardiasController {
 			const agentes = responseAgentes.data?.results || responseAgentes.data || [];
 
 			// Obtener agente de la sesión actual
-			const user = JSON.parse(localStorage.getItem('agente') || '{}');
-			const agenteActual = agentes.find(a => a.id_agente === user.id_agente) || agentes[0];
+			const user = JSON.parse(localStorage.getItem('user') || '{}');
+			const agenteActual = agentes.find(a => a.id_agente === user.id) || agentes[0];
 
 			this.agenteActual.set(agenteActual);
 
