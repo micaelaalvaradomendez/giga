@@ -14,7 +14,7 @@ class AprobacionesGuardiasController {
 		if (!browser) {
 			return;
 		}
-		
+
 		// Stores de estado
 		this.loading = writable(false);
 		this.error = writable('');
@@ -66,7 +66,7 @@ class AprobacionesGuardiasController {
 		if (!browser) {
 			return;
 		}
-		
+
 		try {
 			// Use isAuthenticated check (checkSession already called in +layout.svelte)
 			if (!AuthService.isAuthenticated()) {
@@ -326,7 +326,7 @@ class AprobacionesGuardiasController {
 			alert('Cronograma publicado exitosamente');
 			await this.cargarDatos();
 
-			
+
 		} catch (e) {
 			const mensaje = e.response?.data?.message || 'Error al publicar el cronograma';
 			this.error.set(mensaje);
@@ -474,24 +474,40 @@ class AprobacionesGuardiasController {
 
 			const response = await personasService.getAreas(token);
 
-			// Axios devuelve la respuesta en response.data
 			let areas = [];
 			const responseData = response.data;
-			
 
-			if (responseData.success && responseData.data && responseData.data.results) {
+			if (responseData.success && responseData.data?.results) {
 				areas = responseData.data.results;
-			} else if (responseData.data && responseData.data.results) {
+			} else if (responseData.data?.results) {
 				areas = responseData.data.results;
 			} else if (responseData.results) {
 				areas = responseData.results;
 			} else if (Array.isArray(responseData)) {
 				areas = responseData;
-			} 
+			}
 
+			const user = JSON.parse(localStorage.getItem("user") || "{}");
+			const roles = (user?.roles || []).map(r => String(r.nombre).toLowerCase());
+			const idAreaAgente = Number(user?.area?.id ?? 0);
+
+			if (!roles.includes("administrador")) {
+				if (!idAreaAgente) {
+					areas = [];
+				} else if (roles.includes("director")) {
+					const idAreaDirector = idAreaAgente;
+
+					areas = areas.filter(a =>
+						Number(a.id_area) === idAreaDirector ||
+						Number(a.id_area_padre) === idAreaDirector
+					);
+				} else {
+					areas = areas.filter(a => Number(a.id_area) === idAreaAgente);
+				}
+			}
 			this.areas.set(areas);
 		} catch (e) {
-			
+			this.areas.set([]);
 		}
 	}
 
@@ -566,7 +582,7 @@ class AprobacionesGuardiasController {
 			alert('Cronograma despublicado exitosamente. Ahora está pendiente y puede editarse o eliminarse.');
 			await this.cargarDatos();
 
-		
+
 		} catch (e) {
 			const mensaje = e.response?.data?.message || e.response?.data?.error || 'Error al despublicar el cronograma';
 			this.error.set(mensaje);
