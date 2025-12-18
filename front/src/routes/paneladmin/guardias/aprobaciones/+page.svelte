@@ -130,10 +130,10 @@
       <div class="filtro-item">
         <label for="filtro-area">Área:</label>
         <select id="filtro-area" bind:value={$filtroArea}>
-          <option value="">Todas las áreas</option>
-          {#each $areas as area}
-            <option value={area.id_area}>{area.nombre}</option>
-          {/each}
+           <option value="">Todas las áreas</option>
+           {#each $areas as area}
+             <option value={area.id_area}>{area.nombre}</option>
+           {/each}
         </select>
       </div>
       <div class="filtro-item">
@@ -157,13 +157,13 @@
         </select>
       </div>
       <div class="filtro-item">
-        <label for="filtro-busqueda">Buscar:</label>
-        <input
-          id="filtro-busqueda"
-          type="text"
-          placeholder="Nombre o área..."
-          bind:value={$busqueda}
-        />
+         <label for="filtro-busqueda">Buscar:</label>
+         <input
+           id="filtro-busqueda"
+           type="text"
+           placeholder="Nombre o área..."
+           bind:value={$busqueda}
+         />
       </div>
       <div class="filtro-item filtro-actions">
         <button
@@ -203,188 +203,188 @@
   {:else if $tabActiva === "pendientes"}
     <!-- Lista de pendientes -->
     <div class="cronogramas-lista">
-      {#if $cronogramasPendientesFiltrados.length === 0}
-        <div class="empty-state">
-          <p>
-            {#if $cronogramasPendientes.length > 0}
-              📋 No hay cronogramas que coincidan con los filtros aplicados
-            {:else}
-              ✓ No hay cronogramas pendientes de aprobación
-            {/if}
-          </p>
-        </div>
-      {:else}
-        {#each $cronogramasPendientesFiltrados as cronograma}
-          <div class="cronograma-card pendiente">
-            <div class="cronograma-header">
-              <div class="cronograma-info">
-                <h3>{cronograma.area_nombre || "Sin área"}</h3>
-                <p class="tipo">{cronograma.tipo}</p>
-              </div>
-              <div class="cronograma-estado">
-                <span class="badge badge-pendiente">{cronograma.estado}</span>
-              </div>
-            </div>
-            <div class="cronograma-body">
-              <div class="info-row">
-                <span class="label">Creado por:</span>
-                <span class="valor">
-                  {#if cronograma.creado_por_nombre || cronograma.creado_por_apellido}
-                    {cronograma.creado_por_nombre || ""}
-                    {cronograma.creado_por_apellido || ""}
-                    {#if cronograma.creado_por_rol}
-                      <span class="rol-mini">({cronograma.creado_por_rol})</span
-                      >
-                    {/if}
-                  {:else}
-                    <span class="sin-creador">Sistema (histórico)</span>
-                  {/if}
-                </span>
-              </div>
-              <div class="info-row">
-                <span class="label">Fecha creación:</span>
-                <span class="value"
-                  >{aprobacionesGuardiasController.formatearFecha(
-                    cronograma.fecha_creacion,
-                  )}</span
-                >
-              </div>
-              <div class="info-row">
-                <span class="label">Horario:</span>
-                <span class="value">
-                  {aprobacionesGuardiasController.formatearHora(
-                    cronograma.hora_inicio,
-                  )} - {aprobacionesGuardiasController.formatearHora(
-                    cronograma.hora_fin,
-                  )}
-                </span>
-              </div>
-              <div class="info-row">
-                <span class="label">Guardias:</span>
-                <span class="value">{cronograma.total_guardias || 0}</span>
-              </div>
-              {#if cronograma.puede_aprobar_rol && cronograma.puede_aprobar_rol.length > 0}
-                <div class="info-row">
-                  <span class="label">Puede aprobar:</span>
-                  <span class="value roles-permitidos">
-                    {cronograma.puede_aprobar_rol.join(", ")}
-                  </span>
-                </div>
-              {/if}
-            </div>
-            <div class="cronograma-actions">
-              <button
-                class="btn btn-secondary"
-                on:click={() => handleVerDetalles(cronograma)}
-              >
-                📋 Ver Detalles
-              </button>
-              <!-- <button
-                class="btn btn-info"
-                on:click={() => handleEditarCronograma(cronograma)}
-                disabled={$loading}
-              >
-                ✏️ Editar
-              </button> -->
-              <button
-                class="btn btn-success"
-                on:click={() => handleAprobar(cronograma)}
-                disabled={$loading}
-              >
-                ✓ Aprobar y Publicar
-              </button>
-              <button
-                class="btn btn-danger"
-                on:click={() => handleIniciarRechazo(cronograma)}
-                disabled={$loading}
-              >
-                ✗ Rechazar
-              </button>
-            </div>
-          </div>
-        {/each}
-      {/if}
+       {#if $cronogramasPendientesFiltrados.length === 0}
+         <div class="empty-state">
+           <p>
+             {#if $cronogramasPendientes.length > 0}
+               📋 No hay cronogramas que coincidan con los filtros aplicados
+             {:else}
+               ✓ No hay cronogramas pendientes de aprobación
+             {/if}
+           </p>
+         </div>
+       {:else}
+         {#each $cronogramasPendientesFiltrados as cronograma}
+           <div class="cronograma-card pendiente">
+             <div class="cronograma-header">
+               <div class="cronograma-info">
+                 <h3>{cronograma.area_nombre || "Sin área"}</h3>
+                 <p class="tipo">{cronograma.tipo}</p>
+               </div>
+               <div class="cronograma-estado">
+                 <span class="badge badge-pendiente">{cronograma.estado}</span>
+               </div>
+             </div>
+             <div class="cronograma-body">
+               <div class="info-row">
+                 <span class="label">Creado por:</span>
+                 <span class="valor">
+                   {#if cronograma.creado_por_nombre || cronograma.creado_por_apellido}
+                     {cronograma.creado_por_nombre || ""}
+                     {cronograma.creado_por_apellido || ""}
+                     {#if cronograma.creado_por_rol}
+                       <span class="rol-mini">({cronograma.creado_por_rol})</span
+                       >
+                     {/if}
+                   {:else}
+                     <span class="sin-creador">Sistema (histórico)</span>
+                   {/if}
+                 </span>
+               </div>
+               <div class="info-row">
+                 <span class="label">Fecha creación:</span>
+                 <span class="value"
+                   >{aprobacionesGuardiasController.formatearFecha(
+                     cronograma.fecha_creacion,
+                   )}</span
+                 >
+               </div>
+               <div class="info-row">
+                 <span class="label">Horario:</span>
+                 <span class="value">
+                   {aprobacionesGuardiasController.formatearHora(
+                     cronograma.hora_inicio,
+                   )} - {aprobacionesGuardiasController.formatearHora(
+                     cronograma.hora_fin,
+                   )}
+                 </span>
+               </div>
+               <div class="info-row">
+                 <span class="label">Guardias:</span>
+                 <span class="value">{cronograma.total_guardias || 0}</span>
+               </div>
+               {#if cronograma.puede_aprobar_rol && cronograma.puede_aprobar_rol.length > 0}
+                 <div class="info-row">
+                   <span class="label">Puede aprobar:</span>
+                   <span class="value roles-permitidos">
+                     {cronograma.puede_aprobar_rol.join(", ")}
+                   </span>
+                 </div>
+               {/if}
+             </div>
+             <div class="cronograma-actions">
+               <button
+                 class="btn btn-secondary"
+                 on:click={() => handleVerDetalles(cronograma)}
+               >
+                 📋 Ver Detalles
+               </button>
+               <!-- <button
+                 class="btn btn-info"
+                 on:click={() => handleEditarCronograma(cronograma)}
+                 disabled={$loading}
+               >
+                 ✏️ Editar
+               </button> -->
+               <button
+                 class="btn btn-success"
+                 on:click={() => handleAprobar(cronograma)}
+                 disabled={$loading}
+               >
+                 ✓ Aprobar y Publicar
+               </button>
+               <button
+                 class="btn btn-danger"
+                 on:click={() => handleIniciarRechazo(cronograma)}
+                 disabled={$loading}
+               >
+                 ✗ Rechazar
+               </button>
+             </div>
+           </div>
+         {/each}
+       {/if}
     </div>
   {:else}
     <!-- Lista de aprobadas -->
     <div class="cronogramas-lista">
-      {#if $cronogramasAprobadasFiltradas.length === 0}
-        <div class="empty-state">
-          <p>
-            {#if $cronogramasAprobadas.length > 0}
-              📋 No hay cronogramas que coincidan con los filtros aplicados
-            {:else}
-              ✓ No hay cronogramas publicados
-            {/if}
-          </p>
-        </div>
-      {:else}
-        {#each $cronogramasAprobadasFiltradas as cronograma}
-          <div class="cronograma-card aprobada">
-            <div class="cronograma-header">
-              <div class="cronograma-info">
-                <h3>{cronograma.area_nombre || "Sin área"}</h3>
-                <p class="tipo">{cronograma.tipo}</p>
-              </div>
-              <div class="cronograma-estado">
-                <span class="badge badge-{cronograma.estado}"
-                  >{cronograma.estado}</span
-                >
-              </div>
-            </div>
-            <div class="cronograma-body">
-              <div class="info-row">
-                <span class="label">Creado:</span>
-                <span class="value"
-                  >{aprobacionesGuardiasController.formatearFecha(
-                    cronograma.fecha_creacion,
-                  )}</span
-                >
-              </div>
-              {#if cronograma.fecha_aprobacion}
-                <div class="info-row">
-                  <span class="label">Publicado:</span>
-                  <span class="value"
-                    >{aprobacionesGuardiasController.formatearFecha(
-                      cronograma.fecha_aprobacion,
-                    )}</span
-                  >
-                </div>
-              {/if}
-              <div class="info-row">
-                <span class="label">Guardias:</span>
-                <span class="value">{cronograma.total_guardias || 0}</span>
-              </div>
-            </div>
-            <div class="cronograma-actions">
-              <button
-                class="btn btn-secondary"
-                on:click={() => handleVerDetalles(cronograma)}
-              >
-                📋 Ver Detalles
-              </button>
-              {#if cronograma.estado === "publicada" && cronograma.puedeDespublicar}
-                <button
-                  class="btn btn-warning"
-                  on:click={() => handleDespublicar(cronograma)}
-                  disabled={$loading}
-                  title="Despublicar cronograma"
-                >
-                  📤 Despublicar
-                </button>
-              {/if}
-              {#if cronograma.estado === "pendiente"}
-                <button
-                  class="btn btn-danger"
-                  on:click={() => handleEliminar(cronograma)}
-                >
-                  🗑️ Eliminar
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/each}
-      {/if}
+       {#if $cronogramasAprobadasFiltradas.length === 0}
+         <div class="empty-state">
+           <p>
+             {#if $cronogramasAprobadas.length > 0}
+               📋 No hay cronogramas que coincidan con los filtros aplicados
+             {:else}
+               ✓ No hay cronogramas publicados
+             {/if}
+           </p>
+         </div>
+       {:else}
+         {#each $cronogramasAprobadasFiltradas as cronograma}
+           <div class="cronograma-card aprobada">
+             <div class="cronograma-header">
+               <div class="cronograma-info">
+                 <h3>{cronograma.area_nombre || "Sin área"}</h3>
+                 <p class="tipo">{cronograma.tipo}</p>
+               </div>
+               <div class="cronograma-estado">
+                 <span class="badge badge-{cronograma.estado}"
+                   >{cronograma.estado}</span
+                 >
+               </div>
+             </div>
+             <div class="cronograma-body">
+               <div class="info-row">
+                 <span class="label">Creado:</span>
+                 <span class="value"
+                   >{aprobacionesGuardiasController.formatearFecha(
+                     cronograma.fecha_creacion,
+                   )}</span
+                 >
+               </div>
+               {#if cronograma.fecha_aprobacion}
+                 <div class="info-row">
+                   <span class="label">Publicado:</span>
+                   <span class="value"
+                     >{aprobacionesGuardiasController.formatearFecha(
+                       cronograma.fecha_aprobacion,
+                     )}</span
+                   >
+                 </div>
+               {/if}
+               <div class="info-row">
+                 <span class="label">Guardias:</span>
+                 <span class="value">{cronograma.total_guardias || 0}</span>
+               </div>
+             </div>
+             <div class="cronograma-actions">
+               <button
+                 class="btn btn-secondary"
+                 on:click={() => handleVerDetalles(cronograma)}
+               >
+                 📋 Ver Detalles
+               </button>
+               {#if cronograma.estado === "publicada" && cronograma.puedeDespublicar}
+                 <button
+                   class="btn btn-warning"
+                   on:click={() => handleDespublicar(cronograma)}
+                   disabled={$loading}
+                   title="Despublicar cronograma"
+                 >
+                   📤 Despublicar
+                 </button>
+               {/if}
+               {#if cronograma.estado === "pendiente"}
+                 <button
+                   class="btn btn-danger"
+                   on:click={() => handleEliminar(cronograma)}
+                 >
+                   🗑️ Eliminar
+                 </button>
+               {/if}
+             </div>
+           </div>
+         {/each}
+       {/if}
     </div>
   {/if}
 </section>
@@ -412,7 +412,9 @@
 
 <style>
   .aprobaciones-wrap {
-    max-width: 1200px;
+    width: 100%;
+    box-sizing: border-box;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 1.5rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -796,4 +798,52 @@
     opacity: 0.6;
     cursor: not-allowed;
   }
-</style>
+
+  @media (max-width: 768px) {
+    .aprobaciones-wrap {
+      padding: 1rem;
+    }
+
+    .filtros-grid {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+      gap: 1.25rem;
+    }
+
+    .filtro-item {
+      width: 100%;
+    }
+
+    .filtro-item select,
+    .filtro-item input {
+      width: 100%;
+      box-sizing: border-box; /* Critical for padding to not add to width */
+      max-width: 100%;
+    }
+
+    .filtro-actions {
+      margin-top: 0.5rem;
+    }
+
+    .btn-limpiar {
+      width: 100%;
+    }
+
+    .cronograma-header {
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: flex-start;
+    }
+    
+    .cronograma-actions {
+      flex-direction: column;
+    }
+    
+    .cronograma-actions button {
+      width: 100%;
+    }
+
+    .head h1 {
+        font-size: 1.5rem;
+    }
+  }</style>
