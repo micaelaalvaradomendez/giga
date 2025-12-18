@@ -494,12 +494,44 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+
+  /* Styles specific for Planner responsiveness */
+  @media (max-width: 640px) {
+    .guardias-wrap {
+      padding: 1rem;
+      padding-top: 1rem; /* Reduce top padding */
+    }
+
+    .panel {
+      padding: 1.25rem; /* Reduce panel padding on mobile */
+      min-height: auto !important; /* Allow panel to shrink if needed */
+    }
+
+    .head h1 {
+      font-size: 1.3rem;
+    }
+
+    .head .subtitle {
+      font-size: 0.85rem;
+    }
+
+    .acciones {
+      flex-direction: column-reverse; /* Stack buttons on mobile */
+      gap: 0.75rem;
+    }
+    
+    .acciones button {
+      width: 100%;
+    }
+  }
+
   .guardias-wrap {
-    max-width: 1600px; /* Increased from 1400px */
+    max-width: 1600px;
     margin: 0 auto;
     padding: 2rem;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    min-height: 80vh; /* Prevent layout shift */
+    min-height: 80vh;
+    box-sizing: border-box; /* Ensure padding doesn't overflow width */
   }
 
   .resumen-agentes {
@@ -542,7 +574,6 @@
     word-wrap: break-word;
   }
   
-  /* Media queries for header font size retained */
   @media (min-width: 480px) { .head h1 { font-size: 1.4rem; } }
   @media (min-width: 640px) { .head h1 { font-size: 1.6rem; } }
   @media (min-width: 768px) { .head h1 { font-size: 1.8rem; } }
@@ -561,7 +592,7 @@
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  min-height: 750px !important; 
+  min-height: 750px; 
   display: flex;
   flex-direction: column;
 }
@@ -633,6 +664,7 @@
   .campo {
     display: flex;
     flex-direction: column;
+    width: 100%; /* Ensure full width in grid cell */
   }
 
   .campo-full {
@@ -661,6 +693,8 @@
     font-family: inherit;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    width: 100%; /* Ensure full width */
+    box-sizing: border-box; /* Include padding in width */
   }
 
   .input:hover:not(:disabled) {
