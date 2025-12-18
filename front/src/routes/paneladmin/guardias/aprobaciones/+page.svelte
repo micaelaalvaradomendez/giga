@@ -36,14 +36,12 @@
   onMount(async () => {
     await aprobacionesGuardiasController.init();
     lastLoadTimestamp = Date.now();
-    // Recargar cuando la página vuelve a ser visible
     if (browser) {
       const handleVisibilityChange = () => {
         if (document.visibilityState === "visible") {
           const now = Date.now();
           const timeSinceLastLoad = now - lastLoadTimestamp;
 
-          // Solo recargar si pasaron más de 2 segundos desde la última carga
           if (timeSinceLastLoad > MIN_RELOAD_INTERVAL) {
             aprobacionesGuardiasController.cargarDatos();
             lastLoadTimestamp = now;
@@ -55,7 +53,6 @@
         const now = Date.now();
         const timeSinceLastLoad = now - lastLoadTimestamp;
 
-        // Solo recargar si pasaron más de 2 segundos desde la última carga
         if (timeSinceLastLoad > MIN_RELOAD_INTERVAL) {
           aprobacionesGuardiasController.cargarDatos();
           lastLoadTimestamp = now;

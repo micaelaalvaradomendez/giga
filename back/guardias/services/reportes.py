@@ -252,6 +252,21 @@ def _armar_reporte_individual(filtros: Dict, permisos: Dict) -> Dict:
     }
 
 
+def _as_date(v):
+    from datetime import datetime, date
+    if v is None:
+        return None
+    if isinstance(v, date):
+        return v
+    if isinstance(v, str):
+        # probá primero YYYY-MM-DD (tu caso)
+        try:
+            return datetime.strptime(v, "%Y-%m-%d").date()
+        except ValueError:
+            # si tu Feriado usa otro formato, ajustá acá
+            return datetime.strptime(v, DATE_FMT).date()
+    raise TypeError(f"Tipo de fecha no soportado: {type(v)}")
+
 def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
     area_scope = permisos.get("area_scope", [])
 
@@ -312,14 +327,14 @@ def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
     # =========================
     # FERIADOS
     # =========================
-    feriados_set = set()  # { 'YYYY-MM-DD' }
-
+    feriados_set = set()
     if incluir_feriados:
         feriados_qs = Feriado.feriados_en_rango(fecha_desde, fecha_hasta)
         for fer in feriados_qs:
             for f in fer.get_fechas_incluidas():
+                f = _as_date(f)
                 if fecha_desde <= f <= fecha_hasta:
-                    feriados_set.add(f.strftime(DATE_FMT))
+                    feriados_set.add(f)
 
     # =========================
     # GUARDIAS
@@ -329,17 +344,20 @@ def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
             id_agente_id__in=agentes_qs.values_list("id_agente", flat=True)
         )
     )
-    dias_set = {g.fecha.strftime(DATE_FMT) for g in guardias_qs}
+    dias_set = {g.fecha for g in guardias_qs}
+
     if incluir_licencias:
         for per_agente in licencias_map.values():
-            dias_set.update(per_agente.keys())
+            dias_set.update(_as_date(k) for k in per_agente.keys())
+
     if incluir_feriados:
         dias_set.update(feriados_set)
 
-    dias_fechas = sorted(dias_set)
+    dias_fechas_dt = sorted(dias_set)  
+
     dias_columnas = [
-        {"fecha": f, "dia_semana": datetime.strptime(f, DATE_FMT).strftime("%A")}
-        for f in dias_fechas
+        {"fecha": d.strftime(DATE_FMT), "dia_semana": d.strftime("%A")}
+        for d in dias_fechas_dt
     ]
 
     agentes_data = []
@@ -348,26 +366,23 @@ def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
         total_horas_agente = 0
 
         guardias_agente = [g for g in guardias_qs if g.id_agente_id == agente.id_agente]
-        guardias_por_fecha = {g.fecha.strftime(DATE_FMT): g for g in guardias_agente}
+        guardias_por_fecha = {g.fecha: g for g in guardias_agente}  # date -> guardia
 
-        for fecha_str in dias_fechas:
-            # 1) LICENCIA
+        for d in dias_fechas_dt:
+            fecha_str = d.strftime(DATE_FMT)
+
             lic_code = licencias_map.get(agente.id_agente, {}).get(fecha_str)
             if lic_code:
                 valor = lic_code
-
-            # 2) FERIADO
-            elif fecha_str in feriados_set:
-                valor = "FER"
-
-            # 3) GUARDIA
             else:
-                guardia = guardias_por_fecha.get(fecha_str)
+                guardia = guardias_por_fecha.get(d)
                 if guardia:
                     valor = guardia.horas_efectivas
                     if valor is None:
                         valor = guardia.horas_planificadas or 0
                     total_horas_agente += (valor or 0)
+                elif incluir_feriados and d in feriados_set:
+                    valor = "FER"
                 else:
                     valor = 0
 
@@ -395,8 +410,10 @@ def _armar_reporte_general(filtros: Dict, permisos: Dict) -> Dict:
 
 
 def _query_guardias(filtros: Dict, permisos: Dict):
-    fecha_desde = filtros["fecha_desde"]
-    fecha_hasta = filtros["fecha_hasta"]
+    fecha_desde = _as_date(filtros["fecha_desde"])
+    fecha_hasta = _as_date(filtros["fecha_hasta"])
+    filtros["fecha_desde"] = fecha_desde
+    filtros["fecha_hasta"] = fecha_hasta
 
     base_q = Q(
         fecha__gte=fecha_desde,
