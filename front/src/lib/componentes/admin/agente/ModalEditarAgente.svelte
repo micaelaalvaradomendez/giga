@@ -91,7 +91,20 @@
 			dispatch("guardar", { agente, formData });
 		}
 	}
-	function handleInputChange() {
+	function handleInputChange(event) {
+		if (event && event.target) {
+			const id = event.target.id;
+			const value = event.target.value;
+
+			if (id === "nombre" || id === "apellido") {
+				// Solo letras y espacios
+				formData[id] = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
+			} else if (id === "telefono") {
+				// Solo números, espacios, + y -
+				formData[id] = value.replace(/[^0-9+\-\s]/g, "");
+			}
+		}
+
 		// Debounce validation
 		if (validateTimeout) clearTimeout(validateTimeout);
 		validateTimeout = setTimeout(() => {
@@ -235,6 +248,8 @@
 										id="telefono"
 										bind:value={formData.telefono}
 										disabled={isSaving}
+										maxlength="20"
+										on:input={handleInputChange}
 									/>
 								</div>
 							</div>

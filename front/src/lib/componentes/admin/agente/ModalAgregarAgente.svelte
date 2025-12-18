@@ -68,6 +68,22 @@
 		if (event.target.id === "dni") {
 			formData.password = formData.dni;
 		}
+
+		// Validaciones de entrada
+		if (event.target.id === "nombre" || event.target.id === "apellido") {
+			// Solo letras y espacios
+			formData[event.target.id] = event.target.value.replace(
+				/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g,
+				"",
+			);
+		}
+		if (event.target.id === "telefono") {
+			// Solo números, espacios, + y -
+			formData[event.target.id] = event.target.value.replace(
+				/[^0-9+\-\s]/g,
+				"",
+			);
+		}
 		if (validateTimeout) clearTimeout(validateTimeout);
 		validateTimeout = setTimeout(() => {
 			validateForm();
@@ -330,6 +346,7 @@
 										bind:value={formData.telefono}
 										placeholder="+54 11 1234-5678"
 										disabled={isSaving}
+										maxlength="20"
 									/>
 									<small class="help-text"
 										>Número de teléfono de contacto (incluir
