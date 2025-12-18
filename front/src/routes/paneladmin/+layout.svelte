@@ -30,6 +30,7 @@
 			"/paneladmin/guardias/planificador",
 			"/paneladmin/guardias/aprobaciones",
 			"/paneladmin/auditoria",
+			"/paneladmin/reportes",
 		],
 		director: [
 			"/paneladmin",
@@ -43,6 +44,7 @@
 			"/paneladmin/guardias/aprobaciones",
 			"/paneladmin/parametros",
 			"/paneladmin/auditoria",
+			"/paneladmin/reportes",
 		],
 		administrador: null, // null = acceso a todo
 	};
@@ -79,7 +81,6 @@
 	onMount(async () => {
 		try {
 			const userResponse = await AuthService.getCurrentUserData();
-
 			if (!userResponse?.success || !userResponse.data?.success) {
 				await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
 				goto("/");
