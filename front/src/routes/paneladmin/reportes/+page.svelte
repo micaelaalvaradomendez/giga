@@ -852,7 +852,7 @@
             <div class="list-preview">
               <p class="summary-label">Agentes (vista breve)</p>
               <ul>
-                {#each ($datosReporte.agentes || []).slice(0, 8) as agente}
+                {#each ($datosReporte.agentes_preview || []).slice(0, 8) as agente}
                   <li class="list-item">
                     <div>
                       <strong>{agente.nombre_completo}</strong>
@@ -863,9 +863,9 @@
                     </div>
                   </li>
                 {/each}
-                {#if ($datosReporte.agentes || []).length > 8}
+                {#if ($datosReporte.agentes_preview || []).length > 8}
                   <li class="muted">
-                    ... y {($datosReporte.agentes || []).length - 8} más
+                    ... y {($datosReporte.agentes_preview || []).length - 8} más
                   </li>
                 {/if}
               </ul>
