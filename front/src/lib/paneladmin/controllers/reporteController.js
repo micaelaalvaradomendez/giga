@@ -1681,30 +1681,37 @@ class ReporteController {
 			const response = await guardiasService.getReporteGeneral(body);
 			const reporte = response.data;
 
-			// Fallbacks si el backend no devuelve algunos campos
 			const periodo = reporte.periodo || {
 				fecha_desde: filtros.fecha_desde,
 				fecha_hasta: filtros.fecha_hasta
 			};
 
-			const areaNombreBackend = reporte.area?.nombre || (typeof reporte.area === 'string' ? reporte.area : '');
+			const areaNombreBackend =
+				reporte.area?.nombre || (typeof reporte.area === "string" ? reporte.area : "");
+
 			const areaCompleta = reporte.area || null;
+
+			const agentesAll = (reporte.agentes || []).map(agente => ({
+				...agente,
+				estado: (agente.total_horas || 0) > 0 ? "activo" : "sin_guardias"
+			}));
+
+			const agentesPreview = agentesAll.filter(a => (a.total_horas || 0) > 0);
 
 			return {
 				area_nombre: areaNombreBackend,
 				area_completa: areaCompleta,
 				periodo,
 				dias_columnas: reporte.dias_columnas || [],
-				agentes: (reporte.agentes || []).map(agente => ({
-					...agente,
-					estado: agente.total_horas > 0 ? 'activo' : 'sin_guardias'
-				})),
+				agentes: agentesAll,              
+				agentes_preview: agentesPreview,  
 				totales: reporte.totales
 			};
 		} catch (error) {
 			return this._generarReporteGeneralSimulado(filtros);
 		}
 	}
+
 }
 
 // Instancia singleton para el administrador

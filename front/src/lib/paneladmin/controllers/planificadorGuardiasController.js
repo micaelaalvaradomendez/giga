@@ -98,12 +98,28 @@ class PlanificadorGuardiasController {
 			else if (responseData.results) areasData = responseData.results;
 			else if (Array.isArray(responseData)) areasData = responseData;
 
-			const agente = JSON.parse(localStorage.getItem('user') || '{}');
-			const idAreaAgente = agente?.area?.id ?? 0;
+			const user = JSON.parse(localStorage.getItem('user') || '{}');
+			const roles = (user?.roles || []).map(r => String(r.nombre).toLowerCase());
+			const idAreaAgente = user?.area?.id ?? null;
 
-			// Auto-seleccion deshabilitada para permitir elegir
+			if (!roles.includes('administrador')) {
+				if (roles.includes('jefatura') || roles.includes('agente') || roles.includes('agente avanzado')) {
+					if (idAreaAgente) {
+						areasData = areasData.filter(a => a.id_area === idAreaAgente);
+					} else {
+						areasData = [];
+					}
+				}
+				else if (roles.includes('director')) {
+					if (idAreaAgente) {
+						areasData = areasData.filter(a => a.id_area_padre === idAreaAgente);
+					} else {
+						areasData = [];
+					}
+				}
+			}
+
 			this.areaSeleccionada.set("");
-
 			this.areas.set(areasData);
 		} catch (e) {
 			this.error.set('Error al cargar las áreas');
