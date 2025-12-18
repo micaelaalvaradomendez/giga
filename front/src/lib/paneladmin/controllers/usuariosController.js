@@ -158,10 +158,10 @@ class UsuariosController {
 			if (data.success && data.data && data.data.subareas) {
 				// Guardar IDs de sub-áreas
 				this.subAreas = data.data.subareas.map(sa => sa.id_area);
-				console.log(`📂 Sub-áreas cargadas para área ${areaId}:`, this.subAreas);
+				
 			} else {
 				this.subAreas = [];
-				console.log(`📂 No hay sub-áreas para área ${areaId}`);
+				
 			}
 		} catch (error) {
 			console.error('Error cargando sub-áreas:', error);
@@ -182,7 +182,7 @@ class UsuariosController {
 			throw new Error('Usuario no autenticado');
 		}
 
-		console.log('🚀 Iniciando carga de datos de usuarios...');
+		
 
 		try {
 			// Obtener información del usuario actual
@@ -195,7 +195,7 @@ class UsuariosController {
 					id: userInfo.id,
 					id_area: userInfo.id_area
 				});
-				console.log('👤 Usuario actual:', userInfo.nombre, '- Rol:', rolNombre, '- Área:', userInfo.id_area);
+				
 
 				// Si es Director, cargar sus sub-áreas
 				if (rolNombre.toLowerCase() === 'director' && userInfo.id_area) {
@@ -210,7 +210,7 @@ class UsuariosController {
 			// Cargar agentes
 			await this.cargarAgentes();
 
-			console.log('✅ Carga inicial completada');
+			
 		} catch (error) {
 			console.error('❌ Error en inicialización:', error);
 			this.error.set('Error al inicializar: ' + error.message);
@@ -233,7 +233,7 @@ class UsuariosController {
 			if (response && response.data) {
 				const agentesData = response.data.results || [];
 				this.agentes.set(agentesData);
-				console.log('Agentes cargados:', agentesData.length);
+				
 			} else {
 				console.error('Estructura de respuesta inesperada:', response);
 				throw new Error('Respuesta inválida del servidor');
@@ -255,7 +255,7 @@ class UsuariosController {
 	async cargarAreas() {
 		try {
 			const response = await personasService.getAreas();
-			console.log('🏢 Respuesta de áreas:', response);
+			
 
 			// Axios response: response.data.data.results (doble data)
 			const areas = response.data?.data?.results || response.data?.results || [];
@@ -268,7 +268,7 @@ class UsuariosController {
 			}
 
 			this.areasDisponibles.set(areas);
-			console.log('✅ Áreas cargadas:', areas.length, areas);
+			
 		} catch (error) {
 			console.error('❌ Error cargando áreas:', error);
 			this.areasDisponibles.set([]);
@@ -281,7 +281,7 @@ class UsuariosController {
 	async cargarRoles() {
 		try {
 			const response = await personasService.getRoles();
-			console.log('👥 Respuesta de roles:', response);
+			
 
 			// Axios response: response.data.data.results (doble data)
 			const roles = response.data?.data?.results || response.data?.results || [];
@@ -294,7 +294,7 @@ class UsuariosController {
 			}
 
 			this.rolesDisponibles.set(roles);
-			console.log('✅ Roles cargados:', roles.length, roles);
+			
 		} catch (error) {
 			console.error('❌ Error cargando roles:', error);
 			this.rolesDisponibles.set([]);
@@ -307,7 +307,7 @@ class UsuariosController {
 	limpiarFiltros() {
 		this.busqueda.set('');
 		this.filtroArea.set('');
-		console.log('🧹 Filtros limpiados');
+		
 	}
 
 	/**
@@ -374,14 +374,14 @@ class UsuariosController {
 				activo: formData.activo !== false
 			};
 
-			console.log('📝 Datos filtrados para actualización:', datosActualizacion);
+			
 
 			await personasService.updateAgente(agente.id_agente, datosActualizacion);
 
 			// Si se cambió el rol, actualizar la asignación
 			if (formData.rol_id) {
 				try {
-					console.log('🔄 Actualizando rol del agente:', agente.id_agente, 'al rol:', formData.rol_id);
+					
 
 					// Obtener asignaciones actuales del agente
 					const asignacionesResponse = await personasService.getAsignaciones();
@@ -390,11 +390,11 @@ class UsuariosController {
 					// Buscar asignación por id_agente (no por usuario)
 					const asignacionActual = asignaciones.find(a => a.usuario === agente.id_agente);
 
-					console.log('🔍 Asignación actual encontrada:', asignacionActual);
+					
 
 					if (asignacionActual && String(asignacionActual.rol) !== String(formData.rol_id)) {
 						// Eliminar asignación actual
-						console.log('🗑️ Eliminando asignación actual:', asignacionActual.id);
+						
 						await personasService.deleteAsignacion(asignacionActual.id);
 
 						// Crear nueva asignación con el nuevo rol
@@ -403,7 +403,7 @@ class UsuariosController {
 							rol: parseInt(formData.rol_id)
 							// No enviamos área porque AgenteRol no la maneja
 						};
-						console.log('➕ Creando nueva asignación:', nuevaAsignacion);
+						
 						await personasService.createAsignacion(nuevaAsignacion);
 
 					} else if (!asignacionActual && formData.rol_id) {
@@ -413,11 +413,11 @@ class UsuariosController {
 							rol: parseInt(formData.rol_id)
 							// No enviamos área porque AgenteRol no la maneja
 						};
-						console.log('➕ Creando asignación nueva (no existía):', nuevaAsignacion);
+						:', nuevaAsignacion);
 						await personasService.createAsignacion(nuevaAsignacion);
 					}
 
-					console.log('✅ Rol actualizado correctamente');
+					
 				} catch (rolError) {
 					console.error('❌ Error actualizando rol:', rolError);
 					console.error('❌ Error response:', rolError.response?.data);
@@ -509,11 +509,11 @@ class UsuariosController {
 	async crearNuevoAgente(formData) {
 		this.modalAgregarAgente.update(modal => ({ ...modal, isSaving: true }));
 
-		console.log('Datos del formulario para crear agente:', formData);
+		
 
 		try {
 			const response = await personasService.createAgenteConRol(formData);
-			console.log('✅ Respuesta de creación:', response);
+			
 
 			// El agente creado podría estar en response.data o directamente en response
 			const nuevoAgente = response.data || response;
@@ -546,7 +546,7 @@ class UsuariosController {
 				} else if (errorData.cuil) {
 					errorMessage += 'CUIL inválido o ya registrado.';
 				} else {
-					console.log('Datos de error completos:', errorData);
+					
 					errorMessage += 'Verifique que todos los campos obligatorios estén completos y correctos.';
 				}
 			} else if (error.response?.status === 500) {
@@ -566,10 +566,10 @@ class UsuariosController {
 	 */
 	async actualizarAgenteEnLista(idAgente) {
 		try {
-			console.log('🔄 Recargando lista completa de agentes...');
+			
 			// Recargar toda la lista para asegurar datos completos (area_nombre, roles, etc.)
 			await this.cargarAgentes();
-			console.log('✅ Lista de agentes recargada correctamente');
+			
 		} catch (error) {
 			console.error('❌ Error recargando lista de agentes:', error);
 			await this.cargarAgentes();

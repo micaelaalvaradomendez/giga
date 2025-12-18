@@ -138,7 +138,7 @@ class RolesController {
 				this.areasDisponibles.set(areasData);
 			}
 
-			console.log('✅ Datos cargados correctamente');
+			
 		} catch (err) {
 			console.error('❌ Error cargando datos:', err);
 
@@ -265,7 +265,7 @@ class RolesController {
 				rol_id: nuevoRolId && String(nuevoRolId).trim() !== '' ? parseInt(nuevoRolId) : null
 			};
 
-			console.log('Cambiando rol con operación atómica:', cambioData);
+			
 			const response = await personasService.cambiarRolAgente(cambioData);
 
 			if (response.data && response.data.success) {
@@ -277,8 +277,8 @@ class RolesController {
 				// Log del cambio para auditoría
 				const rolNuevo = nuevoRolId ? this.obtenerNombreRolPorId(parseInt(nuevoRolId)) : 'Sin rol';
 
-				console.log(`🔄 Cambio de rol realizado: ${agente.nombre} ${agente.apellido} - ${rolAnteriorNombre} → ${rolNuevo}`);
-				console.log(`📊 Backend reporta: ${response.data.data.roles_eliminados} roles eliminados`);
+				
+				
 
 				return {
 					success: true,

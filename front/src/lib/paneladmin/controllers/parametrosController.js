@@ -155,7 +155,7 @@ class ParametrosController {
 			}
 			
 			this.areas.set(areasData);
-			console.log('✅ Áreas cargadas:', areasData.length);
+			
 		} catch (error) {
 			console.error('❌ Error cargando áreas:', error);
 			this.areas.set([]);
@@ -178,7 +178,7 @@ class ParametrosController {
 			}
 			
 			this.agrupaciones.set(agrupacionesData);
-			console.log('✅ Agrupaciones cargadas:', agrupacionesData.length);
+			
 		} catch (error) {
 			console.error('❌ Error cargando agrupaciones:', error);
 			this.agrupaciones.set([]);
@@ -200,7 +200,7 @@ class ParametrosController {
 				agentesData = response.data.results || [];
 			}
 			
-			console.log('✅ Agentes cargados:', agentesData.length);
+			
 			return agentesData;
 		} catch (error) {
 			console.error('❌ Error cargando agentes:', error);
@@ -330,7 +330,7 @@ class ParametrosController {
 			}
 			
 			if (response && response.data && response.data.success) {
-				console.log('✅ Área guardada correctamente:', response.data.data);
+				
 			}
 			
 			this.modalArea.set({ isOpen: false, agente: null, isSaving: false });
@@ -360,7 +360,7 @@ class ParametrosController {
 			const response = await personasService.deleteArea(areaId);
 			
 			if (response && response.data && response.data.success) {
-				console.log('✅ Área eliminada correctamente');
+				
 			}
 			
 			this.modalDelete.set({
@@ -454,7 +454,7 @@ class ParametrosController {
 			}
 			
 			if (response && response.data && response.data.success) {
-				console.log('✅ Agrupación guardada correctamente');
+				
 			}
 			
 			this.modalAgrupacion.set({ isOpen: false, agente: null, isSaving: false });
@@ -486,7 +486,7 @@ class ParametrosController {
 			const response = await personasService.deleteAgrupacion(agrupacionId, requestData);
 			
 			if (response && response.data && response.data.success) {
-				console.log('✅ Agrupación eliminada correctamente');
+				
 			}
 			
 			this.modalDelete.set({
@@ -533,7 +533,7 @@ class ParametrosController {
 	 * Actualizar horarios por área o agrupación
 	 */
 	async actualizarHorarios(formData, tipo, target) {
-		console.log('📋 actualizarHorarios llamado con:', { formData, tipo, target });
+		
 		
 		if (!formData.horario_entrada || !formData.horario_salida) {
 			console.error('❌ Faltan datos de horarios:', formData);
@@ -548,13 +548,13 @@ class ParametrosController {
 				horario_salida: formData.horario_salida
 			};
 
-			console.log('📤 Enviando datos:', horarioData);
+			
 
 			let response;
 
 			if (tipo === 'area') {
 				// Actualizar horarios por área
-				console.log('🏢 Actualizando horarios por área:', target.id_area);
+				
 				response = await personasService.updateAreaSchedule(target.id_area, horarioData);
 			} else if (tipo === 'agrupacion') {
 				// Actualizar horarios por agrupación
@@ -562,14 +562,14 @@ class ParametrosController {
 					agrupacion: target.nombre,
 					...horarioData
 				};
-				console.log('👥 Actualizando horarios por agrupación:', agrupacionData);
+				
 				response = await personasService.updateAgrupacionSchedule(agrupacionData);
 			}
 			
-			console.log('📥 Respuesta recibida:', response);
+			
 			
 			if (response && response.data && response.data.success) {
-				console.log('✅ Horarios actualizados correctamente');
+				
 			}
 			
 			this.modalSchedule.set({ isOpen: false, tipo: '', target: null, isSaving: false });

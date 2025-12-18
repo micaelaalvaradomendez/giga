@@ -31,9 +31,9 @@
 	// Validación de autenticación e inicialización
 	onMount(async () => {
 		try {
-			console.log("🚀 Iniciando controlador de parámetros...");
+			
 			await parametrosController.init();
-			console.log("✅ Controlador de parámetros inicializado");
+			
 			// Recargar cuando la página vuelve a ser visible
 			if (typeof window !== "undefined") {
 				const handleVisibilityChange = () => {

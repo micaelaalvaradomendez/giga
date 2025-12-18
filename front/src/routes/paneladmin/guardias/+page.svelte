@@ -50,7 +50,6 @@
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       rolesIds = (user?.roles || []).map(r => r.id); 
 
-      console.log(user)
       const handleVisibilityChange = () => {
         if (document.visibilityState === "visible") {
           guardiasMainController.recargar();

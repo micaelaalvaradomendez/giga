@@ -147,17 +147,9 @@
 					userInfo.roles?.[0]?.nombre ||
 					userInfo.rol_nombre ||
 					"Agente";
-				console.log(
-					"🔐 Usuario actual:",
-					userInfo.nombre,
-					userInfo.apellido,
-					"| Rol:",
-					rol,
-					"| Área:",
-					userInfo.area?.nombre,
-				);
+				
 				permisos = obtenerPermisos(rol, userInfo.id_area);
-				console.log("🔑 Permisos calculados:", permisos);
+				
 				// Cargar datos iniciales
 				await cargarDatosIniciales();
 			} else {
@@ -222,9 +214,7 @@
 							(agente.rol?.nombre || agente.rol_nombre) ===
 							"Agente",
 					);
-					console.log(
-						`🔍 Agente Avanzado: filtrado ${agentes.length} agentes de ${agentesCompletos.length} totales`,
-					);
+					
 				} else {
 					agentes = agentesCompletos;
 				}
@@ -281,7 +271,7 @@
 		cargarLicencias(); // Recargar la lista
 	}
 	function handleAsignarEvent(event) {
-		console.log("Asignar licencia event:", event.detail);
+		
 		showModalAsignar = false;
 		mostrarExito("Licencia asignada correctamente");
 	}

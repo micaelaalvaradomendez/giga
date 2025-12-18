@@ -257,7 +257,7 @@ export async function exportarPDF(tipoReporte, datosReporte, filtros) {
         
         window.URL.revokeObjectURL(url);
         
-        console.log('✅ PDF exportado exitosamente');
+        
         return {
             exito: true,
             archivo: link.download,
@@ -274,7 +274,7 @@ export async function exportarPDF(tipoReporte, datosReporte, filtros) {
  */
 export async function exportarCSV(tipoReporte, datosReporte, filtros, formato = 'csv') {
     try {
-        console.log('🔄 Iniciando exportación CSV/Excel...', { tipoReporte, formato, filtros });
+        
         
         if (!browser) {
             throw new Error('La exportación CSV/Excel solo está disponible en el navegador');
@@ -314,7 +314,7 @@ export async function exportarCSV(tipoReporte, datosReporte, filtros, formato = 
         
         window.URL.revokeObjectURL(url);
         
-        console.log(`✅ ${formato.toUpperCase()} exportado exitosamente`);
+        } exportado exitosamente`);
         return {
             exito: true,
             archivo: link.download,

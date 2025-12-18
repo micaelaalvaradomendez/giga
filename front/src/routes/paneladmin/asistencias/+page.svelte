@@ -23,14 +23,10 @@
         usarHoraEspecifica,
     } = asistenciasController;
     onMount(async () => {
-        console.log(
-            "🔄 Componente de asistencias montado, iniciando controlador...",
-        );
+        
         try {
             await asistenciasController.init();
-            console.log(
-                "✅ Controlador de asistencias inicializado exitosamente",
-            );
+            
             // Recargar cuando la página vuelve a ser visible
             if (typeof window !== "undefined") {
                 const handleVisibilityChange = () => {
