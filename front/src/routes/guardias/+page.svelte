@@ -5,7 +5,11 @@
   import AuthService from "$lib/login/authService.js";
   import ModalNotaGuardia from "$lib/componentes/usuario/ModalNotaGuardia.svelte";
   import ModalAlert from "$lib/componentes/ModalAlert.svelte";
-  import { modalAlert, showAlert, showConfirm } from "$lib/stores/modalAlertStore.js";
+  import {
+    modalAlert,
+    showAlert,
+    showConfirm,
+  } from "$lib/stores/modalAlertStore.js";
   let user = null;
   let token = null;
   let guardiasPorHacer = [];
@@ -63,7 +67,7 @@
           g.estado === "planificada" &&
           g.activa === true &&
           (g.cronograma_estado === "aprobada" ||
-            g.cronograma_estado === "publicada"),
+            g.cronograma_estado === "publicada")
       );
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
@@ -81,7 +85,10 @@
     }
   }
   function formatearFecha(fecha) {
-    const f = new Date(fecha);
+    const [year, month, day] = fecha.split("-").map(Number);
+
+    const f = new Date(year, month - 1, day);
+
     const dias = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
     const meses = [
       "Ene",
@@ -97,7 +104,8 @@
       "Nov",
       "Dic",
     ];
-    return `${dias[f.getDay()]} ${f.getDate()} ${meses[f.getMonth()]} ${f.getFullYear()}`;
+
+    return `${dias[f.getDay()]} ${day} ${meses[f.getMonth()]} ${year}`;
   }
   function abrirModalNota(guardia) {
     guardiaSeleccionada = guardia;
@@ -141,7 +149,7 @@
         await guardiasService.createNotaGuardia(
           guardiaSeleccionada.id_guardia,
           data,
-          token,
+          token
         );
       }
       // Recargar guardias para actualizar notas
@@ -252,6 +260,7 @@
     fechaSeleccionada = new Date().toISOString().split("T")[0];
   }
 </script>
+
 <div class="container">
   <div class="header">
     <div class="header-glass">
@@ -486,6 +495,7 @@
   on:confirm={() => $modalAlert.onConfirm && $modalAlert.onConfirm()}
   on:cancel={() => $modalAlert.onCancel && $modalAlert.onCancel()}
 />
+
 <style>
   .container {
     width: 100%;

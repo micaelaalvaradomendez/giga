@@ -45,10 +45,7 @@
   }
 
   async function handleFechaInicioChange() {
-    // Si la nueva fecha inicio es posterior a la fecha fin, limpiar fecha fin
-    if ($fechaInicio && $fechaFin && $fechaInicio > $fechaFin) {
-      fechaFin.set('');
-    }
+    this.fechaFin.set(fechaInicio); 
     await planificadorGuardiasController.handleFechaHorarioChange();
   }
 
@@ -154,7 +151,7 @@
   })();
 
   // Validar que todos los campos obligatorios estén completos
-  $: puedeAvanzar = $nombre && $areaSeleccionada && $fechaInicio && $fechaFin && $horaInicio && $horaFin && !errorFechaHora;
+  $: puedeAvanzar = $nombre && $areaSeleccionada && $fechaInicio && $horaInicio && $horaFin && !errorFechaHora;
 </script>
 
 <section class="guardias-wrap">
@@ -226,8 +223,8 @@
           </select>
         </div>
 
-        <div class="campo">
-          <label for="fechaInicio">Fecha Inicio *</label>
+        <div class="campo campo-full">
+          <label for="fechaInicio">Fecha Guardia *</label>
           <input
             class="input"
             id="fechaInicio"
@@ -239,7 +236,7 @@
           />
         </div>
 
-        <div class="campo">
+        <!-- <div class="campo">
           <label for="fechaFin">Fecha Fin *</label>
           <input
             class="input"
@@ -250,7 +247,7 @@
             disabled={$loading}
             min={$fechaInicio}
           />
-        </div>
+        </div> -->
 
         <div class="campo">
           <label for="horaInicio">Hora Inicio *</label>
