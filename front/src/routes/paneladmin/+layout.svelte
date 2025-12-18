@@ -81,8 +81,6 @@
 	onMount(async () => {
 		try {
 			const userResponse = await AuthService.getCurrentUserData();
-
-			console.log(userResponse, "USER RESPONSEEEEEEEEEEEEE")
 			if (!userResponse?.success || !userResponse.data?.success) {
 				await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
 				goto("/");
