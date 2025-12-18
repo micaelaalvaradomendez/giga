@@ -1404,7 +1404,6 @@ class GuardiaViewSet(viewsets.ModelViewSet):
         ocupados_qs = Guardia.objects.filter(
             id_agente_id__in=agentes_ids,
             fecha__range=(fd, fh),
-            activa=True,
             estado__in=estados_validos,
         ).values_list('id_agente_id', flat=True).distinct()
 

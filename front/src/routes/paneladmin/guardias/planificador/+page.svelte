@@ -48,7 +48,7 @@
     await planificadorGuardiasController.handleAreaChange();
   }
 
-  async function handleFechaInicioChange() {
+  async function handleFechaInicioChange(fechaInicio) {
     this.fechaFin.set(fechaInicio); 
     await planificadorGuardiasController.handleFechaHorarioChange();
   }
@@ -243,7 +243,7 @@
             id="fechaInicio"
             type="date"
             bind:value={$fechaInicio}
-            on:change={handleFechaInicioChange}
+            on:change={handleFechaInicioChange($fechaInicio)}
             min={hoy}
             disabled={$loading}
           />

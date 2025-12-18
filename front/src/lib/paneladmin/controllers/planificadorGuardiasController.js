@@ -217,7 +217,6 @@ class PlanificadorGuardiasController {
 				fechaFinalGuardia,
 				token
 			);
-
 			const dispByAgente = new Map();
 			(disponibilidadResponse.data?.resultados || []).forEach(r => {
 				dispByAgente.set(Number(r.agente_id), r);
@@ -228,15 +227,12 @@ class PlanificadorGuardiasController {
 
 			for (const agente of agentes) {
 				const r = dispByAgente.get(Number(agente.id_agente));
-
-				const disponible = r ? r.disponible : true;
-
-				if (!disponible) {
+				if (!r.disponible) {
 					agentesConConflicto.add(String(agente.id_agente));
 					continue;
+				}else{
+					agentesDisponibles.push(agente);
 				}
-
-				agentesDisponibles.push(agente);
 			}
 
 			this.agentesDisponibles.set(agentesDisponibles);
