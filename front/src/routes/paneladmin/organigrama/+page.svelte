@@ -79,7 +79,7 @@
 
             // Solo recargar si pasaron más de 10 minutos (600000ms)
             if (timeDiff > 600000) {
-              ");
+              console.log("🔄 Recargando organigrama (caché obsoleto)");
               invalidateCache("organigrama");
               loadOrganigramaLocal();
               localStorage.setItem(
@@ -87,7 +87,9 @@
                 Date.now().toString(),
               );
             } else {
-              ,
+              console.log(
+                "✅ Usando organigrama en caché (actualizado hace",
+                Math.round(timeDiff / 1000),
                 "segundos)",
               );
             }
@@ -120,19 +122,19 @@
   async function loadOrganigramaLocal() {
     try {
       loading = true;
-      
+      console.log("🔄 Cargando organigrama...");
 
       // OPTIMIZACIÓN: Usar caché global
       const data = await loadOrganigrama();
 
       if (data) {
         organigramaData = data;
-        
+        console.log("✅ Organigrama cargado desde caché");
       }
 
       // Actualizar lista de nodos para el selector
       updateNodesList();
-      
+      console.log("✅ Lista de nodos actualizada:", allNodes.length, "nodos");
     } catch (error) {
       console.error("❌ Error cargando organigrama:", error);
       // Datos de fallback básicos para mostrar algo en caso de error
@@ -155,7 +157,7 @@
         ],
       };
       updateNodesList();
-      
+      console.log("✅ Usando datos de fallback básicos");
     } finally {
       loading = false;
     }
@@ -186,7 +188,7 @@
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          
+          console.log("✅ Organigrama sincronizado correctamente");
           await showAlert(
             "Organigrama sincronizado exitosamente con las áreas del sistema",
             "success",
@@ -237,7 +239,7 @@
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          
+          console.log("✅ Organigrama guardado correctamente");
           // Actualizar datos locales con la respuesta del servidor
           organigramaData.lastUpdated = result.data.actualizado_en;
           organigramaData.updatedBy = result.data.creado_por;
@@ -438,8 +440,8 @@
         }
       }
     } else if (modalType === "edit" && selectedNode) {
-      
-      
+      console.log(selectedNode, "SELECTED NODE");
+      console.log(formData, "FORM DATA");
       selectedNode.nombre = formData.nombre;
       selectedNode.tipo = formData.tipo;
       selectedNode.descripcion = formData.descripcion;

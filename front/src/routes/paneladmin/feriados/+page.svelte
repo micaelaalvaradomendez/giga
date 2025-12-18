@@ -14,10 +14,12 @@
         feriadosController;
     // Inicializar el controlador
     onMount(async () => {
-        
+        console.log(
+            "🔄 Componente montado, iniciando controlador de feriados...",
+        );
         try {
             await feriadosController.init();
-            
+            console.log("✅ Controlador de feriados inicializado exitosamente");
             
             // OPTIMIZADO: Recargar solo si pasaron más de 5 minutos desde la última actualización
             // en lugar de recargar en cada visibilitychange
@@ -31,12 +33,12 @@
                             
                             // Solo recargar si pasaron más de 5 minutos (300000ms)
                             if (timeDiff > 300000) {
-                                ');
+                                console.log('🔄 Recargando feriados (caché obsoleto)');
                                 invalidateCache('feriados');
                                 feriadosController.init();
                                 localStorage.setItem('lastFeriadosUpdate', Date.now().toString());
                             } else {
-                                , 'segundos)');
+                                console.log('✅ Usando feriados en caché (actualizado hace', Math.round(timeDiff/1000), 'segundos)');
                             }
                         } catch (error) {
                             // Si localStorage no está disponible, recargar directamente

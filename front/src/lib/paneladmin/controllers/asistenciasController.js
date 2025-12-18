@@ -144,6 +144,7 @@ class AsistenciasController {
 					paramsAusentes.area_id = area;
 				}
 
+
 				const [responseAsistencias, responseAusentes] = await Promise.all([
 					asistenciaService.getAsistenciasAdmin(paramsAsistencias),
 					asistenciaService.getAsistenciasAdmin(paramsAusentes)
@@ -152,7 +153,11 @@ class AsistenciasController {
 				const dataAsistencias = responseAsistencias.data;
 				const dataAusentes = responseAusentes.data;
 
-				
+				console.log('📊 Datos cargados:', {
+					asistencias_registradas: dataAsistencias.data?.length || 0,
+					ausentes: dataAusentes.data?.length || 0,
+					primer_ausente: dataAusentes.data?.[0]
+				});
 
 				// Filtrar ausentes que YA tienen asistencia (evitar duplicados visuales)
 				// Esto protege contra latencia del backend o condiciones de carrera
@@ -291,6 +296,7 @@ class AsistenciasController {
 			this.horaEntrada.set(horaEntradaFormatted);
 			this.horaSalida.set(horaSalidaFormatted);
 
+
 		} else {
 			// Si se desactiva el checkbox, limpiar los campos
 			this.horaEntrada.set('');
@@ -306,6 +312,7 @@ class AsistenciasController {
 		this.observacionEdit.subscribe((value) => (observacion = value))();
 		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
 		this.horaEntrada.subscribe((value) => (horaEntrada = value))();
+
 
 		if (!asistencia) {
 			return {
@@ -356,6 +363,8 @@ class AsistenciasController {
 				requestBody.hora_especifica = horaEntrada;
 			}
 
+
+
 			const response = await asistenciaService.marcarAsistencia(requestBody);
 			const data = response.data;
 
@@ -382,7 +391,7 @@ class AsistenciasController {
 					);
 
 					if (asistenciaActualizada) {
-						
+						console.log('🔄 Actualizando asistenciaEditando tras marcar entrada:', asistenciaActualizada);
 						this.asistenciaEditando.set(asistenciaActualizada);
 					}
 				}
@@ -412,7 +421,18 @@ class AsistenciasController {
 		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
 		this.horaSalida.subscribe((value) => (horaSalida = value))();
 
-		
+		console.log('🚪 Intentando marcar salida:', {
+			asistencia_id: asistencia?.id_asistencia,
+			agente: asistencia?.agente_nombre,
+			dni: asistencia?.agente_dni,
+			id_agente: asistencia?.id_agente,
+			fecha: asistencia?.fecha,
+			tiene_entrada: !!asistencia?.hora_entrada,
+			tiene_salida: !!asistencia?.hora_salida,
+			usar_hora: usarHora,
+			hora_salida: horaSalida,
+			asistencia_completa: asistencia
+		});
 
 		if (!asistencia || !asistencia.id_agente) {
 			console.error("❌ Error: No se recibió información del agente en marcarSalida", asistencia);
@@ -471,6 +491,7 @@ class AsistenciasController {
 				requestBody.hora_especifica = horaSalida;
 			}
 
+
 			const response = await asistenciaService.marcarAsistencia(requestBody);
 			const data = response.data;
 
@@ -504,7 +525,15 @@ class AsistenciasController {
 		this.horaEntrada.subscribe((value) => (horaEntrada = value))();
 		this.horaSalida.subscribe((value) => (horaSalida = value))();
 
-		
+		console.log('🔧 Iniciando corrección de asistencia:', {
+			asistencia_id: asistencia?.id_asistencia,
+			tiene_entrada: !!asistencia?.hora_entrada,
+			tiene_salida: !!asistencia?.hora_salida,
+			usarHora,
+			horaEntrada,
+			horaSalida,
+			observacion
+		});
 
 		if (!asistencia || !asistencia.id_agente) {
 			console.error("❌ Error: No se recibió información del agente en corregirAsistencia", asistencia);
@@ -591,7 +620,7 @@ class AsistenciasController {
 							// Intentamos mantener el ID si existe, o confiamos en que marcarSalida use DNI
 							id_asistencia: a.id_asistencia || null
 						}));
-						
+						console.log('🔄 Store actualizado manualmente con entrada:', horaEntrada);
 					}
 				}
 
@@ -627,6 +656,7 @@ class AsistenciasController {
 				};
 			}
 		}
+
 
 		if (!usarHora) {
 			return {
@@ -768,6 +798,7 @@ class AsistenciasController {
 		let asistencia, observacion;
 		this.asistenciaEditando.subscribe((value) => (asistencia = value))();
 		this.observacionEdit.subscribe((value) => (observacion = value))();
+
 
 		if (!asistencia) {
 			return {

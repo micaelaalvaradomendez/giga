@@ -17,7 +17,7 @@
 
 	async function cargarOrganigramaOptimizado() {
 		try {
-			
+			console.log("🔄 Cargando organigrama...");
 			loading = true;
 			
 			// Usar caché global - evita cargas duplicadas
@@ -25,7 +25,7 @@
 			
 			// Si no hay datos en caché, usar fallback
 			if (!data) {
-				
+				console.log("⚠️ No hay datos de organigrama, usando fallback");
 				// Los datos de fallback ya están manejados en dataCache.js
 			}
 		} catch (error) {

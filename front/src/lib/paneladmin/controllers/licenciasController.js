@@ -37,29 +37,29 @@ export const licenciasFiltradas = derived(
         if ($usuario) {
             const usuarioRol = $usuario.roles?.[0]?.nombre || $usuario.rol_nombre || 'Agente';
             const usuarioId = $usuario.id_agente;
-            
+            console.log('🔍 Filtrando licencias para rol:', usuarioRol, 'ID:', usuarioId);
 
             resultado = resultado.filter(licencia => {
                 const puedeVer = puedeVerLicenciaDeRol(licencia.agente_rol, usuarioRol);
                 if (!puedeVer) {
-                    `);
+                    console.log(`🚫 ${usuarioRol} NO puede ver licencia de ${licencia.agente_rol} (${licencia.agente_nombre})`);
                 }
                 return puedeVer;
             });
 
             // FILTRO ADICIONAL: Agente y Agente Avanzado solo ven sus propias licencias
             if (usuarioRol.toLowerCase() === 'agente' || usuarioRol.toLowerCase() === 'agente avanzado') {
-                
+                console.log('🔒 Aplicando filtro restricto: solo licencias del usuario actual');
                 resultado = resultado.filter(licencia => {
                     const esPropia = licencia.id_agente === usuarioId;
                     if (!esPropia) {
-                        
+                        console.log(`🚫 Agente no puede ver licencia de otro agente:`, licencia.id_agente, 'vs', usuarioId);
                     }
                     return esPropia;
                 });
             }
 
-            
+            console.log(`✅ Licencias filtradas: ${resultado.length} de ${$licencias.length} totales`);
         }
 
         if ($filtros.fecha_desde) {
@@ -272,17 +272,17 @@ export async function cargarLicencias(parametros = {}) {
     error.set(null);
 
     try {
-        
+        console.log('📊 Cargando licencias con parámetros:', parametros);
         const response = await asistenciaService.getLicencias(parametros);
-        
+        console.log('📊 Respuesta completa de licencias:', response);
 
         if (response?.data?.success) {
             const licenciasData = response.data.data || [];
-            
+            console.log('📊 Licencias procesadas:', licenciasData.length, licenciasData);
 
             // Debug: mostrar la primera licencia completa
             if (licenciasData.length > 0) {
-                :', JSON.stringify(licenciasData[0], null, 2));
+                console.log('🔍 Primera licencia (estructura completa):', JSON.stringify(licenciasData[0], null, 2));
             }
 
             licencias.set(licenciasData);

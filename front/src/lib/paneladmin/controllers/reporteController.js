@@ -507,6 +507,7 @@ class ReporteController {
 					throw new Error(`Tipo de reporte no soportado: ${tipo}`);
 			}
 
+			console.log(datos, "DATOS REPORTE")
 			this.datosReporte.set(datos);
 			this.vistaPreviaVisible.set(true);
 			this.mensaje.set(`Reporte ${tipo} generado exitosamente`);
@@ -770,6 +771,7 @@ class ReporteController {
 		return fecha.toISOString().split('T')[0];
 	}
 
+
 	_generarNombreArchivo({ tipo, formato, fechaDesde, fechaHasta }) {
 		const extension = formato === 'pdf' ? 'pdf' : 'xlsx';
 
@@ -792,6 +794,7 @@ class ReporteController {
 
 		return `Planilla_${tipo}_${periodo}.${extension}`;
 	}
+
 
 	_descargarBlob(blob, nombreArchivo) {
 		const url = window.URL.createObjectURL(blob);
@@ -855,13 +858,13 @@ class ReporteController {
 				fecha_hasta: filtros.fecha_hasta,
 			});
 
-			);
+			console.log('ðŸ“Š Generando reporte individual con:', params.toString());
 
 			// Usar el nuevo endpoint que implementa la documentaciÃ³n
 			const response = await guardiasService.getReporteIndividual(params.toString());
 			const reporte = response.data;
 
-			
+			console.log('âœ… Reporte individual recibido:', reporte);
 
 			return {
 				agente: reporte.agente,
@@ -903,7 +906,7 @@ class ReporteController {
 	}
 
 	async _generarReporteIndividualSimulado(filtros) {
-		
+		console.log('ðŸ“Š Generando datos simulados para reporte individual');
 
 		try {
 			// Obtener informaciÃ³n del agente
@@ -993,13 +996,13 @@ class ReporteController {
 				fecha_hasta: filtros.fecha_hasta,
 			});
 
-			);
+			console.log('ðŸ“Š Generando reporte general con:', params.toString());
 
 			// Usar el nuevo endpoint que implementa la documentaciÃ³n
 			const response = await guardiasService.getReporteGeneral(params.toString());
 			const reporte = response.data;
 
-			
+			console.log('âœ… Reporte general recibido:', reporte);
 
 			return {
 				area_nombre: reporte.area.nombre,
@@ -1021,7 +1024,7 @@ class ReporteController {
 	}
 
 	async _generarReporteGeneralSimulado(filtros) {
-		
+		console.log('ðŸ“Š Generando datos simulados para reporte general');
 
 		try {
 			// Obtener agentes del Ã¡rea
@@ -1433,7 +1436,7 @@ class ReporteController {
 
 	// MÃ©todo fallback para cuando el endpoint no funcione
 	async _generarReportePlusSimulado(filtros) {
-		
+		console.log('ðŸ“Š Generando datos simulados para reporte plus');
 
 		try {
 			// Obtener agentes del Ã¡rea
@@ -1665,7 +1668,7 @@ class ReporteController {
 				tipo_guardia: filtros.tipo_guardia
 			};
 
-			con body:', body);
+			console.log('ðŸ’¡ Generando reporte individual (POST) con body:', body);
 
 			const response = await guardiasService.getReporteIndividual(body);
 			const reporte = response.data;
@@ -1755,4 +1758,7 @@ class ReporteController {
 // Instancia singleton para el administrador
 export const reporteController = new ReporteController();
 export default reporteController;
+
+
+
 
