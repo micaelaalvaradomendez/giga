@@ -460,7 +460,7 @@
                 <td>{formatearFecha(compensacion.fecha_servicio)}</td>
                 <td>
                   <span class="horas-badge">
-                    {compensacion.horas_extra || "N/A"}h
+                    {compensacion.horas_extra ? Math.floor(compensacion.horas_extra) : "N/A"}h
                   </span>
                   {#if compensacion.hora_fin_real}
                     <br /><small

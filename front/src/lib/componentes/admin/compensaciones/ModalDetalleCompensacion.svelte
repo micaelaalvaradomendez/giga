@@ -127,7 +127,7 @@
           <div class="detalle-item">
             <label for="horasextra">Horas Extra Calculadas:</label>
             <span class="horas-badge">
-              {compensacion.horas_extra || "Pendiente de cálculo"}h
+              {compensacion.horas_extra ? Math.floor(compensacion.horas_extra) : "Pendiente de cálculo"}h
             </span>
           </div>
           {#if compensacion.monto_compensacion}
