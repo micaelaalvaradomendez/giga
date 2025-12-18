@@ -98,7 +98,7 @@ class PlanificadorGuardiasController {
 			else if (Array.isArray(responseData)) areasData = responseData;
 
 			const agente = JSON.parse(localStorage.getItem('user') || '{}');
-			const idAreaAgente = agente?.id ?? 0;
+			const idAreaAgente = agente?.area?.id ?? 0;
 
 			if (idAreaAgente !== 0) {
 				areasData = areasData.filter(a => a.id_area === Number(idAreaAgente));
@@ -658,7 +658,7 @@ class PlanificadorGuardiasController {
 
 			// Redirigir a aprobaciones después de 1.5 segundos
 			setTimeout(() => {
-				goto('/paneladmin/guardias/aprobaciones');
+				goto('/paneladmin/guardias');
 			}, 1500);
 
 		} catch (e) {
@@ -676,8 +676,8 @@ class PlanificadorGuardiasController {
 	 */
 	_obtenerAgenteActual() {
 		try {
-			const user = JSON.parse(localStorage.getItem('agente') || '{}');
-			return user.id_agente || user.id || 1; // Fallback a ID 1 si no hay usuario
+			const user = JSON.parse(localStorage.getItem('user') || '{}');
+			return user.id ?? 1;
 		} catch (e) {
 			console.warn('⚠️ No se pudo obtener usuario de localStorage:', e);
 			return 1; // Fallback

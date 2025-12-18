@@ -1215,21 +1215,20 @@ class CronogramaViewSet(viewsets.ModelViewSet):
             'cronogramas': serializer.data
         })
 
+
     @action(detail=True, methods=['post'])
     def rechazar(self, request, pk=None):
-        """Rechaza un cronograma con motivo"""
+        from auditoria.models import Auditoria
         from .utils import get_agente_rol, puede_aprobar
 
         cronograma = self.get_object()
 
-        # Validar estado actual
         if cronograma.estado not in ['generada', 'pendiente']:
             return Response(
                 {'error': f'Solo se pueden rechazar cronogramas pendientes. Estado actual: {cronograma.estado}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Obtener motivo de rechazo
         motivo = request.data.get('motivo')
         if not motivo:
             return Response(
@@ -1237,7 +1236,6 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Obtener agente que rechaza
         agente_id = request.data.get('agente_id')
         if not agente_id:
             return Response(
@@ -1245,54 +1243,48 @@ class CronogramaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        from personas.models import Agente
         try:
-            from personas.models import Agente
             agente_rechazador = Agente.objects.get(id_agente=agente_id)
         except Agente.DoesNotExist:
-            return Response(
-                {'error': 'Agente no encontrado'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({'error': 'Agente no encontrado'}, status=404)
 
-        # Validar permisos
         rol_rechazador = get_agente_rol(agente_rechazador)
-        if not rol_rechazador:
-            return Response(
-                {'error': 'El agente no tiene un rol asignado'},
-                status=status.HTTP_403_FORBIDDEN
+        if not rol_rechazador or not puede_aprobar(cronograma, rol_rechazador):
+            return Response({'error': 'No tiene permisos para rechazar este cronograma'}, status=403)
+
+
+        with transaction.atomic():
+            estado_previo = cronograma.estado
+
+            cronograma.estado = 'rechazada'
+            cronograma.save(update_fields=['estado'])
+
+            guardias_rechazadas = cronograma.guardia_set.update(
+                estado='rechazada'
             )
 
-        if not puede_aprobar(cronograma, rol_rechazador):
-            return Response(
-                {'error': 'No tiene permisos para rechazar este cronograma'},
-                status=status.HTTP_403_FORBIDDEN
+            Auditoria.objects.create(
+                pk_afectada=cronograma.id_cronograma,
+                nombre_tabla='cronograma',
+                creado_en=timezone.now(),
+                valor_previo={'estado': estado_previo},
+                valor_nuevo={
+                    'estado': 'rechazada',
+                    'motivo': motivo,
+                    'guardias_rechazadas': guardias_rechazadas
+                },
+                accion='RECHAZO',
+                id_agente_id=agente_id
             )
-
-        # Guardar estado previo para auditorÃ­a
-        estado_previo = cronograma.estado
-
-        # Rechazar cronograma
-        cronograma.estado = 'rechazada'
-        cronograma.save()
-
-        # Registrar en auditorÃ­a
-        Auditoria.objects.create(
-            pk_afectada=cronograma.id_cronograma,
-            nombre_tabla='cronograma',
-            creado_en=timezone.now(),
-            valor_previo={'estado': estado_previo},
-            valor_nuevo={'estado': 'rechazada', 'motivo': motivo},
-            accion='RECHAZO',
-            id_agente_id=agente_id
-        )
 
         return Response({
-            'mensaje': 'Cronograma rechazado',
+            'mensaje': 'Cronograma rechazado correctamente',
             'cronograma_id': cronograma.id_cronograma,
+            'guardias_rechazadas': guardias_rechazadas,
             'rechazado_por': f'{agente_rechazador.nombre} {agente_rechazador.apellido}',
             'motivo': motivo
         })
-
 
 class GuardiaViewSet(viewsets.ModelViewSet):
     """ViewSet para guardias con reportes y exportaciÃ³n"""

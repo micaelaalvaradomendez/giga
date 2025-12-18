@@ -135,23 +135,23 @@ def _aplicar_reglas_por_rol(filtros: Dict, rol: str, agente_ctx: Agente) -> Dict
         filtros["agente"] = [agente_ctx.id_agente]
         if filtros.get("area"):
             raise ReporteError("El rol agente no puede filtrar por area")
-        area_scope = [agente_ctx.id_area] if agente_ctx.id_area else []
+        area_scope = [agente_ctx.id_area] if agente_ctx.id_area_id else []
 
     elif rol == "jefatura":
-        if not agente_ctx.id_area:
+        if not agente_ctx.id_area_id:
             raise ReporteError("La jefatura no tiene un area asignada")
-        area_scope = [agente_ctx.id_area]
-        filtros["area"] = [agente_ctx.id_area]
+        area_scope = [agente_ctx.id_area_id]
+        filtros["area"] = [agente_ctx.id_area_id]
         if filtros.get("agente"):
             for agente_id in filtros["agente"]:
                 agente_filtro = _obtener_agente(agente_id)
-                if agente_filtro.id_area != agente_ctx.id_area:
+                if agente_filtro.id_area_id != agente_ctx.id_area_id:
                     raise ReporteError("El agente indicado no pertenece a su area")
 
     elif rol == "director":
-        if not agente_ctx.id_area:
+        if not agente_ctx.id_area_id:
             raise ReporteError("El director no tiene un area asignada")
-        areas_permitidas = obtener_area_y_subareas(agente_ctx.id_area)
+        areas_permitidas = obtener_area_y_subareas(agente_ctx.id_area_id)
         area_ids_permitidas = [a.id_area for a in areas_permitidas]
 
         if filtros.get("area"):
@@ -168,7 +168,7 @@ def _aplicar_reglas_por_rol(filtros: Dict, rol: str, agente_ctx: Agente) -> Dict
             if filtros.get("agente"):
                 for agente_id in filtros["agente"]:
                     agente_filtro = _obtener_agente(agente_id)
-                    if agente_filtro.id_area not in area_ids_permitidas:
+                    if agente_filtro.id_area_id not in area_ids_permitidas:
                         raise ReporteError("Algún agente indicado no pertenece a su jerarquía")
                 # opcional: no forzar area si no viene; se usa scope
 
@@ -420,8 +420,9 @@ def _query_guardias(filtros: Dict, permisos: Dict):
     if filtros.get("agente"):
         qs = qs.filter(id_agente_id__in=filtros["agente"])
 
-    if permisos.get("area_scope") is not None:
-        qs = qs.filter(id_agente__id_area_id__in=permisos["area_scope"])
+    area_scope = permisos.get("area_scope")
+    if area_scope:
+        qs = qs.filter(id_agente__id_area_id__in=area_scope)
     elif filtros.get("area"):
         qs = qs.filter(id_agente__id_area_id__in=filtros["area"])
 
@@ -448,13 +449,33 @@ def _buscar_asistencia(agente_id: int, fecha):
         return None
 
 
-def _filtros_serializables(filtros: Dict):
-    fecha_desde = filtros.get("fecha_desde")
-    fecha_hasta = filtros.get("fecha_hasta")
-    return {
-        "agente": filtros.get("agente"),
-        "area": filtros.get("area"),
-        "fecha_desde": fecha_desde.strftime(DATE_FMT) if fecha_desde else None,
-        "fecha_hasta": fecha_hasta.strftime(DATE_FMT) if fecha_hasta else None,
-        "tipo_guardia": filtros.get("tipo_guardia"),
-    }
+def _filtros_serializables(f: Dict) -> Dict:
+    out = dict(f)
+
+    if out.get("fecha_desde") and hasattr(out["fecha_desde"], "strftime"):
+        out["fecha_desde"] = out["fecha_desde"].strftime("%Y-%m-%d")
+    if out.get("fecha_hasta") and hasattr(out["fecha_hasta"], "strftime"):
+        out["fecha_hasta"] = out["fecha_hasta"].strftime("%Y-%m-%d")
+
+    def _to_ids(v):
+        if v is None:
+            return None
+        if not isinstance(v, list):
+            v = [v]
+        ids = []
+        for x in v:
+            if hasattr(x, "id_area"):     
+                ids.append(x.id_area)
+            elif hasattr(x, "id_agente"):
+                ids.append(x.id_agente)
+            else:
+                ids.append(int(x))
+        return ids
+
+    out["area"] = _to_ids(out.get("area"))
+    out["agente"] = _to_ids(out.get("agente"))
+
+    out["incluir_feriados"] = bool(out.get("incluir_feriados"))
+    out["incluir_licencias"] = bool(out.get("incluir_licencias"))
+
+    return out
