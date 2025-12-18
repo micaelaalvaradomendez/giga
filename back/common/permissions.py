@@ -67,26 +67,27 @@ def obtener_rol_agente(agente):
 
 def obtener_area_y_subareas(area):
     """
-    Obtiene un área y todas sus sub-áreas recursivamente
-    
-    Args:
-        area: Instancia de Area
-        
-    Returns:
-        list: Lista de áreas (incluyendo la original y todas sus descendientes)
+    Obtiene un área y todas sus sub-áreas recursivamente.
+    Acepta instancia Area o id_area (int).
     """
     if not area:
         return []
-    
+
     from personas.models import Area
+    if isinstance(area, (int, str)):
+        try:
+            area = Area.objects.get(id_area=int(area), activo=True)
+        except Area.DoesNotExist:
+            return []
+
     areas = [area]
-    
-    # Buscar sub-áreas (donde id_area_padre = area)
+
     subareas = Area.objects.filter(id_area_padre=area)
     for subarea in subareas:
         areas.extend(obtener_area_y_subareas(subarea))
-    
+
     return areas
+
 
 
 def obtener_areas_jerarquia(agente):
