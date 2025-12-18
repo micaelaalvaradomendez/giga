@@ -315,7 +315,10 @@
 </svelte:head>
 <div class="compensaciones-container">
   <div class="header-compensaciones">
-    <div class="titulo-compensaciones">⏱️ Compensaciones por Horas Extra</div>
+    <div class="titulo-wrapper">
+      <h1>Compensaciones por Horas Extra</h1>
+      <p>Gestioná las compensaciones y solicitudes</p>
+    </div>
     <button class="btn-nueva-compensacion"> ➕ Nueva Compensación </button>
   </div>
   <!-- Errores -->
@@ -552,13 +555,17 @@
 {/if}
 <style>
 .compensaciones-container {
-  max-width: 1400px;
+  max-width: 1600px;
+  width: 100%;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 20px;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 .lista-compensaciones {
-  max-width: 1400px;
+  max-width: 1600px;
+  width: 100%;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 0 20px;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -568,49 +575,41 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
-.titulo-compensaciones {
-  position: relative;
-  flex: 1;
-  text-align: center;
-  background: linear-gradient(135deg, #5a84e8, #5c8df0);
-  color: #fff;
-  padding: 18px 22px;
-  border-radius: 24px;
-  font-size: 1.1rem;
+.titulo-wrapper h1 {
+  font-size: 1.75rem;
   font-weight: 800;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
-    0 16px 50px rgba(30, 64, 175, 0.25);
+  color: #1e3a8a;
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.025em;
+}
+.titulo-wrapper p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
 }
 .btn-nueva-compensacion {
   background: linear-gradient(135deg, #f5a43a, #f0932b);
   color: #fff;
   border: none;
-  border-radius: 14px;
-  padding: 14px 18px;
-  font-size: 0.95rem;
-  font-weight: 800;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 10px 25px rgba(240, 147, 43, 0.25);
+  box-shadow: 0 4px 6px -1px rgba(240, 147, 43, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .btn-nueva-compensacion:hover {
   transform: translateY(-1px);
   opacity: 0.95;
+  box-shadow: 0 6px 8px -1px rgba(240, 147, 43, 0.3);
 }
-@media (max-width: 768px) {
-  .header-compensaciones {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-  }
-  .btn-nueva-compensacion {
-    width: 100%;
-    text-align: center;
-  }
-}
+
 .alert {
   padding: 14px 18px;
   border-radius: 10px;
@@ -638,6 +637,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%; /* Ensure full width in flex container */
 }
 .filtro-group label {
   font-size: 0.9rem;
@@ -652,7 +652,7 @@
   border: 1px solid #dee2e6;
   background: #fff;
   width: 100%;
-  box-sizing: border-box;
+  box-sizing: border-box; /* Fix input overflow */
 }
 .filtro-group select:focus {
   outline: none;
@@ -668,6 +668,8 @@
   font-size: 0.9rem;
   font-weight: 800;
   white-space: nowrap;
+  width: 100%; /* Default full width on mobile or grid */
+  box-sizing: border-box;
 }
 .btn-limpiar:first-of-type {
   background: #e9ecef;
@@ -680,29 +682,38 @@
 .btn-limpiar:hover {
   opacity: 0.92;
 }
-@media (min-width: 900px) {
+
+/* Mobile & Tablet Styles */
+@media (max-width: 900px) {
+  .header-compensaciones {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .btn-nueva-compensacion {
+    width: 100%;
+    text-align: center;
+  }
+  .filtro-row {
+    grid-template-columns: 1fr; /* Stack vertically */
+  }
+   /* Reset specific grid placements for mobile */
+  .filtro-group:first-child,
+  .btn-limpiar {
+     grid-column: auto; 
+     justify-self: stretch;
+     width: 100%;
+  }
+}
+
+/* Desktop Styles */
+@media (min-width: 901px) {
   .filtro-row {
     grid-template-columns: 1.6fr 1.2fr 1fr auto auto;
     align-items: end;
   }
-}
-@media (max-width: 900px) and (min-width: 601px) {
-  .filtro-row {
-    grid-template-columns: 1fr 1fr;
-  }
-  .filtro-group:first-child {
-    grid-column: 1 / -1;
-  }
   .btn-limpiar {
-    grid-column: 1 / -1;
-    justify-self: center;
-    width: min(320px, 100%);
-  }
-}
-@media (max-width: 600px) {
-  .btn-limpiar {
-    width: 100%;
-    text-align: center;
+    width: auto; /* Revert to auto width on desktop */
   }
 }
 .lista-container {
@@ -718,22 +729,20 @@
   font-size: 22px;
   font-weight: 800;
   display: inline-block;
+  width: fit-content;
+  max-width: 100%;
   padding-bottom: 10px;
   position: relative;
 }
 .lista-header h2::after {
   content: "";
   position: absolute;
-  left: -100%;
+  left: 0;
   bottom: 0;
   width: 100%;
   height: 3px;
-  background: linear-gradient(90deg, transparent, #000, transparent);
-  animation: moveLine 2s linear infinite;
-}
-@keyframes moveLine {
-  0% { left: -100%; }
-  100% { left: 100%; }
+  background:#1e293b; 
+  border-radius: 2px;
 }
 .table-container {
   overflow-x: auto;
