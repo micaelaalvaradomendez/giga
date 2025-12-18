@@ -43,7 +43,6 @@
       token = localStorage.getItem("token");
       await cargarGuardias();
     } catch (err) {
-      console.error("Error verificando sesión:", err);
       goto("/");
     }
   });
@@ -75,14 +74,7 @@
       guardiasRealizadas = guardiasAprobadas
         .filter((g) => new Date(g.fecha) < hoy)
         .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-      console.log("📊 Guardias cargadas:", {
-        porHacer: guardiasPorHacer.length,
-        realizadas: guardiasRealizadas.length,
-        fechasporHacer: guardiasPorHacer.map((g) => g.fecha),
-        fechasRealizadas: guardiasRealizadas.map((g) => g.fecha),
-      });
     } catch (err) {
-      console.error("Error cargando guardias:", err);
       error = err.message || "Error al cargar guardias";
     } finally {
       cargando = false;
@@ -156,7 +148,6 @@
       await cargarGuardias();
       cerrarModalNota();
     } catch (err) {
-      console.error("Error guardando nota:", err);
       await showAlert(
         "Error al guardar la nota: " + (err.message || "Error desconocido"),
         "error",
@@ -186,7 +177,6 @@
       await cargarGuardias();
       cerrarModalNota();
     } catch (err) {
-      console.error("Error eliminando nota:", err);
       await showAlert(
         "Error al eliminar la nota: " + (err.message || "Error desconocido"),
         "error",
@@ -198,74 +188,35 @@
   }
   // Función para filtrar guardias por fecha
   function filtrarPorFecha(guardias) {
-    console.log("🔍 Filtrando guardias:", {
-      total: guardias.length,
-      tipoFiltro,
-      añoSeleccionado,
-      mesSeleccionado,
-      fechaSeleccionada,
-    });
     if (tipoFiltro === "todos") {
-      console.log(
-        '✅ Filtro "todos" - devolviendo todas las guardias:',
-        guardias.length,
-      );
       return guardias;
     }
     const resultado = guardias.filter((guardia) => {
       const fechaGuardia = new Date(guardia.fecha);
-      console.log(
-        "📅 Evaluando guardia:",
-        guardia.fecha,
-        "-> Objeto Date:",
-        fechaGuardia,
-      );
       switch (tipoFiltro) {
         case "año":
           const añoGuardia = fechaGuardia.getFullYear();
           const coincideAño = añoGuardia === añoSeleccionado;
-          console.log(
-            `📊 Año guardia: ${añoGuardia} === ${añoSeleccionado}? ${coincideAño}`,
-          );
           return coincideAño;
         case "mes":
           const añoGuardiaM = fechaGuardia.getFullYear();
           const mesGuardia = fechaGuardia.getMonth() + 1;
           const coincideMes =
             añoGuardiaM === añoSeleccionado && mesGuardia === mesSeleccionado;
-          console.log(
-            `📊 Mes guardia: ${añoGuardiaM}/${mesGuardia} === ${añoSeleccionado}/${mesSeleccionado}? ${coincideMes}`,
-          );
           return coincideMes;
         case "dia":
           const fechaSeleccionadaObj = new Date(fechaSeleccionada);
           const coincideDia =
             fechaGuardia.toDateString() === fechaSeleccionadaObj.toDateString();
-          console.log(
-            `📊 Día guardia: ${fechaGuardia.toDateString()} === ${fechaSeleccionadaObj.toDateString()}? ${coincideDia}`,
-          );
           return coincideDia;
         default:
           return true;
       }
     });
-    console.log(
-      "🎯 Resultado filtro:",
-      resultado.length,
-      "guardias de",
-      guardias.length,
-      "totales",
-    );
     return resultado;
   }
   // Guardias filtradas reactivas
   $: {
-    console.log("🔄 Variables de filtro cambiaron:", {
-      tipoFiltro,
-      añoSeleccionado,
-      mesSeleccionado,
-      fechaSeleccionada,
-    });
     guardiasPorHacerFiltradas = filtrarPorFecha(guardiasPorHacer);
     guardiasRealizadasFiltradas = filtrarPorFecha(guardiasRealizadas);
   }

@@ -13,7 +13,7 @@ class ReporteController {
 		if (!browser) {
 			return;
 		}
-		
+
 		// ========================================
 		// STORES PRINCIPALES
 		// ========================================
@@ -124,7 +124,6 @@ class ReporteController {
 
 					return { valido: true, mensaje: '' };
 				} catch (error) {
-					console.error('Error validando fechas:', error);
 					return { valido: false, mensaje: 'Error en validaciÃ³n de fechas' };
 				}
 			}
@@ -202,11 +201,9 @@ class ReporteController {
 							return fechasValidas; // Cambio: requiere fechas vÃ¡lidas tambiÃ©n
 
 						default:
-							console.warn('Tipo de reporte desconocido:', $tipo);
 							return false;
 					}
 				} catch (error) {
-					console.error('Error en validaciÃ³n de filtros:', error);
 					return false;
 				}
 			}
@@ -356,7 +353,6 @@ class ReporteController {
 					filtrosDisponibles.areas[0].id : null
 			}));
 		} catch (error) {
-			console.error('Error configurando filtros por defecto:', error);
 			// Continuar sin configuraciÃ³n automÃ¡tica
 		}
 	}
@@ -506,8 +502,6 @@ class ReporteController {
 				default:
 					throw new Error(`Tipo de reporte no soportado: ${tipo}`);
 			}
-
-			console.log(datos, "DATOS REPORTE")
 			this.datosReporte.set(datos);
 			this.vistaPreviaVisible.set(true);
 			this.mensaje.set(`Reporte ${tipo} generado exitosamente`);
@@ -518,7 +512,6 @@ class ReporteController {
 			return true;
 
 		} catch (error) {
-			console.error(`Error al generar reporte ${tipo}:`, error);
 			this.error.set(error.message || `Error al generar reporte ${tipo}`);
 			return false;
 		} finally {
@@ -569,7 +562,6 @@ class ReporteController {
 					resultado = await exportService.exportarExcel(tipo, datos, filtrosEnriquecidos);
 				}
 			} catch (exportError) {
-				console.warn('âš ï¸ Error en exportaciÃ³n, usando fallback:', exportError);
 				resultado = await this._exportarFallback(formato, tipo, datos, filtrosEnriquecidos);
 			}
 
@@ -581,7 +573,6 @@ class ReporteController {
 			return true;
 
 		} catch (error) {
-			console.error(`Error al exportar como ${formato}:`, error);
 			this.error.set(`Error al exportar el reporte: ${error.message}`);
 			return false;
 		} finally {
@@ -627,7 +618,6 @@ class ReporteController {
 			// Otros tipos siguen usando el exportador cliente
 			return await exportService.exportarPDF(tipo, datos, filtros);
 		} catch (error) {
-			console.warn('⚠️ Exportación PDF desde backend falló, usando cliente:', error);
 			// Fallback a exportación desde cliente
 			return await exportService.exportarPDF(tipo, datos, filtros);
 		}
@@ -761,9 +751,9 @@ class ReporteController {
 	_getFechaDefecto(tipo) {
 		// Para demo, usar octubre 2025 donde hay datos completos de guardias (75% presentismo)
 		if (tipo === 'inicio') {
-			return this._formatearFecha(new Date()); 
+			return this._formatearFecha(new Date());
 		} else {
-			return this._formatearFecha(new Date()); 
+			return this._formatearFecha(new Date());
 		}
 	}
 
@@ -858,14 +848,9 @@ class ReporteController {
 				fecha_hasta: filtros.fecha_hasta,
 			});
 
-			console.log('ðŸ“Š Generando reporte individual con:', params.toString());
-
 			// Usar el nuevo endpoint que implementa la documentaciÃ³n
 			const response = await guardiasService.getReporteIndividual(params.toString());
 			const reporte = response.data;
-
-			console.log('âœ… Reporte individual recibido:', reporte);
-
 			return {
 				agente: reporte.agente,
 				periodo: reporte.periodo,
@@ -899,15 +884,11 @@ class ReporteController {
 				}
 			};
 		} catch (error) {
-			console.error('Error generando reporte individual:', error);
-			console.warn('âš ï¸ Endpoint individual no disponible, usando datos simulados');
 			return this._generarReporteIndividualSimulado(filtros);
 		}
 	}
 
 	async _generarReporteIndividualSimulado(filtros) {
-		console.log('ðŸ“Š Generando datos simulados para reporte individual');
-
 		try {
 			// Obtener informaciÃ³n del agente
 			const agentesResponse = await personasService.getAgentes();
@@ -982,7 +963,6 @@ class ReporteController {
 				_esSimulado: true
 			};
 		} catch (error) {
-			console.error('Error en simulaciÃ³n individual:', error);
 			throw new Error('No se pudo generar el reporte individual (simulado)');
 		}
 	}
@@ -996,13 +976,9 @@ class ReporteController {
 				fecha_hasta: filtros.fecha_hasta,
 			});
 
-			console.log('ðŸ“Š Generando reporte general con:', params.toString());
-
 			// Usar el nuevo endpoint que implementa la documentaciÃ³n
 			const response = await guardiasService.getReporteGeneral(params.toString());
 			const reporte = response.data;
-
-			console.log('âœ… Reporte general recibido:', reporte);
 
 			return {
 				area_nombre: reporte.area.nombre,
@@ -1017,14 +993,11 @@ class ReporteController {
 				totales: reporte.totales
 			};
 		} catch (error) {
-			console.error('Error generando reporte general:', error);
-			console.warn('âš ï¸ Endpoint general no disponible, usando datos simulados');
 			return this._generarReporteGeneralSimulado(filtros);
 		}
 	}
 
 	async _generarReporteGeneralSimulado(filtros) {
-		console.log('ðŸ“Š Generando datos simulados para reporte general');
 
 		try {
 			// Obtener agentes del Ã¡rea
@@ -1094,7 +1067,6 @@ class ReporteController {
 				_esSimulado: true
 			};
 		} catch (error) {
-			console.error('Error en simulaciÃ³n general:', error);
 			throw new Error('No se pudo generar el reporte general (simulado)');
 		}
 	}
@@ -1216,7 +1188,6 @@ class ReporteController {
 				}
 			};
 		} catch (error) {
-			console.error('Error generando reporte horas trabajadas:', error);
 			throw new Error('No se pudo generar el reporte de horas trabajadas');
 		}
 	}
@@ -1303,7 +1274,6 @@ class ReporteController {
 				}
 			};
 		} catch (error) {
-			console.error('Error generando parte diario:', error);
 			throw new Error('No se pudo generar el parte diario');
 		}
 	}
@@ -1353,7 +1323,6 @@ class ReporteController {
 				}
 			};
 		} catch (error) {
-			console.error('Error generando resumen de licencias:', error);
 			throw new Error('No se pudo generar el resumen de licencias');
 		}
 	}
@@ -1380,7 +1349,6 @@ class ReporteController {
 			clearTimeout(timeoutId);
 
 			if (!response.ok) {
-				console.warn('âš ï¸ Endpoint plus no disponible, usando datos simulados');
 				return this._generarReportePlusSimulado(filtros);
 			}
 
@@ -1424,19 +1392,12 @@ class ReporteController {
 				}
 			};
 		} catch (error) {
-			console.error('Error generando cÃ¡lculo de plus:', error);
-			if (error.name === 'AbortError') {
-				console.warn('âš ï¸ Timeout en endpoint plus, usando datos simulados');
-			} else {
-				console.warn('âš ï¸ Error en endpoint plus, usando datos simulados');
-			}
 			return this._generarReportePlusSimulado(filtros);
 		}
 	}
 
 	// MÃ©todo fallback para cuando el endpoint no funcione
 	async _generarReportePlusSimulado(filtros) {
-		console.log('ðŸ“Š Generando datos simulados para reporte plus');
 
 		try {
 			// Obtener agentes del Ã¡rea
@@ -1494,7 +1455,6 @@ class ReporteController {
 				_esSimulado: true
 			};
 		} catch (error) {
-			console.error('Error en simulaciÃ³n plus:', error);
 			throw new Error('No se pudo generar el reporte de plus (simulado)');
 		}
 	}
@@ -1574,7 +1534,6 @@ class ReporteController {
 				}
 			};
 		} catch (error) {
-			console.error('Error generando reporte de incumplimiento:', error);
 			throw new Error('No se pudo generar el reporte de incumplimiento normativo');
 		}
 	}
@@ -1622,7 +1581,6 @@ class ReporteController {
 
 			return response.data; // Axios devuelve el blob en response.data
 		} catch (error) {
-			console.error('Error exportando reporte:', error);
 			// Fallback temporal mientras se implementan los endpoints
 			const contenido = `Reporte ${tipo} en formato ${formato}\nGenerado: ${new Date().toLocaleString()}\n\nEste es un reporte temporal.\nPrÃ³ximamente se implementarÃ¡ la exportaciÃ³n completa desde el backend.`;
 			return new Blob([contenido], {
@@ -1668,8 +1626,6 @@ class ReporteController {
 				tipo_guardia: filtros.tipo_guardia
 			};
 
-			console.log('ðŸ’¡ Generando reporte individual (POST) con body:', body);
-
 			const response = await guardiasService.getReporteIndividual(body);
 			const reporte = response.data;
 
@@ -1706,8 +1662,6 @@ class ReporteController {
 				}
 			};
 		} catch (error) {
-			console.error('Error generando reporte individual (POST):', error);
-			console.warn('âš ï¸ Endpoint individual no disponible, usando datos simulados');
 			return this._generarReporteIndividualSimulado(filtros);
 		}
 	}
@@ -1748,8 +1702,6 @@ class ReporteController {
 				totales: reporte.totales
 			};
 		} catch (error) {
-			console.error('Error generando reporte general (POST):', error);
-			console.warn('âš ï¸ Endpoint general no disponible, usando datos simulados');
 			return this._generarReporteGeneralSimulado(filtros);
 		}
 	}
@@ -1758,7 +1710,6 @@ class ReporteController {
 // Instancia singleton para el administrador
 export const reporteController = new ReporteController();
 export default reporteController;
-
 
 
 

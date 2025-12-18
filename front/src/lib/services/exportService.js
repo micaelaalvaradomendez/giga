@@ -18,12 +18,12 @@ const apiClient = createApiClient();
  */
 export function formatearFecha(fecha) {
     if (!fecha) return '';
-    
+
     const d = new Date(fecha);
     const dia = String(d.getDate()).padStart(2, '0');
     const mes = String(d.getMonth() + 1).padStart(2, '0');
     const año = d.getFullYear();
-    
+
     return `${dia}/${mes}/${año}`;
 }
 
@@ -32,14 +32,14 @@ export function formatearFecha(fecha) {
  */
 export function formatearFechaHora(fecha = new Date()) {
     const d = new Date(fecha);
-    
+
     const dia = String(d.getDate()).padStart(2, '0');
     const mes = String(d.getMonth() + 1).padStart(2, '0');
     const año = d.getFullYear();
-    
+
     const horas = String(d.getHours()).padStart(2, '0');
     const minutos = String(d.getMinutes()).padStart(2, '0');
-    
+
     return `${dia}/${mes}/${año} ${horas}:${minutos} hs`;
 }
 
@@ -49,7 +49,7 @@ export function formatearFechaHora(fecha = new Date()) {
 export function generarNombreArchivo(tipoReporte, extension, filtros) {
     const fechaActual = new Date();
     const timestamp = fechaActual.toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '_');
-    
+
     // Mapear tipos de reportes a nombres descriptivos
     const nombresReportes = {
         individual: 'reporte_individual',
@@ -60,9 +60,9 @@ export function generarNombreArchivo(tipoReporte, extension, filtros) {
         calculo_plus: 'calculo_plus_guardias',
         incumplimiento_normativo: 'incumplimiento_normativo'
     };
-    
+
     const nombreBase = nombresReportes[tipoReporte] || 'reporte';
-    
+
     // Agregar período si existe
     let sufijo = '';
     if (filtros.fecha_desde && filtros.fecha_hasta) {
@@ -70,7 +70,7 @@ export function generarNombreArchivo(tipoReporte, extension, filtros) {
         const hasta = filtros.fecha_hasta.replace(/-/g, '');
         sufijo = `_${desde}_${hasta}`;
     }
-    
+
     return `GIGA_${nombreBase}${sufijo}_${timestamp}.${extension}`;
 }
 
@@ -79,21 +79,21 @@ export function generarNombreArchivo(tipoReporte, extension, filtros) {
  */
 export function formatearFiltrosAplicados(filtros, tipoReporte) {
     const descripcionFiltros = [];
-    
+
     // Período
     if (filtros.fecha_desde && filtros.fecha_hasta) {
         const desde = formatearFecha(filtros.fecha_desde);
         const hasta = formatearFecha(filtros.fecha_hasta);
         descripcionFiltros.push(`Período: ${desde} al ${hasta}`);
     }
-    
+
     // Área
     if (filtros.area_nombre) {
         descripcionFiltros.push(`Área: ${filtros.area_nombre}`);
     } else if (tipoReporte !== 'individual') {
         descripcionFiltros.push('Área: Todas las áreas');
     }
-    
+
     // Agente (solo para reporte individual)
     if (tipoReporte === 'individual' && filtros.agente_nombre) {
         descripcionFiltros.push(`Agente: ${filtros.agente_nombre}`);
@@ -101,12 +101,12 @@ export function formatearFiltrosAplicados(filtros, tipoReporte) {
             descripcionFiltros.push(`Legajo: ${filtros.agente_legajo}`);
         }
     }
-    
+
     // Tipo de guardia
     if (filtros.tipo_guardia) {
         descripcionFiltros.push(`Tipo de guardia: ${filtros.tipo_guardia}`);
     }
-    
+
     // Opciones adicionales
     const opciones = [];
     if (filtros.incluir_licencias) opciones.push('Licencias');
@@ -114,7 +114,7 @@ export function formatearFiltrosAplicados(filtros, tipoReporte) {
     if (opciones.length > 0) {
         descripcionFiltros.push(`Incluye: ${opciones.join(', ')}`);
     }
-    
+
     return descripcionFiltros.join(' • ');
 }
 
@@ -215,7 +215,7 @@ export async function exportarPDF(tipoReporte, datosReporte, filtros) {
         if (!browser) {
             throw new Error('La exportación PDF solo está disponible en el navegador');
         }
-        
+
         // Preparar datos para envío al backend (flatten, sin anidar filtros)
         const payload = {
             tipo_reporte: tipoReporte,
@@ -236,34 +236,33 @@ export async function exportarPDF(tipoReporte, datosReporte, filtros) {
                 filtros_aplicados: formatearFiltrosAplicados(filtros, tipoReporte)
             }
         };
-        
+
         // Llamar al endpoint de generación de PDF
         const response = await apiClient.post('/guardias/guardias/exportar_pdf/', payload, {
             responseType: 'blob'
         });
-        
+
         // Crear y descargar archivo
         const blob = new Blob([response.data], { type: 'application/pdf' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
-        
+
         link.href = url;
         link.download = generarNombreArchivo(tipoReporte, 'pdf', filtros);
         link.style.display = 'none';
-        
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         window.URL.revokeObjectURL(url);
-        
-        console.log('✅ PDF exportado exitosamente');
+
         return {
             exito: true,
             archivo: link.download,
             mensaje: `PDF generado: ${link.download}`
         };
-        
+
     } catch (error) {
         throw new Error(`Error al generar PDF: ${error.message}`);
     }
@@ -274,12 +273,10 @@ export async function exportarPDF(tipoReporte, datosReporte, filtros) {
  */
 export async function exportarCSV(tipoReporte, datosReporte, filtros, formato = 'csv') {
     try {
-        console.log('🔄 Iniciando exportación CSV/Excel...', { tipoReporte, formato, filtros });
-        
         if (!browser) {
             throw new Error('La exportación CSV/Excel solo está disponible en el navegador');
         }
-        
+
         const payload = {
             tipo_reporte: tipoReporte,
             filtros: filtros,
@@ -290,39 +287,37 @@ export async function exportarCSV(tipoReporte, datosReporte, filtros, formato = 
                 separador: formato === 'csv' ? ',' : null
             }
         };
-        
+
         // Llamar al endpoint de generación de CSV/Excel
         const endpoint = formato === 'xlsx' ? '/guardias/guardias/exportar_excel/' : '/guardias/guardias/exportar_csv/';
         const mimeType = formato === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv';
-        
+
         const response = await apiClient.post(endpoint, payload, {
             responseType: 'blob'
         });
-        
+
         // Crear y descargar archivo
         const blob = new Blob([response.data], { type: mimeType });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
-        
+
         link.href = url;
         link.download = generarNombreArchivo(tipoReporte, formato, filtros);
         link.style.display = 'none';
-        
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         window.URL.revokeObjectURL(url);
-        
-        console.log(`✅ ${formato.toUpperCase()} exportado exitosamente`);
+
         return {
             exito: true,
             archivo: link.download,
             mensaje: `${formato.toUpperCase()} generado: ${link.download}`
         };
-        
+
     } catch (error) {
-        console.error(`❌ Error al exportar ${formato.toUpperCase()}:`, error);
         throw new Error(`Error al generar ${formato.toUpperCase()}: ${error.message}`);
     }
 }
@@ -345,11 +340,11 @@ export function validarDatosExportacion(tipoReporte, datosReporte) {
     if (!tipoReporte) {
         throw new Error('Tipo de reporte es requerido');
     }
-    
+
     if (!datosReporte) {
         throw new Error('No hay datos para exportar');
     }
-    
+
     // Validaciones específicas por tipo
     switch (tipoReporte) {
         case 'individual':
@@ -357,20 +352,20 @@ export function validarDatosExportacion(tipoReporte, datosReporte) {
                 throw new Error('Datos de agente requeridos para reporte individual');
             }
             break;
-            
+
         case 'general':
             if (!datosReporte.agentes || datosReporte.agentes.length === 0) {
                 throw new Error('No hay agentes para exportar en reporte general');
             }
             break;
-            
+
         default:
             // Validación genérica
             if (!datosReporte.periodo) {
                 throw new Error('Período de reporte es requerido');
             }
     }
-    
+
     return true;
 }
 
@@ -387,7 +382,7 @@ export function obtenerConfiguracionReporte(tipoReporte) {
 export function formatearDatosParaExportacion(tipoReporte, datosReporte) {
     // Esta función prepara los datos en el formato específico que necesita cada reporte
     // Se implementará según las necesidades específicas de cada tipo de reporte
-    
+
     return {
         tipo: tipoReporte,
         datos_originales: datosReporte,
