@@ -494,6 +494,50 @@ body {
     color: var(--accent-color);
 }
 
+/* --- LIGHTBOX PARA IMÁGENES --- */
+.image-lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 3000;
+    cursor: zoom-out;
+}
+
+.image-lightbox img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+.image-lightbox .close-img {
+    position: absolute;
+    top: 18px;
+    right: 26px;
+    font-size: 2.6rem;
+    color: white;
+    cursor: pointer;
+    z-index: 3010;
+}
+
+/* Cursor y pequeño efecto para imágenes dentro del modal expandido */
+.expanded-content img,
+.tabs-body img {
+    cursor: zoom-in;
+    border: 2px solid rgba(255,255,255,0.03);
+    transition: transform 0.25s ease;
+}
+.expanded-content img:hover,
+.tabs-body img:hover {
+    transform: scale(1.02);
+}
+
 /* Instrucciones Footer */
 .footer-nav {
     position: fixed;

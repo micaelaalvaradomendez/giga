@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: presentacion_web
+    ports:
+      - "8000:80" # Mapea el puerto 80 del contenedor al 8000 del host
+    restart: unless-stopped
+    # No volumes necesarios; sirve los archivos que están en el contexto de build

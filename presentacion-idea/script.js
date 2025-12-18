@@ -1,262 +1,6 @@
-// ================= CONFIGURACIÓN DE DATOS =================
-// Datos embebidos para funcionamiento independiente (sin servidor)
-const slides = [
-    {
-        id: 4,
-        title: "Metodología",
-        icon: "📋",
-        content: `
-            <p>Adoptamos un enfoque Híbrido:</p>
-            <ul>
-                <li><strong>Fase 1 (Cascada):</strong> Análisis y Diseño estricto (Agosto-Septiembre).</li>
-                <li><strong>Fase 2 (Ágil/Scrum):</strong> Construcción iterativa e incremental.</li>
-            </ul>
-            <p>Organización mediante Tablero Kanban (Trello) y Git Flow.</p>
-        `
-    },
-    {
-        id: 5,
-        title: "Sprints",
-        icon: "🏃‍♂️",
-        content: `
-            <p>Evolución del desarrollo en 4 etapas:</p>
-            <ul>
-                <li><strong>Sprint 1:</strong> Cimientos, Docker y Autenticación.</li>
-                <li><strong>Sprint 2:</strong> Núcleo (Agentes), refactorización a "Database First".</li>
-                <li><strong>Sprint 3:</strong> Lógica de Negocio (Guardias, Licencias) y Compensaciones.</li>
-                <li><strong>Sprint 4:</strong> Seguridad (RBAC), Anti-Fraude y Despliegue Final.</li>
-            </ul>
-        `
-    },
-    {
-        id: 6,
-        title: "Tecnología",
-        icon: "💻",
-        tabs: [
-            {
-                id: "backend",
-                title: "Backend",
-                icon: "🐍",
-                content: `
-                    <p>Django REST Framework con PostgreSQL</p>
-                    <ul>
-                        <li>API RESTful</li>
-                        <li>Autenticación JWT</li>
-                        <li>ORM Database First</li>
-                    </ul>
-                `
-            },
-            {
-                id: "frontend",
-                title: "Frontend",
-                icon: "⚡",
-                content: `
-                    <p>SvelteKit con TypeScript</p>
-                    <ul>
-                        <li>SSR/SPA Híbrido</li>
-                        <li>Reactivo</li>
-                        <li>Optimizado</li>
-                    </ul>
-                `
-            },
-            {
-                id: "infraestructura",
-                title: "Infraestructura",
-                icon: "🐳",
-                content: `
-                    <p>Docker + Railway</p>
-                    <ul>
-                        <li>Microservicios</li>
-                        <li>CI/CD Automático</li>
-                        <li>NGINX Gateway</li>
-                    </ul>
-                `
-            }
-        ]
-    },
-    {
-        id: 7,
-        title: "Inteligencia Artificial",
-        icon: "🧠",
-        content: `
-            <p>Integración de Chatbot para consultas del Convenio Colectivo.</p>
-            <ul>
-                <li><strong>Motor:</strong> n8n (Orquestador de flujos).</li>
-                <li><strong>Almacenamiento:</strong> MinIO (Object Storage) para los PDFs.</li>
-                <li><strong>Modelo:</strong> Gemini Flash 2.5 con "Corpus Cerrado" para evitar alucinaciones.</li>
-            </ul>
-        `
-    },
-    {
-        id: 8,
-        title: "Desafíos",
-        icon: "🔥",
-        content: `
-            <p>Problemas críticos resueltos durante el desarrollo:</p>
-            <ul>
-                <li><strong>Infraestructura:</strong> Render no permitía persistencia de archivos (n8n se borraba). Migramos a <strong>Railway</strong>.</li>
-                <li><strong>Seguridad:</strong> Detección de fraude (Marcación por otros). Implementamos validación cruzada de sesión e IP.</li>
-                <li><strong>CORS:</strong> Problemas de cookies entre Front y Back en dominios distintos.</li>
-            </ul>
-        `
-    },
-    {
-        id: 9,
-        title: "Aprendizajes",
-        icon: "🎓",
-        content: `
-            <ul>
-                <li>Gestión de deuda técnica y refactorización.</li>
-                <li>Despliegue real en nube (CI/CD).</li>
-                <li>Importancia de "Database First" en sistemas complejos.</li>
-                <li>Seguridad ofensiva y defensiva (RBAC).</li>
-            </ul>
-        `
-    },
-    {
-        id: 10,
-        title: "Sistema Final",
-        icon: "🚀",
-        tabs: [
-            {
-                id: "acceso-web",
-                title: "Acceso Web",
-                icon: "🌐",
-                content: `
-                    <p style="text-align:center; font-size:1.3rem; margin-bottom:30px;">El sistema está operativo y en producción.</p>
-                    
-                    <div style="display:flex; justify-content:center; align-items:center; gap:50px; margin-top:30px;">
-                        <!-- QR Code -->
-                        <div style="text-align:center;">
-                            <h3 style="color:var(--secondary-color); margin-bottom:15px;">Acceso Web</h3>
-                            <img src="imagenes/qr-pag.png" alt="QR Code GIGA" style="width:200px; height:200px; border:3px solid var(--accent-color); border-radius:10px; box-shadow:0 0 20px rgba(255,42,109,0.3);">
-                            <p style="margin-top:10px; font-size:1.1rem; color:#05d9e8;">giga-untdf.up.railway.app</p>
-                        </div>
-                        
-                        <!-- Credenciales de Acceso -->
-                        <div style="background:rgba(255,255,255,0.05); padding:30px; border-radius:15px; border:1px solid rgba(5,217,232,0.3); min-width:350px;">
-                            <h3 style="color:var(--accent-color); margin-bottom:20px; text-align:center;">Credenciales de Prueba</h3>
-                            
-                            <div style="margin-bottom:20px; padding:15px; background:rgba(0,0,0,0.3); border-radius:8px;">
-                                <p style="font-size:0.9rem; color:#888; margin-bottom:5px;">Usuario 1:</p>
-                                <p style="font-family:monospace; font-size:1.1rem;"><strong>CUIL:</strong> 20-12345678-9</p>
-                                <p style="font-family:monospace; font-size:1.1rem;"><strong>Contraseña:</strong> demo123</p>
-                            </div>
-                            
-                            <div style="padding:15px; background:rgba(0,0,0,0.3); border-radius:8px;">
-                                <p style="font-size:0.9rem; color:#888; margin-bottom:5px;">Usuario 2:</p>
-                                <p style="font-family:monospace; font-size:1.1rem;"><strong>CUIL:</strong> 27-98765432-1</p>
-                                <p style="font-family:monospace; font-size:1.1rem;"><strong>Contraseña:</strong> demo456</p>
-                            </div>
-                        </div>
-                    </div>
-                `
-            },
-            {
-                id: "presentacion",
-                title: "Presentación",
-                icon: "📊",
-                content: `
-                    <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
-                        <h3 style="color:var(--secondary-color);">Equipo de Desarrollo</h3>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; text-align:left; font-size:1.1rem;">
-                            <div>• Aguila Cárcamo Tayra Belén</div>
-                            <div>• Alvarado Mendez Micaela</div>
-                            <div>• Criniti Teresa</div>
-                            <div>• Frers Pamela</div>
-                            <div>• García Cristian</div>
-                            <div>• Gomez Antonaz Leandro</div>
-                        </div>
-                        
-                        <div style="margin-top:30px; text-align:center;">
-                            <h3 style="color:var(--accent-color); margin-bottom:15px;">Acceder a la Presentación</h3>
-                            <img src="imagenes/qr-prest.png" alt="QR Presentación" style="width:180px; height:180px; border:3px solid var(--secondary-color); border-radius:10px; box-shadow:0 0 20px rgba(77, 238, 234, 0.3);">
-                        </div>
-                    </div>
-                `
-            }
-        ]
-    },
-    {
-        id: 11, // Nuevo ID
-        title: "Escalabilidad",
-        icon: "🌍",
-        content: `
-            <p>GIGA trasciende a Protección Civil. Su arquitectura abstracta permite gestion de turnos en:</p>
-            <ul>
-                <li><strong>Salud:</strong> Guardias médicas y cronogramas hospitalarios.</li>
-                <li><strong>Industria:</strong> Turnos rotativos en fábricas 24/7.</li>
-                <li><strong>Seguridad:</strong> Despliegue territorial (Policía/Bomberos).</li>
-            </ul>
-        `
-    },
-    {
-        id: 12, // Nuevo ID
-        title: "Futuro",
-        icon: "🔮",
-        content: `
-            <p>Roadmap de evolución tecnológica (GIGA 2.0):</p>
-            <ul>
-                <li><strong>Biometría Real (WebAuthn):</strong> Uso de huella/rostro del celular para validar identidad física.</li>
-                <li><strong>Geofencing:</strong> Validación de ubicación GPS para guardias de campo.</li>
-                <li><strong>Modo Offline (PWA):</strong> Operatividad sin conexión para zonas de emergencia.</li>
-            </ul>
-        `
-    }
-];
-
-const heroData = {
-    title: "GIGA SYSTEM",
-    subtitle: "Gestión Integral de Guardias y Asistencia",
-    tabs: [
-        {
-            id: "importancia",
-            title: "Importancia",
-            icon: "🚨",
-            content: `
-                <p>La Secretaría de Protección Civil opera en un entorno crítico donde la precisión administrativa es vital.</p>
-                <ul>
-                    <li><strong>El Problema:</strong> Gestión manual, planillas de papel y Excel con macros (VBA) obsoletas.</li>
-                    <li><strong>El Riesgo:</strong> Errores en cálculos de sueldos (Plus), falta de transparencia y dependencia física.</li>
-                    <li><strong>La Misión:</strong> Modernizar, centralizar y asegurar la información.</li>
-                </ul>
-            `
-        },
-        {
-            id: "sistemas-viejos",
-            title: "Sistemas Viejos",
-            icon: "💾",
-            content: `
-                <p>Analizamos la situación actual encontrando:</p>
-                <ul>
-                    <li>Dependencia de una herramienta interna en Excel con VBA.</li>
-                    <li>Instalación manual equipo por equipo (Sin sincronización).</li>
-                    <li>Incompatibilidad de arquitecturas (x86 vs x64).</li>
-                    <li>Errores humanos recurrentes en la carga de horas.</li>
-                </ul>
-                <div style="background:#333; padding:20px; text-align:center; border-radius:10px; margin-top:20px;">
-                    <em>[Espacio para Capturas de Excel Viejos]</em>
-                </div>
-            `
-        },
-        {
-            id: "solucion",
-            title: "La Solución",
-            icon: "🌐",
-            content: `
-                <p>Desarrollamos una plataforma web integral:</p>
-                <ul>
-                    <li><strong>Centralizada:</strong> Una única fuente de verdad.</li>
-                    <li><strong>Accesible:</strong> Desde PC, Tablets y Móviles.</li>
-                    <li><strong>Transparente:</strong> El agente ve sus horas en tiempo real.</li>
-                    <li><strong>Segura:</strong> Auditoría completa de cada movimiento.</li>
-                </ul>
-            `
-        }
-    ]
-};
-
 // ================= LÓGICA 3D Y ORBITAL =================
+// Este archivo requiere que data.js esté cargado previamente
+// Contiene SOLO la funcionalidad de la presentación
 const universe = document.getElementById('universe');
 const orbitRing = document.getElementById('orbitRing');
 const centerObject = document.getElementById('centerObject');
@@ -585,28 +329,8 @@ function createOverlay(sourceElement, data, isHero) {
     // DETECCIÓN GEOMÉTRICA PARA EL NÚCLEO (CÍRCULO)
     // Si es Hero, el div es cuadrado pero se ve redondo.
     // Si clickean en las esquinas (fuera del radio), debe cerrarse.
-    if (isHero) {
-        clone.addEventListener('click', (e) => {
-            // Coordenadas del click relativas al centro del modal
-            const modalRect = clone.getBoundingClientRect();
-            const centerX = modalRect.left + modalRect.width / 2;
-            const centerY = modalRect.top + modalRect.height / 2;
-
-            const clickX = e.clientX;
-            const clickY = e.clientY;
-
-            // Distancia del click al centro
-            const distance = Math.sqrt(Math.pow(clickX - centerX, 2) + Math.pow(clickY - centerY, 2));
-
-            // Radio del círculo (usamos el menor lado por seguridad, aunque debería ser cuadrado)
-            const radius = modalRect.width / 2;
-
-            // Si la distancia es mayor al radio, clickearon en la "esquina" invisible
-            if (distance > radius) {
-                closeOverlay(overlay, clone, rect, isHero);
-            }
-        });
-    }
+    // Nota: Se removió el cierre por detección geométrica del núcleo circular
+    // porque podía interferir con interacciones internas (tabs/botones).
 
     // Si tiene tabs, agregar funcionalidad
     if (data.tabs && data.tabs.length > 0) {
@@ -626,6 +350,52 @@ function createOverlay(sourceElement, data, isHero) {
                 if (activeContent) {
                     activeContent.classList.add('active');
                 }
+            });
+        });
+    }
+
+    // Agregar funcionalidad de lightbox para imágenes dentro del modal/clon
+    const modalImages = clone.querySelectorAll('img');
+    if (modalImages.length > 0) {
+        modalImages.forEach(img => {
+            img.style.cursor = 'zoom-in';
+            img.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                // Crear backdrop del lightbox
+                const lb = document.createElement('div');
+                lb.className = 'image-lightbox';
+
+                // Imagen grande
+                const large = document.createElement('img');
+                large.src = img.src;
+                large.alt = img.alt || '';
+
+                // Botón cerrar
+                const closeImg = document.createElement('div');
+                closeImg.className = 'close-img';
+                closeImg.innerHTML = '&times;';
+
+                lb.appendChild(large);
+                lb.appendChild(closeImg);
+                document.body.appendChild(lb);
+
+                // Función de cierre
+                const removeLightbox = () => {
+                    if (lb && lb.parentNode) lb.parentNode.removeChild(lb);
+                    document.removeEventListener('keydown', escHandler);
+                };
+
+                // Cerrar al hacer click en backdrop o en el botón
+                lb.addEventListener('click', (ev) => {
+                    if (ev.target === lb || ev.target === closeImg) removeLightbox();
+                });
+
+                // Cerrar con ESC
+                function escHandler(ev) {
+                    if (ev.key === 'Escape') removeLightbox();
+                }
+                document.addEventListener('keydown', escHandler);
             });
         });
     }
