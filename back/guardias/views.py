@@ -1592,13 +1592,19 @@ class GuardiaViewSet(viewsets.ModelViewSet):
 
         queryset = self.get_queryset()
 
-        # FILTRO CRITICO: Solo mostrar guardias activas de cronogramas aprobados/publicados
-        # Esto previene que usuarios vean guardias pendientes de aprobaciÃ³n
+        # Incluir guardias planificadas Y pendientes (activa puede ser False si está pendiente)
         queryset = queryset.filter(
-            activa=True,
-            estado='planificada',
-            id_cronograma__estado__in=['aprobada', 'publicada']
+            Q(estado='planificada') | Q(estado='pendiente')
         )
+
+        # Aplicar filtros RBAC: solo mostrar guardias del área del usuario
+        agente_sesion = obtener_agente_sesion(request)
+        rol = obtener_rol_agente(agente_sesion)
+        areas_acceso = obtener_areas_jerarquia(agente_sesion)
+        
+        # Filtrar por áreas a las que tiene acceso
+        if rol != 'Administrador':
+            queryset = queryset.filter(id_cronograma__id_area__in=areas_acceso)
 
         if fecha_desde:
             queryset = queryset.filter(fecha__gte=fecha_desde)
@@ -1609,17 +1615,26 @@ class GuardiaViewSet(viewsets.ModelViewSet):
         if area_id:
             queryset = queryset.filter(id_cronograma__id_area=area_id)
 
-        # EstadÃ­sticas
-        estadisticas = queryset.aggregate(
-            total_guardias=Count('id_guardia'),
-            guardias_activas=Count('id_guardia', filter=Q(activa=True)),
-            horas_planificadas=Sum('horas_planificadas'),
-            horas_efectivas=Sum('horas_efectivas')
-        )
+        # EstadÃ­sticas separadas: planificadas (pendientes) vs activas (aprobadas/publicadas)
+        estadisticas = {
+            'total_guardias': queryset.count(),
+            'guardias_planificadas': queryset.filter(
+                Q(id_cronograma__estado='pendiente') | Q(estado='pendiente')
+            ).count(),
+            'guardias_activas': queryset.filter(
+                id_cronograma__estado__in=['aprobada', 'publicada'],
+                estado='planificada',
+                activa=True
+            ).count(),
+            'horas_planificadas': queryset.aggregate(Sum('horas_planificadas'))['horas_planificadas__sum'] or 0,
+            'horas_efectivas': queryset.aggregate(Sum('horas_efectivas'))['horas_efectivas__sum'] or 0
+        }
 
-        # Guardias del perÃ­odo
+        # Guardias del perÃ­odo (mostrar solo aprobadas/publicadas en lista)
         # Limitar a 50 mÃ¡s recientes
-        guardias = queryset.order_by('-fecha')[:50]
+        guardias = queryset.filter(
+            id_cronograma__estado__in=['aprobada', 'publicada']
+        ).order_by('-fecha')[:50]
         serializer = self.get_serializer(guardias, many=True)
 
         return Response({

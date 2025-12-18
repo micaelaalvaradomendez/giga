@@ -25,15 +25,12 @@ class GuardiasMainController {
 		this.guardiasDeFecha = writable([]);
 		this.mostrarModal = writable(false);
 
-		// Derived store para estadísticas
-		this.estadisticas = derived(
-			this.guardias,
-			$guardias => ({
-				total: $guardias.length,
-				planificadas: $guardias.filter(g => g.estado === 'planificada').length,
-				activas: $guardias.filter(g => g.activa).length
-			})
-		);
+		// Store para estadísticas reales del backend
+		this.estadisticas = writable({
+			total: 0,
+			planificadas: 0,
+			activas: 0
+		});
 	}
 
 	/**
@@ -68,8 +65,18 @@ class GuardiasMainController {
 
 			const response = await guardiasService.getResumenGuardias('');
 			const guardiasData = response.data?.guardias || [];
+			const estadisticasBackend = response.data?.estadisticas || {};
 
 			this.guardias.set(guardiasData);
+
+			// Actualizar estadísticas con datos reales del backend
+			// Planificadas: guardias en cronogramas pendientes/borrador
+			// Activas: guardias en cronogramas aprobados/publicados
+			this.estadisticas.set({
+				total: estadisticasBackend.total_guardias || 0,
+				planificadas: estadisticasBackend.guardias_planificadas || 0,
+				activas: estadisticasBackend.guardias_activas || 0
+			});
 
 			// Agrupar guardias para el calendario
 			this.agruparGuardias(guardiasData);
