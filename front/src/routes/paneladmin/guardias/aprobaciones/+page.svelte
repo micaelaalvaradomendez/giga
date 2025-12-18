@@ -279,13 +279,13 @@
               >
                 📋 Ver Detalles
               </button>
-              <button
+              <!-- <button
                 class="btn btn-info"
                 on:click={() => handleEditarCronograma(cronograma)}
                 disabled={$loading}
               >
                 ✏️ Editar
-              </button>
+              </button> -->
               <button
                 class="btn btn-success"
                 on:click={() => handleAprobar(cronograma)}

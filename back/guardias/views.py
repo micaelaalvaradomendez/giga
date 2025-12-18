@@ -25,7 +25,7 @@ from .serializers import (
     PlanificacionCronogramaSerializer, CalculoPlusSerializer, AprobacionPlusSerializer,
     HoraCompensacionSerializer, CrearCompensacionSerializer, AprobacionCompensacionSerializer, ResumenCompensacionSerializer
 )
-from .utils import CalculadoraPlus, PlanificadorCronograma, ValidadorHorarios
+from .utils import CalculadoraPlus, PlanificadorCronograma
 from .services.reportes import obtener_datos_reporte, ReporteError
 from .services.reportes import obtener_datos_reporte, ReporteError
 
@@ -1364,6 +1364,7 @@ class GuardiaViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def verificar_disponibilidad_batch(self, request):
+        from asistencia.models import Licencia
         data = request.data
 
         agentes_ids = (
@@ -1400,17 +1401,40 @@ class GuardiaViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Formato de fecha inválido (YYYY-MM-DD)'}, status=status.HTTP_400_BAD_REQUEST)
 
         estados_validos = ['pendiente', 'planificada']
-
         ocupados_qs = Guardia.objects.filter(
             id_agente_id__in=agentes_ids,
             fecha__range=(fd, fh),
-        ).filter(
-            Q(estado__in=estados_validos) | Q(activa=True)
+            activa=True,
+            estado__in=estados_validos,
         ).values_list('id_agente_id', flat=True).distinct()
 
         ocupados = set(ocupados_qs)
 
-        resultados = [{'agente_id': aid, 'disponible': aid not in ocupados} for aid in agentes_ids]
+        estados_licencia_bloquean = ['aprobada']  
+
+        ocupados_licencia_qs = Licencia.objects.filter(
+            id_agente_id__in=agentes_ids,
+            estado__in=estados_licencia_bloquean,
+            fecha_desde__lte=fh,
+            fecha_hasta__gte=fd,
+        ).values_list('id_agente_id', flat=True).distinct()
+
+        ocupados_licencia = set(ocupados_licencia_qs)
+
+        ocupados_total = ocupados | ocupados_licencia
+
+        resultados = []
+        for aid in agentes_ids:
+            tiene_guardia = aid in ocupados
+            tiene_licencia = aid in ocupados_licencia
+
+            resultados.append({
+                'agente_id': aid,
+                'disponible': aid not in ocupados_total,
+                'conflicto_guardia': tiene_guardia,
+                'conflicto_licencia': tiene_licencia,
+            })
+
         return Response({'resultados': resultados}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get', 'post'], url_path='notas')

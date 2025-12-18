@@ -19,14 +19,7 @@
       href: "/paneladmin/guardias/aprobaciones",
       emoji: "📝",
       roles: [1, 2],
-    },
-    {
-      title: "Compensaciones",
-      desc: "Compensaciones horas guardias y extras",
-      href: "/paneladmin/guardias/compensaciones",
-      emoji: "📝",
-      roles: [1, 2, 3],
-    },
+    }
   ];
   // Obtener stores del controller
   const {

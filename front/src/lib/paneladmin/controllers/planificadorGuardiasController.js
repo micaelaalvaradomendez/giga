@@ -165,16 +165,16 @@ class PlanificadorGuardiasController {
 	 * Carga los agentes del área seleccionada y filtra los disponibles
 	 */
 	async cargarAgentesDeArea() {
-		let areaId, fechaInicio, fechaFin, horaInicio, horaFin, token;
+		let areaId, fechaInicio, horaInicio, horaFin, token;
 		this.areaSeleccionada.subscribe(a => areaId = a)();
 		this.fechaInicio.subscribe(f => fechaInicio = f)();
-		this.fechaFin.subscribe(f => fechaFin = f)();
 		this.horaInicio.subscribe(h => horaInicio = h)();
 		this.horaFin.subscribe(h => horaFin = h)();
 		this.token.subscribe(t => token = t)();
 
 		if (!areaId) {
 			this.agentesDisponibles.set([]);
+			this.agentesConConflicto.set(new Set());
 			return;
 		}
 
@@ -184,53 +184,48 @@ class PlanificadorGuardiasController {
 
 			const response = await personasService.getAgentesByArea(areaId, token);
 			let agentes = response.data?.results || response.data || [];
-
-			// Filtrar solo agentes activos
 			agentes = agentes.filter(a => a.activo === true);
 
-			// Si tenemos fecha y horario, filtrar agentes que NO tienen conflictos ni licencias
-			if (fechaInicio && horaInicio && horaFin) {
-				try {
-					const fechaFinalGuardia = fechaFin || fechaInicio;
-					const agentesIds = agentes.map(a => a.id_agente);
-
-					// 1. Verificar conflictos con guardias en batch (1 sola llamada)
-					const disponibilidadResponse = await guardiasService.verificarDisponibilidadBatch(
-						agentesIds,
-						fechaInicio,
-						fechaFinalGuardia,
-						token
-					);
-
-					const disponibilidadMap = new Map();
-					if (disponibilidadResponse.data?.resultados) {
-						disponibilidadResponse.data.resultados.forEach(r => {
-							disponibilidadMap.set(r.agente_id, r.disponible);
-						});
-					}
-
-					// 2. Verificar licencias (aún se hace individual, pero más rápido que antes)
-					const agentesDisponibles = [];
-					for (const agente of agentes) {
-						// Verificar disponibilidad de guardias desde el batch
-						const disponibleGuardias = disponibilidadMap.get(agente.id_agente) !== false;
-						// Verificar licencias
-						try {
-							const estaEnLicencia = await this.verificarLicenciasAgente(agente.id_agente, fechaInicio, fechaFinalGuardia);
-						} catch (e) {
-						}
-
-						agentesDisponibles.push(agente);
-					}
-
-					this.agentesDisponibles.set(agentesDisponibles);
-				} catch (error) {
-					this.agentesDisponibles.set(agentes);
-				}
-			} else {
-				// Sin fecha/horario, mostrar todos los agentes activos
+			if (!(fechaInicio && horaInicio && horaFin)) {
 				this.agentesDisponibles.set(agentes);
+				this.agentesConConflicto.set(new Set());
+				return;
 			}
+
+			const fechaFinalGuardia = fechaInicio; // 1 día
+			const agentesIds = agentes.map(a => a.id_agente);
+
+			const disponibilidadResponse = await guardiasService.verificarDisponibilidadBatch(
+				agentesIds,
+				fechaInicio,
+				fechaFinalGuardia,
+				token
+			);
+
+			const dispByAgente = new Map();
+			(disponibilidadResponse.data?.resultados || []).forEach(r => {
+				dispByAgente.set(Number(r.agente_id), r);
+			});
+
+			const agentesDisponibles = [];
+			const agentesConConflicto = new Set();
+
+			for (const agente of agentes) {
+				const r = dispByAgente.get(Number(agente.id_agente));
+
+				const disponible = r ? r.disponible : true;
+
+				if (!disponible) {
+					agentesConConflicto.add(String(agente.id_agente));
+					continue;
+				}
+
+				agentesDisponibles.push(agente);
+			}
+
+			this.agentesDisponibles.set(agentesDisponibles);
+			this.agentesConConflicto.set(agentesConConflicto);
+
 		} catch (e) {
 			// this.error.set('Error al cargar los agentes'); // Only show global error if critical? Let's suppress or handle gracefully.
 			console.error(e);
@@ -575,7 +570,7 @@ class PlanificadorGuardiasController {
 				fecha: fechaInicio, //para buscar cronograma 
 				fecha_desde: fechaInicio,
 				hora_inicio: horaInicio,
-				fecha_hasta: fechaFin || fechaInicio,
+				fecha_hasta: fechaInicio,
 				hora_fin: horaFin,
 				observaciones: observaciones.trim(),
 				agentes: agentesArray,

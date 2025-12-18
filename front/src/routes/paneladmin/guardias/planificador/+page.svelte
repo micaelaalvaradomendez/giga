@@ -49,10 +49,7 @@
   }
 
   async function handleFechaInicioChange() {
-    // Si la nueva fecha inicio es posterior a la fecha fin, limpiar fecha fin
-    if ($fechaInicio && $fechaFin && $fechaInicio > $fechaFin) {
-      fechaFin.set('');
-    }
+    this.fechaFin.set(fechaInicio); 
     await planificadorGuardiasController.handleFechaHorarioChange();
   }
 
@@ -158,7 +155,7 @@
   })();
 
   // Validar que todos los campos obligatorios estén completos
-  $: puedeAvanzar = $nombre && $areaSeleccionada && $fechaInicio && $fechaFin && $horaInicio && $horaFin && !errorFechaHora;
+  $: puedeAvanzar = $nombre && $areaSeleccionada && $fechaInicio && $horaInicio && $horaFin && !errorFechaHora;
 </script>
 
 <section class="guardias-wrap">
@@ -239,55 +236,55 @@
               </select>
             </div>
 
-            <div class="campo">
-              <label for="fechaInicio">Fecha Inicio *</label>
-              <input
-                class="input"
-                id="fechaInicio"
-                type="date"
-                bind:value={$fechaInicio}
-                on:change={handleFechaInicioChange}
-                min={hoy}
-                disabled={$loading}
-              />
-            </div>
-    
-            <div class="campo">
-              <label for="fechaFin">Fecha Fin *</label>
-              <input
-                class="input"
-                id="fechaFin"
-                type="date"
-                bind:value={$fechaFin}
-                on:change={handleFechaHorarioChange}
-                disabled={$loading}
-                min={$fechaInicio}
-              />
-            </div>
-    
-            <div class="campo">
-              <label for="horaInicio">Hora Inicio *</label>
-              <input
-                class="input"
-                id="horaInicio"
-                type="time"
-                bind:value={$horaInicio}
-                on:change={handleFechaHorarioChange}
-                disabled={$loading}
-              />
-            </div>
-    
-            <div class="campo">
-              <label for="horaFin">Hora Fin *</label>
-              <input
-                class="input"
-                id="horaFin"
-                type="time"
-                bind:value={$horaFin}
-                on:change={handleFechaHorarioChange}
-                disabled={$loading}
-              />
-            </div>
+        <div class="campo campo-full">
+          <label for="fechaInicio">Fecha Guardia *</label>
+          <input
+            class="input"
+            id="fechaInicio"
+            type="date"
+            bind:value={$fechaInicio}
+            on:change={handleFechaInicioChange}
+            min={hoy}
+            disabled={$loading}
+          />
+        </div>
+
+        <!-- <div class="campo">
+          <label for="fechaFin">Fecha Fin *</label>
+          <input
+            class="input"
+            id="fechaFin"
+            type="date"
+            bind:value={$fechaFin}
+            on:change={handleFechaHorarioChange}
+            disabled={$loading}
+            min={$fechaInicio}
+          />
+        </div> -->
+
+        <div class="campo">
+          <label for="horaInicio">Hora Inicio *</label>
+          <input
+            class="input"
+            id="horaInicio"
+            type="time"
+            bind:value={$horaInicio}
+            on:change={handleFechaHorarioChange}
+            disabled={$loading}
+          />
+        </div>
+
+        <div class="campo">
+          <label for="horaFin">Hora Fin *</label>
+          <input
+            class="input"
+            id="horaFin"
+            type="time"
+            bind:value={$horaFin}
+            on:change={handleFechaHorarioChange}
+            disabled={$loading}
+          />
+        </div>
 
              {#if $fechaInicio && $fechaFin && $horaInicio && $horaFin && duracionGuardia}
               <div class="campo campo-full">
