@@ -13,7 +13,7 @@ class PlanificadorGuardiasController {
 		if (!browser) {
 			return;
 		}
-		
+
 		// Stores de navegación y estado general
 		this.loading = writable(false);
 		this.error = writable('');
@@ -130,8 +130,6 @@ class PlanificadorGuardiasController {
 			const responseCronograma = await guardiasService.getCronograma(id, token);
 			const cronograma = responseCronograma.data;
 
-			console.log('✅ Cronograma cargado para editar:', cronograma);
-
 			// Pre-llenar formulario
 			this.nombre.set(cronograma.nombre || '');
 			this.tipo.set(cronograma.tipo || 'regular');
@@ -145,7 +143,6 @@ class PlanificadorGuardiasController {
 			const responseGuardias = await guardiasService.getResumenGuardias(`id_cronograma=${id}`, token);
 			const guardias = responseGuardias.data?.guardias || [];
 
-			console.log('✅ Guardias del cronograma:', guardias.length);
 
 			if (guardias.length > 0) {
 				// Tomar datos de la primera guardia
@@ -157,12 +154,9 @@ class PlanificadorGuardiasController {
 				// Pre-seleccionar agentes
 				const agentesIds = [...new Set(guardias.map(g => g.id_agente))];
 				this.agentesSeleccionados.set(new Set(agentesIds));
-
-				console.log('✅ Agentes pre-seleccionados:', agentesIds.length);
 			}
 		} catch (e) {
 			this.error.set('Error al cargar el cronograma');
-			console.error('❌ Error cargando cronograma:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -221,42 +215,25 @@ class PlanificadorGuardiasController {
 					for (const agente of agentes) {
 						// Verificar disponibilidad de guardias desde el batch
 						const disponibleGuardias = disponibilidadMap.get(agente.id_agente) !== false;
-
-						if (!disponibleGuardias) {
-							console.log(`🚫 Agente ${agente.nombre} ${agente.apellido} tiene conflictos con guardias`);
-							continue;
-						}
-
 						// Verificar licencias
 						try {
 							const estaEnLicencia = await this.verificarLicenciasAgente(agente.id_agente, fechaInicio, fechaFinalGuardia);
-							if (estaEnLicencia) {
-								console.log(`🏖️ Agente ${agente.nombre} ${agente.apellido} está en licencia durante el período`);
-								continue;
-							}
 						} catch (e) {
-							console.warn(`⚠️ Error verificando licencias del agente ${agente.id_agente}:`, e);
-							// En caso de error, incluir el agente
 						}
 
 						agentesDisponibles.push(agente);
 					}
 
 					this.agentesDisponibles.set(agentesDisponibles);
-					console.log(`✅ Agentes disponibles para ${fechaInicio}-${fechaFinalGuardia}: ${agentesDisponibles.length}/${agentes.length} (sin guardias ni licencias)`);
 				} catch (error) {
-					console.error('❌ Error verificando disponibilidad:', error);
-					// En caso de error, mostrar todos los agentes
 					this.agentesDisponibles.set(agentes);
 				}
 			} else {
 				// Sin fecha/horario, mostrar todos los agentes activos
 				this.agentesDisponibles.set(agentes);
-				console.log('✅ Agentes del área cargados:', agentes.length);
 			}
 		} catch (e) {
 			this.error.set('Error al cargar los agentes');
-			console.error('❌ Error cargando agentes:', e);
 		} finally {
 			this.loading.set(false);
 		}
@@ -303,7 +280,6 @@ class PlanificadorGuardiasController {
 			this.agentesSeleccionados.set(new Set());
 			this.agentesConConflicto.set(new Set());
 
-			console.log('🔄 Recargando agentes disponibles tras cambio de fecha/horario...');
 			await this.cargarAgentesDeArea();
 		}
 	}
@@ -316,19 +292,11 @@ class PlanificadorGuardiasController {
 		let seleccionados;
 		this.agentesSeleccionados.subscribe(s => seleccionados = s)();
 
-		console.log('🔍 DEBUG - Toggle agente:', {
-			agenteId,
-			agenteIdType: typeof agenteId,
-			seleccionadosAntes: Array.from(seleccionados),
-			seleccionadosSize: seleccionados.size
-		});
-
 		const nuevoSet = new Set(seleccionados);
 
 		if (nuevoSet.has(agenteId)) {
 			// Deseleccionar
 			nuevoSet.delete(agenteId);
-			console.log('🔍 DEBUG - Deseleccionando agente:', agenteId);
 
 			let conflictos;
 			this.agentesConConflicto.subscribe(c => conflictos = c)();
@@ -338,7 +306,6 @@ class PlanificadorGuardiasController {
 		} else {
 			// Seleccionar y verificar conflictos
 			nuevoSet.add(agenteId);
-			console.log('🔍 DEBUG - Seleccionando agente:', agenteId);
 
 			const tieneConflicto = await this.verificarDisponibilidadAgente(agenteId);
 			if (tieneConflicto) {
@@ -349,11 +316,6 @@ class PlanificadorGuardiasController {
 				this.agentesConConflicto.set(nuevosConflictos);
 			}
 		}
-
-		console.log('🔍 DEBUG - Agentes después del toggle:', {
-			nuevoSetSize: nuevoSet.size,
-			nuevoSetArray: Array.from(nuevoSet)
-		});
 
 		this.agentesSeleccionados.set(nuevoSet);
 	}
@@ -381,7 +343,6 @@ class PlanificadorGuardiasController {
 			const response = await guardiasService.verificarDisponibilidad(agenteId, fechaInicio, token);
 			return !response.data?.disponible; // Devolver true si NO está disponible (hay conflicto)
 		} catch (e) {
-			console.error('❌ Error verificando disponibilidad:', e);
 			return false;
 		}
 	}
@@ -421,10 +382,6 @@ class PlanificadorGuardiasController {
 					// Verificar superposición de fechas
 					const haySuperposicion = licenciaInicio <= guardiaFin && licenciaFin >= guardiaInicio;
 
-					if (haySuperposicion) {
-						console.log(`📋 Licencia encontrada: ${licencia.tipo_licencia_descripcion} del ${licencia.fecha_desde} al ${licencia.fecha_hasta}`);
-					}
-
 					return haySuperposicion;
 				});
 
@@ -433,8 +390,6 @@ class PlanificadorGuardiasController {
 
 			return false;
 		} catch (e) {
-			console.error('❌ Error verificando licencias del agente:', e);
-			// En caso de error, asumir que no está en licencia para no bloquear innecesariamente
 			return false;
 		}
 	}
@@ -508,47 +463,30 @@ class PlanificadorGuardiasController {
 		try {
 			const fechaDate = new Date(fechaInicio + 'T00:00:00');
 			const diaSemana = fechaDate.getDay();
-			const nombresDias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-
-			console.log(`🗓️ Validando fecha: ${fechaInicio} (${nombresDias[diaSemana]})`);
-
 			// Si es fin de semana (sábado=6, domingo=0), está permitido
 			if (diaSemana === 0 || diaSemana === 6) {
-				console.log('✅ Fecha válida: Es fin de semana');
 				return { valido: true, errores: [] };
 			}
 
 			// Si no es fin de semana, verificar si es feriado
-			console.log('🔍 Verificando si es feriado...');
 			const verificacionFeriado = await guardiasService.verificarFeriado({ fecha: fechaInicio }, token);
 
-			console.log('📋 Respuesta verificación feriado:', verificacionFeriado.data);
-
 			if (verificacionFeriado.data?.es_feriado) {
-				console.log('✅ Fecha válida: Es feriado');
 				const feriados = verificacionFeriado.data.feriados || [];
 				if (feriados.length > 0) {
-					console.log('🎉 Feriados encontrados:', feriados.map(f => f.nombre).join(', '));
 				}
 				return { valido: true, errores: [] };
 			} else {
-				console.log('❌ Fecha inválida: No es fin de semana ni feriado');
 				errores.push('Las guardias solo pueden programarse en fines de semana (sábado y domingo) o feriados');
 				return { valido: false, errores };
 			}
 
 		} catch (e) {
-			console.error('❌ Error verificando feriado:', e);
-			console.error('❌ Detalles del error:', e.response?.data || e.message);
-
-			// En caso de error, permitir la creación pero con advertencia
-			console.warn('⚠️ No se pudo verificar feriados, permitiendo creación con advertencia');
 			const fechaDate = new Date(fechaInicio + 'T00:00:00');
 			const diaSemana = fechaDate.getDay();
 
 			if (diaSemana !== 0 && diaSemana !== 6) {
 				// Si no es fin de semana y no pudimos verificar feriados, permitir pero con advertencia
-				console.warn('⚠️ Permitiendo creación de guardia a pesar del error en verificación de feriados');
 				return { valido: true, errores: [] }; // Cambiado para permitir la creación
 			}
 
@@ -643,8 +581,6 @@ class PlanificadorGuardiasController {
 				agente_id: this._obtenerAgenteActual()
 			};
 
-			console.log('📤 Guardando cronograma:', payload);
-
 			let response;
 			if (modoEdicion && cronogramaId) {
 				// Actualizar cronograma existente con guardias
@@ -679,7 +615,6 @@ class PlanificadorGuardiasController {
 			const user = JSON.parse(localStorage.getItem('agente') || '{}');
 			return user.id_agente || user.id || 1; // Fallback a ID 1 si no hay usuario
 		} catch (e) {
-			console.warn('⚠️ No se pudo obtener usuario de localStorage:', e);
 			return 1; // Fallback
 		}
 	}

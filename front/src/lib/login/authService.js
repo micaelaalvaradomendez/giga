@@ -66,7 +66,6 @@ export class AuthService {
                 credentials: 'include'
             });
         } catch (error) {
-            console.error('Error en logout:', error);
         } finally {
             if (isBrowser) {
                 localStorage.removeItem('user');
@@ -111,7 +110,6 @@ export class AuthService {
                 return { authenticated: false };
             }
         } catch (error) {
-            console.error('Error verificando sesión:', error);
             if (isBrowser) {
                 localStorage.removeItem('user');
                 localStorage.removeItem('isAuthenticated');
@@ -132,7 +130,6 @@ export class AuthService {
             }
             return null;
         } catch (error) {
-            console.error('Error obteniendo usuario actual:', error);
             return null;
         }
     }
@@ -178,7 +175,6 @@ export class AuthService {
 
             return { success: false, data: null };
         } catch (error) {
-            console.error('Error obteniendo datos del usuario:', error);
             return { success: false, data: null };
         }
     }

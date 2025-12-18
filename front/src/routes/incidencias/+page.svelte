@@ -74,7 +74,6 @@
       }
       await cargarDatos();
     } catch (error) {
-      console.error("Error inicializando página:", error);
       error = error.message;
     } finally {
       loading = false;
@@ -97,7 +96,6 @@
         : [];
       incidenciasAsignadas = Array.isArray(asignadasData) ? asignadasData : [];
     } catch (err) {
-      console.error("Error al cargar datos:", err);
       error = err.message;
     }
   }
@@ -172,7 +170,6 @@
         jefesArea = response.agentes || [];
       }
     } catch (error) {
-      console.error("Error cargando destinatarios:", error);
       jefesArea = [];
     } finally {
       cargandoJefes = false;
@@ -208,7 +205,6 @@
       // Cambiar a la tab de "mis incidencias" para mostrar la nueva
       tabActiva = "mias";
     } catch (err) {
-      console.error("Error al crear incidencia:", err);
       mostrarMensaje(
         "Error",
         `No se pudo crear la incidencia: ${err.message}`,
@@ -229,7 +225,6 @@
       );
       incidenciaSeleccionada = detallesCompletos;
     } catch (error) {
-      console.error("Error cargando detalles:", error);
       incidenciaSeleccionada = incidencia; // Usar los datos que ya tenemos
     } finally {
       cargandoDetalle = false;
@@ -285,7 +280,6 @@
         "success",
       );
     } catch (err) {
-      console.error("Error al cambiar estado:", err);
       mostrarMensaje(
         "Error",
         `No se pudo cambiar el estado: ${err.message}`,

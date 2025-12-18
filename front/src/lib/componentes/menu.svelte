@@ -79,10 +79,6 @@
                         error?.message &&
                         !error.message.includes("authenticated")
                     ) {
-                        console.error(
-                            "Error en verificación de sesión del menú:",
-                            error.message,
-                        );
                     }
                 });
             }

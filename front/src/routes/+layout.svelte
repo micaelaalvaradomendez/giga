@@ -29,8 +29,6 @@
 				// Verificar sesión
 				await AuthService.checkSession();
 			} catch (error) {
-				console.error('Error loading components:', error);
-				// En caso de error, mostrar mensaje al usuario
 				// Los componentes no se cargarán y se mostrará el loading spinner
 			}
 		}

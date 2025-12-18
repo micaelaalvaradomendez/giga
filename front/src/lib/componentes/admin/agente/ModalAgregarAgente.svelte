@@ -108,7 +108,6 @@
 		if (isFormValid && !isSaving) {
 			dispatch("guardar", { formData });
 		} else {
-			console.warn("⚠️ No se puede guardar:", { isFormValid, isSaving });
 		}
 	}
 	// Validaciones por pestaña

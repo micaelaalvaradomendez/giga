@@ -205,7 +205,6 @@
 				}
 			}, 100);
 		} catch (error) {
-			console.error("Error de autenticación:", error);
 			await showAlert("Usuario no autorizado", "error", "Acceso Denegado");
 			goto("/");
 		}

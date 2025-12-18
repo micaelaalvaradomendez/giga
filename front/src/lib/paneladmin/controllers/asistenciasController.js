@@ -92,7 +92,6 @@ class AsistenciasController {
 			await this.cargarDatos();
 
 		} catch (error) {
-			console.error('❌ Error inicializando asistenciasController:', error);
 			throw new Error('Error al inicializar el controlador de asistencias');
 		} finally {
 			this.loading.set(false);
@@ -106,7 +105,6 @@ class AsistenciasController {
 			const areasData = response.data?.data?.results || response.data?.results || response.data;
 			this.areas.set(areasData);
 		} catch (error) {
-			console.error('Error al cargar áreas:', error);
 		}
 	}
 
@@ -119,7 +117,6 @@ class AsistenciasController {
 				this.cargarLicencias()
 			]);
 		} catch (error) {
-			console.error('Error al cargar datos:', error);
 		} finally {
 			this.loading.set(false);
 		}
@@ -152,12 +149,6 @@ class AsistenciasController {
 
 				const dataAsistencias = responseAsistencias.data;
 				const dataAusentes = responseAusentes.data;
-
-				console.log('📊 Datos cargados:', {
-					asistencias_registradas: dataAsistencias.data?.length || 0,
-					ausentes: dataAusentes.data?.length || 0,
-					primer_ausente: dataAusentes.data?.[0]
-				});
 
 				// Filtrar ausentes que YA tienen asistencia (evitar duplicados visuales)
 				// Esto protege contra latencia del backend o condiciones de carrera
@@ -195,7 +186,6 @@ class AsistenciasController {
 
 			this.asistencias.set(asistenciasData);
 		} catch (error) {
-			console.error('Error al cargar asistencias:', error);
 		}
 	}
 
@@ -213,7 +203,6 @@ class AsistenciasController {
 			const response = await asistenciaService.getResumenAdmin(params);
 			this.resumen.set(response.data?.data);
 		} catch (error) {
-			console.error('Error al cargar resumen:', error);
 		}
 	}
 
@@ -231,27 +220,18 @@ class AsistenciasController {
 			const response = await asistenciaService.getLicenciasAdmin(params);
 			this.licencias.set(response.data?.data || []);
 		} catch (error) {
-			console.error('Error al cargar licencias:', error);
 		}
 	}
 
 	// ========== GESTIÓN DE MODAL ==========
 	abrirModalCorreccion(asistencia) {
 		if (!asistencia) {
-			console.error('❌ Error: Se intentó abrir modal sin datos de asistencia');
 			alert('Error: No se puede abrir el modal sin información de asistencia');
 			return;
 		}
 
 		// Validar que tenga los datos mínimos necesarios
 		if (!asistencia.agente_dni) {
-			console.error('❌ Error: Asistencia sin DNI del agente:', {
-				asistencia_completa: asistencia,
-				tiene_agente_dni: !!asistencia.agente_dni,
-				tiene_dni: !!asistencia.dni,
-				tiene_id_agente: !!asistencia.id_agente,
-				keys: Object.keys(asistencia)
-			});
 			alert('Error: Los datos del agente están incompletos (falta DNI). No se puede proceder con la corrección.');
 			return;
 		}
@@ -322,12 +302,6 @@ class AsistenciasController {
 		}
 
 		if (!asistencia.agente_dni) {
-			console.error('❌ Falta DNI del agente:', {
-				asistencia: asistencia,
-				tiene_agente_dni: !!asistencia.agente_dni,
-				tiene_id_agente: !!asistencia.id_agente,
-				keys: Object.keys(asistencia)
-			});
 			return {
 				success: false,
 				message: `Error: El agente ${(asistencia && asistencia.agente_nombre) || 'desconocido'} no tiene DNI registrado`
@@ -391,14 +365,12 @@ class AsistenciasController {
 					);
 
 					if (asistenciaActualizada) {
-						console.log('🔄 Actualizando asistenciaEditando tras marcar entrada:', asistenciaActualizada);
 						this.asistenciaEditando.set(asistenciaActualizada);
 					}
 				}
 
 				return { success: true, message: '✅ Entrada marcada correctamente' };
 			} else {
-				console.error('❌ Error en marcación:', data);
 				let mensaje = data.message || 'No se pudo marcar la entrada';
 				if (data.tipo === 'dia_no_laborable') {
 					mensaje = '📅 ' + mensaje;
@@ -409,7 +381,6 @@ class AsistenciasController {
 				};
 			}
 		} catch (error) {
-			console.error('❌ Error al marcar entrada:', error);
 			return { success: false, message: '❌ Error de conexión: ' + error.message };
 		}
 	}
@@ -421,21 +392,7 @@ class AsistenciasController {
 		this.usarHoraEspecifica.subscribe((value) => (usarHora = value))();
 		this.horaSalida.subscribe((value) => (horaSalida = value))();
 
-		console.log('🚪 Intentando marcar salida:', {
-			asistencia_id: asistencia?.id_asistencia,
-			agente: asistencia?.agente_nombre,
-			dni: asistencia?.agente_dni,
-			id_agente: asistencia?.id_agente,
-			fecha: asistencia?.fecha,
-			tiene_entrada: !!asistencia?.hora_entrada,
-			tiene_salida: !!asistencia?.hora_salida,
-			usar_hora: usarHora,
-			hora_salida: horaSalida,
-			asistencia_completa: asistencia
-		});
-
 		if (!asistencia || !asistencia.id_agente) {
-			console.error("❌ Error: No se recibió información del agente en marcarSalida", asistencia);
 			return {
 				success: false,
 				message: 'Error: No se recibió información del agente'
@@ -443,12 +400,6 @@ class AsistenciasController {
 		}
 
 		if (!asistencia.agente_dni) {
-			console.error('❌ Falta DNI del agente para salida:', {
-				asistencia: asistencia,
-				tiene_agente_dni: !!asistencia.agente_dni,
-				tiene_id_agente: !!asistencia.id_agente,
-				keys: Object.keys(asistencia)
-			});
 			return {
 				success: false,
 				message: `Error: El agente ${asistencia.agente_nombre || 'desconocido'} no tiene DNI registrado`
@@ -500,7 +451,6 @@ class AsistenciasController {
 				await this.cargarDatos();
 				return { success: true, message: '✅ Salida marcada correctamente' };
 			} else {
-				console.error('❌ Error en marcación salida:', { status: response.status, data });
 				let mensaje = data.message || 'No se pudo marcar la salida';
 				if (data.tipo === 'dia_no_laborable') {
 					mensaje = '📅 ' + mensaje;
@@ -511,7 +461,6 @@ class AsistenciasController {
 				};
 			}
 		} catch (error) {
-			console.error('❌ Error al marcar salida:', error);
 			return { success: false, message: '❌ Error de conexión: ' + error.message };
 		}
 	}
@@ -525,18 +474,7 @@ class AsistenciasController {
 		this.horaEntrada.subscribe((value) => (horaEntrada = value))();
 		this.horaSalida.subscribe((value) => (horaSalida = value))();
 
-		console.log('🔧 Iniciando corrección de asistencia:', {
-			asistencia_id: asistencia?.id_asistencia,
-			tiene_entrada: !!asistencia?.hora_entrada,
-			tiene_salida: !!asistencia?.hora_salida,
-			usarHora,
-			horaEntrada,
-			horaSalida,
-			observacion
-		});
-
 		if (!asistencia || !asistencia.id_agente) {
-			console.error("❌ Error: No se recibió información del agente en corregirAsistencia", asistencia);
 			return {
 				success: false,
 				message: 'Error: No se recibió información del agente'
@@ -544,7 +482,6 @@ class AsistenciasController {
 		}
 
 		if (!asistencia.agente_dni) {
-			console.error('❌ Falta DNI del agente para corrección:', asistencia);
 			return {
 				success: false,
 				message: `Error: El agente ${asistencia.agente_nombre || 'desconocido'} no tiene DNI registrado`
@@ -620,7 +557,6 @@ class AsistenciasController {
 							// Intentamos mantener el ID si existe, o confiamos en que marcarSalida use DNI
 							id_asistencia: a.id_asistencia || null
 						}));
-						console.log('🔄 Store actualizado manualmente con entrada:', horaEntrada);
 					}
 				}
 
@@ -649,7 +585,6 @@ class AsistenciasController {
 				};
 
 			} catch (error) {
-				console.error('❌ Error creando marcaciones:', error);
 				return {
 					success: false,
 					message: '❌ Error creando marcaciones: ' + error.message
@@ -735,14 +670,12 @@ class AsistenciasController {
 				await this.cargarDatos();
 				return { success: true, message: '✅ Asistencia corregida correctamente' };
 			} else {
-				console.error('❌ Error del servidor (corrección):', { status: response.status, data });
 				return {
 					success: false,
 					message: '❌ Error: ' + (data.message || 'No se pudo corregir la asistencia')
 				};
 			}
 		} catch (error) {
-			console.error('❌ Error al corregir asistencia:', error);
 			return { success: false, message: '❌ Error de conexión: ' + error.message };
 		}
 	}
@@ -852,14 +785,12 @@ class AsistenciasController {
 				await this.cargarDatos();
 				return { success: true, message: '✅ Agente marcado como ausente correctamente' };
 			} else {
-				console.error('❌ Error marcando ausente:', { status: response.status, data });
 				return {
 					success: false,
 					message: '❌ Error: ' + (data.message || 'No se pudo marcar como ausente')
 				};
 			}
 		} catch (error) {
-			console.error('❌ Error al marcar ausente:', error);
 			return { success: false, message: '❌ Error de conexión: ' + error.message };
 		}
 	}

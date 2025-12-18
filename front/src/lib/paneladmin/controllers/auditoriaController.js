@@ -13,7 +13,7 @@ class AuditoriaController {
 		if (!browser) {
 			return;
 		}
-		
+
 		// Stores principales
 		this.registros = writable([]);
 		this.loading = writable(false);
@@ -42,20 +42,20 @@ class AuditoriaController {
 
 				// Aplicar filtros avanzados
 				if ($filtros.modulo) {
-					registrosFiltrados = registrosFiltrados.filter(registro => 
+					registrosFiltrados = registrosFiltrados.filter(registro =>
 						registro.nombre_tabla === $filtros.modulo
 					);
 				}
 
 				if ($filtros.accion) {
-					registrosFiltrados = registrosFiltrados.filter(registro => 
+					registrosFiltrados = registrosFiltrados.filter(registro =>
 						registro.accion === $filtros.accion
 					);
 				}
 
 				if ($filtros.categoria) {
 					const acciones = this.getAccionesPorCategoria($filtros.categoria);
-					registrosFiltrados = registrosFiltrados.filter(registro => 
+					registrosFiltrados = registrosFiltrados.filter(registro =>
 						acciones.includes(registro.accion)
 					);
 				}
@@ -94,7 +94,7 @@ class AuditoriaController {
 				// Aplicar búsqueda de texto libre
 				if ($terminoBusqueda.trim()) {
 					const busqueda = $terminoBusqueda.toLowerCase().trim();
-					
+
 					// Mapeo de acciones traducidas para búsqueda (static, defined once)
 					const traduccionAccion = {
 						// Acciones generales
@@ -105,7 +105,7 @@ class AuditoriaController {
 						'create': 'alta de registro',
 						'update': 'modificación',
 						'delete': 'registro eliminado',
-						
+
 						// Acciones específicas de asistencias
 						'CREAR_ASISTENCIA': 'crear asistencia',
 						'MARCAR_ENTRADA': 'marcar entrada',
@@ -114,39 +114,39 @@ class AuditoriaController {
 						'MARCAR_SALIDA_ADMIN': 'marcar salida admin',
 						'CORREGIR_ASISTENCIA': 'corregir asistencia',
 						'MARCAR_AUSENTE': 'marcar ausente',
-						
+
 						// Acciones específicas de licencias
 						'CREAR_LICENCIA': 'crear licencia',
 						'APROBAR_LICENCIA': 'aprobar licencia',
 						'RECHAZAR_LICENCIA': 'rechazar licencia',
 						'ELIMINAR_LICENCIA': 'eliminar licencia',
-						
+
 						// Acciones específicas de tipos de licencia
 						'CREAR_TIPO_LICENCIA': 'crear tipo licencia',
 						'ACTUALIZAR_TIPO_LICENCIA': 'actualizar tipo licencia',
 						'ELIMINAR_TIPO_LICENCIA': 'eliminar tipo licencia',
-						
+
 						// Acciones específicas de roles
 						'ASIGNAR_ROL': 'asignar rol',
 						'QUITAR_ROL': 'quitar rol',
 						'CAMBIO_ROL_ATOMICO': 'cambio rol',
-						
+
 						// Acciones de autenticación
 						'LOGIN_EXITOSO': 'login exitoso',
 						'LOGIN_FALLIDO': 'login fallido',
 						'LOGOUT': 'logout'
 					};
-					
+
 					registrosFiltrados = registrosFiltrados.filter(registro => {
 						// Campos de búsqueda
 						const usuario = (registro.creado_por_nombre || registro.id_agente?.nombre || 'sistema').toLowerCase();
 						const accion = (traduccionAccion[registro.accion] || registro.accion || '').toLowerCase();
 						const tabla = (registro.nombre_tabla || '').toLowerCase();
-						
+
 						// Buscar en todos los campos relevantes
-						return usuario.includes(busqueda) || 
-							   accion.includes(busqueda) || 
-							   tabla.includes(busqueda);
+						return usuario.includes(busqueda) ||
+							accion.includes(busqueda) ||
+							tabla.includes(busqueda);
 					});
 				}
 
@@ -167,7 +167,7 @@ class AuditoriaController {
 		if (!browser) {
 			return;
 		}
-		
+
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
 		}
@@ -177,7 +177,6 @@ class AuditoriaController {
 			await this.loadRegistros();
 			this.initialized = true;
 		} catch (error) {
-			console.error('Error inicializando controlador de auditoría:', error);
 			this.error.set('Error al inicializar el controlador de auditoría');
 			throw error;
 		} finally {
@@ -195,9 +194,9 @@ class AuditoriaController {
 
 			// Las cookies de sesión se incluyen automáticamente
 			const response = await auditoriaService.getRegistrosAuditoria();
-			
+
 			const registrosData = response.data?.results || response.data || [];
-			
+
 			// Procesar y enriquecer los datos
 			const registrosProcesados = registrosData.map(registro => {
 				// Manejar el nombre del creador de forma segura
@@ -207,10 +206,10 @@ class AuditoriaController {
 				} else if (registro.id_agente && (registro.id_agente.nombre || registro.id_agente.apellido)) {
 					creado_por_nombre = `${registro.id_agente.nombre || ''} ${registro.id_agente.apellido || ''}`.trim();
 				}
-				
+
 				// Precompute timestamp for efficient sorting (avoid new Date() on each sort)
 				const _ts_creado_en = registro.creado_en ? new Date(registro.creado_en).getTime() : 0;
-				
+
 				return {
 					...registro,
 					creado_por_nombre,
@@ -221,9 +220,8 @@ class AuditoriaController {
 			});
 
 			this.registros.set(registrosProcesados);
-			
+
 		} catch (error) {
-			console.error('Error cargando registros de auditoría:', error);
 			this.error.set('Error al cargar los registros de auditoría');
 			throw error;
 		} finally {
@@ -289,7 +287,7 @@ class AuditoriaController {
 			'aprobacion': ['APROBAR_LICENCIA', 'APROBAR_COMPENSACION'],
 			'rechazo': ['RECHAZAR_LICENCIA', 'RECHAZAR_COMPENSACION']
 		};
-		
+
 		return categorias[categoria] || [];
 	}
 
@@ -299,7 +297,7 @@ class AuditoriaController {
 	getModulosUnicos() {
 		return derived([this.registros], ([$registros]) => {
 			if (!$registros || !Array.isArray($registros)) return [];
-			
+
 			const modulos = [...new Set($registros.map(r => r.nombre_tabla))].sort();
 			return modulos.map(modulo => ({
 				value: modulo,
@@ -314,7 +312,7 @@ class AuditoriaController {
 	getAccionesUnicas() {
 		return derived([this.registros], ([$registros]) => {
 			if (!$registros || !Array.isArray($registros)) return [];
-			
+
 			const acciones = [...new Set($registros.map(r => r.accion))].sort();
 			return acciones.map(accion => ({
 				value: accion,
@@ -329,7 +327,7 @@ class AuditoriaController {
 	getUsuariosUnicos() {
 		return derived([this.registros], ([$registros]) => {
 			if (!$registros || !Array.isArray($registros)) return [];
-			
+
 			const usuarios = [...new Set($registros.map(r => r.creado_por_nombre || 'Sistema'))].sort();
 			return usuarios.map(usuario => ({
 				value: usuario,
@@ -354,7 +352,7 @@ class AuditoriaController {
 			'funciones_plus': 'Funciones Plus',
 			'hora_compensacion': 'Compensaciones'
 		};
-		
+
 		return nombres[modulo] || modulo.charAt(0).toUpperCase() + modulo.slice(1);
 	}
 
@@ -363,7 +361,7 @@ class AuditoriaController {
 	 */
 	formatearFecha(fechaISO) {
 		if (!fechaISO) return 'N/A';
-		
+
 		try {
 			const fecha = new Date(fechaISO);
 			return fecha.toLocaleString('es-AR', {
@@ -375,7 +373,6 @@ class AuditoriaController {
 				hour12: false
 			});
 		} catch (error) {
-			console.error('Error formateando fecha:', error);
 			return 'Fecha inválida';
 		}
 	}
@@ -393,7 +390,7 @@ class AuditoriaController {
 			'create': 'Alta de registro',
 			'update': 'Modificación',
 			'delete': 'Registro eliminado',
-			
+
 			// Acciones específicas de asistencias
 			'CREAR_ASISTENCIA': 'Crear asistencia',
 			'MARCAR_ENTRADA': 'Marcar entrada',
@@ -402,23 +399,23 @@ class AuditoriaController {
 			'MARCAR_SALIDA_ADMIN': 'Marcar salida (Admin)',
 			'CORREGIR_ASISTENCIA': 'Corregir asistencia',
 			'MARCAR_AUSENTE': 'Marcar ausente',
-			
+
 			// Acciones específicas de licencias
 			'CREAR_LICENCIA': 'Crear licencia',
 			'APROBAR_LICENCIA': 'Aprobar licencia',
 			'RECHAZAR_LICENCIA': 'Rechazar licencia',
 			'ELIMINAR_LICENCIA': 'Eliminar licencia',
-			
+
 			// Acciones específicas de tipos de licencia
 			'CREAR_TIPO_LICENCIA': 'Crear tipo de licencia',
 			'ACTUALIZAR_TIPO_LICENCIA': 'Actualizar tipo de licencia',
 			'ELIMINAR_TIPO_LICENCIA': 'Eliminar tipo de licencia',
-			
+
 			// Acciones específicas de roles
 			'ASIGNAR_ROL': 'Asignar rol',
 			'QUITAR_ROL': 'Quitar rol',
 			'CAMBIO_ROL_ATOMICO': 'Cambio de rol',
-			
+
 			// Acciones de autenticación
 			'LOGIN_EXITOSO': 'Inicio de sesión exitoso',
 			'LOGIN_FALLIDO': 'Intento de inicio de sesión fallido',
@@ -445,7 +442,6 @@ class AuditoriaController {
 				.map(([key, val]) => `${key}: ${val}`)
 				.join(', ');
 		} catch (error) {
-			console.error('Error formateando valor:', error);
 			return 'Valor inválido';
 		}
 	}
@@ -461,36 +457,36 @@ class AuditoriaController {
 			'CREAR_LICENCIA': 'bg-green-500 text-white',
 			'CREAR_TIPO_LICENCIA': 'bg-green-500 text-white',
 			'create': 'bg-green-500 text-white',
-			
+
 			// Acciones de modificación/actualización (amarillo)
 			'MODIFICAR': 'bg-yellow-400 text-black',
 			'ACTUALIZAR': 'bg-yellow-400 text-black',
 			'ACTUALIZAR_TIPO_LICENCIA': 'bg-yellow-400 text-black',
 			'CORREGIR_ASISTENCIA': 'bg-yellow-400 text-black',
 			'update': 'bg-yellow-400 text-black',
-			
+
 			// Acciones de eliminación (rojo)
 			'ELIMINAR': 'bg-red-500 text-white',
 			'ELIMINAR_LICENCIA': 'bg-red-500 text-white',
 			'ELIMINAR_TIPO_LICENCIA': 'bg-red-500 text-white',
 			'delete': 'bg-red-500 text-white',
-			
+
 			// Acciones de aprobación/rechazo (azul/naranja)
 			'APROBAR_LICENCIA': 'bg-blue-500 text-white',
 			'RECHAZAR_LICENCIA': 'bg-orange-500 text-white',
-			
+
 			// Acciones de marcación (púrpura)
 			'MARCAR_ENTRADA': 'bg-purple-500 text-white',
 			'MARCAR_SALIDA': 'bg-purple-600 text-white',
 			'MARCAR_ENTRADA_ADMIN': 'bg-purple-700 text-white',
 			'MARCAR_SALIDA_ADMIN': 'bg-purple-700 text-white',
 			'MARCAR_AUSENTE': 'bg-gray-600 text-white',
-			
+
 			// Acciones de roles (índigo)
 			'ASIGNAR_ROL': 'bg-indigo-500 text-white',
 			'QUITAR_ROL': 'bg-indigo-600 text-white',
 			'CAMBIO_ROL_ATOMICO': 'bg-indigo-700 text-white',
-			
+
 			// Acciones de autenticación (cyan)
 			'LOGIN_EXITOSO': 'bg-cyan-500 text-white',
 			'LOGIN_FALLIDO': 'bg-red-600 text-white',

@@ -57,7 +57,6 @@ export async function initializeAllControllers() {
 		// Los controladores se inicializan bajo demanda
 		// Esta función está disponible para casos especiales donde se necesite
 		// inicializar todos los controladores de una vez
-		console.log('📋 Controladores del panel de administración disponibles');
 		return {
 			usuarios: usuariosController,
 			roles: rolesController,
@@ -72,24 +71,6 @@ export async function initializeAllControllers() {
 			aprobacionesGuardias: aprobacionesGuardiasController
 		};
 	} catch (error) {
-		console.error('❌ Error inicializando controladores:', error);
 		throw error;
-	}
-}
-
-/**
- * Función utilitaria para limpiar todos los stores
- * Útil para logout o cambio de sesión
- */
-export function resetAllControllers() {
-	try {
-		// Cada controlador debería implementar un método reset si es necesario
-		console.log('🧹 Limpiando estado de controladores');
-		
-		// Por ahora, los stores se limpiarán automáticamente en la siguiente carga
-		// En el futuro, cada controlador puede implementar un método reset()
-		
-	} catch (error) {
-		console.error('❌ Error limpiando controladores:', error);
 	}
 }

@@ -13,7 +13,7 @@ class ParametrosController {
 		if (!browser) {
 			return;
 		}
-		
+
 		// Stores principales para datos
 		this.areas = writable([]);
 		this.agrupaciones = writable([]);
@@ -28,32 +28,32 @@ class ParametrosController {
 		this.modalArea = writable({ isOpen: false, agente: null, isSaving: false });
 		this.modalAgrupacion = writable({ isOpen: false, agente: null, isSaving: false });
 		this.modalSchedule = writable({ isOpen: false, tipo: '', target: null, isSaving: false });
-		this.modalDelete = writable({ 
-			isOpen: false, 
-			tipo: '', 
-			item: null, 
-			isDeleting: false, 
-			nuevaAsignacion: '' 
+		this.modalDelete = writable({
+			isOpen: false,
+			tipo: '',
+			item: null,
+			isDeleting: false,
+			nuevaAsignacion: ''
 		});
 
 		// Stores para formularios
-		this.areaForm = writable({ 
-			id_area: null, 
-			nombre: '', 
+		this.areaForm = writable({
+			id_area: null,
+			nombre: '',
 			descripcion: '',
 			id_area_padre: null,
 			jefe_area: null,
 			agentes_asignados: [],
-			activo: true 
+			activo: true
 		});
-		this.agrupacionForm = writable({ 
-			id_agrupacion: null, 
-			nombre: '', 
-			descripcion: '', 
-			color: '#e79043', 
-			activo: true 
+		this.agrupacionForm = writable({
+			id_agrupacion: null,
+			nombre: '',
+			descripcion: '',
+			color: '#e79043',
+			activo: true
 		});
-		this.scheduleForm = writable({ 
+		this.scheduleForm = writable({
 			horario_entrada: '08:00',
 			horario_salida: '16:00'
 		});
@@ -63,9 +63,9 @@ class ParametrosController {
 			[this.areas, this.busquedaAreas],
 			([$areas, $busquedaAreas]) => {
 				if (!$areas || !Array.isArray($areas)) return [];
-				
+
 				return $areas.filter(area => {
-					return !$busquedaAreas || 
+					return !$busquedaAreas ||
 						area.nombre.toLowerCase().includes($busquedaAreas.toLowerCase());
 				});
 			}
@@ -75,9 +75,9 @@ class ParametrosController {
 			[this.agrupaciones, this.busquedaAgrupaciones],
 			([$agrupaciones, $busquedaAgrupaciones]) => {
 				if (!$agrupaciones || !Array.isArray($agrupaciones)) return [];
-				
+
 				return $agrupaciones.filter(agrupacion => {
-					return !$busquedaAgrupaciones || 
+					return !$busquedaAgrupaciones ||
 						agrupacion.nombre.toLowerCase().includes($busquedaAgrupaciones.toLowerCase());
 				});
 			}
@@ -111,7 +111,7 @@ class ParametrosController {
 		if (!browser) {
 			return;
 		}
-		
+
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
 		}
@@ -125,14 +125,13 @@ class ParametrosController {
 	async cargarDatos() {
 		this.loading.set(true);
 		this.error.set(null);
-		
+
 		try {
 			await Promise.all([
 				this.cargarAreas(),
 				this.cargarAgrupaciones()
 			]);
 		} catch (err) {
-			console.error('Error cargando datos:', err);
 			this.error.set('Error al cargar datos del sistema');
 			throw err;
 		} finally {
@@ -146,18 +145,16 @@ class ParametrosController {
 	async cargarAreas() {
 		try {
 			const response = await personasService.getAreas();
-			
+
 			let areasData = [];
 			if (response && response.data && response.data.data) {
 				areasData = response.data.data.results || [];
 			} else if (response && response.data) {
 				areasData = response.data.results || [];
 			}
-			
+
 			this.areas.set(areasData);
-			console.log('✅ Áreas cargadas:', areasData.length);
 		} catch (error) {
-			console.error('❌ Error cargando áreas:', error);
 			this.areas.set([]);
 			throw error;
 		}
@@ -169,18 +166,16 @@ class ParametrosController {
 	async cargarAgrupaciones() {
 		try {
 			const response = await personasService.getAgrupaciones();
-			
+
 			let agrupacionesData = [];
 			if (response && response.data && response.data.data) {
 				agrupacionesData = response.data.data.results || [];
 			} else if (response && response.data) {
 				agrupacionesData = response.data.results || [];
 			}
-			
+
 			this.agrupaciones.set(agrupacionesData);
-			console.log('✅ Agrupaciones cargadas:', agrupacionesData.length);
 		} catch (error) {
-			console.error('❌ Error cargando agrupaciones:', error);
 			this.agrupaciones.set([]);
 			throw error;
 		}
@@ -192,18 +187,16 @@ class ParametrosController {
 	async cargarAgentes() {
 		try {
 			const response = await personasService.getAgentes();
-			
+
 			let agentesData = [];
 			if (response && response.data && response.data.data) {
 				agentesData = response.data.data.results || [];
 			} else if (response && response.data) {
 				agentesData = response.data.results || [];
 			}
-			
-			console.log('✅ Agentes cargados:', agentesData.length);
+
 			return agentesData;
 		} catch (error) {
-			console.error('❌ Error cargando agentes:', error);
 			return [];
 		}
 	}
@@ -235,11 +228,11 @@ class ParametrosController {
 	 */
 	_construirArbol(areas, parentId = null, level = 0) {
 		const result = [];
-		const children = areas.filter(area => 
-			(parentId === null && !area.id_area_padre) || 
+		const children = areas.filter(area =>
+			(parentId === null && !area.id_area_padre) ||
 			(area.id_area_padre === parentId)
 		);
-		
+
 		for (const area of children) {
 			const areaWithChildren = {
 				...area,
@@ -248,7 +241,7 @@ class ParametrosController {
 			};
 			result.push(areaWithChildren);
 		}
-		
+
 		return result;
 	}
 
@@ -260,14 +253,14 @@ class ParametrosController {
 	 * Abrir modal para agregar nueva área
 	 */
 	agregarArea() {
-		this.areaForm.set({ 
-			id_area: null, 
-			nombre: '', 
+		this.areaForm.set({
+			id_area: null,
+			nombre: '',
 			descripcion: '',
 			id_area_padre: null,
 			jefe_area: null,
 			agentes_asignados: [],
-			activo: true 
+			activo: true
 		});
 		this.modalArea.set({ isOpen: true, agente: null, isSaving: false });
 	}
@@ -307,10 +300,10 @@ class ParametrosController {
 		}
 
 		this.modalArea.update(modal => ({ ...modal, isSaving: true }));
-		
+
 		try {
 			let response;
-			
+
 			// Preparar datos con todos los campos jerárquicos
 			const areaData = {
 				nombre: formData.nombre.trim(),
@@ -320,7 +313,7 @@ class ParametrosController {
 				agentes_asignados: formData.agentes_asignados || [],
 				activo: formData.activo
 			};
-			
+
 			if (formData.id_area) {
 				// Actualizar área existente
 				response = await personasService.updateArea(formData.id_area, areaData);
@@ -328,21 +321,16 @@ class ParametrosController {
 				// Crear nueva área
 				response = await personasService.createArea(areaData);
 			}
-			
-			if (response && response.data && response.data.success) {
-				console.log('✅ Área guardada correctamente:', response.data.data);
-			}
-			
+
 			this.modalArea.set({ isOpen: false, agente: null, isSaving: false });
 			await this.cargarAreas();
-			
-			return { 
-				success: true, 
+
+			return {
+				success: true,
 				message: formData.id_area ? 'Área actualizada correctamente' : 'Área creada correctamente',
 				data: response.data.data
 			};
 		} catch (error) {
-			console.error('❌ Error guardando área:', error);
 			const errorMessage = 'Error al guardar el área: ' + (error.response?.data?.message || error.message);
 			throw new Error(errorMessage);
 		} finally {
@@ -355,14 +343,10 @@ class ParametrosController {
 	 */
 	async confirmarEliminarArea(areaId) {
 		this.modalDelete.update(modal => ({ ...modal, isDeleting: true }));
-		
+
 		try {
 			const response = await personasService.deleteArea(areaId);
-			
-			if (response && response.data && response.data.success) {
-				console.log('✅ Área eliminada correctamente');
-			}
-			
+
 			this.modalDelete.set({
 				isOpen: false,
 				tipo: '',
@@ -370,12 +354,11 @@ class ParametrosController {
 				isDeleting: false,
 				nuevaAsignacion: ''
 			});
-			
+
 			await this.cargarAreas();
-			
+
 			return { success: true, message: 'Área eliminada correctamente' };
 		} catch (error) {
-			console.error('❌ Error eliminando área:', error);
 			const errorMessage = 'Error al eliminar el área: ' + (error.response?.data?.message || error.message);
 			throw new Error(errorMessage);
 		} finally {
@@ -391,12 +374,12 @@ class ParametrosController {
 	 * Abrir modal para agregar nueva agrupación
 	 */
 	agregarAgrupacion() {
-		this.agrupacionForm.set({ 
-			id_agrupacion: null, 
-			nombre: '', 
-			descripcion: '', 
-			color: '#e79043', 
-			activo: true 
+		this.agrupacionForm.set({
+			id_agrupacion: null,
+			nombre: '',
+			descripcion: '',
+			color: '#e79043',
+			activo: true
 		});
 		this.modalAgrupacion.set({ isOpen: true, agente: null, isSaving: false });
 	}
@@ -431,10 +414,10 @@ class ParametrosController {
 		}
 
 		this.modalAgrupacion.update(modal => ({ ...modal, isSaving: true }));
-		
+
 		try {
 			let response;
-			
+
 			if (formData.id_agrupacion) {
 				// Actualizar agrupación existente
 				response = await personasService.updateAgrupacion(formData.id_agrupacion, {
@@ -452,20 +435,15 @@ class ParametrosController {
 					activo: formData.activo
 				});
 			}
-			
-			if (response && response.data && response.data.success) {
-				console.log('✅ Agrupación guardada correctamente');
-			}
-			
+
 			this.modalAgrupacion.set({ isOpen: false, agente: null, isSaving: false });
 			await this.cargarAgrupaciones();
-			
-			return { 
-				success: true, 
+
+			return {
+				success: true,
 				message: formData.id_agrupacion ? 'Agrupación actualizada correctamente' : 'Agrupación creada correctamente'
 			};
 		} catch (error) {
-			console.error('❌ Error guardando agrupación:', error);
 			const errorMessage = 'Error al guardar la agrupación: ' + (error.response?.data?.message || error.message);
 			throw new Error(errorMessage);
 		} finally {
@@ -478,17 +456,13 @@ class ParametrosController {
 	 */
 	async confirmarEliminarAgrupacion(agrupacionId, nuevaAsignacion = null) {
 		this.modalDelete.update(modal => ({ ...modal, isDeleting: true }));
-		
+
 		try {
-			const requestData = nuevaAsignacion ? 
+			const requestData = nuevaAsignacion ?
 				{ nueva_agrupacion: nuevaAsignacion } : {};
-			
+
 			const response = await personasService.deleteAgrupacion(agrupacionId, requestData);
-			
-			if (response && response.data && response.data.success) {
-				console.log('✅ Agrupación eliminada correctamente');
-			}
-			
+
 			this.modalDelete.set({
 				isOpen: false,
 				tipo: '',
@@ -496,12 +470,11 @@ class ParametrosController {
 				isDeleting: false,
 				nuevaAsignacion: ''
 			});
-			
+
 			await this.cargarAgrupaciones();
-			
+
 			return { success: true, message: 'Agrupación eliminada correctamente' };
 		} catch (error) {
-			console.error('❌ Error eliminando agrupación:', error);
 			const errorMessage = 'Error al eliminar la agrupación: ' + (error.response?.data?.message || error.message);
 			throw new Error(errorMessage);
 		} finally {
@@ -533,28 +506,23 @@ class ParametrosController {
 	 * Actualizar horarios por área o agrupación
 	 */
 	async actualizarHorarios(formData, tipo, target) {
-		console.log('📋 actualizarHorarios llamado con:', { formData, tipo, target });
-		
+
 		if (!formData.horario_entrada || !formData.horario_salida) {
-			console.error('❌ Faltan datos de horarios:', formData);
 			throw new Error('Horarios de entrada y salida son requeridos');
 		}
 
 		this.modalSchedule.update(modal => ({ ...modal, isSaving: true }));
-		
+
 		try {
 			const horarioData = {
 				horario_entrada: formData.horario_entrada,
 				horario_salida: formData.horario_salida
 			};
 
-			console.log('📤 Enviando datos:', horarioData);
-
 			let response;
 
 			if (tipo === 'area') {
 				// Actualizar horarios por área
-				console.log('🏢 Actualizando horarios por área:', target.id_area);
 				response = await personasService.updateAreaSchedule(target.id_area, horarioData);
 			} else if (tipo === 'agrupacion') {
 				// Actualizar horarios por agrupación
@@ -562,24 +530,16 @@ class ParametrosController {
 					agrupacion: target.nombre,
 					...horarioData
 				};
-				console.log('👥 Actualizando horarios por agrupación:', agrupacionData);
 				response = await personasService.updateAgrupacionSchedule(agrupacionData);
 			}
-			
-			console.log('📥 Respuesta recibida:', response);
-			
-			if (response && response.data && response.data.success) {
-				console.log('✅ Horarios actualizados correctamente');
-			}
-			
+
 			this.modalSchedule.set({ isOpen: false, tipo: '', target: null, isSaving: false });
-			
+
 			// Recargar datos para mostrar cambios
 			await this.init();
-			
+
 			return { success: true, message: 'Horarios actualizados correctamente' };
 		} catch (error) {
-			console.error('❌ Error actualizando horarios:', error);
 			const errorMessage = 'Error al actualizar horarios: ' + (error.response?.data?.message || error.message);
 			throw new Error(errorMessage);
 		} finally {
@@ -626,12 +586,12 @@ class ParametrosController {
 		this.modalArea.set({ isOpen: false, agente: null, isSaving: false });
 		this.modalAgrupacion.set({ isOpen: false, agente: null, isSaving: false });
 		this.modalSchedule.set({ isOpen: false, tipo: '', target: null, isSaving: false });
-		this.modalDelete.set({ 
-			isOpen: false, 
-			tipo: '', 
-			item: null, 
-			isDeleting: false, 
-			nuevaAsignacion: '' 
+		this.modalDelete.set({
+			isOpen: false,
+			tipo: '',
+			item: null,
+			isDeleting: false,
+			nuevaAsignacion: ''
 		});
 	}
 
@@ -645,7 +605,6 @@ class ParametrosController {
 			// Por ahora, permitimos la eliminación directa
 			return { canDelete: true, agentesCount: 0 };
 		} catch (error) {
-			console.error('Error validando eliminación:', error);
 			return { canDelete: false, agentesCount: 0 };
 		}
 	}

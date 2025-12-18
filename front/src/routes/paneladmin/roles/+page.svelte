@@ -22,9 +22,7 @@
 	// Verificar autenticación al montar
 	onMount(async () => {
 		try {
-			console.log("🚀 Iniciando controlador de roles...");
 			await rolesController.init();
-			console.log("✅ Controlador de roles inicializado");
 			// Recargar cuando la página vuelve a ser visible
 			if (browser) {
 				const handleVisibilityChange = () => {
@@ -49,7 +47,6 @@
 				};
 			}
 		} catch (err) {
-			console.error("❌ Error inicializando controlador:", err);
 			if (
 				err.message === "Usuario no autenticado" ||
 				err.message === "Sesión expirada"

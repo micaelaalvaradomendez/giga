@@ -41,7 +41,6 @@
         }
       }
     } catch (e) {
-      console.warn("No se pudo leer el usuario de localStorage:", e);
     }
     try {
       const [areasRes, agentesRes] = await Promise.all([
@@ -51,7 +50,6 @@
       areas = areasRes.data?.data?.results || areasRes.data?.results || areasRes.data || [];
       agentes = agentesRes.data?.results || agentesRes.data?.data?.results || agentesRes.data || [];
     } catch (e) {
-      console.warn("No se pudieron cargar áreas/agentes:", e);
     }
     if ([ROLES.JEFATURA, ROLES.DIRECTOR].includes(rolActual)) {
       area = areaUsuario || "";
@@ -146,8 +144,7 @@
         resultado = res.data;
       }
       mensaje = "Reporte generado.";
-    } catch (e) {
-      console.error(e);
+    } catch (e) { 
       error = e?.response?.data?.error || e?.message || "No se pudo generar el reporte";
     } finally {
       cargando = false;
@@ -192,7 +189,6 @@
       window.URL.revokeObjectURL(url);
       mensaje = `Exportado como ${formato.toUpperCase()}`;
     } catch (e) {
-      console.error(e);
       error = e?.response?.data?.error || e?.message || "No se pudo exportar";
     } finally {
       exportando = false;

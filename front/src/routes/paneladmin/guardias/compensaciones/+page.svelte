@@ -10,7 +10,6 @@
   let mostrandoFormulario = false;
   let token = null;
   // Debug: verificar que el script se esté ejecutando
-  console.log("Script de compensaciones inicializado");
   // Datos para el formulario de nueva compensación
   let areas = [];
   let agentes = {};
@@ -47,7 +46,6 @@
     error = null;
     try {
       const response = await guardiasService.getCompensaciones("", token);
-      console.log("Respuesta completa compensaciones:", response);
       let datos = [];
       if (response.data?.data?.results) {
         datos = response.data.data.results;
@@ -78,7 +76,6 @@
     cargandoAreas = true;
     try {
       const response = await personasService.getAreas(token);
-      console.log("Respuesta completa de áreas:", response);
       // Manejar diferentes estructuras de respuesta (incluyendo response.data.data.results)
       let datos = [];
       if (response.data?.data?.results) {
@@ -167,13 +164,11 @@
   async function buscarCompensaciones() {
     const query = buildQuery();
     const { data } = await guardiasService.getCompensaciones(query, token);
-    console.log(data.results, "response filter");
     compensaciones = data.results;
   }
   function verDetalles(compensacion) {
     compensacionSeleccionada = compensacion;
     mostrandoDetalles = true;
-    console.log("Ver detalles de compensación:", compensacion);
   }
   function cerrarDetalles() {
     mostrandoDetalles = false;
@@ -186,14 +181,12 @@
     try {
       cargando = true;
       error = null;
-      console.log("Compensación a aprobar:", compensacion);
       // Identificar el ID correcto de la compensación
       const compensacionId =
         compensacion.id_hora_compensacion ||
         compensacion.id_compensacion ||
         compensacion.id ||
         compensacion.pk;
-      console.log("ID de compensación:", compensacionId);
       if (!compensacionId) {
         throw new Error("No se pudo identificar el ID de la compensación");
       }
@@ -208,9 +201,7 @@
         "Compensación aprobada exitosamente",
         "success"
       );
-      console.log("Compensación aprobada:", response);
     } catch (err) {
-      console.error("Error aprobando compensación:", err);
       const mensaje =
         err.response?.data?.message || err.message || "Error desconocido";
       error = "Error al aprobar compensación: " + mensaje;
@@ -236,14 +227,12 @@
     try {
       cargando = true;
       error = null;
-      console.log("Compensación a rechazar:", compensacion);
       // Identificar el ID correcto de la compensación
       const compensacionId =
         compensacion.id_hora_compensacion ||
         compensacion.id_compensacion ||
         compensacion.id ||
         compensacion.pk;
-      console.log("ID de compensación:", compensacionId);
       if (!compensacionId) {
         throw new Error("No se pudo identificar el ID de la compensación");
       }
@@ -261,9 +250,7 @@
         "Compensación rechazada correctamente",
         "success"
       );
-      console.log("Compensación rechazada:", response);
     } catch (err) {
-      console.error("Error rechazando compensación:", err);
       const mensaje =
         err.response?.data?.message || err.message || "Error desconocido";
       error = "Error al rechazar compensación: " + mensaje;

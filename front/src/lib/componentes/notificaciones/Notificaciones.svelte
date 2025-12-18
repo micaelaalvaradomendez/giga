@@ -47,9 +47,7 @@
             let data = response.data?.results || response.data || [];
             notificaciones = data.filter((n) => !n.leida);
         } catch (e) {
-            console.error("Error cargando notificaciones:", e);
             if (e.response && e.response.data) {
-                console.error("Detalle del error:", e.response.data);
             }
             notificaciones = [];
         } finally {
@@ -67,7 +65,6 @@
             notificaciones = notificaciones.filter((n) => n.id !== id);
             actualizarContador();
         } catch (e) {
-            console.error(e);
             notificaciones = notificaciones.filter((n) => n.id !== id);
             actualizarContador();
         }
@@ -78,7 +75,6 @@
             notificaciones = [];
             actualizarContador();
         } catch (e) {
-            console.error(e);
             notificaciones = [];
             actualizarContador();
         }

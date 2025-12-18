@@ -28,7 +28,6 @@ export const personasService = {
       const agenteData_response = response.data?.data || response.data;
       return agenteData_response || response;
     } catch (error) {
-      console.error('Error creando agente con rol:', error);
       throw error;
     }
   },
@@ -157,12 +156,12 @@ export const guardiasService = {
   publicarCronograma: (id, token = null) => createApiClient(token).patch(`/guardias/cronogramas/${id}/publicar/`),
   crearGuardia: (data, token = null) => createApiClient(token).post('/guardias/cronogramas/crear_con_guardias/', data),
   actualizarConGuardias: (id, data, token = null) => createApiClient(token).put(`/guardias/cronogramas/${id}/actualizar_con_guardias/`, data),
-  verificarDisponibilidadBatch: (agentesIds, fechaDesde, fechaHasta, token = null) => 
-  createApiClient(token).post('/guardias/guardias/verificar_disponibilidad_batch/', {
-    agentes_ids: agentesIds,
-    fecha_desde: fechaDesde,
-    fecha_hasta: fechaHasta
-  }),
+  verificarDisponibilidadBatch: (agentesIds, fechaDesde, fechaHasta, token = null) =>
+    createApiClient(token).post('/guardias/guardias/verificar_disponibilidad_batch/', {
+      agentes_ids: agentesIds,
+      fecha_desde: fechaDesde,
+      fecha_hasta: fechaHasta
+    }),
 
   // Aprobaciones jerárquicas
   getPendientesAprobacion: (agenteId, token = null) => createApiClient(token).get(`/guardias/cronogramas/pendientes/?agente_id=${agenteId}`),
@@ -358,7 +357,6 @@ export const convenioIaService = {
       return { respuesta: textoRespuesta };
 
     } catch (error) {
-      console.error('Error consultando convenio:', error);
       if (error.name === 'AbortError') {
         throw new Error('Timeout: La consulta está tardando más de lo esperado. La IA podría estar procesando un archivo grande.');
       }

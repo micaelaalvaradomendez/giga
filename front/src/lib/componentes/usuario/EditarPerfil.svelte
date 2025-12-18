@@ -133,7 +133,6 @@
                     result.message || "Error al actualizar el email";
             }
         } catch (error) {
-            console.error("Error al actualizar email:", error);
             errors.general = "Error de conexión. Intente nuevamente.";
         } finally {
             loading = false;
@@ -165,7 +164,6 @@
                         await AuthService.logout();
                         window.location.href = "/";
                     } catch (error) {
-                        console.error("Error al cerrar sesión:", error);
                         window.location.href = "/";
                     }
                 }, 3000);
@@ -174,7 +172,6 @@
                     result.message || "Error al cambiar la contraseña";
             }
         } catch (error) {
-            console.error("Error al cambiar contraseña:", error);
             errors.general = "Error de conexión. Intente nuevamente.";
         } finally {
             loading = false;

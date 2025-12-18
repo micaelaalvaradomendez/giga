@@ -86,19 +86,15 @@
 	let showModalDetalle = false;
 	let licenciaParaDetalle = null;
 	onMount(async () => {
-		console.log("Iniciando página de licencias...");
 		await inicializar();
 	});
 	async function inicializar() {
-		console.log("Inicializando datos...");
 		// Primero cargamos usuario para habilitar UI critica (botones)
 		try {
 			const userResponse = await AuthService.getCurrentUserData();
-			console.log("Respuesta de usuario:", userResponse);
 			if (userResponse?.success && userResponse.data?.success) {
 				userInfo = userResponse.data.data;
 				usuario.set(userInfo);
-				console.log("Usuario cargado:", userInfo);
 				const primerRol =
 					userInfo.roles && userInfo.roles.length > 0
 						? typeof userInfo.roles[0] === "string"
@@ -126,76 +122,44 @@
 					userRol.toLowerCase() === "jefatura" ||
 					userRol.toLowerCase() === "director";
 				permisos = obtenerPermisos(userRol, userArea);
-				console.log(
-					`✅ Usuario: ${primerRol} | Área: ${userArea} | Permisos:`,
-					permisos,
-				);
 			} else {
-				console.warn(
-					"No se pudo obtener información del usuario, continuando sin autenticación",
-				);
 			}
 		} catch (err) {
-			console.error("Error en autenticación, continuando:", err);
 		}
 
 		// Luego cargamos los datos pesados
 		await cargarDatosIniciales();
 	}
 	async function cargarDatosIniciales() {
-		console.log("🚀 Cargando datos iniciales...");
 		try {
-			console.log("📋 Cargando tipos de licencia...");
 			await cargarTiposLicencia();
 		} catch (err) {
-			console.error("❌ Error cargando tipos de licencia:", err);
 		}
 		try {
-			console.log("🏢 Cargando áreas...");
 			const areasResponse = await personasService.getAreas();
-			console.log("🏢 Respuesta de áreas:", areasResponse);
 			if (
 				areasResponse?.data?.success &&
 				areasResponse?.data?.data?.results
 			) {
 				areas = areasResponse.data.data.results || [];
-				console.log("✅ Áreas cargadas:", areas.length, areas);
 			} else if (areasResponse?.data?.results) {
 				areas = areasResponse.data.results || [];
-				console.log(
-					"✅ Áreas cargadas (formato alt):",
-					areas.length,
-					areas,
-				);
 			} else {
-				console.warn(
-					"⚠️ No se pudieron cargar las áreas:",
-					areasResponse,
-				);
 				areas = [];
 			}
 		} catch (err) {
-			console.error("❌ Error cargando áreas:", err);
 			areas = [];
 		}
 		try {
-			console.log("Cargando licencias...");
 			await cargarLicencias();
-			console.log("Licencias cargadas");
 		} catch (err) {
-			console.error("Error cargando licencias:", err);
 		}
 		try {
-			console.log("Cargando tipos para gestión...");
 			await cargarTipos();
-			console.log("Tipos para gestión cargados");
 		} catch (err) {
-			console.error("Error cargando tipos para gestión:", err);
 		}
-		console.log("Carga de datos iniciales completada");
 	}
 	async function cargarAgentesPorArea(areaId) {
-		console.log("🔄 Cargando agentes para área:", areaId);
 		if (!areaId) {
 			agentesDelArea = [];
 			return;
@@ -203,28 +167,18 @@
 		try {
 			cargandoAgentes = true;
 			const response = await personasService.getAgentesByArea(areaId);
-			console.log("📋 Respuesta agentes por área:", response);
 			if (response?.data?.success) {
 				agentesDelArea = response.data.data || [];
-				console.log("✅ Agentes cargados:", agentesDelArea.length);
 			} else {
-				console.error(
-					"Error cargando agentes:",
-					response?.data?.message,
-				);
 				agentesDelArea = [];
 			}
 		} catch (err) {
-			console.error("Error cargando agentes del área:", err);
 			agentesDelArea = [];
 		} finally {
 			cargandoAgentes = false;
 		}
 	}
 	function abrirModalCrear() {
-		console.log("🆕 Abriendo modal crear licencia");
-		console.log("🧑 Usuario actual:", userInfo);
-		console.log("📋 Tipos disponibles:", $tiposLicencia.length);
 		licenciaSeleccionada = null;
 		formLicencia = {
 			id_agente: null,
@@ -244,9 +198,6 @@
 			);
 			return;
 		}
-		console.log("📝 Abriendo modal asignar licencia");
-		console.log("🏢 Áreas disponibles:", areas.length);
-		console.log("📋 Tipos disponibles:", $tiposLicencia.length);
 		areaSeleccionada = null;
 		agentesDelArea = [];
 		formLicencia = {
@@ -294,26 +245,21 @@
 				mostrarAlerta(`❌ Error: ${resultado.error}`, "error");
 			}
 		} catch (err) {
-			console.error("Error eliminando licencia:", err);
 			mostrarAlerta("❌ Error al eliminar la licencia", "error");
 		} finally {
 			cancelarEliminacionLicencia();
 		}
 	}
 	function handleAsignarEvent(event) {
-		console.log("Asignar licencia event:", event.detail);
 		showModalAsignar = false;
 	}
 	function handleAprobarEvent(event) {
-		console.log("🚀 handleAprobarEvent triggered", event.detail);
-		console.log("📄 Licencia seleccionada:", licenciaSeleccionada);
 		if (licenciaSeleccionada) {
 			aprobarLicencia(
 				licenciaSeleccionada.id_licencia,
 				event.detail.observaciones,
 			)
 				.then((resultado) => {
-					console.log("🔄 Resultado aprobarLicencia:", resultado);
 					if (resultado.success) {
 						showModalAprobar = false;
 						mostrarAlerta(
@@ -321,48 +267,39 @@
 							"success",
 						);
 					} else {
-						console.error("❌ Error al aprobar:", resultado.error);
 						mostrarAlerta(resultado.error, "error");
 					}
 				})
 				.catch((err) => {
-					console.error("❌ Excepción en aprobarLicencia:", err);
 					mostrarAlerta(
 						"Error inesperado al aprobar la licencia",
 						"error",
 					);
 				});
 		} else {
-			console.error("❌ No hay licencia seleccionada");
 		}
 	}
 	function handleRechazarEvent(event) {
-		console.log("🚀 handleRechazarEvent triggered", event.detail);
-		console.log("📄 Licencia seleccionada:", licenciaSeleccionada);
 		if (licenciaSeleccionada) {
 			rechazarLicencia(
 				licenciaSeleccionada.id_licencia,
 				event.detail.motivo,
 			)
 				.then((resultado) => {
-					console.log("🔄 Resultado rechazarLicencia:", resultado);
 					if (resultado.success) {
 						showModalRechazar = false;
 						mostrarAlerta("Licencia rechazada.", "success");
 					} else {
-						console.error("❌ Error al rechazar:", resultado.error);
 						mostrarAlerta(resultado.error, "error");
 					}
 				})
 				.catch((err) => {
-					console.error("❌ Excepción en rechazarLicencia:", err);
 					mostrarAlerta(
 						"Error inesperado al rechazar la licencia",
 						"error",
 					);
 				});
 		} else {
-			console.error("❌ No hay licencia seleccionada");
 		}
 	}
 	function mostrarAlerta(mensaje, tipo = "info") {
@@ -384,7 +321,6 @@
 		agentesDelArea = [];
 	}
 	function handleSolicitarEvent(event) {
-		console.log("Licencia creada:", event.detail);
 		showModalCrear = false;
 		mostrarAlerta(
 			"Licencia solicitada correctamente. Aguarde aprobación.",
@@ -404,13 +340,6 @@
 		aplicarFiltros();
 	}
 	function aplicarFiltros() {
-		console.log("🔍 Aplicando filtros:", $filtros);
-		console.log(
-			"📊 Datos disponibles - Áreas:",
-			areas.length,
-			"Tipos:",
-			$tiposLicencia.length,
-		);
 		cargarLicencias($filtros);
 	}
 	function limpiarTodosFiltros() {
@@ -451,7 +380,6 @@
 				errorTipos = resp?.data?.message || "Error al cargar tipos";
 			}
 		} catch (err) {
-			console.error(err);
 			errorTipos =
 				err?.response?.data?.message ||
 				err.message ||
@@ -508,7 +436,6 @@
 				}
 			}
 		} catch (err) {
-			console.error(err);
 			errorTipos =
 				err?.response?.data?.message ||
 				err.message ||
@@ -530,7 +457,6 @@
 			showConfirmDelete = false;
 			tipoAEliminar = null;
 		} catch (err) {
-			console.error(err);
 			const msg =
 				err?.response?.data?.message ||
 				err.message ||

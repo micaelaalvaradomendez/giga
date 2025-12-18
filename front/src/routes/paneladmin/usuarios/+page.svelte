@@ -45,10 +45,8 @@
 	// Los filtros ahora usan bind:value directamente con los stores
 	// Verificar autenticación y cargar datos al montar el componente
 	onMount(async () => {
-		console.log("🔄 Componente montado, iniciando controlador...");
 		try {
 			await usuariosController.init();
-			console.log("✅ Controlador inicializado exitosamente");
 			// Recargar cuando la página vuelve a ser visible
 			if (typeof window !== "undefined") {
 				const handleVisibilityChange = () => {
@@ -73,7 +71,6 @@
 				};
 			}
 		} catch (err) {
-			console.error("❌ Error inicializando controlador:", err);
 			if (err.message === "Usuario no autenticado") {
 				goto("/");
 				return;

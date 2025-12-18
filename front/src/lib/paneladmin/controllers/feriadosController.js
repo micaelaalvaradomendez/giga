@@ -15,7 +15,7 @@ class FeriadosController {
 		if (!browser) {
 			return;
 		}
-		
+
 		// OPTIMIZACIÓN: Usar store de caché global en lugar de store local
 		// Esto permite compartir datos entre múltiples componentes
 		this.feriados = derived(feriadosCache, $cache => $cache.data || []);
@@ -64,7 +64,7 @@ class FeriadosController {
 		if (!browser) {
 			return;
 		}
-		
+
 		if (!AuthService.isAuthenticated()) {
 			throw new Error('Usuario no autenticado');
 		}
@@ -73,7 +73,6 @@ class FeriadosController {
 			await this.loadFeriados();
 			this.initialized = true;
 		} catch (error) {
-			console.error('Error inicializando controlador de feriados:', error);
 			this.error.set('Error al inicializar el controlador de feriados');
 		}
 	}
@@ -87,7 +86,6 @@ class FeriadosController {
 			this.error.set(null);
 			await loadFeriadosCache();
 		} catch (error) {
-			console.error('Error cargando feriados:', error);
 			this.error.set('Error al cargar los feriados');
 			throw error;
 		}
@@ -136,7 +134,6 @@ class FeriadosController {
 			return response.data;
 
 		} catch (error) {
-			console.error('Error creando feriado:', error);
 			const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Error al crear el feriado';
 			this.error.set(errorMsg);
 			throw error;
@@ -172,7 +169,6 @@ class FeriadosController {
 			return response.data;
 
 		} catch (error) {
-			console.error('Error actualizando feriado:', error);
 			const errorMsg = error.response?.data?.message || 'Error al actualizar el feriado';
 			this.error.set(errorMsg);
 			throw error;
@@ -197,7 +193,6 @@ class FeriadosController {
 			this.success.set('Feriado eliminado exitosamente');
 
 		} catch (error) {
-			console.error('Error eliminando feriado:', error);
 			const errorMsg = error.response?.data?.message || 'Error al eliminar el feriado';
 			this.error.set(errorMsg);
 			throw error;

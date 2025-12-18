@@ -95,7 +95,6 @@
 				userInfo = userResponse.data.data;
 			}
 		} catch (err) {
-			console.error("Error cargando usuario en modal:", err);
 		}
 	}
 	function cerrarModal() {
@@ -117,14 +116,9 @@
 				} else if (response.data.success && response.data.data) {
 					agentesCompletos = response.data.data || [];
 				} else {
-					console.warn(
-						"⚠️ Respuesta sin formato conocido:",
-						response.data,
-					);
 					agentesCompletos = [];
 				}
 			} else {
-				console.warn("⚠️ No hay data en la respuesta:", response);
 				agentesCompletos = [];
 			}
 			if (userRol) {
@@ -141,7 +135,6 @@
 				agentesDelArea = agentesCompletos;
 			}
 		} catch (err) {
-			console.error("❌ Error cargando agentes:", err);
 			agentesDelArea = [];
 		} finally {
 			cargandoAgentes = false;
@@ -164,7 +157,6 @@
 				throw new Error(errorMessage);
 			}
 		} catch (err) {
-			console.error("❌ Error asignando licencia:", err);
 			const errorMessage =
 				err?.response?.data?.message ||
 				err.message ||

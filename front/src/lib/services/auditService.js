@@ -36,11 +36,7 @@ class AuditService {
                 })
             });
 
-            if (!response.ok) {
-                console.error('Error al registrar evento de auditoría:', response.statusText);
-            }
         } catch (error) {
-            console.error('Error en auditoría:', error);
             // No lanzar error para no interrumpir el flujo de la aplicación
         }
     }
@@ -69,7 +65,6 @@ class AuditService {
                 })
             });
         } catch (error) {
-            console.error('Error en auditoría de acceso:', error);
         }
     }
 }
